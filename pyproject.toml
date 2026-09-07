@@ -1,0 +1,42 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "cqlib-algorithms"
+version = "0.1.0.dev0"
+description = "Composable quantum algorithm components for Cqlib."
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE.txt"]
+requires-python = ">=3.10"
+dependencies = ["cqlib>=0.1.0"]
+
+classifiers = [
+    "Development Status :: 1 - Planning",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+
+[dependency-groups]
+dev = [
+    "build>=1.2.2,<2",
+    "pytest>=8.3,<10",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/cqlib_algorithms"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/src", "/tests", "/docs", "/pyproject.toml", "/README.md", "/AGENTS.md", "/LICENSE.txt"]
+
+[tool.pytest.ini_options]
+minversion = "8.3"
+testpaths = ["tests"]
+addopts = ["--import-mode=importlib", "--strict-config", "--strict-markers"]
+markers = [
+    "integration: tests covering interactions between components",
+    "reference: correctness checks against independent reference implementations",
+    "slow: tests unsuitable for the default short development cycle",
+]
