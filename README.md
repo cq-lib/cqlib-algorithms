@@ -1,39 +1,48 @@
 # cqlib-algorithms
 
-#### 介绍
-{**以下是 Gitee 平台说明，您可以替换此简介**
-Gitee 是 OSCHINA 推出的基于 Git 的代码托管平台（同时支持 SVN）。专为开发者提供稳定、高效、安全的云端软件开发协作平台
-无论是个人、团队、或是企业，都能够用 Gitee 实现代码托管、项目管理、协作开发。企业项目请看 [https://gitee.com/enterprises](https://gitee.com/enterprises)}
+面向 Cqlib 的量子算法组件库。支持 Python 3.10+，使用 uv 管理依赖、pytest 测试，
+采用 Apache-2.0 开源协议。当前仅提供基础工程骨架。
 
-#### 软件架构
-软件架构说明
+## 目录
 
+```text
+src/cqlib_algorithms/
+├── __init__.py
+├── py.typed
+└── algorithms/
+tests/
+docs/development.md
+AGENTS.md
+pyproject.toml
+LICENSE.txt
+```
 
-#### 安装教程
+组件按功能直接放在 `cqlib_algorithms/` 下，完整算法放在 `algorithms/` 下。
+有实际实现时再增加模块或子包。
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+## 开发
 
-#### 使用说明
+运行依赖为 `cqlib>=0.1.0`，尚未发布期间由开发者手动安装。
+使用已有 `.venv` 时跳过创建环境的步骤：
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+```bash
+uv venv --python 3.10
+source .venv/bin/activate
+```
 
-#### 参与贡献
+将 Cqlib 安装到该环境后：
 
-1.  Fork 本仓库
-2.  新建 Feat_xxx 分支
-3.  提交代码
-4.  新建 Pull Request
+```bash
+uv pip install --group dev
+uv pip install --no-deps -e .
+pytest
+python -m build
+```
 
+Windows PowerShell 使用 `.venv/Scripts/Activate.ps1` 激活环境。
+不激活环境时，使用 `uv run --no-sync pytest` 和 `uv run --no-sync python -m build`。
+构建产物位于 `dist/`；隔离构建需要获取 Hatchling，但不需要安装运行时 SDK。
 
-#### 特技
+SDK 尚未发布期间不执行 `uv sync`。依赖可从包源获取后，再生成并提交 `uv.lock`。
 
-1.  使用 Readme\_XXX.md 来支持不同的语言，例如 Readme\_en.md, Readme\_zh.md
-2.  Gitee 官方博客 [blog.gitee.com](https://blog.gitee.com)
-3.  你可以 [https://gitee.com/explore](https://gitee.com/explore) 这个地址来了解 Gitee 上的优秀开源项目
-4.  [GVP](https://gitee.com/gvp) 全称是 Gitee 最有价值开源项目，是综合评定出的优秀开源项目
-5.  Gitee 官方提供的使用手册 [https://gitee.com/help](https://gitee.com/help)
-6.  Gitee 封面人物是一档用来展示 Gitee 会员风采的栏目 [https://gitee.com/gitee-stars/](https://gitee.com/gitee-stars/)
+开发规范见 [docs/development.md](docs/development.md)。许可证见 [LICENSE.txt](LICENSE.txt)。
