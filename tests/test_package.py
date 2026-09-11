@@ -4,7 +4,36 @@ from importlib import import_module
 from importlib.metadata import metadata
 from importlib.resources import files
 
+import pytest
+from cqlib.error_mitigation import Estimator as ErrorMitigationEstimator
+
 import cqlib_algorithms
+from cqlib_algorithms.protocols import (
+    Ansatz,
+    Estimator,
+    EstimatorRequest,
+    EstimatorResult,
+    Gradient,
+    GradientRequest,
+    GradientResult,
+    Sampler,
+    SamplerRequest,
+    StatePreparation,
+)
+
+
+PUBLIC_COMPONENTS = {
+    "Ansatz": Ansatz,
+    "Estimator": Estimator,
+    "EstimatorRequest": EstimatorRequest,
+    "EstimatorResult": EstimatorResult,
+    "Gradient": Gradient,
+    "GradientRequest": GradientRequest,
+    "GradientResult": GradientResult,
+    "Sampler": Sampler,
+    "SamplerRequest": SamplerRequest,
+    "StatePreparation": StatePreparation,
+}
 
 
 def test_distribution_metadata():
@@ -17,5 +46,22 @@ def test_algorithms_package_is_importable():
     assert import_module("cqlib_algorithms.algorithms") is not None
 
 
+def test_protocols_package_is_importable():
+    assert import_module("cqlib_algorithms.protocols") is not None
+
+
 def test_typing_marker_is_packaged():
     assert files("cqlib_algorithms").joinpath("py.typed").is_file()
+
+
+@pytest.mark.parametrize(("name", "component"), PUBLIC_COMPONENTS.items())
+def test_stable_components_are_exported_from_package(name, component):
+    assert getattr(cqlib_algorithms, name) is component
+
+
+def test_package_all_matches_the_stable_public_api():
+    assert set(cqlib_algorithms.__all__) == {"__version__", *PUBLIC_COMPONENTS}
+
+
+def test_estimator_protocol_is_distinct_from_the_core_callback_alias():
+    assert cqlib_algorithms.Estimator is not ErrorMitigationEstimator

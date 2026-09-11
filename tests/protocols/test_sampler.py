@@ -1,0 +1,143 @@
+"""Tests for the public sampler contract."""
+
+from __future__ import annotations
+
+from collections.abc import Sequence
+from copy import copy
+
+import pytest
+from cqlib import Circuit, Parameter, Qubit
+from cqlib.device import ExecutionResult
+
+from cqlib_algorithms.protocols.sampler import Sampler, SamplerRequest
+
+
+def _sample_request(shots: int = 4) -> SamplerRequest:
+    circuit = Circuit(2)
+    circuit.h(0)
+    return SamplerRequest(circuit, tuple(circuit.qubits), shots)
+
+
+class _FakeSampler:
+    def run(
+        self,
+        requests: Sequence[SamplerRequest],
+        /,
+    ) -> list[ExecutionResult]:
+        results: list[ExecutionResult] = []
+        for index, request in enumerate(requests):
+            request.validate()
+            execution_circuit = copy(request.circuit)
+            measurement = execution_circuit.measure_bits(list(request.qubits))
+            bitstring = "0" * measurement.width
+            results.append(
+                ExecutionResult.from_counts(
+                    f"fake-{index}",
+                    measurement.qubits,
+                    request.shots,
+                    measurement.width,
+                    {bitstring: request.shots},
+                    "fake",
+                )
+            )
+        return results
+
+
+def _run_sampler(
+    sampler: Sampler, requests: Sequence[SamplerRequest]
+) -> list[ExecutionResult]:
+    return sampler.run(requests)
+
+
+def test_sampler_request_accepts_explicit_ordered_qubits():
+    request = _sample_request()
+
+    assert request.qubits == (Qubit(0), Qubit(1))
+    assert request.shots == 4
+    with pytest.raises(TypeError):
+        hash(request)
+
+
+def test_sampler_request_requires_a_tuple_of_qubits():
+    circuit = Circuit(1)
+
+    with pytest.raises(TypeError, match="qubits must be a tuple"):
+        SamplerRequest(circuit, circuit.qubits, 10)  # type: ignore[arg-type]
+    with pytest.raises(TypeError, match="only cqlib.Qubit"):
+        SamplerRequest(circuit, (0,), 10)  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize("shots", [0, -1])
+def test_sampler_request_rejects_non_positive_shots(shots):
+    circuit = Circuit(1)
+
+    with pytest.raises(ValueError, match="greater than zero"):
+        SamplerRequest(circuit, tuple(circuit.qubits), shots)
+
+
+@pytest.mark.parametrize("shots", [True, 1.5, "1"])
+def test_sampler_request_rejects_non_integer_shots(shots):
+    circuit = Circuit(1)
+
+    with pytest.raises(TypeError, match="shots must be an integer"):
+        SamplerRequest(circuit, tuple(circuit.qubits), shots)
+
+
+def test_sampler_request_rejects_unbound_circuit():
+    circuit = Circuit(1)
+    circuit.rx(0, Parameter("theta"))
+
+    with pytest.raises(ValueError, match="symbolic"):
+        SamplerRequest(circuit, tuple(circuit.qubits), 10)
+
+
+def test_sampler_request_rejects_empty_duplicate_or_foreign_qubits():
+    circuit = Circuit(2)
+
+    with pytest.raises(ValueError, match="must not be empty"):
+        SamplerRequest(circuit, (), 10)
+    with pytest.raises(ValueError, match="unique"):
+        SamplerRequest(circuit, (Qubit(0), Qubit(0)), 10)
+    with pytest.raises(ValueError, match="belong to circuit"):
+        SamplerRequest(circuit, (Qubit(0), Qubit(7)), 10)
+
+
+def test_sampler_preserves_reversed_non_contiguous_qubit_order():
+    circuit = Circuit([7, 2])
+    circuit.h(Qubit(7))
+    request = SamplerRequest(circuit, (Qubit(2), Qubit(7)), 5)
+    original_operation_count = len(circuit.operations)
+
+    result = _FakeSampler().run([request])[0]
+
+    assert result.qubits == [Qubit(2), Qubit(7)]
+    assert result.num_qubits == 2
+    assert result.shots == 5
+    assert len(circuit.operations) == original_operation_count
+
+
+def test_sampler_revalidates_mutable_circuit_before_execution():
+    request = _sample_request()
+    request.circuit.rx(0, Parameter("late"))
+
+    with pytest.raises(ValueError, match="symbolic"):
+        _FakeSampler().run([request])
+
+
+def test_structural_sampler_preserves_batch_order_and_supports_empty_batches():
+    sampler = _FakeSampler()
+    requests = [_sample_request(2), _sample_request(3)]
+
+    assert _run_sampler(sampler, []) == []
+    results = _run_sampler(sampler, requests)
+
+    assert [result.task_id for result in results] == ["fake-0", "fake-1"]
+    assert [result.shots for result in results] == [2, 3]
+    assert all(result.status.is_terminal() for result in results)
+    assert all(result.status.is_success() for result in results)
+    assert [sum(result.counts.values()) for result in results] == [2, 3]
+
+
+def test_sampler_protocol_is_not_runtime_checkable():
+    with pytest.raises(TypeError, match="runtime_checkable"):
+        isinstance(_FakeSampler(), Sampler)  # type: ignore[misc]

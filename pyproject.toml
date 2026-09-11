@@ -10,7 +10,7 @@ readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE.txt"]
 requires-python = ">=3.10"
-dependencies = ["cqlib>=0.1.0"]
+dependencies = ["cqlib>=1.4.0b1,<1.5"]
 
 classifiers = [
     "Development Status :: 1 - Planning",
@@ -22,8 +22,14 @@ classifiers = [
 [dependency-groups]
 dev = [
     "build>=1.2.2,<2",
+    "mypy>=1.17,<2",
     "pytest>=8.3,<10",
 ]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+files = ["src/cqlib_algorithms"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/cqlib_algorithms"]
