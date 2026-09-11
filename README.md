@@ -45,4 +45,6 @@ Windows PowerShell 使用 `.venv/Scripts/Activate.ps1` 激活环境。
 
 SDK 尚未发布期间不执行 `uv sync`。依赖可从包源获取后，再生成并提交 `uv.lock`。
 
-开发规范见 [docs/development.md](docs/development.md)。许可证见 [LICENSE.txt](LICENSE.txt)。
+开发规范见 [docs/development.md](docs/development.md)，多 Agent 开发流程见
+[docs/cqlib-agent-development-workflow.md](docs/cqlib-agent-development-workflow.md)。许可证见
+[LICENSE.txt](LICENSE.txt)。
