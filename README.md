@@ -2,13 +2,16 @@
 
 面向 Cqlib 的量子算法组件库。支持 Python 3.10+，使用 uv 管理依赖、pytest 测试，
 采用 Apache-2.0 开源协议。当前提供第一批公共组件协议及其请求、结果数据结构，
-尚未提供具体算法实现。
+以及可复用的量子傅里叶变换线路构造器。
 
 ## 目录
 
 ```text
 src/cqlib_algorithms/
 ├── __init__.py
+├── transforms/
+│   ├── __init__.py
+│   └── qft.py
 ├── py.typed
 ├── protocols/
 │   ├── state_preparation.py
@@ -25,7 +28,8 @@ LICENSE.txt
 ```
 
 公共协议及其请求、结果类型集中放在 `protocols/`；具体组件按实际功能增加模块或
-子包，完整算法放在 `algorithms/`。不预建没有实现的分类目录。
+子包；可复用的线路变换放在 `transforms/`，完整算法放在 `algorithms/`。
+不预建没有实现的分类目录。
 
 ## 公共组件协议
 
@@ -52,6 +56,29 @@ from cqlib_algorithms import (
     StatePreparation,
 )
 ```
+
+## 量子傅里叶变换
+
+`QFT` 构建新的 Cqlib `Circuit`。正向变换采用正指数约定，量子位 `0`
+是计算基索引的最低有效位；默认加入输出位反转所需的 SWAP 门，因此线路矩阵可直接
+对应标准离散傅里叶矩阵。
+
+```python
+from cqlib_algorithms import QFT
+
+forward = QFT(3).build_circuit()
+inverse = QFT(3, inverse=True).build_circuit()
+approximate = QFT(
+    4,
+    approximation_degree=1,
+    do_swaps=False,
+).build_circuit()
+```
+
+`approximation_degree=0` 保留全部受控相位门。值增大时，会按量子位距离省略角度
+最小的受控相位门；其取值必须满足
+`0 <= approximation_degree < num_qubits`。当 `do_swaps=False` 时，输出量子位
+保持位反转顺序。`inverse=True` 返回相同近似与 SWAP 配置下完整正向线路的伴随。
 
 ## 开发
 

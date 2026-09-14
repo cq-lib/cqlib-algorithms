@@ -8,6 +8,7 @@ import pytest
 from cqlib.error_mitigation import Estimator as ErrorMitigationEstimator
 
 import cqlib_algorithms
+from cqlib_algorithms import QFT
 from cqlib_algorithms.protocols import (
     Ansatz,
     Estimator,
@@ -20,6 +21,7 @@ from cqlib_algorithms.protocols import (
     SamplerRequest,
     StatePreparation,
 )
+from cqlib_algorithms.transforms import QFT as TransformQFT
 
 
 PUBLIC_COMPONENTS = {
@@ -50,6 +52,10 @@ def test_protocols_package_is_importable():
     assert import_module("cqlib_algorithms.protocols") is not None
 
 
+def test_transforms_package_is_importable():
+    assert import_module("cqlib_algorithms.transforms") is not None
+
+
 def test_typing_marker_is_packaged():
     assert files("cqlib_algorithms").joinpath("py.typed").is_file()
 
@@ -60,8 +66,12 @@ def test_stable_components_are_exported_from_package(name, component):
 
 
 def test_package_all_matches_the_stable_public_api():
-    assert set(cqlib_algorithms.__all__) == {"__version__", *PUBLIC_COMPONENTS}
+    assert set(cqlib_algorithms.__all__) == {"__version__", "QFT", *PUBLIC_COMPONENTS}
 
 
 def test_estimator_protocol_is_distinct_from_the_core_callback_alias():
     assert cqlib_algorithms.Estimator is not ErrorMitigationEstimator
+
+
+def test_qft_is_exported_from_public_namespaces():
+    assert QFT is TransformQFT

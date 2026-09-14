@@ -2,7 +2,7 @@
 
 ## 结构
 
-- 使用 `src/cqlib_algorithms/` 布局。稳定的公共协议集中放在 `protocols/`，具体组件按实际功能增加模块或子包。
+- 使用 `src/cqlib_algorithms/` 布局。稳定的公共协议集中放在 `protocols/`，可复用的线路变换放在 `transforms/`，其他具体组件按实际功能增加模块或子包。
 - 完整算法放在 `algorithms/`，随实际实现按功能增加模块；不预建空分类目录。
 - 不设置泛化的 `components` 或 `contracts` 层；`protocols` 只收纳已经冻结并被多个实现复用的公共契约。
 - `StatePreparation`、`Ansatz`、`Sampler`、`Estimator` 和 `Gradient` 是首批公共结构协议；请求和结果类型与对应协议放在同一模块。
@@ -20,6 +20,15 @@
 - 请求数据结构仅浅冻结；Cqlib 的线路和可观测量仍可变，调用方不得在请求生命周期内修改它们，执行实现必须在运行前重新验证可检测的不变量。
 - 当前 Core 兼容基线为 Python 包 `cqlib>=1.4.0b1,<1.5`；扩大版本范围前必须通过兼容性测试。
 - 保持依赖无环；新增公共接口或第三方依赖时说明必要性。
+
+## QFT 约定
+
+- 正向 QFT 使用 `F[y, x] = exp(2π i x y / 2**n) / sqrt(2**n)`，量子位 `0` 是最低有效位。
+- 精确受控相位使用 `StandardGate.Phase(theta).control(1)` 与 `Circuit.append_mc_gate`；`CRZ` 的相对相位不同，不能替代。
+- `approximation_degree=d` 时仅保留满足 `distance < n - d` 的受控相位门。
+- 默认 SWAP 将输出恢复为自然计算基顺序；关闭 SWAP 时必须明确记录输出位反转语义。
+- 逆变换是相同近似和 SWAP 配置下完整正向线路的伴随。
+- 正确性测试使用独立解析傅里叶矩阵和基态演化验证，不以实现自身作为参考。
 
 ## 代码与验证
 

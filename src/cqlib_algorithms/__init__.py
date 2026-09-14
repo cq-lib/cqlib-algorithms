@@ -14,6 +14,7 @@ from .protocols import (
     SamplerRequest,
     StatePreparation,
 )
+from .transforms import QFT
 
 __version__ = version("cqlib-algorithms")
 
@@ -29,4 +30,5 @@ __all__ = [
     "Sampler",
     "SamplerRequest",
     "StatePreparation",
+    "QFT",
 ]
