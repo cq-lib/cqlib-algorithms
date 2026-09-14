@@ -1,0 +1,51 @@
+"""Computational-basis state initialization."""
+
+from __future__ import annotations
+
+from typing import final
+
+from cqlib.circuit import Circuit
+
+from ._state_synthesis import validate_positive_qubit_count
+from .basis_encoding import BasisEncoding
+
+
+@final
+class BasisStateInitialization:
+    """Prepare one computational basis state from its integer index.
+
+    Bit ``q`` of ``basis_index`` is placed on qubit ``q``. Thus qubit zero is
+    the least-significant basis-index bit.
+    """
+
+    __slots__ = ("_basis_index", "_encoding", "_num_qubits")
+
+    def __init__(self, num_qubits: int, basis_index: int) -> None:
+        self._num_qubits = validate_positive_qubit_count(num_qubits)
+        if type(basis_index) is not int:
+            raise TypeError("basis_index must be an int")
+        if basis_index < 0 or basis_index >= 1 << self._num_qubits:
+            raise ValueError("basis_index must fit within num_qubits bits")
+        self._basis_index = basis_index
+        self._encoding = BasisEncoding(
+            tuple(bool((basis_index >> qubit) & 1) for qubit in range(self._num_qubits))
+        )
+
+    def validate(self) -> None:
+        """Validate the delegated basis encoding."""
+        self._encoding.validate()
+
+    def build_circuit(self, prefix: str) -> Circuit:
+        """Return a new basis-state initialization circuit."""
+        return self._encoding.build_circuit(prefix)
+
+    def num_parameters(self) -> int:
+        """Return zero because the prepared state is fixed."""
+        return 0
+
+    def num_qubits(self) -> int:
+        """Return the configured register width."""
+        return self._num_qubits
+
+
+__all__ = ["BasisStateInitialization"]

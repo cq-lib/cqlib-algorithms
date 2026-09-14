@@ -38,3 +38,29 @@
 - 使用 pytest；发布的 `py.typed` 源码使用 mypy 严格检查。代码、必要测试和使用说明同步更新；不提前实现无需求的抽象。
 - 使用 uv 管理环境；未发布 SDK 由开发者手动安装，不运行自动同步。验证使用 `uv run --no-sync`。
 - 版本号维护在 `pyproject.toml`。打包使用 `python -m build`，采用 Apache-2.0，保留 `LICENSE.txt`。
+
+## 状态制备实现约定
+
+- 每个公共算子独占一个模块，并仅实现冻结协议的 `validate()`、
+  `build_circuit(prefix)`、`num_parameters()` 与 `num_qubits()` 四个公共方法。
+- 输入在构造时复制。固定数值态不公开可变配置，`build_circuit` 每次返回独立线路；
+  数值组件不创建符号参数，因此 `num_parameters()` 返回 0。
+- 基态索引和幅度索引遵循 Cqlib 小端约定：量子比特 0 是最低有效位；乘积态输入的
+  第 `q` 项对应量子比特 `q`。数值输出测试必须比较 `Circuit.to_matrix()` 的第一列，
+  逐幅度核验相位，不以保真度忽略全局相位。
+- `ArbitraryStatePreparation` 要求输入已在相对、绝对误差 `1e-12` 内归一化；
+  `AmplitudeEncoding` 自动归一化非零输入。二者使用 Möttönen 均匀受控 RY/RZ
+  综合，并仅生成标准旋转、CX 及必要的多控门，不生成稠密 `UnitaryGate`。
+- `SparseAmplitudeEncoding` 对显式支持集自动归一化，拒绝重复索引和显式零幅度。
+  其 exact support-set two-level 综合的经典存储为 `O(s+n)`，逻辑多控操作为
+  `O(sn)`，open-control 周边单比特操作为最坏 `O(sn²)`。当前 Core 无辅助量子比特
+  的多控门分解使基础门上界为最坏 `O(sn³)`。该实现不作量子随机访问存储器
+  （QRAM）能力或多项式以下的数据加载复杂度声明。
+- `AngleEncoding` 仅接受未绑定的 `RX`、`RY`、`RZ` 或 `Phase`；
+  `FeatureMapPreparation` 仅接受 Cqlib 的 `ZFeatureMap`、`IQPFeatureMap`、
+  `ZZFeatureMap` 或 `PauliFeatureMap`。两者保存 Core 组件快照并委托 Core 构建。
+- `UserCircuitPreparation` 保存用户线路快照，按输入线路的量子比特插入顺序映射到
+  连续的 `0..n-1`，保留活跃符号和全局相位。线路必须能由 Core 静态求逆；测量、
+  重置、动态控制及 Core 当前不能求逆的三量子比特以上数值酉门会被拒绝。
+- 数值组件忽略合法字符串 `prefix`，Core 参数化编码及 Feature Map 使用它命名符号；
+  User Circuit 保留用户原有符号名，不进行重命名。
