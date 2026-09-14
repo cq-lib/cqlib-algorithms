@@ -7,11 +7,12 @@ from typing import final
 
 from cqlib.circuit import Circuit, CircuitError
 
+from ...protocols.state_preparation import StatePreparation
 from ._state_synthesis import validate_prefix
 
 
 @final
-class UserCircuitPreparation:
+class UserCircuitPreparation(StatePreparation):
     """Snapshot an invertible user circuit as a state preparation.
 
     Source qubits are mapped by insertion position onto contiguous qubits
@@ -59,6 +60,3 @@ class UserCircuitPreparation:
     def num_qubits(self) -> int:
         """Return the normalized snapshot register width."""
         return self._circuit.num_qubits
-
-
-__all__ = ["UserCircuitPreparation"]

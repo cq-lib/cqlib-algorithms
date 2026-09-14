@@ -7,6 +7,7 @@ from typing import final
 
 from cqlib.circuit import Circuit
 
+from ...protocols.state_preparation import StatePreparation
 from ._state_synthesis import (
     build_sparse_two_level_circuit,
     copy_sparse_entries,
@@ -15,7 +16,7 @@ from ._state_synthesis import (
 
 
 @final
-class SparseAmplitudeEncoding:
+class SparseAmplitudeEncoding(StatePreparation):
     """Prepare normalized amplitudes supplied only on an explicit support.
 
     The implementation uses exact support-set two-level synthesis rather than
@@ -54,6 +55,3 @@ class SparseAmplitudeEncoding:
     def num_qubits(self) -> int:
         """Return the configured register width."""
         return self._num_qubits
-
-
-__all__ = ["SparseAmplitudeEncoding"]

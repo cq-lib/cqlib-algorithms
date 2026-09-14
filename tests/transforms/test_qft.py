@@ -11,6 +11,7 @@ import pytest
 from cqlib import Circuit, Qubit
 from cqlib.qis import Statevector
 
+from cqlib_algorithms.protocols import Ansatz
 from cqlib_algorithms.transforms import QFT
 
 
@@ -86,6 +87,18 @@ def test_qft_configuration_signature_has_keyword_only_options():
         assert signature.parameters[name].kind is inspect.Parameter.KEYWORD_ONLY
     with pytest.raises(TypeError):
         QFT(3, 1)  # type: ignore[misc]
+
+
+def test_qft_implements_the_ansatz_base_class_contract():
+    transform = QFT(3)
+
+    assert isinstance(transform, Ansatz)
+    assert transform.validate() is None
+    assert transform.num_qubits() == 3
+    assert transform.num_parameters() == 0
+    assert transform.build_circuit("qft") == transform.build_circuit()
+    with pytest.raises(TypeError, match="prefix must be a string"):
+        transform.build_circuit(1)  # type: ignore[arg-type]
 
 
 @pytest.mark.parametrize("num_qubits", [1, 2, 3, 4])
@@ -306,4 +319,4 @@ def test_qft_configuration_is_frozen_and_slotted():
 
     assert not hasattr(transform, "__dict__")
     with pytest.raises(FrozenInstanceError):
-        transform.num_qubits = 3  # type: ignore[misc]
+        transform._num_qubits = 3  # type: ignore[misc]

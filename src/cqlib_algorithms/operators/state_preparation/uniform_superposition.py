@@ -6,11 +6,12 @@ from typing import final
 
 from cqlib.circuit import Circuit
 
+from ...protocols.state_preparation import StatePreparation
 from ._state_synthesis import validate_positive_qubit_count, validate_prefix
 
 
 @final
-class UniformSuperposition:
+class UniformSuperposition(StatePreparation):
     r"""Prepare the uniform state :math:`2^{-n/2}\sum_x |x\rangle`."""
 
     __slots__ = ("_num_qubits",)
@@ -37,6 +38,3 @@ class UniformSuperposition:
     def num_qubits(self) -> int:
         """Return the configured register width."""
         return self._num_qubits
-
-
-__all__ = ["UniformSuperposition"]

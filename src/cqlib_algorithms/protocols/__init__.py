@@ -1,4 +1,4 @@
-"""Public component protocols and their supporting value types."""
+"""Public component abstract base classes and supporting value types."""
 
 from .ansatz import Ansatz
 from .estimator import Estimator, EstimatorRequest, EstimatorResult

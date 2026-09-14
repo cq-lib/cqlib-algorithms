@@ -2,6 +2,8 @@
 
 from importlib import import_module
 
+from cqlib_algorithms.protocols import StatePreparation
+
 
 def test_state_preparation_operators_are_exported_from_functional_packages():
     operators = import_module("cqlib_algorithms.operators")
@@ -23,3 +25,4 @@ def test_state_preparation_operators_are_exported_from_functional_packages():
     assert set(state_preparation.__all__) == expected
     for name in expected:
         assert getattr(operators, name) is getattr(state_preparation, name)
+        assert issubclass(getattr(state_preparation, name), StatePreparation)

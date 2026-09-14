@@ -5,9 +5,9 @@
 - 使用 `src/cqlib_algorithms/` 布局。稳定的公共协议集中放在 `protocols/`，可复用的线路变换放在 `transforms/`，其他具体组件按实际功能增加模块或子包。
 - 完整算法放在 `algorithms/`，随实际实现按功能增加模块；不预建空分类目录。
 - 不设置泛化的 `components` 或 `contracts` 层；`protocols` 只收纳已经冻结并被多个实现复用的公共契约。
-- `StatePreparation`、`Ansatz`、`Sampler`、`Estimator` 和 `Gradient` 是首批公共结构协议；请求和结果类型与对应协议放在同一模块。
+- `StatePreparation`、`Ansatz`、`Sampler`、`Estimator` 和 `Gradient` 是首批公共抽象基类；请求和结果类型与对应契约放在同一模块。
 - 稳定协议同时从 `cqlib_algorithms.protocols` 和包顶层导出，具体实现从所属功能模块导出。
-- 结构协议不启用运行时检查。`StatePreparation` 与 `Ansatz` 目前结构等价，其角色差异由调用位置和文档语义约束。
+- 具体组件必须显式继承对应抽象基类。`StatePreparation` 与 `Ansatz` 具有相同抽象操作，但属于不同的名义类型层级，并分别约束状态制备参数和可训练参数语义。
 - 本库批量 `Estimator` 与 `cqlib.error_mitigation.Estimator` 回调类型属于不同契约；同时使用时必须显式别名，避免短名覆盖。
 - 测试放在 `tests/` 并镜像源码功能结构；协议测试位于 `tests/protocols/`，不修改 `sys.path` 绕过包安装。
 
@@ -23,6 +23,7 @@
 
 ## QFT 约定
 
+- `QFT` 继承 `Ansatz`，实现统一的验证、线路构建、参数数量和量子比特数量接口；其逻辑参数数量为 0。
 - 正向 QFT 使用 `F[y, x] = exp(2π i x y / 2**n) / sqrt(2**n)`，量子位 `0` 是最低有效位。
 - 精确受控相位使用 `StandardGate.Phase(theta).control(1)` 与 `Circuit.append_mc_gate`；`CRZ` 的相对相位不同，不能替代。
 - `approximation_degree=d` 时仅保留满足 `distance < n - d` 的受控相位门。
@@ -41,7 +42,7 @@
 
 ## 状态制备实现约定
 
-- 每个公共算子独占一个模块，并仅实现冻结协议的 `validate()`、
+- 每个公共算子独占一个模块，显式继承 `StatePreparation`，并实现冻结契约的 `validate()`、
   `build_circuit(prefix)`、`num_parameters()` 与 `num_qubits()` 四个公共方法。
 - 输入在构造时复制。固定数值态不公开可变配置，`build_circuit` 每次返回独立线路；
   数值组件不创建符号参数，因此 `num_parameters()` 返回 0。

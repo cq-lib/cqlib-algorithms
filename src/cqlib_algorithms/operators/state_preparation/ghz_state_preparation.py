@@ -6,11 +6,12 @@ from typing import final
 
 from cqlib.circuit import Circuit
 
+from ...protocols.state_preparation import StatePreparation
 from ._state_synthesis import validate_positive_qubit_count, validate_prefix
 
 
 @final
-class GHZStatePreparation:
+class GHZStatePreparation(StatePreparation):
     r"""Prepare :math:`(|0\ldots0\rangle+|1\ldots1\rangle)/\sqrt{2}`."""
 
     __slots__ = ("_num_qubits",)
@@ -38,6 +39,3 @@ class GHZStatePreparation:
     def num_qubits(self) -> int:
         """Return the configured register width."""
         return self._num_qubits
-
-
-__all__ = ["GHZStatePreparation"]

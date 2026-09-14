@@ -1,13 +1,13 @@
-"""Structural expectation-estimation protocol and value types."""
+"""Abstract expectation-estimation interface and value types."""
 
 from __future__ import annotations
 
 import math
+from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from numbers import Real
 from types import MappingProxyType
-from typing import Protocol
 
 from cqlib import Circuit
 from cqlib.qis import Hamiltonian, PauliString
@@ -182,8 +182,8 @@ class EstimatorResult:
         object.__setattr__(self, "variance", variance)
 
 
-class Estimator(Protocol):
-    """Structural protocol for synchronous batch expectation estimation.
+class Estimator(ABC):
+    """Abstract base class for synchronous batch expectation estimation.
 
     Implementations call :meth:`EstimatorRequest.validate` immediately before
     execution and return one :class:`EstimatorResult` per request, in input
@@ -195,13 +195,13 @@ class Estimator(Protocol):
     single-call callback alias in a separate namespace.
     """
 
+    __slots__ = ()
+
+    @abstractmethod
     def run(
         self,
         requests: Sequence[EstimatorRequest],
         /,
     ) -> list[EstimatorResult]:
         """Estimate a batch and return results in input order."""
-        ...
-
-
-__all__ = ["EstimatorRequest", "EstimatorResult", "Estimator"]
+        raise NotImplementedError

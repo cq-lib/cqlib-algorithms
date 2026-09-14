@@ -27,7 +27,7 @@ def _symbolic_request(*, shots: int | None = None) -> EstimatorRequest:
     )
 
 
-class _FakeEstimator:
+class _FakeEstimator(Estimator):
     def run(
         self,
         requests: Sequence[EstimatorRequest],
@@ -42,7 +42,7 @@ class _FakeEstimator:
         return results
 
 
-class _ExactOnlyEstimator:
+class _ExactOnlyEstimator(Estimator):
     def run(
         self,
         requests: Sequence[EstimatorRequest],
@@ -291,7 +291,7 @@ def test_estimator_result_accepts_unknown_or_zero_estimate_variance():
     assert EstimatorResult(1, 0).variance == 0.0
 
 
-def test_structural_estimator_preserves_batch_order_and_supports_empty_batches():
+def test_estimator_preserves_batch_order_and_supports_empty_batches():
     estimator = _FakeEstimator()
     first = _symbolic_request()
     second = EstimatorRequest(
@@ -308,7 +308,6 @@ def test_structural_estimator_preserves_batch_order_and_supports_empty_batches()
     assert [result.variance for result in results] == [0.0, 0.0]
 
 
-def test_estimator_is_distinct_and_not_runtime_checkable():
+def test_estimator_is_distinct_and_uses_nominal_runtime_membership():
     assert Estimator is not ErrorMitigationEstimator
-    with pytest.raises(TypeError, match="runtime_checkable"):
-        isinstance(_FakeEstimator(), Estimator)  # type: ignore[misc]
+    assert isinstance(_FakeEstimator(), Estimator)

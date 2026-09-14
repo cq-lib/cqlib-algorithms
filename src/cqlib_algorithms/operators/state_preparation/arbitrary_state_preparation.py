@@ -7,6 +7,7 @@ from typing import final
 
 from cqlib.circuit import Circuit
 
+from ...protocols.state_preparation import StatePreparation
 from ._state_synthesis import (
     build_mottonen_circuit,
     copy_complex_vector,
@@ -16,7 +17,7 @@ from ._state_synthesis import (
 
 
 @final
-class ArbitraryStatePreparation:
+class ArbitraryStatePreparation(StatePreparation):
     """Prepare a normalized complex state using Möttönen multiplexors.
 
     Amplitude index bits follow Cqlib's little-endian convention, with qubit
@@ -47,6 +48,3 @@ class ArbitraryStatePreparation:
     def num_qubits(self) -> int:
         """Return the base-two logarithm of the amplitude count."""
         return len(self._amplitudes).bit_length() - 1
-
-
-__all__ = ["ArbitraryStatePreparation"]

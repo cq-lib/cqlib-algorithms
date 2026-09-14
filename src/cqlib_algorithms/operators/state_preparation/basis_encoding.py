@@ -8,11 +8,12 @@ from typing import final
 from cqlib.circuit import Circuit
 from cqlib.circuit.ansatz import BasisEncoding as CoreBasisEncoding
 
+from ...protocols.state_preparation import StatePreparation
 from ._state_synthesis import validate_prefix
 
 
 @final
-class BasisEncoding:
+class BasisEncoding(StatePreparation):
     """Encode Boolean data as a Cqlib computational-basis state.
 
     ``bits[q]`` is assigned to qubit ``q``; consequently ``bits[0]`` is the
@@ -50,6 +51,3 @@ class BasisEncoding:
     def num_qubits(self) -> int:
         """Return the number of encoded bits."""
         return len(self._bits)
-
-
-__all__ = ["BasisEncoding"]

@@ -6,12 +6,13 @@ from typing import final
 
 from cqlib.circuit import Circuit
 
+from ...protocols.state_preparation import StatePreparation
 from ._state_synthesis import validate_positive_qubit_count
 from .basis_encoding import BasisEncoding
 
 
 @final
-class BasisStateInitialization:
+class BasisStateInitialization(StatePreparation):
     """Prepare one computational basis state from its integer index.
 
     Bit ``q`` of ``basis_index`` is placed on qubit ``q``. Thus qubit zero is
@@ -46,6 +47,3 @@ class BasisStateInitialization:
     def num_qubits(self) -> int:
         """Return the configured register width."""
         return self._num_qubits
-
-
-__all__ = ["BasisStateInitialization"]

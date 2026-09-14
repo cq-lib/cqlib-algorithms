@@ -13,6 +13,7 @@ from cqlib.circuit.ansatz import (
     ZZFeatureMap,
 )
 
+from ...protocols.state_preparation import StatePreparation
 from ._state_synthesis import validate_prefix
 
 _CoreFeatureMap: TypeAlias = (
@@ -27,7 +28,7 @@ _SUPPORTED_FEATURE_MAPS = (
 
 
 @final
-class FeatureMapPreparation:
+class FeatureMapPreparation(StatePreparation):
     """Snapshot and delegate one supported Cqlib feature-map component.
 
     Supported inputs are :class:`ZFeatureMap`, :class:`IQPFeatureMap`,
@@ -62,6 +63,3 @@ class FeatureMapPreparation:
     def num_qubits(self) -> int:
         """Return the Core feature map's register width."""
         return self._feature_map.num_qubits()
-
-
-__all__ = ["FeatureMapPreparation"]

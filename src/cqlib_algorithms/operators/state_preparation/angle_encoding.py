@@ -9,6 +9,7 @@ from cqlib.circuit import Circuit
 from cqlib.circuit.ansatz import AngleEncoding as CoreAngleEncoding
 from cqlib.circuit.gates import StandardGate
 
+from ...protocols.state_preparation import StatePreparation
 from ._state_synthesis import validate_positive_qubit_count, validate_prefix
 
 _SUPPORTED_ROTATION_GATES = (
@@ -20,7 +21,7 @@ _SUPPORTED_ROTATION_GATES = (
 
 
 @final
-class AngleEncoding:
+class AngleEncoding(StatePreparation):
     """Encode one symbolic feature per qubit with a Core rotation gate.
 
     ``rotation_gate`` must be the unbound ``RX``, ``RY``, ``RZ``, or
@@ -58,6 +59,3 @@ class AngleEncoding:
     def num_qubits(self) -> int:
         """Return the configured register width."""
         return self._inner.num_qubits()
-
-
-__all__ = ["AngleEncoding"]

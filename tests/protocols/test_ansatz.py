@@ -1,25 +1,17 @@
-"""Tests for the variational ansatz structural protocol."""
+"""Tests for the variational ansatz abstract base class."""
 
 from __future__ import annotations
 
 import inspect
-from collections.abc import Callable
 
 import pytest
 from cqlib.circuit import Circuit, Parameter
-from cqlib.circuit.ansatz import (
-    BasicEntanglerLayers,
-    PauliEvolutionAnsatz,
-    QAOAAnsatz,
-    TwoLocal,
-)
-from cqlib.qis import Hamiltonian, PauliString
 
 from cqlib_algorithms.protocols.ansatz import Ansatz
 
 
-class _SingleParameterAnsatz:
-    """Minimal non-inheriting implementation used to verify structural use."""
+class _SingleParameterAnsatz(Ansatz):
+    """Minimal concrete implementation used to verify nominal use."""
 
     def validate(self) -> None:
         return None
@@ -63,11 +55,7 @@ def _assert_component_contract(component: Ansatz, prefix: str) -> None:
     assert len(second.operations) == second_length
 
 
-def _zz_hamiltonian() -> Hamiltonian:
-    return Hamiltonian.from_pauli(PauliString.from_str("ZZ"))
-
-
-def test_protocol_declares_only_the_four_minimal_methods():
+def test_base_class_declares_only_the_four_minimal_methods():
     public_callables = {
         name
         for name, value in Ansatz.__dict__.items()
@@ -86,43 +74,15 @@ def test_protocol_declares_only_the_four_minimal_methods():
     )
 
 
-def test_protocol_is_deliberately_not_runtime_checkable():
-    with pytest.raises(TypeError, match="runtime_checkable"):
-        isinstance(_SingleParameterAnsatz(), Ansatz)
+def test_ansatz_is_an_abstract_nominal_base_class():
+    assert inspect.isabstract(Ansatz)
+    with pytest.raises(TypeError, match="abstract"):
+        Ansatz()  # type: ignore[abstract]
+    assert isinstance(_SingleParameterAnsatz(), Ansatz)
 
 
-def test_non_inheriting_python_implementation_is_consumable():
+def test_inheriting_python_implementation_is_consumable():
     ansatz = _SingleParameterAnsatz()
 
     _assert_component_contract(ansatz, "theta")
     assert ansatz.build_circuit("").used_symbols == ["_0"]
-
-
-@pytest.mark.parametrize(
-    "factory",
-    [
-        lambda: TwoLocal(2),
-        lambda: BasicEntanglerLayers(2),
-        lambda: QAOAAnsatz(_zz_hamiltonian()),
-    ],
-    ids=["two-local", "basic-entangler-layers", "qaoa"],
-)
-def test_representative_core_builders_satisfy_the_contract(
-    factory: Callable[[], Ansatz],
-):
-    _assert_component_contract(factory(), "theta")
-
-
-def test_explicit_core_parameter_name_may_take_precedence_over_prefix():
-    ansatz = PauliEvolutionAnsatz(_zz_hamiltonian()).with_time_param_name("tau")
-    first = ansatz.build_circuit("first")
-    second = ansatz.build_circuit("second")
-
-    assert first.used_symbols == ["tau"]
-    assert second.used_symbols == ["tau"]
-    assert ansatz.num_parameters() == 1
-
-
-def test_core_validation_error_is_exposed_as_value_error():
-    with pytest.raises(ValueError):
-        TwoLocal(0).validate()

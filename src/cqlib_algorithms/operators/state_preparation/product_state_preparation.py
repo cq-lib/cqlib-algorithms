@@ -9,6 +9,7 @@ from typing import final
 
 from cqlib.circuit import Circuit
 
+from ...protocols.state_preparation import StatePreparation
 from ._state_synthesis import (
     ComplexVector,
     require_normalized,
@@ -17,7 +18,7 @@ from ._state_synthesis import (
 
 
 @final
-class ProductStatePreparation:
+class ProductStatePreparation(StatePreparation):
     r"""Prepare :math:`\bigotimes_q(a_q|0\rangle+b_q|1\rangle)`.
 
     Item ``q`` of ``qubit_states`` configures qubit ``q``. Every item must
@@ -100,6 +101,3 @@ class ProductStatePreparation:
     def num_qubits(self) -> int:
         """Return the number of single-qubit factors."""
         return len(self._qubit_states)
-
-
-__all__ = ["ProductStatePreparation"]

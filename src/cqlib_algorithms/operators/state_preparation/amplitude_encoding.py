@@ -7,6 +7,7 @@ from typing import final
 
 from cqlib.circuit import Circuit
 
+from ...protocols.state_preparation import StatePreparation
 from ._state_synthesis import (
     build_mottonen_circuit,
     copy_complex_vector,
@@ -16,7 +17,7 @@ from ._state_synthesis import (
 
 
 @final
-class AmplitudeEncoding:
+class AmplitudeEncoding(StatePreparation):
     r"""Normalize and encode dense data as :math:`\sum_i x_i|i\rangle`."""
 
     __slots__ = ("_features",)
@@ -41,6 +42,3 @@ class AmplitudeEncoding:
     def num_qubits(self) -> int:
         """Return the base-two logarithm of the feature count."""
         return len(self._features).bit_length() - 1
-
-
-__all__ = ["AmplitudeEncoding"]

@@ -53,8 +53,9 @@ LICENSE.txt
 - `Estimator`：同步、批量的期望值估计协议。
 - `Gradient`：基于 Estimator 期望值目标的同步、批量梯度协议。
 
-协议采用结构类型，具体组件无须继承协议即可兼容。`StatePreparation` 与 `Ansatz`
-目前具有相同的方法结构，二者的区别是组合位置和参数语义，而不是运行时类型判断。
+公共组件契约采用抽象基类，具体组件必须显式继承对应基类并实现其抽象方法。
+`StatePreparation` 与 `Ansatz` 具有相同的抽象操作，但属于不同的名义类型层级，
+分别表达状态制备参数和可训练参数语义。
 请求对象只浅冻结字段；其中的 Cqlib 线路和可观测量仍然可变，执行实现必须在运行前
 重新核验请求约束，调用方不得在请求生命周期内修改这些 Core 对象。
 
@@ -114,6 +115,7 @@ approximate = QFT(
 最小的受控相位门；其取值必须满足
 `0 <= approximation_degree < num_qubits`。当 `do_swaps=False` 时，输出量子位
 保持位反转顺序。`inverse=True` 返回相同近似与 SWAP 配置下完整正向线路的伴随。
+`QFT` 显式继承 `Ansatz`，其逻辑参数数量为 0。
 
 ## 开发
 

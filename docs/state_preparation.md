@@ -1,7 +1,7 @@
 # 状态制备与数据编码组件
 
 本文档说明 `cqlib_algorithms.operators.state_preparation` 的首版公共接口。
-所有组件结构化实现 `StatePreparation` 协议，不要求继承协议类；稳定公共面统一为：
+所有组件显式继承 `StatePreparation` 抽象基类；稳定公共面统一为：
 
 - `validate() -> None`：核验构造配置；
 - `build_circuit(prefix: str) -> Circuit`：每次返回独立线路；

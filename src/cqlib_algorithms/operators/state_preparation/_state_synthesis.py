@@ -39,7 +39,7 @@ def validate_positive_qubit_count(num_qubits: int) -> int:
 
 
 def validate_prefix(prefix: str) -> None:
-    """Validate a protocol parameter-name prefix."""
+    """Validate a component parameter-name prefix."""
     if not isinstance(prefix, str):
         raise TypeError("prefix must be a str")
 
@@ -453,6 +453,3 @@ def _append_conditioned_gate(
         circuit.append_gate(gate, [target])
     for qubit in reversed(open_controls):
         circuit.x(qubit)
-
-
-__all__: list[str] = []
