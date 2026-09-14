@@ -137,3 +137,10 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+# CQLib
+cqlib/
+cqlib_data/
+
+# design doc
+docs/design_md/
