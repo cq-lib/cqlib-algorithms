@@ -1,3 +1,14 @@
+﻿# This code is part of Cqlib.
+#
+# (C) Copyright China Telecom Quantum Group 2026
+#
+# This code is licensed under the Apache License, Version 2.0. You may
+# obtain a copy of this license in the LICENSE.txt file in the root directory
+# of this source tree or at http://www.apache.org/licenses/LICENSE-2.0.
+#
+# Any modifications or derivative works of this code must retain this
+# copyright notice, and modified files need to carry a notice indicating
+# that they have been altered from the originals.
 """Test suite for the arithmetic integer comparator.
 
 Scope of this module:
@@ -24,7 +35,7 @@ for _path in (str(SRC), str(TEST_DIR)):
     if _path not in sys.path:
         sys.path.insert(0, _path)
 
-from cqlib_algorithms.algorithms.operators.arithmetic import (  # noqa: E402
+from cqlib_algorithms.operators.arithmetic import (  # noqa: E402
     IntegerComparator,
 )
 
@@ -189,3 +200,4 @@ def test_integer_comparator_invalid_inputs_raise_valueerror() -> None:
         IntegerComparator(4, 3, relation="bad")
     with pytest.raises(ValueError):
         IntegerComparator(4, 3, synthesis="bad")
+

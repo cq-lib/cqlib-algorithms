@@ -1,3 +1,14 @@
+﻿# This code is part of Cqlib.
+#
+# (C) Copyright China Telecom Quantum Group 2026
+#
+# This code is licensed under the Apache License, Version 2.0. You may
+# obtain a copy of this license in the LICENSE.txt file in the root directory
+# of this source tree or at http://www.apache.org/licenses/LICENSE-2.0.
+#
+# Any modifications or derivative works of this code must retain this
+# copyright notice, and modified files need to carry a notice indicating
+# that they have been altered from the originals.
 """Shared internal helpers used only by the adder test module.
 
 This module is intentionally restricted to internal helper utilities. It
@@ -18,7 +29,7 @@ import numpy as np
 from cqlib import Circuit
 from cqlib.qis.state import Statevector
 
-from cqlib_algorithms.algorithms.operators.arithmetic import (
+from cqlib_algorithms.operators.arithmetic import (
     FullAdder,
     HalfAdder,
     ModularAdder,
@@ -160,3 +171,4 @@ def _expected_num_qubits(
     if adder_cls is ModularAdder:
         return 2 * n + 1
     raise TypeError(f"Unknown adder class: {adder_cls!r}")
+

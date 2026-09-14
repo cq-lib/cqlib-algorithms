@@ -1,3 +1,14 @@
+﻿# This code is part of Cqlib.
+#
+# (C) Copyright China Telecom Quantum Group 2026
+#
+# This code is licensed under the Apache License, Version 2.0. You may
+# obtain a copy of this license in the LICENSE.txt file in the root directory
+# of this source tree or at http://www.apache.org/licenses/LICENSE-2.0.
+#
+# Any modifications or derivative works of this code must retain this
+# copyright notice, and modified files need to carry a notice indicating
+# that they have been altered from the originals.
 """Test suite for the quantum arithmetic adder classes.
 
 Scope of this module:
@@ -40,7 +51,7 @@ from _adder_utils import (  # noqa: E402  (sys.path adjustment above)
     _run_adder,
 )
 
-from cqlib_algorithms.algorithms.operators.arithmetic import (  # noqa: E402
+from cqlib_algorithms.operators.arithmetic import (  # noqa: E402
     DraperConstantAdder,
     FullAdder,
     HalfAdder,
@@ -613,3 +624,4 @@ def test_adder_general_zero_width_raises_valueerror(
     """GEN-05. Zero bit-width is always illegal."""
     with pytest.raises(ValueError):
         adder_cls(0)
+

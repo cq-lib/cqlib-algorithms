@@ -1,3 +1,14 @@
+﻿# This code is part of Cqlib.
+#
+# (C) Copyright China Telecom Quantum Group 2026
+#
+# This code is licensed under the Apache License, Version 2.0. You may
+# obtain a copy of this license in the LICENSE.txt file in the root directory
+# of this source tree or at http://www.apache.org/licenses/LICENSE-2.0.
+#
+# Any modifications or derivative works of this code must retain this
+# copyright notice, and modified files need to carry a notice indicating
+# that they have been altered from the originals.
 """Full adder wrapper.
 
 This module exposes the public full adder interface of the arithmetic package.
@@ -11,7 +22,7 @@ from __future__ import annotations
 
 from cqlib import Circuit
 
-from cqlib_algorithms.algorithms.operators.arithmetic.adders.ripple_carry_adder import (
+from cqlib_algorithms.operators.arithmetic.adders.ripple_carry_adder import (
     RippleCarryAdder,
 )
 
@@ -117,7 +128,3 @@ class FullAdder:
         circuit.compose(sub, list(range(total)))
         return circuit
 
-
-__all__ = [
-    "FullAdder",
-]

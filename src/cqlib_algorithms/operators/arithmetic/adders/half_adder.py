@@ -1,8 +1,19 @@
-"""Modular adder wrapper.
+﻿# This code is part of Cqlib.
+#
+# (C) Copyright China Telecom Quantum Group 2026
+#
+# This code is licensed under the Apache License, Version 2.0. You may
+# obtain a copy of this license in the LICENSE.txt file in the root directory
+# of this source tree or at http://www.apache.org/licenses/LICENSE-2.0.
+#
+# Any modifications or derivative works of this code must retain this
+# copyright notice, and modified files need to carry a notice indicating
+# that they have been altered from the originals.
+"""Half adder wrapper.
 
-This module exposes the public modular adder interface of the arithmetic
-package. It keeps register a unchanged and updates register b with the value of
-a plus b modulo 2 to the power n through a fixed local layout. The class is a
+This module exposes the public half adder interface of the arithmetic package.
+It keeps register a unchanged, updates register b with the lower n bits of the
+sum, and exposes a carry out bit through a fixed local layout. The class is a
 thin wrapper around the concrete adder implementations in this package.
 """
 
@@ -10,33 +21,33 @@ from __future__ import annotations
 
 from cqlib import Circuit
 
-from cqlib_algorithms.algorithms.operators.arithmetic.adders.ripple_carry_adder import (
+from cqlib_algorithms.operators.arithmetic.adders.ripple_carry_adder import (
     RippleCarryAdder,
 )
-from cqlib_algorithms.algorithms.operators.arithmetic.adders.draper_qft_adder import (
+from cqlib_algorithms.operators.arithmetic.adders.draper_qft_adder import (
     DraperQFTAdder,
 )
 
 
-class ModularAdder:
-    """Modular adder with a fixed local qubit layout.
+class HalfAdder:
+    """Half adder with a fixed local qubit layout.
 
     Parameters
         num_state_qubits Positive integer width n of each input register.
         synthesis String synthesis strategy name. Accepted values are
             ripple_carry and draper_qft. Default ripple_carry.
-        name Optional human readable circuit name defaulting to ModularAdder.
+        name Optional human readable circuit name defaulting to HalfAdder.
 
     Attributes
         num_state_qubits Stored register width n.
         synthesis Selected synthesis strategy name.
         a_register_indices Local qubit indices of the read only a register.
-        b_register_indices Local qubit indices of the register holding the
-            modular sum a + b mod 2^n on output.
-        carry_in_index Always None for ModularAdder.
-        carry_out_index Always None for ModularAdder.
+        b_register_indices Local qubit indices of the sum register which
+            holds the lower n bits of a+b.
+        carry_in_index Always None for HalfAdder.
+        carry_out_index Local qubit index of the carry out bit.
         helper_index Local qubit index of the helper wire.
-        num_qubits Total qubit count, equal to 2n + 1.
+        num_qubits Total number of qubits, equal to 2 n + 2.
         name Human readable name.
     """
 
@@ -54,23 +65,24 @@ class ModularAdder:
             )
         if synthesis not in {"ripple_carry", "draper_qft"}:
             raise ValueError(
-                f"Unsupported ModularAdder synthesis strategy {synthesis!r}. "
+                f"Unsupported HalfAdder synthesis strategy {synthesis!r}. "
                 "Expected one of ripple_carry draper_qft."
             )
 
         self._num_state_qubits = int(num_state_qubits)
         self._synthesis: str = synthesis
-        self._name: str = name or "ModularAdder"
+        self._name: str = name or "HalfAdder"
 
-        reference = RippleCarryAdder(self._num_state_qubits, kind="modular")
+        reference = RippleCarryAdder(self._num_state_qubits, kind="half")
         self._num_qubits: int = reference.num_qubits
         self._a_register_indices: list[int] = reference.a_register_indices
         self._b_register_indices: list[int] = reference.b_register_indices
+        assert reference.carry_out_index is not None
         assert reference.helper_index is not None
         self._carry_in_index: int | None = None
-        self._carry_out_index: int | None = None
+        self._carry_out_index: int = reference.carry_out_index
         self._helper_index: int = reference.helper_index
-        self._ref_modular: RippleCarryAdder = reference
+        self._ref_kind_half: RippleCarryAdder = reference
 
     @property
     def name(self) -> str:
@@ -99,17 +111,17 @@ class ModularAdder:
 
     @property
     def b_register_indices(self) -> list[int]:
-        """Local qubit indices of the modular sum register."""
+        """Local qubit indices of the sum register holding lower n bits."""
         return list(self._b_register_indices)
 
     @property
     def carry_in_index(self) -> int | None:
-        """ModularAdder does not expose a carry in wire."""
+        """HalfAdder does not expose a carry in wire."""
         return self._carry_in_index
 
     @property
-    def carry_out_index(self) -> int | None:
-        """ModularAdder does not expose a carry out wire."""
+    def carry_out_index(self) -> int:
+        """Local qubit index of the carry out bit."""
         return self._carry_out_index
 
     @property
@@ -118,26 +130,25 @@ class ModularAdder:
         return self._helper_index
 
     def build_circuit(self) -> Circuit:
-        """Return a fresh Circuit implementing this modular adder instance."""
+        """Return a fresh Circuit implementing this half adder instance."""
         n = self._num_state_qubits
         total = self._num_qubits
         circuit = Circuit(total)
         if self._synthesis == "ripple_carry":
-            sub = self._ref_modular.build_circuit()
+            sub = self._ref_kind_half.build_circuit()
             circuit.compose(sub, list(range(total)))
             return circuit
-        draper = DraperQFTAdder(n, kind="modular")
+        draper = DraperQFTAdder(n, kind="half")
         draper_circuit = draper.build_circuit()
-        a_wires = list(self._a_register_indices)
-        b_wires = list(self._b_register_indices)
-        mapping = a_wires + b_wires
+        mapping = (
+            list(self._a_register_indices)
+            + list(self._b_register_indices)
+            + [self._carry_out_index]
+        )
         circuit.compose(draper_circuit, mapping)
         return circuit
 
 
-__all__ = [
-    "ModularAdder",
-]
 
 
 if __name__ == "__main__":
@@ -146,11 +157,11 @@ if __name__ == "__main__":
     from cqlib.qis.state import Statevector
     from cqlib.visualization import draw_figure
 
-    adder = ModularAdder(3, synthesis="draper_qft")
+    adder = HalfAdder(3, synthesis="draper_qft")
     test_circuit = Circuit(adder.num_qubits)
 
-    a_value = 5
-    b_value = 6
+    a_value = 6
+    b_value = 5
 
     for bit, qubit in enumerate(adder.a_register_indices):
         if (a_value >> bit) & 1:
@@ -164,7 +175,7 @@ if __name__ == "__main__":
         list(range(adder.num_qubits)),
     )
 
-    # figure_path = "modular_adder_demo.svg"
+    # figure_path = "half_adder_demo.svg"
     # draw_figure(test_circuit, output_path=figure_path)
     # print(f"circuit figure saved to {figure_path}")
 
@@ -176,9 +187,11 @@ if __name__ == "__main__":
     for bit, qubit in enumerate(adder.b_register_indices):
         if (outcome >> qubit) & 1:
             sum_value |= 1 << bit
+    carry_out = (outcome >> adder.carry_out_index) & 1
 
     print(
         "verification:",
         f"{a_value} + {b_value}",
-        f"-> low_bits={sum_value}",
+        f"-> low_bits={sum_value}, carry_out={carry_out}",
     )
+
