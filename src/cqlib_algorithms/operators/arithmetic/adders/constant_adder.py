@@ -1,4 +1,4 @@
-﻿# This code is part of Cqlib.
+# This code is part of Cqlib.
 #
 # (C) Copyright China Telecom Quantum Group 2026
 #
@@ -11,10 +11,10 @@
 # that they have been altered from the originals.
 """Draper constant adder circuits.
 
-This module implements the concrete classical constant version of the Draper
-adder. A fixed integer value is compiled into phase rotations on a single
-Fourier basis register and the result is written back in place under the LSB
-first convention used by this package.
+This module exposes the public constant-adder interface of the arithmetic
+package. The wrapper validates the classical value and exposes a fixed local
+register layout while delegating the concrete Fourier-basis construction to the
+internal implementation module.
 
 References
 Thomas G Draper, Addition on a Quantum Computer, 2000,
@@ -23,11 +23,11 @@ arXiv quant ph 0008033.
 
 from __future__ import annotations
 
-import math
-
 from cqlib import Circuit
 
-from cqlib_algorithms.transforms import QFT as TransformQFT
+from cqlib_algorithms.operators.arithmetic.adders._constant_adder import (
+    build_draper_constant_adder,
+)
 
 
 class DraperConstantAdder:
@@ -48,6 +48,10 @@ class DraperConstantAdder:
         if not isinstance(value, int):
             raise ValueError(
                 f"value must be an integer, got {value!r}."
+            )
+        if name is not None and not isinstance(name, str):
+            raise ValueError(
+                f"name must be a string or None, got {name!r}."
             )
 
         modulus = 1 << int(num_state_qubits)
@@ -89,35 +93,9 @@ class DraperConstantAdder:
 
     def build_circuit(self) -> Circuit:
         """Build a new circuit implementing |b> -> |b + value mod 2^n>."""
-        n = self._num_state_qubits
-        circuit = Circuit(self._num_qubits)
-        wires = list(self._b_register_indices)
-
-        forward_qft = TransformQFT(
-            n,
-            approximation_degree=0,
-            do_swaps=False,
-            inverse=False,
-        ).build_circuit()
-        circuit.compose(forward_qft, wires)
-
-        for target_bit, qubit in enumerate(wires):
-            angle = 0.0
-            for const_bit in range(target_bit + 1):
-                if (self._value >> const_bit) & 1:
-                    angle += (2.0 * math.pi) / (
-                        2 ** (target_bit - const_bit + 1)
-                    )
-            if angle != 0.0:
-                circuit.phase(qubit, angle)
-
-        inverse_qft = TransformQFT(
-            n,
-            approximation_degree=0,
-            do_swaps=False,
-            inverse=True,
-        ).build_circuit()
-        circuit.compose(inverse_qft, wires)
-        return circuit
+        return build_draper_constant_adder(
+            self._num_state_qubits,
+            self._value,
+        )
 
 

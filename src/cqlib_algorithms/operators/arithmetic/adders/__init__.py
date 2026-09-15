@@ -1,4 +1,4 @@
-﻿# This code is part of Cqlib.
+# This code is part of Cqlib.
 #
 # (C) Copyright China Telecom Quantum Group 2026
 #
@@ -11,24 +11,19 @@
 # that they have been altered from the originals.
 """Quantum adder circuit collection.
 
-This package exports the public adder classes used by the arithmetic module.
-Concrete implementations and wrapper interfaces are documented in their
-individual modules.
+This package exposes the four public adder interfaces used by the arithmetic
+module. Concrete synthesis implementations live in internal modules prefixed
+with an underscore.
 """
 
 from __future__ import annotations
 
-from .ripple_carry_adder import RippleCarryAdder, AdderKind
-from .draper_qft_adder import DraperQFTAdder
 from .constant_adder import DraperConstantAdder
 from .half_adder import HalfAdder
 from .full_adder import FullAdder
 from .modular_adder import ModularAdder
 
 __all__ = [
-    "RippleCarryAdder",
-    "AdderKind",
-    "DraperQFTAdder",
     "DraperConstantAdder",
     "HalfAdder",
     "FullAdder",

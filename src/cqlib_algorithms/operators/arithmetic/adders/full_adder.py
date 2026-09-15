@@ -1,4 +1,4 @@
-﻿# This code is part of Cqlib.
+# This code is part of Cqlib.
 #
 # (C) Copyright China Telecom Quantum Group 2026
 #
@@ -22,8 +22,8 @@ from __future__ import annotations
 
 from cqlib import Circuit
 
-from cqlib_algorithms.operators.arithmetic.adders.ripple_carry_adder import (
-    RippleCarryAdder,
+from cqlib_algorithms.operators.arithmetic.adders._ripple_carry_adder import (
+    build_ripple_carry_adder,
 )
 
 
@@ -65,20 +65,20 @@ class FullAdder:
                 f"Unsupported FullAdder synthesis strategy {synthesis!r}. "
                 "Expected ripple_carry."
             )
+        if name is not None and not isinstance(name, str):
+            raise ValueError(
+                f"name must be a string or None, got {name!r}."
+            )
 
         self._num_state_qubits = int(num_state_qubits)
         self._synthesis: str = synthesis
         self._name: str = name or "FullAdder"
-
-        reference = RippleCarryAdder(self._num_state_qubits, kind="full")
-        self._num_qubits: int = reference.num_qubits
-        self._a_register_indices: list[int] = reference.a_register_indices
-        self._b_register_indices: list[int] = reference.b_register_indices
-        assert reference.carry_in_index is not None
-        assert reference.carry_out_index is not None
-        self._carry_in_index: int = reference.carry_in_index
-        self._carry_out_index: int = reference.carry_out_index
-        self._ref: RippleCarryAdder = reference
+        n = self._num_state_qubits
+        self._num_qubits: int = 2 * n + 2
+        self._carry_in_index: int = 0
+        self._a_register_indices: list[int] = list(range(1, n + 1))
+        self._b_register_indices: list[int] = list(range(n + 1, 2 * n + 1))
+        self._carry_out_index: int = 2 * n + 1
 
     @property
     def name(self) -> str:
@@ -124,7 +124,7 @@ class FullAdder:
         """Return a fresh Circuit implementing this full adder instance."""
         total = self._num_qubits
         circuit = Circuit(total)
-        sub = self._ref.build_circuit()
+        sub = build_ripple_carry_adder(self._num_state_qubits, kind="full")
         circuit.compose(sub, list(range(total)))
         return circuit
 

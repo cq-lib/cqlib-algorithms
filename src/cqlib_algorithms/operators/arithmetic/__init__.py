@@ -1,4 +1,4 @@
-﻿# This code is part of Cqlib.
+# This code is part of Cqlib.
 #
 # (C) Copyright China Telecom Quantum Group 2026
 #
@@ -21,11 +21,13 @@ from __future__ import annotations
 
 from . import adders
 from . import comparators
+from . import multipliers
 from .adders import DraperConstantAdder
 from .adders import HalfAdder
 from .adders import FullAdder
 from .adders import ModularAdder
 from .comparators import IntegerComparator
+from .multipliers import Multiplier
 
 __all__ = [
     "adders",
@@ -36,5 +38,5 @@ __all__ = [
     "FullAdder",
     "ModularAdder",
     "IntegerComparator",
+    "Multiplier",
 ]
-

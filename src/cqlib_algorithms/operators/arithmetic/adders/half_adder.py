@@ -1,4 +1,4 @@
-﻿# This code is part of Cqlib.
+# This code is part of Cqlib.
 #
 # (C) Copyright China Telecom Quantum Group 2026
 #
@@ -21,11 +21,11 @@ from __future__ import annotations
 
 from cqlib import Circuit
 
-from cqlib_algorithms.operators.arithmetic.adders.ripple_carry_adder import (
-    RippleCarryAdder,
+from cqlib_algorithms.operators.arithmetic.adders._draper_qft_adder import (
+    build_draper_qft_adder,
 )
-from cqlib_algorithms.operators.arithmetic.adders.draper_qft_adder import (
-    DraperQFTAdder,
+from cqlib_algorithms.operators.arithmetic.adders._ripple_carry_adder import (
+    build_ripple_carry_adder,
 )
 
 
@@ -68,21 +68,21 @@ class HalfAdder:
                 f"Unsupported HalfAdder synthesis strategy {synthesis!r}. "
                 "Expected one of ripple_carry draper_qft."
             )
+        if name is not None and not isinstance(name, str):
+            raise ValueError(
+                f"name must be a string or None, got {name!r}."
+            )
 
         self._num_state_qubits = int(num_state_qubits)
         self._synthesis: str = synthesis
         self._name: str = name or "HalfAdder"
-
-        reference = RippleCarryAdder(self._num_state_qubits, kind="half")
-        self._num_qubits: int = reference.num_qubits
-        self._a_register_indices: list[int] = reference.a_register_indices
-        self._b_register_indices: list[int] = reference.b_register_indices
-        assert reference.carry_out_index is not None
-        assert reference.helper_index is not None
+        n = self._num_state_qubits
+        self._num_qubits: int = 2 * n + 2
+        self._a_register_indices: list[int] = list(range(n))
+        self._b_register_indices: list[int] = list(range(n, 2 * n))
         self._carry_in_index: int | None = None
-        self._carry_out_index: int = reference.carry_out_index
-        self._helper_index: int = reference.helper_index
-        self._ref_kind_half: RippleCarryAdder = reference
+        self._carry_out_index: int = 2 * n
+        self._helper_index: int = 2 * n + 1
 
     @property
     def name(self) -> str:
@@ -135,11 +135,10 @@ class HalfAdder:
         total = self._num_qubits
         circuit = Circuit(total)
         if self._synthesis == "ripple_carry":
-            sub = self._ref_kind_half.build_circuit()
+            sub = build_ripple_carry_adder(n, kind="half")
             circuit.compose(sub, list(range(total)))
             return circuit
-        draper = DraperQFTAdder(n, kind="half")
-        draper_circuit = draper.build_circuit()
+        draper_circuit = build_draper_qft_adder(n, kind="half")
         mapping = (
             list(self._a_register_indices)
             + list(self._b_register_indices)
@@ -147,51 +146,4 @@ class HalfAdder:
         )
         circuit.compose(draper_circuit, mapping)
         return circuit
-
-
-
-
-if __name__ == "__main__":
-    import numpy as np
-
-    from cqlib.qis.state import Statevector
-    from cqlib.visualization import draw_figure
-
-    adder = HalfAdder(3, synthesis="draper_qft")
-    test_circuit = Circuit(adder.num_qubits)
-
-    a_value = 6
-    b_value = 5
-
-    for bit, qubit in enumerate(adder.a_register_indices):
-        if (a_value >> bit) & 1:
-            test_circuit.x(qubit)
-    for bit, qubit in enumerate(adder.b_register_indices):
-        if (b_value >> bit) & 1:
-            test_circuit.x(qubit)
-
-    test_circuit.compose(
-        adder.build_circuit(),
-        list(range(adder.num_qubits)),
-    )
-
-    # figure_path = "half_adder_demo.svg"
-    # draw_figure(test_circuit, output_path=figure_path)
-    # print(f"circuit figure saved to {figure_path}")
-
-    statevector = Statevector.from_circuit(test_circuit)
-    probabilities = np.asarray(statevector.probabilities(), dtype=np.float64)
-    outcome = int(np.argmax(probabilities))
-
-    sum_value = 0
-    for bit, qubit in enumerate(adder.b_register_indices):
-        if (outcome >> qubit) & 1:
-            sum_value |= 1 << bit
-    carry_out = (outcome >> adder.carry_out_index) & 1
-
-    print(
-        "verification:",
-        f"{a_value} + {b_value}",
-        f"-> low_bits={sum_value}, carry_out={carry_out}",
-    )
 
