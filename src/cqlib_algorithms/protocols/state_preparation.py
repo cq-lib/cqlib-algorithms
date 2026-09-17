@@ -1,4 +1,4 @@
-﻿# This code is part of Cqlib.
+# This code is part of Cqlib.
 #
 # (C) Copyright China Telecom Quantum Group 2026
 #
@@ -9,28 +9,29 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
-"""Structural protocol for state-preparation circuit components."""
+
+"""Abstract base class for state-preparation circuit components."""
 
 from __future__ import annotations
 
-from typing import Protocol
+from abc import ABC, abstractmethod
 
 from cqlib.circuit import Circuit
 
 
-class StatePreparation(Protocol):
+class StatePreparation(ABC):
     """A component that builds a state-preparation or data-encoding circuit.
 
-    Implementations are matched structurally and do not need to inherit from
-    this protocol.  The protocol deliberately is not runtime-checkable:
-    runtime member checks cannot verify signatures or semantic invariants.
+    Implementations must inherit from this class and implement its four
+    abstract methods. Runtime ``isinstance`` checks therefore express actual
+    membership in the state-preparation hierarchy.
 
     ``StatePreparation`` and
     :class:`cqlib_algorithms.protocols.ansatz.Ansatz` have the
-    same structural members.  Static structural typing therefore cannot stop
-    one from being passed in place of the other.  Their distinction is a
-    semantic contract at the consuming API: parameters here represent state
-    preparation or input-data symbols, rather than trainable ansatz symbols.
+    same abstract operations. Their distinct base classes prevent one
+    component role from being substituted nominally for the other. Parameters
+    here represent state preparation or input-data symbols, rather than
+    trainable ansatz symbols.
 
     For a valid component, ``build_circuit`` returns a new circuit whose
     ``num_qubits`` equals ``num_qubits()``. ``num_parameters()`` declares the
@@ -47,14 +48,18 @@ class StatePreparation(Protocol):
     deterministic and must return independent circuits.
     """
 
+    __slots__ = ()
+
+    @abstractmethod
     def validate(self) -> None:
         """Validate the component configuration.
 
         Raises:
             ValueError: If the component configuration is invalid.
         """
-        ...
+        raise NotImplementedError
 
+    @abstractmethod
     def build_circuit(self, prefix: str) -> Circuit:
         """Build and return a new state-preparation circuit.
 
@@ -69,15 +74,14 @@ class StatePreparation(Protocol):
         Raises:
             ValueError: If the component configuration is invalid.
         """
-        ...
+        raise NotImplementedError
 
+    @abstractmethod
     def num_parameters(self) -> int:
         """Return the number of logical preparation or feature slots."""
-        ...
+        raise NotImplementedError
 
+    @abstractmethod
     def num_qubits(self) -> int:
         """Return the number of qubits in the generated circuit."""
-        ...
-
-
-
+        raise NotImplementedError

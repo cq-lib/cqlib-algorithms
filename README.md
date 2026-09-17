@@ -1,8 +1,8 @@
 # cqlib-algorithms
 
 面向 Cqlib 的量子算法组件库。支持 Python 3.10+，使用 uv 管理依赖、pytest 测试，
-采用 Apache-2.0 开源协议。当前提供第一批公共组件协议及其请求、结果数据结构，
-以及可复用的量子傅里叶变换线路构造器。
+采用 Apache-2.0 开源协议。当前提供第一批公共组件协议、请求与结果数据结构，以及
+首批状态制备、数据编码组件和可复用的量子傅里叶变换线路构造器。
 
 ## 目录
 
@@ -19,8 +19,22 @@ src/cqlib_algorithms/
 │   ├── sampler.py
 │   ├── estimator.py
 │   └── gradient.py
+├── operators/
+│   └── state_preparation/
+│       ├── basis_state_initialization.py
+│       ├── uniform_superposition.py
+│       ├── arbitrary_state_preparation.py
+│       ├── product_state_preparation.py
+│       ├── ghz_state_preparation.py
+│       ├── amplitude_encoding.py
+│       ├── angle_encoding.py
+│       ├── basis_encoding.py
+│       ├── sparse_amplitude_encoding.py
+│       ├── user_circuit_preparation.py
+│       └── feature_map_preparation.py
 └── algorithms/
 tests/protocols/
+tests/operators/state_preparation/
 docs/development.md
 AGENTS.md
 pyproject.toml
@@ -39,8 +53,9 @@ LICENSE.txt
 - `Estimator`：同步、批量的期望值估计协议。
 - `Gradient`：基于 Estimator 期望值目标的同步、批量梯度协议。
 
-协议采用结构类型，具体组件无须继承协议即可兼容。`StatePreparation` 与 `Ansatz`
-目前具有相同的方法结构，二者的区别是组合位置和参数语义，而不是运行时类型判断。
+公共组件契约采用抽象基类，具体组件必须显式继承对应基类并实现其抽象方法。
+`StatePreparation` 与 `Ansatz` 具有相同的抽象操作，但属于不同的名义类型层级，
+分别表达状态制备参数和可训练参数语义。
 请求对象只浅冻结字段；其中的 Cqlib 线路和可观测量仍然可变，执行实现必须在运行前
 重新核验请求约束，调用方不得在请求生命周期内修改这些 Core 对象。
 
@@ -56,6 +71,27 @@ from cqlib_algorithms import (
     StatePreparation,
 )
 ```
+
+## 状态制备组件
+
+具体实现从 `cqlib_algorithms.operators` 或
+`cqlib_algorithms.operators.state_preparation` 导入：
+
+- 固定态：`BasisStateInitialization`、`UniformSuperposition`、
+  `ArbitraryStatePreparation`、`ProductStatePreparation`、
+  `GHZStatePreparation`。
+- 数据编码：`AmplitudeEncoding`、`AngleEncoding`、`BasisEncoding`、
+  `SparseAmplitudeEncoding`。
+- 适配器：`UserCircuitPreparation`、`FeatureMapPreparation`。
+
+所有基态索引采用 Cqlib 的小端约定，即第 0 个量子比特对应最低有效位。任意态和
+稠密幅度编码使用均匀受控旋转进行精确线路综合，不依赖稠密酉门。
+`SparseAmplitudeEncoding` 仅保存显式支持集，并以 two-level Givens 线路进行精确
+综合，不分配长度为 `2**num_qubits` 的稠密向量；这不代表 QRAM 或对数复杂度
+数据加载。Angle、Basis 和 Feature Map 组件委托当前兼容基线内的 Cqlib Core 实现。
+
+完整接口、数值约定、综合方法和已知 Core 边界见
+[状态制备与数据编码组件](docs/state_preparation.md)。
 
 ## 量子傅里叶变换
 
@@ -79,6 +115,8 @@ approximate = QFT(
 最小的受控相位门；其取值必须满足
 `0 <= approximation_degree < num_qubits`。当 `do_swaps=False` 时，输出量子位
 保持位反转顺序。`inverse=True` 返回相同近似与 SWAP 配置下完整正向线路的伴随。
+`QFT` 是冻结且使用 slots 的标准 dataclass，可使用 `dataclasses.replace` 派生新配置；
+它是可复用线路变换，不属于可训练 `Ansatz` 类型层级。
 
 ## 开发
 
@@ -99,11 +137,14 @@ uv pip install --group dev
 uv pip install --no-deps -e .
 pytest
 mypy src/cqlib_algorithms
+ruff check .
+ruff format --check .
 python -m build
 ```
 
 Windows PowerShell 使用 `.venv/Scripts/Activate.ps1` 激活环境。
-不激活环境时，使用 `uv run --no-sync pytest`、`uv run --no-sync mypy` 和
+不激活环境时，使用 `uv run --no-sync pytest`、`uv run --no-sync mypy`、
+`uv run --no-sync ruff check .`、`uv run --no-sync ruff format --check .` 和
 `uv run --no-sync python -m build`。
 构建产物位于 `dist/`；隔离构建需要获取 Hatchling，但不需要安装运行时 SDK。
 

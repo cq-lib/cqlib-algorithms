@@ -1,4 +1,4 @@
-﻿# This code is part of Cqlib.
+# This code is part of Cqlib.
 #
 # (C) Copyright China Telecom Quantum Group 2026
 #
@@ -9,6 +9,7 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
+
 """Tests for the public sampler contract."""
 
 from __future__ import annotations
@@ -29,7 +30,7 @@ def _sample_request(shots: int = 4) -> SamplerRequest:
     return SamplerRequest(circuit, tuple(circuit.qubits), shots)
 
 
-class _FakeSampler:
+class _FakeSampler(Sampler):
     def run(
         self,
         requests: Sequence[SamplerRequest],
@@ -135,7 +136,7 @@ def test_sampler_revalidates_mutable_circuit_before_execution():
         _FakeSampler().run([request])
 
 
-def test_structural_sampler_preserves_batch_order_and_supports_empty_batches():
+def test_sampler_preserves_batch_order_and_supports_empty_batches():
     sampler = _FakeSampler()
     requests = [_sample_request(2), _sample_request(3)]
 

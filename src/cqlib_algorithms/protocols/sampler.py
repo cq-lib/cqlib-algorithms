@@ -1,4 +1,4 @@
-﻿# This code is part of Cqlib.
+# This code is part of Cqlib.
 #
 # (C) Copyright China Telecom Quantum Group 2026
 #
@@ -9,13 +9,14 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
-"""Structural sampling protocol and request for Cqlib circuits."""
+
+"""Abstract sampling interface and request for Cqlib circuits."""
 
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Protocol
 
 from cqlib.device import ExecutionResult
 
@@ -89,8 +90,8 @@ class SamplerRequest:
             raise ValueError("qubits must belong to circuit")
 
 
-class Sampler(Protocol):
-    """Structural protocol for synchronous batch circuit sampling.
+class Sampler(ABC):
+    """Abstract base class for synchronous batch circuit sampling.
 
     Implementations must call :meth:`SamplerRequest.validate` and must not
     mutate request circuits. A Core measurement, when needed, is created on a
@@ -102,13 +103,13 @@ class Sampler(Protocol):
     ``request.qubits``.
     """
 
+    __slots__ = ()
+
+    @abstractmethod
     def run(
         self,
         requests: Sequence[SamplerRequest],
         /,
     ) -> list[ExecutionResult]:
         """Execute a batch and return terminal results in input order."""
-        ...
-
-
-
+        raise NotImplementedError

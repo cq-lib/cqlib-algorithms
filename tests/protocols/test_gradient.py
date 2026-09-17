@@ -1,4 +1,4 @@
-﻿# This code is part of Cqlib.
+# This code is part of Cqlib.
 #
 # (C) Copyright China Telecom Quantum Group 2026
 #
@@ -9,6 +9,7 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
+
 """Tests for the public gradient contract."""
 
 from __future__ import annotations
@@ -43,7 +44,7 @@ def _estimator_request(x: float = 2.0, y: float = 3.0) -> EstimatorRequest:
     )
 
 
-class _QuadraticEstimator:
+class _QuadraticEstimator(Estimator):
     def __init__(self) -> None:
         self.batch_sizes: list[int] = []
 
@@ -65,7 +66,7 @@ class _QuadraticEstimator:
         return results
 
 
-class _CentralDifferenceGradient:
+class _CentralDifferenceGradient(Gradient):
     def __init__(self, step: float = 1e-5) -> None:
         self.step = step
 
@@ -199,7 +200,7 @@ def test_gradient_result_rejects_invalid_values(value):
         GradientResult(("x",), (value,))
 
 
-def test_structural_gradient_batches_all_perturbed_estimator_requests():
+def test_gradient_batches_all_perturbed_estimator_requests():
     estimator = _QuadraticEstimator()
     gradient = _CentralDifferenceGradient()
     requests = [
@@ -216,7 +217,7 @@ def test_structural_gradient_batches_all_perturbed_estimator_requests():
     assert results[1].values == pytest.approx((8.0,))
 
 
-def test_structural_gradient_supports_empty_batches_without_evaluation():
+def test_gradient_supports_empty_batches_without_evaluation():
     estimator = _QuadraticEstimator()
     gradient = _CentralDifferenceGradient()
 

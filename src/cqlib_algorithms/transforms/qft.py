@@ -1,4 +1,4 @@
-﻿# This code is part of Cqlib.
+# This code is part of Cqlib.
 #
 # (C) Copyright China Telecom Quantum Group 2026
 #
@@ -9,6 +9,7 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
+
 """Quantum Fourier transform circuit construction."""
 
 from __future__ import annotations
@@ -98,6 +99,3 @@ class QFT:
                 circuit.swap(low, self.num_qubits - 1 - low)
 
         return circuit.inverse() if self.inverse else circuit
-
-
-

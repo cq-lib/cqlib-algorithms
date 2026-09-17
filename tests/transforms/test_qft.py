@@ -1,4 +1,4 @@
-﻿# This code is part of Cqlib.
+# This code is part of Cqlib.
 #
 # (C) Copyright China Telecom Quantum Group 2026
 #
@@ -9,13 +9,14 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
+
 """Tests for the quantum Fourier transform."""
 
 from __future__ import annotations
 
 import math
 import inspect
-from dataclasses import FrozenInstanceError
+from dataclasses import FrozenInstanceError, replace
 
 import numpy as np
 import pytest
@@ -319,3 +320,11 @@ def test_qft_configuration_is_frozen_and_slotted():
     with pytest.raises(FrozenInstanceError):
         transform.num_qubits = 3  # type: ignore[misc]
 
+
+def test_qft_supports_standard_dataclass_replace():
+    transform = QFT(3)
+
+    updated = replace(transform, approximation_degree=1, do_swaps=False)
+
+    assert updated == QFT(3, approximation_degree=1, do_swaps=False)
+    assert transform == QFT(3)

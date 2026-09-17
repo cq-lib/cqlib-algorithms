@@ -1,4 +1,4 @@
-﻿# This code is part of Cqlib.
+# This code is part of Cqlib.
 #
 # (C) Copyright China Telecom Quantum Group 2026
 #
@@ -9,15 +9,16 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
-"""Structural gradient protocol and value types for estimator objectives."""
+
+"""Abstract gradient interface and value types for estimator objectives."""
 
 from __future__ import annotations
 
 import math
+from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from dataclasses import dataclass
 from numbers import Real
-from typing import Protocol
 
 from .estimator import Estimator, EstimatorRequest
 
@@ -115,16 +116,19 @@ class GradientResult:
         object.__setattr__(self, "values", tuple(normalized))
 
 
-class Gradient(Protocol):
-    """Structural protocol for synchronous batched estimator gradients.
+class Gradient(ABC):
+    """Abstract base class for synchronous batched estimator gradients.
 
     Implementations differentiate only ``EstimatorResult.expectation``. They
     call :meth:`GradientRequest.validate` before evaluation, should flatten all
     perturbed points into as few estimator batches as possible, and return one
     result per request in input order. The estimator is explicit so the
-    protocol does not impose a constructor on implementations.
+    abstract base class does not impose a constructor on implementations.
     """
 
+    __slots__ = ()
+
+    @abstractmethod
     def run(
         self,
         estimator: Estimator,
@@ -132,7 +136,4 @@ class Gradient(Protocol):
         /,
     ) -> list[GradientResult]:
         """Differentiate a batch of estimator expectation objectives."""
-        ...
-
-
-
+        raise NotImplementedError

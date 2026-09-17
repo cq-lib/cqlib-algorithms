@@ -1,4 +1,4 @@
-﻿# This code is part of Cqlib.
+# This code is part of Cqlib.
 #
 # (C) Copyright China Telecom Quantum Group 2026
 #
@@ -9,13 +9,37 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
+
 """Operator subpackage for algorithmic quantum building blocks."""
 
-from __future__ import annotations
-
 from . import arithmetic
+from .state_preparation import (
+    AmplitudeEncoding,
+    AngleEncoding,
+    ArbitraryStatePreparation,
+    BasisEncoding,
+    BasisStateInitialization,
+    FeatureMapPreparation,
+    GHZStatePreparation,
+    ProductStatePreparation,
+    SparseAmplitudeEncoding,
+    UniformSuperposition,
+    UserCircuitPreparation,
+)
+
 
 __all__ = [
     "arithmetic",
+    "AmplitudeEncoding",
+    "AngleEncoding",
+    "ArbitraryStatePreparation",
+    "BasisEncoding",
+    "BasisStateInitialization",
+    "FeatureMapPreparation",
+    "GHZStatePreparation",
+    "ProductStatePreparation",
+    "SparseAmplitudeEncoding",
+    "UniformSuperposition",
+    "UserCircuitPreparation",
 ]
 

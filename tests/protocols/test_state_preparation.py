@@ -1,4 +1,4 @@
-﻿# This code is part of Cqlib.
+# This code is part of Cqlib.
 #
 # (C) Copyright China Telecom Quantum Group 2026
 #
@@ -9,29 +9,21 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
-"""Tests for the state-preparation structural protocol."""
+
+"""Tests for the state-preparation abstract base class."""
 
 from __future__ import annotations
 
 import inspect
-from collections.abc import Callable
 
 import pytest
 from cqlib.circuit import Circuit, Parameter
-from cqlib.circuit.ansatz import (
-    AngleEncoding,
-    BasisEncoding,
-    PauliFeatureMap,
-    ZFeatureMap,
-)
-from cqlib.circuit.gates import RY
-from cqlib.qis import PauliString
 
 from cqlib_algorithms.protocols.state_preparation import StatePreparation
 
 
-class _FixedPreparation:
-    """Minimal non-inheriting implementation used to verify structural use."""
+class _FixedPreparation(StatePreparation):
+    """Minimal concrete implementation used to verify nominal use."""
 
     def validate(self) -> None:
         return None
@@ -48,7 +40,7 @@ class _FixedPreparation:
         return 1
 
 
-class _ParameterizedPreparation:
+class _ParameterizedPreparation(StatePreparation):
     """Preparation fixture that creates one active data symbol."""
 
     def validate(self) -> None:
@@ -100,7 +92,7 @@ def _operation_shape(circuit: Circuit) -> list[tuple[str, tuple[int, ...]]]:
     ]
 
 
-def test_protocol_declares_only_the_four_minimal_methods():
+def test_base_class_declares_only_the_four_minimal_methods():
     public_callables = {
         name
         for name, value in StatePreparation.__dict__.items()
@@ -119,12 +111,14 @@ def test_protocol_declares_only_the_four_minimal_methods():
     )
 
 
-def test_protocol_is_deliberately_not_runtime_checkable():
-    with pytest.raises(TypeError, match="runtime_checkable"):
-        isinstance(_FixedPreparation(), StatePreparation)
+def test_state_preparation_is_an_abstract_nominal_base_class():
+    assert inspect.isabstract(StatePreparation)
+    with pytest.raises(TypeError, match="abstract"):
+        StatePreparation()  # type: ignore[abstract]
+    assert isinstance(_FixedPreparation(), StatePreparation)
 
 
-def test_non_inheriting_python_implementation_is_consumable():
+def test_inheriting_python_implementation_is_consumable():
     preparation = _FixedPreparation()
 
     _assert_component_contract(preparation, "data")
