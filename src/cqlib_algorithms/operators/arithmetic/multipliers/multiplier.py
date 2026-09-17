@@ -21,13 +21,12 @@ from __future__ import annotations
 
 from cqlib import Circuit
 
-from cqlib_algorithms.operators.arithmetic.multipliers._draper_qft_multiplier import (
+from ._draper_qft_multiplier import (
     build_draper_qft_multiplier,
 )
-from cqlib_algorithms.operators.arithmetic.multipliers._hrs_cumulative_multiplier import (
+from ._hrs_cumulative_multiplier import (
     build_hrs_cumulative_multiplier,
 )
-
 
 MultiplierSynthesis = str
 
@@ -38,10 +37,14 @@ _VALID_SYNTHESIS: frozenset[str] = frozenset(
 
 def _validate_num_state_qubits(num_state_qubits: int) -> int:
     """Validate and normalize the multiplier register width."""
-    if not isinstance(num_state_qubits, int) or num_state_qubits < 1:
-        raise ValueError(
-            "num_state_qubits must be an integer >= 1, got "
+    if not isinstance(num_state_qubits, int):
+        raise TypeError(
+            "num_state_qubits must be an integer, got "
             f"{num_state_qubits!r}."
+        )
+    if num_state_qubits < 1:
+        raise ValueError(
+            f"num_state_qubits must be >= 1, got {num_state_qubits!r}."
         )
     return int(num_state_qubits)
 
@@ -49,7 +52,7 @@ def _validate_num_state_qubits(num_state_qubits: int) -> int:
 def _validate_name(name: str | None) -> str | None:
     """Validate the optional human-readable circuit name."""
     if name is not None and not isinstance(name, str):
-        raise ValueError(f"name must be a string or None, got {name!r}.")
+        raise TypeError(f"name must be a string or None, got {name!r}.")
     return name
 
 
@@ -78,10 +81,12 @@ def _validate_approximation_degree(
 
     if approximation_degree is None:
         return None
-    if (
-        not isinstance(approximation_degree, int)
-        or approximation_degree < 0
-    ):
+    if not isinstance(approximation_degree, int):
+        raise TypeError(
+            "approximation_degree must be None or an integer, got "
+            f"{approximation_degree!r}."
+        )
+    if approximation_degree < 0:
         raise ValueError(
             "approximation_degree must be None or a non-negative "
             f"integer, got {approximation_degree!r}."
@@ -134,7 +139,7 @@ class Multiplier:
 
         self._num_state_qubits = n
         self._synthesis = synthesis
-        self._a_register_indices = list(range(0, n))
+        self._a_register_indices = list(range(n))
         self._b_register_indices = list(range(n, 2 * n))
         self._product_register_indices = list(range(2 * n, 4 * n))
         self._helper_index = 4 * n if synthesis == "hrs_cumulative" else None

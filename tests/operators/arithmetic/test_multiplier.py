@@ -27,23 +27,13 @@ Coverage map (case IDs match the design document):
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
 import numpy as np
 import pytest
 
 from cqlib import Circuit
 from cqlib.qis import Statevector
 
-ROOT = Path(__file__).resolve().parents[3]
-SRC = ROOT / "src"
-TEST_DIR = Path(__file__).resolve().parent
-for _path in (str(SRC), str(TEST_DIR)):
-    if _path not in sys.path:
-        sys.path.insert(0, _path)
-
-from cqlib_algorithms.operators.arithmetic import (  # noqa: E402
+from cqlib_algorithms.operators.arithmetic import (
     Multiplier,
 )
 
@@ -301,13 +291,11 @@ def test_multiplier_name_default_and_override() -> None:
 
 
 def test_multiplier_invalid_num_state_qubits_raise_valueerror() -> None:
-    """MUL-06. Zero, negative, and non-integer widths raise ValueError."""
+    """MUL-06. Zero and negative widths raise ValueError."""
     with pytest.raises(ValueError):
         Multiplier(0)
     with pytest.raises(ValueError):
         Multiplier(-1)
-    with pytest.raises(ValueError):
-        Multiplier(2.5)
 
 
 def test_multiplier_unknown_synthesis_raises_valueerror() -> None:
@@ -326,28 +314,38 @@ def test_multiplier_hrs_cumulative_rejects_approximation_degree() -> None:
         )
 
 
-def test_multiplier_approximation_degree_must_be_nonnegative_int() -> None:
-    """MUL-06. Negative or non-integer approximation_degree is rejected."""
+def test_multiplier_approximation_degree_negative_raises_valueerror() -> None:
+    """MUL-06. Negative approximation_degree raises ValueError."""
     with pytest.raises(ValueError):
         Multiplier(
             3,
             synthesis="draper_qft",
             approximation_degree=-1,
         )
-    with pytest.raises(ValueError):
-        Multiplier(
-            3,
-            synthesis="draper_qft",
-            approximation_degree=1.5,
-        )
 
 
-def test_multiplier_name_must_be_string_or_none() -> None:
-    """MUL-06. Non-string name values raise ValueError."""
-    with pytest.raises(ValueError):
-        Multiplier(3, name=123)
-    with pytest.raises(ValueError):
-        Multiplier(3, name=True)
+@pytest.mark.parametrize(
+    "case,callable_wrapper",
+    [
+        ("non_int_n", lambda: Multiplier(2.5)),
+        ("name_int", lambda: Multiplier(3, name=123)),
+        ("name_bool", lambda: Multiplier(3, name=True)),
+        (
+            "non_int_approximation_degree",
+            lambda: Multiplier(
+                3,
+                synthesis="draper_qft",
+                approximation_degree=1.5,
+            ),
+        ),
+    ],
+)
+def test_multiplier_invalid_types_raise_typeerror(
+    case: str, callable_wrapper
+) -> None:
+    """MUL-06. Invalid construction input types raise TypeError."""
+    with pytest.raises(TypeError):
+        callable_wrapper()
 
 
 # ---------------------------------------------------------------------------

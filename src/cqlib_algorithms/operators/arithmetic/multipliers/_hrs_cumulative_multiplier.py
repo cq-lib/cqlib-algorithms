@@ -25,8 +25,9 @@ A New Quantum Ripple Carry Addition Circuit, 2004, arXiv:quant-ph/0410184.
 
 from __future__ import annotations
 
-from cqlib import Circuit
 from cqlib.circuit.gates import StandardGate
+
+from cqlib import Circuit
 
 
 def _accumulator_window_indices(
@@ -162,7 +163,7 @@ def build_hrs_cumulative_multiplier(num_state_qubits: int) -> Circuit:
     """Build and return the internal HRS cumulative multiplier circuit."""
     n = num_state_qubits
     num_qubits = 4 * n + 1
-    a_indices = list(range(0, n))
+    a_indices = list(range(n))
     b_indices = list(range(n, 2 * n))
     product_indices = list(range(2 * n, 4 * n))
     helper_index = 4 * n

@@ -25,7 +25,7 @@ from __future__ import annotations
 
 from cqlib import Circuit
 
-from cqlib_algorithms.operators.arithmetic.adders._constant_adder import (
+from ._constant_adder import (
     build_draper_constant_adder,
 )
 
@@ -40,17 +40,22 @@ class DraperConstantAdder:
         *,
         name: str | None = None,
     ) -> None:
-        if not isinstance(num_state_qubits, int) or num_state_qubits < 1:
+        if not isinstance(num_state_qubits, int):
+            raise TypeError(
+                "num_state_qubits must be an integer, got "
+                f"{num_state_qubits!r}."
+            )
+        if num_state_qubits < 1:
             raise ValueError(
-                "num_state_qubits must be an integer >= 1, got "
+                "num_state_qubits must be >= 1, got "
                 f"{num_state_qubits!r}."
             )
         if not isinstance(value, int):
-            raise ValueError(
+            raise TypeError(
                 f"value must be an integer, got {value!r}."
             )
         if name is not None and not isinstance(name, str):
-            raise ValueError(
+            raise TypeError(
                 f"name must be a string or None, got {name!r}."
             )
 

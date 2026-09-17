@@ -19,24 +19,19 @@ each component is landed in its respective module / subpackage.
 
 from __future__ import annotations
 
-from . import adders
-from . import comparators
-from . import multipliers
-from .adders import DraperConstantAdder
-from .adders import HalfAdder
-from .adders import FullAdder
-from .adders import ModularAdder
+from . import adders, comparators, multipliers
+from .adders import DraperConstantAdder, FullAdder, HalfAdder, ModularAdder
 from .comparators import IntegerComparator
 from .multipliers import Multiplier
 
 __all__ = [
-    "adders",
-    "multipliers",
-    "comparators",
     "DraperConstantAdder",
-    "HalfAdder",
     "FullAdder",
-    "ModularAdder",
+    "HalfAdder",
     "IntegerComparator",
+    "ModularAdder",
     "Multiplier",
+    "adders",
+    "comparators",
+    "multipliers",
 ]

@@ -29,12 +29,11 @@ from __future__ import annotations
 
 from typing import Literal
 
-from cqlib import Circuit
 from cqlib.circuit import Parameter
 from cqlib.circuit.gates import StandardGate
 
+from cqlib import Circuit
 from cqlib_algorithms.transforms import QFT as TransformQFT
-
 
 DraperAdderKind = Literal["modular", "half"]
 

@@ -30,7 +30,7 @@ from .transforms import QFT
 __version__ = version("cqlib-algorithms")
 
 __all__ = [
-    "__version__",
+    "QFT",
     "Ansatz",
     "Estimator",
     "EstimatorRequest",
@@ -41,6 +41,6 @@ __all__ = [
     "Sampler",
     "SamplerRequest",
     "StatePreparation",
-    "QFT",
+    "__version__",
 ]
 

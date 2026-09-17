@@ -1,4 +1,4 @@
-﻿# This code is part of Cqlib.
+# This code is part of Cqlib.
 #
 # (C) Copyright China Telecom Quantum Group 2026
 #
@@ -29,29 +29,19 @@ Coverage map (case IDs match the design document):
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
 import numpy as np
 import pytest
 
 from cqlib import Circuit
 from cqlib.qis.state import Statevector
 
-ROOT = Path(__file__).resolve().parents[3]
-SRC = ROOT / "src"
-TEST_DIR = Path(__file__).resolve().parent
-for _path in (str(SRC), str(TEST_DIR)):
-    if _path not in sys.path:
-        sys.path.insert(0, _path)
-
-from _adder_utils import (  # noqa: E402  (sys.path adjustment above)
+from _adder_utils import (
     _assert_clean_register_layout,
     _expected_num_qubits,
     _run_adder,
 )
 
-from cqlib_algorithms.operators.arithmetic import (  # noqa: E402
+from cqlib_algorithms.operators.arithmetic import (
     DraperConstantAdder,
     FullAdder,
     HalfAdder,
@@ -219,13 +209,11 @@ def test_half_adder_properties_interface() -> None:
 
 
 def test_half_adder_invalid_inputs_raise_valueerror() -> None:
-    """ADD-H-12. Illegal construction inputs raise ValueError."""
+    """ADD-H-12. Illegal construction input values raise ValueError."""
     with pytest.raises(ValueError):
         HalfAdder(0)
     with pytest.raises(ValueError):
         HalfAdder(-1)
-    with pytest.raises(ValueError):
-        HalfAdder(1.5)
     with pytest.raises(ValueError):
         HalfAdder(4, synthesis="nonexistent")
 
@@ -573,7 +561,7 @@ def test_constant_adder_properties_interface() -> None:
 
 
 def test_constant_adder_invalid_inputs_raise_valueerror() -> None:
-    """ADD-C-05. Illegal construction inputs raise ValueError."""
+    """ADD-C-05. Illegal construction input values raise ValueError."""
     with pytest.raises(ValueError):
         DraperConstantAdder(0, 0)
     with pytest.raises(ValueError):
@@ -582,8 +570,6 @@ def test_constant_adder_invalid_inputs_raise_valueerror() -> None:
         DraperConstantAdder(3, -1)
     with pytest.raises(ValueError):
         DraperConstantAdder(3, 8)
-    with pytest.raises(ValueError):
-        DraperConstantAdder(3, 1.5)
 
 
 # ---------------------------------------------------------------------------
@@ -624,4 +610,26 @@ def test_adder_general_zero_width_raises_valueerror(
     """GEN-05. Zero bit-width is always illegal."""
     with pytest.raises(ValueError):
         adder_cls(0)
+
+
+@pytest.mark.parametrize(
+    "case,callable_wrapper",
+    [
+        ("half_adder_non_int_n", lambda: HalfAdder(1.5)),
+        ("full_adder_non_int_n", lambda: FullAdder(1.5)),
+        ("modular_adder_non_int_n", lambda: ModularAdder(1.5)),
+        ("constant_adder_non_int_n", lambda: DraperConstantAdder(1.5, 3)),
+        ("constant_adder_non_int_value", lambda: DraperConstantAdder(3, 1.5)),
+        ("half_adder_name_int", lambda: HalfAdder(3, name=123)),
+        ("full_adder_name_int", lambda: FullAdder(3, name=123)),
+        ("modular_adder_name_int", lambda: ModularAdder(3, name=123)),
+        ("constant_adder_name_int", lambda: DraperConstantAdder(3, 2, name=123)),
+    ],
+)
+def test_all_adders_invalid_types_raise_typeerror(
+    case: str, callable_wrapper
+) -> None:
+    """Invalid construction input types raise TypeError across all adders."""
+    with pytest.raises(TypeError):
+        callable_wrapper()
 

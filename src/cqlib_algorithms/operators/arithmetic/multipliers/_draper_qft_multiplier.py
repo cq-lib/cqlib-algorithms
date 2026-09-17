@@ -29,11 +29,10 @@ from __future__ import annotations
 
 import math
 
-from cqlib import Circuit
 from cqlib.circuit.gates import StandardGate
 
+from cqlib import Circuit
 from cqlib_algorithms.transforms import QFT as TransformQFT
-
 
 _TWO_PI = 2.0 * math.pi
 
@@ -91,7 +90,7 @@ def build_draper_qft_multiplier(
 ) -> Circuit:
     """Build and return the internal Draper QFT multiplier circuit."""
     n = num_state_qubits
-    a_indices = list(range(0, n))
+    a_indices = list(range(n))
     b_indices = list(range(n, 2 * n))
     product_indices = list(range(2 * n, 4 * n))
     circuit = Circuit(4 * n)

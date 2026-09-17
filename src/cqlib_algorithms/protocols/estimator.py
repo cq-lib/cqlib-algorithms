@@ -20,8 +20,9 @@ from numbers import Real
 from types import MappingProxyType
 from typing import Protocol
 
-from cqlib import Circuit
 from cqlib.qis import Hamiltonian, PauliString
+
+from cqlib import Circuit
 
 
 def _validate_positive_shots(shots: int | None) -> None:

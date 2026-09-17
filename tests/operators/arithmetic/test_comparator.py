@@ -1,4 +1,4 @@
-﻿# This code is part of Cqlib.
+# This code is part of Cqlib.
 #
 # (C) Copyright China Telecom Quantum Group 2026
 #
@@ -19,23 +19,13 @@ Scope of this module:
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
 import numpy as np
 import pytest
 
 from cqlib import Circuit
 from cqlib.qis.state import Statevector
 
-ROOT = Path(__file__).resolve().parents[3]
-SRC = ROOT / "src"
-TEST_DIR = Path(__file__).resolve().parent
-for _path in (str(SRC), str(TEST_DIR)):
-    if _path not in sys.path:
-        sys.path.insert(0, _path)
-
-from cqlib_algorithms.operators.arithmetic import (  # noqa: E402
+from cqlib_algorithms.operators.arithmetic import (
     IntegerComparator,
 )
 
@@ -185,7 +175,7 @@ def test_integer_comparator_properties_interface() -> None:
 
 
 def test_integer_comparator_invalid_inputs_raise_valueerror() -> None:
-    """CMP-07. Illegal construction inputs raise ValueError."""
+    """CMP-07. Illegal construction input values raise ValueError."""
     with pytest.raises(ValueError):
         IntegerComparator(0, 0)
     with pytest.raises(ValueError):
@@ -195,9 +185,23 @@ def test_integer_comparator_invalid_inputs_raise_valueerror() -> None:
     with pytest.raises(ValueError):
         IntegerComparator(4, 16)
     with pytest.raises(ValueError):
-        IntegerComparator(4, 1.5)
-    with pytest.raises(ValueError):
         IntegerComparator(4, 3, relation="bad")
     with pytest.raises(ValueError):
         IntegerComparator(4, 3, synthesis="bad")
+
+
+@pytest.mark.parametrize(
+    "case,callable_wrapper",
+    [
+        ("non_int_n", lambda: IntegerComparator(1.5, 3)),
+        ("non_int_value", lambda: IntegerComparator(4, 1.5)),
+        ("name_int", lambda: IntegerComparator(4, 3, name=123)),
+    ],
+)
+def test_integer_comparator_invalid_types_raise_typeerror(
+    case: str, callable_wrapper
+) -> None:
+    """CMP-07. Invalid construction input types raise TypeError."""
+    with pytest.raises(TypeError):
+        callable_wrapper()
 

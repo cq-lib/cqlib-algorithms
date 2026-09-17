@@ -1,4 +1,4 @@
-﻿# This code is part of Cqlib.
+# This code is part of Cqlib.
 #
 # (C) Copyright China Telecom Quantum Group 2026
 #
@@ -40,9 +40,9 @@ from __future__ import annotations
 
 from typing import Literal
 
-from cqlib import Circuit
 from cqlib.circuit.gates import StandardGate
 
+from cqlib import Circuit
 from cqlib_algorithms.operators.arithmetic.adders.constant_adder import (
     DraperConstantAdder,
 )
@@ -131,12 +131,8 @@ def _build_ripple_geq_comparator(
         ]
         for qubit in open_controls:
             circuit.x(qubit)
-        gate = (
-            StandardGate.X.control(len(controls))
-            if controls
-            else StandardGate.X
-        )
         if controls:
+            gate = StandardGate.X.control(len(controls))
             circuit.append_mc_gate(gate, controls + [flag_index])
         else:
             circuit.x(flag_index)
@@ -166,12 +162,8 @@ def _build_ripple_lt_comparator(
         open_controls.append(x_indices[bit])
         for qubit in open_controls:
             circuit.x(qubit)
-        gate = (
-            StandardGate.X.control(len(controls))
-            if controls
-            else StandardGate.X
-        )
         if controls:
+            gate = StandardGate.X.control(len(controls))
             circuit.append_mc_gate(gate, controls + [flag_index])
         else:
             circuit.x(flag_index)
@@ -192,13 +184,17 @@ class IntegerComparator:
         synthesis: ComparatorSynthesis = "ripple_carry",
         name: str | None = None,
     ) -> None:
-        if not isinstance(num_state_qubits, int) or num_state_qubits < 1:
-            raise ValueError(
-                "num_state_qubits must be an integer >= 1, got "
+        if not isinstance(num_state_qubits, int):
+            raise TypeError(
+                "num_state_qubits must be an integer, got "
                 f"{num_state_qubits!r}."
             )
+        if num_state_qubits < 1:
+            raise ValueError(
+                f"num_state_qubits must be >= 1, got {num_state_qubits!r}."
+            )
         if not isinstance(value, int):
-            raise ValueError(f"value must be an integer, got {value!r}.")
+            raise TypeError(f"value must be an integer, got {value!r}.")
         if relation not in _VALID_RELATIONS:
             raise ValueError(
                 f"Unknown comparator relation {relation!r}. "
@@ -208,6 +204,11 @@ class IntegerComparator:
             raise ValueError(
                 f"Unknown comparator synthesis {synthesis!r}. "
                 f"Expected one of {sorted(_VALID_SYNTHESIS)}."
+            )
+        if name is not None and not isinstance(name, str):
+            raise TypeError(
+                "name must be a string or None, got "
+                f"{name!r}."
             )
 
         modulus = 1 << int(num_state_qubits)
@@ -224,7 +225,7 @@ class IntegerComparator:
         self._x_register_indices = list(range(self._num_state_qubits))
         self._flag_index = self._num_state_qubits
         self._helper_index = self._num_state_qubits + 1
-        self._name = name or f"IntegerComparator[{synthesis},{relation}]"
+        self._name = name or "IntegerComparator"
 
     @property
     def name(self) -> str:

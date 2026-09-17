@@ -19,14 +19,14 @@ with an underscore.
 from __future__ import annotations
 
 from .constant_adder import DraperConstantAdder
-from .half_adder import HalfAdder
 from .full_adder import FullAdder
+from .half_adder import HalfAdder
 from .modular_adder import ModularAdder
 
 __all__ = [
     "DraperConstantAdder",
-    "HalfAdder",
     "FullAdder",
+    "HalfAdder",
     "ModularAdder",
 ]
 

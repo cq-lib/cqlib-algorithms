@@ -26,7 +26,6 @@ from __future__ import annotations
 import math
 
 from cqlib import Circuit
-
 from cqlib_algorithms.transforms import QFT as TransformQFT
 
 

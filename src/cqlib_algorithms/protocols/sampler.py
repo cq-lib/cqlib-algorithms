@@ -17,8 +17,9 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Protocol
 
-from cqlib import Circuit, Qubit
 from cqlib.device import ExecutionResult
+
+from cqlib import Circuit, Qubit
 
 
 @dataclass(frozen=True, slots=True)
