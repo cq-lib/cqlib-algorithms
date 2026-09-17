@@ -5,9 +5,9 @@
 - 使用 `src/cqlib_algorithms/` 布局。稳定的公共协议集中放在 `protocols/`，可复用的线路变换放在 `transforms/`，其他具体组件按实际功能增加模块或子包。
 - 完整算法放在 `algorithms/`，随实际实现按功能增加模块；不预建空分类目录。
 - 不设置泛化的 `components` 或 `contracts` 层；`protocols` 只收纳已经冻结并被多个实现复用的公共契约。
-- `StatePreparation`、`Ansatz`、`Sampler`、`Estimator` 和 `Gradient` 是首批公共结构协议；请求和结果类型与对应协议放在同一模块。
+- `StatePreparation`、`Ansatz`、`Sampler`、`Estimator` 和 `Gradient` 是首批公共抽象基类；请求和结果类型与对应契约放在同一模块。
 - 稳定协议同时从 `cqlib_algorithms.protocols` 和包顶层导出，具体实现从所属功能模块导出。
-- 结构协议不启用运行时检查。`StatePreparation` 与 `Ansatz` 目前结构等价，其角色差异由调用位置和文档语义约束。
+- 受公共抽象基类约束的具体组件必须显式继承对应基类。`StatePreparation` 与 `Ansatz` 具有相同抽象操作，但属于不同的名义类型层级，并分别约束状态制备参数和可训练参数语义。线路变换等独立值类型不为满足名义类型而强行继承不匹配的抽象基类。
 - 本库批量 `Estimator` 与 `cqlib.error_mitigation.Estimator` 回调类型属于不同契约；同时使用时必须显式别名，避免短名覆盖。
 - 测试放在 `tests/` 并镜像源码功能结构；协议测试位于 `tests/protocols/`，不修改 `sys.path` 绕过包安装。
 
@@ -23,6 +23,7 @@
 
 ## QFT 约定
 
+- `QFT` 是冻结且使用 slots 的标准 dataclass，通过 `__post_init__` 校验配置并保留 dataclass 的标准构造、比较、哈希和 `dataclasses.replace` 行为；它是线路变换，不继承 `Ansatz`。
 - 正向 QFT 使用 `F[y, x] = exp(2π i x y / 2**n) / sqrt(2**n)`，量子位 `0` 是最低有效位。
 - 精确受控相位使用 `StandardGate.Phase(theta).control(1)` 与 `Circuit.append_mc_gate`；`CRZ` 的相对相位不同，不能替代。
 - `approximation_degree=d` 时仅保留满足 `distance < n - d` 的受控相位门。
@@ -38,3 +39,32 @@
 - 使用 pytest；发布的 `py.typed` 源码使用 mypy 严格检查。代码、必要测试和使用说明同步更新；不提前实现无需求的抽象。
 - 使用 uv 管理环境；未发布 SDK 由开发者手动安装，不运行自动同步。验证使用 `uv run --no-sync`。
 - 版本号维护在 `pyproject.toml`。打包使用 `python -m build`，采用 Apache-2.0，保留 `LICENSE.txt`。
+
+## 状态制备实现约定
+
+- 每个公共算子独占一个模块，显式继承 `StatePreparation`，并实现冻结契约的 `validate()`、
+  `build_circuit(prefix)`、`num_parameters()` 与 `num_qubits()` 四个公共方法。
+- 输入在构造时复制。固定数值态不公开可变配置，`build_circuit` 每次返回独立线路；
+  数值组件不创建符号参数，因此 `num_parameters()` 返回 0。
+- `validate_*` 辅助函数和组件 `validate()` 只检查现有值、成功时返回 `None`，不得复制、
+  排序、归一化或丢弃转换结果；`copy_*`、`normalize_*`、`canonicalize_*` 只在构造阶段
+  生成并返回内部标准快照。
+- 基态索引和幅度索引遵循 Cqlib 小端约定：量子比特 0 是最低有效位；乘积态输入的
+  第 `q` 项对应量子比特 `q`。数值输出测试必须比较 `Circuit.to_matrix()` 的第一列，
+  逐幅度核验相位，不以保真度忽略全局相位。
+- `ArbitraryStatePreparation` 要求输入已在相对、绝对误差 `1e-12` 内归一化；
+  `AmplitudeEncoding` 自动归一化非零输入。二者使用 Möttönen 均匀受控 RY/RZ
+  综合，并仅生成标准旋转、CX 及必要的多控门，不生成稠密 `UnitaryGate`。
+- `SparseAmplitudeEncoding` 对显式支持集自动归一化，拒绝重复索引和显式零幅度。
+  其 exact support-set two-level 综合的经典存储为 `O(s+n)`，逻辑多控操作为
+  `O(sn)`，open-control 周边单比特操作为最坏 `O(sn²)`。当前 Core 无辅助量子比特
+  的多控门分解使基础门上界为最坏 `O(sn³)`。该实现不作量子随机访问存储器
+  （QRAM）能力或多项式以下的数据加载复杂度声明。
+- `AngleEncoding` 仅接受未绑定的 `RX`、`RY`、`RZ` 或 `Phase`；
+  `FeatureMapPreparation` 仅接受 Cqlib 的 `ZFeatureMap`、`IQPFeatureMap`、
+  `ZZFeatureMap` 或 `PauliFeatureMap`。两者保存 Core 组件快照并委托 Core 构建。
+- `UserCircuitPreparation` 保存用户线路快照，按输入线路的量子比特插入顺序映射到
+  连续的 `0..n-1`，保留活跃符号和全局相位。线路必须能由 Core 静态求逆；测量、
+  重置、动态控制及 Core 当前不能求逆的三量子比特以上数值酉门会被拒绝。
+- 数值组件忽略合法字符串 `prefix`，Core 参数化编码及 Feature Map 使用它命名符号；
+  User Circuit 保留用户原有符号名，不进行重命名。

@@ -1,26 +1,38 @@
-"""Structural protocol for variational ansatz circuit components."""
+# This code is part of Cqlib.
+#
+# (C) Copyright China Telecom Quantum Group 2026
+#
+# This code is licensed under the Apache License, Version 2.0. You may
+# obtain a copy of this license in the LICENSE.txt file in the root directory
+# of this source tree or at http://www.apache.org/licenses/LICENSE-2.0.
+#
+# Any modifications or derivative works of this code must retain this
+# copyright notice, and modified files need to carry a notice indicating
+# that they have been altered from the originals.
+
+"""Abstract base class for variational ansatz circuit components."""
 
 from __future__ import annotations
 
-from typing import Protocol
+from abc import ABC, abstractmethod
 
 from cqlib.circuit import Circuit
 
 
-class Ansatz(Protocol):
-    """A component that builds a variational parameterized circuit family.
+class Ansatz(ABC):
+    """Nominal base class for variational parameterized circuit families.
 
-    Implementations are matched structurally and do not need to inherit from
-    this protocol.  The protocol deliberately is not runtime-checkable:
-    runtime member checks cannot verify signatures or semantic invariants.
+    Implementations must inherit from this class and implement its four
+    abstract methods. Runtime ``isinstance`` checks therefore express actual
+    membership in the ansatz hierarchy.
 
     ``Ansatz`` and
     :class:`cqlib_algorithms.protocols.state_preparation.StatePreparation`
     have the same
-    structural members.  Static structural typing therefore cannot stop one
-    from being passed in place of the other.  Their distinction is a semantic
-    contract at the consuming API: parameters here are ordered trainable
-    symbols, rather than state-preparation or input-data symbols.
+    abstract operations. Their distinct base classes prevent one component
+    role from being substituted nominally for the other. Parameters here are
+    ordered trainable symbols, rather than state-preparation or input-data
+    symbols.
 
     For a valid component, ``build_circuit`` returns a new circuit whose
     ``num_qubits`` equals ``num_qubits()``. ``num_parameters()`` declares the
@@ -37,14 +49,18 @@ class Ansatz(Protocol):
     deterministic and must return independent circuits.
     """
 
+    __slots__ = ()
+
+    @abstractmethod
     def validate(self) -> None:
         """Validate the ansatz configuration.
 
         Raises:
             ValueError: If the ansatz configuration is invalid.
         """
-        ...
+        raise NotImplementedError
 
+    @abstractmethod
     def build_circuit(self, prefix: str) -> Circuit:
         """Build and return a new variational circuit.
 
@@ -59,15 +75,14 @@ class Ansatz(Protocol):
         Raises:
             ValueError: If the ansatz configuration is invalid.
         """
-        ...
+        raise NotImplementedError
 
+    @abstractmethod
     def num_parameters(self) -> int:
         """Return the number of logical trainable-parameter slots."""
-        ...
+        raise NotImplementedError
 
+    @abstractmethod
     def num_qubits(self) -> int:
         """Return the number of qubits in the generated circuit."""
-        ...
-
-
-__all__ = ["Ansatz"]
+        raise NotImplementedError

@@ -1,3 +1,15 @@
+# This code is part of Cqlib.
+#
+# (C) Copyright China Telecom Quantum Group 2026
+#
+# This code is licensed under the Apache License, Version 2.0. You may
+# obtain a copy of this license in the LICENSE.txt file in the root directory
+# of this source tree or at http://www.apache.org/licenses/LICENSE-2.0.
+#
+# Any modifications or derivative works of this code must retain this
+# copyright notice, and modified files need to carry a notice indicating
+# that they have been altered from the originals.
+
 """Tests for the public gradient contract."""
 
 from __future__ import annotations
@@ -32,7 +44,7 @@ def _estimator_request(x: float = 2.0, y: float = 3.0) -> EstimatorRequest:
     )
 
 
-class _QuadraticEstimator:
+class _QuadraticEstimator(Estimator):
     def __init__(self) -> None:
         self.batch_sizes: list[int] = []
 
@@ -54,7 +66,7 @@ class _QuadraticEstimator:
         return results
 
 
-class _CentralDifferenceGradient:
+class _CentralDifferenceGradient(Gradient):
     def __init__(self, step: float = 1e-5) -> None:
         self.step = step
 
@@ -188,7 +200,7 @@ def test_gradient_result_rejects_invalid_values(value):
         GradientResult(("x",), (value,))
 
 
-def test_structural_gradient_batches_all_perturbed_estimator_requests():
+def test_gradient_batches_all_perturbed_estimator_requests():
     estimator = _QuadraticEstimator()
     gradient = _CentralDifferenceGradient()
     requests = [
@@ -205,7 +217,7 @@ def test_structural_gradient_batches_all_perturbed_estimator_requests():
     assert results[1].values == pytest.approx((8.0,))
 
 
-def test_structural_gradient_supports_empty_batches_without_evaluation():
+def test_gradient_supports_empty_batches_without_evaluation():
     estimator = _QuadraticEstimator()
     gradient = _CentralDifferenceGradient()
 
@@ -213,6 +225,5 @@ def test_structural_gradient_supports_empty_batches_without_evaluation():
     assert estimator.batch_sizes == []
 
 
-def test_gradient_protocol_is_not_runtime_checkable():
-    with pytest.raises(TypeError, match="runtime_checkable"):
-        isinstance(_CentralDifferenceGradient(), Gradient)  # type: ignore[misc]
+def test_gradient_uses_nominal_runtime_membership():
+    assert isinstance(_CentralDifferenceGradient(), Gradient)

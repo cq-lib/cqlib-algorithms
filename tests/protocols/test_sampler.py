@@ -1,3 +1,15 @@
+# This code is part of Cqlib.
+#
+# (C) Copyright China Telecom Quantum Group 2026
+#
+# This code is licensed under the Apache License, Version 2.0. You may
+# obtain a copy of this license in the LICENSE.txt file in the root directory
+# of this source tree or at http://www.apache.org/licenses/LICENSE-2.0.
+#
+# Any modifications or derivative works of this code must retain this
+# copyright notice, and modified files need to carry a notice indicating
+# that they have been altered from the originals.
+
 """Tests for the public sampler contract."""
 
 from __future__ import annotations
@@ -18,7 +30,7 @@ def _sample_request(shots: int = 4) -> SamplerRequest:
     return SamplerRequest(circuit, tuple(circuit.qubits), shots)
 
 
-class _FakeSampler:
+class _FakeSampler(Sampler):
     def run(
         self,
         requests: Sequence[SamplerRequest],
@@ -124,7 +136,7 @@ def test_sampler_revalidates_mutable_circuit_before_execution():
         _FakeSampler().run([request])
 
 
-def test_structural_sampler_preserves_batch_order_and_supports_empty_batches():
+def test_sampler_preserves_batch_order_and_supports_empty_batches():
     sampler = _FakeSampler()
     requests = [_sample_request(2), _sample_request(3)]
 
@@ -138,6 +150,5 @@ def test_structural_sampler_preserves_batch_order_and_supports_empty_batches():
     assert [sum(result.counts.values()) for result in results] == [2, 3]
 
 
-def test_sampler_protocol_is_not_runtime_checkable():
-    with pytest.raises(TypeError, match="runtime_checkable"):
-        isinstance(_FakeSampler(), Sampler)  # type: ignore[misc]
+def test_sampler_uses_nominal_runtime_membership():
+    assert isinstance(_FakeSampler(), Sampler)
