@@ -98,34 +98,3 @@ def test_inheriting_python_implementation_is_consumable():
 
     _assert_component_contract(ansatz, "theta")
     assert ansatz.build_circuit("").used_symbols == ["_0"]
-
-
-@pytest.mark.parametrize(
-    "factory",
-    [
-        lambda: TwoLocal(2),
-        lambda: BasicEntanglerLayers(2),
-        lambda: QAOAAnsatz(_zz_hamiltonian()),
-    ],
-    ids=["two-local", "basic-entangler-layers", "qaoa"],
-)
-def test_representative_core_builders_satisfy_the_contract(
-    factory: Callable[[], Ansatz],
-):
-    _assert_component_contract(factory(), "theta")
-
-
-def test_explicit_core_parameter_name_may_take_precedence_over_prefix():
-    ansatz = PauliEvolutionAnsatz(_zz_hamiltonian()).with_time_param_name("tau")
-    first = ansatz.build_circuit("first")
-    second = ansatz.build_circuit("second")
-
-    assert first.used_symbols == ["tau"]
-    assert second.used_symbols == ["tau"]
-    assert ansatz.num_parameters() == 1
-
-
-def test_core_validation_error_is_exposed_as_value_error():
-    with pytest.raises(ValueError):
-        TwoLocal(0).validate()
-

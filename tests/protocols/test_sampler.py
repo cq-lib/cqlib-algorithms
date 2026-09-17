@@ -150,7 +150,5 @@ def test_sampler_preserves_batch_order_and_supports_empty_batches():
     assert [sum(result.counts.values()) for result in results] == [2, 3]
 
 
-def test_sampler_protocol_is_not_runtime_checkable():
-    with pytest.raises(TypeError, match="runtime_checkable"):
-        isinstance(_FakeSampler(), Sampler)  # type: ignore[misc]
-
+def test_sampler_uses_nominal_runtime_membership():
+    assert isinstance(_FakeSampler(), Sampler)

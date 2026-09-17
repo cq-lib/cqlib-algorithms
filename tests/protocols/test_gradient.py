@@ -225,7 +225,5 @@ def test_gradient_supports_empty_batches_without_evaluation():
     assert estimator.batch_sizes == []
 
 
-def test_gradient_protocol_is_not_runtime_checkable():
-    with pytest.raises(TypeError, match="runtime_checkable"):
-        isinstance(_CentralDifferenceGradient(), Gradient)  # type: ignore[misc]
-
+def test_gradient_uses_nominal_runtime_membership():
+    assert isinstance(_CentralDifferenceGradient(), Gradient)
