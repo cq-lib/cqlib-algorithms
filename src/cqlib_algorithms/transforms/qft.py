@@ -17,8 +17,9 @@ from __future__ import annotations
 import math
 from dataclasses import KW_ONLY, dataclass
 
-from cqlib import Circuit
 from cqlib.circuit.gates import StandardGate
+
+from cqlib import Circuit
 
 
 @dataclass(frozen=True, slots=True)

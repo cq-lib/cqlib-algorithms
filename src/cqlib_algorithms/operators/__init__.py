@@ -10,8 +10,9 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Reusable quantum operator components."""
+"""Operator subpackage for algorithmic quantum building blocks."""
 
+from . import arithmetic
 from .state_preparation import (
     AmplitudeEncoding,
     AngleEncoding,
@@ -26,7 +27,9 @@ from .state_preparation import (
     UserCircuitPreparation,
 )
 
+
 __all__ = [
+    "arithmetic",
     "AmplitudeEncoding",
     "AngleEncoding",
     "ArbitraryStatePreparation",
@@ -39,3 +42,4 @@ __all__ = [
     "UniformSuperposition",
     "UserCircuitPreparation",
 ]
+

@@ -44,6 +44,7 @@ include = ["/src", "/tests", "/docs", "/pyproject.toml", "/README.md", "/AGENTS.
 [tool.pytest.ini_options]
 minversion = "8.3"
 testpaths = ["tests"]
+pythonpath = ["cqlib/src", "tests/operators/arithmetic"]
 addopts = ["--import-mode=importlib", "--strict-config", "--strict-markers"]
 markers = [
     "integration: tests covering interactions between components",
