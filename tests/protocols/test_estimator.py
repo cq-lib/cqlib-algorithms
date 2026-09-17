@@ -322,6 +322,4 @@ def test_estimator_preserves_batch_order_and_supports_empty_batches():
 
 def test_estimator_is_distinct_and_uses_nominal_runtime_membership():
     assert Estimator is not ErrorMitigationEstimator
-    with pytest.raises(TypeError, match="runtime_checkable"):
-        isinstance(_FakeEstimator(), Estimator)  # type: ignore[misc]
-
+    assert isinstance(_FakeEstimator(), Estimator)

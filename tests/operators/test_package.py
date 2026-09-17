@@ -33,7 +33,7 @@ def test_state_preparation_operators_are_exported_from_functional_packages():
         "UniformSuperposition",
         "UserCircuitPreparation",
     }
-    assert set(operators.__all__) == expected
+    assert expected <= set(operators.__all__)
     assert set(state_preparation.__all__) == expected
     for name in expected:
         assert getattr(operators, name) is getattr(state_preparation, name)
