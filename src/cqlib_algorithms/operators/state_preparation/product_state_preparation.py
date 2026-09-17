@@ -24,7 +24,8 @@ from cqlib.circuit import Circuit
 from ...protocols.state_preparation import StatePreparation
 from ._state_synthesis import (
     ComplexVector,
-    require_normalized,
+    normalize_unit_vector,
+    validate_normalized_vector,
     validate_prefix,
 )
 
@@ -70,14 +71,14 @@ class ProductStatePreparation(StatePreparation):
                     raise ValueError(f"qubit_states[{qubit}][{basis}] must be finite")
                 values.append(value)
             copied.append(
-                require_normalized(tuple(values), name=f"qubit_states[{qubit}]")
+                normalize_unit_vector(tuple(values), name=f"qubit_states[{qubit}]")
             )
         self._qubit_states = tuple(copied)
 
     def validate(self) -> None:
         """Validate every immutable single-qubit state."""
         for qubit, state in enumerate(self._qubit_states):
-            require_normalized(state, name=f"qubit_states[{qubit}]")
+            validate_normalized_vector(state, name=f"qubit_states[{qubit}]")
 
     def build_circuit(self, prefix: str) -> Circuit:
         """Return a new circuit of independent RY and Phase preparations."""

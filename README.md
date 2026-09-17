@@ -115,7 +115,8 @@ approximate = QFT(
 最小的受控相位门；其取值必须满足
 `0 <= approximation_degree < num_qubits`。当 `do_swaps=False` 时，输出量子位
 保持位反转顺序。`inverse=True` 返回相同近似与 SWAP 配置下完整正向线路的伴随。
-`QFT` 显式继承 `Ansatz`，其逻辑参数数量为 0。
+`QFT` 是冻结且使用 slots 的标准 dataclass，可使用 `dataclasses.replace` 派生新配置；
+它是可复用线路变换，不属于可训练 `Ansatz` 类型层级。
 
 ## 开发
 
@@ -136,11 +137,14 @@ uv pip install --group dev
 uv pip install --no-deps -e .
 pytest
 mypy src/cqlib_algorithms
+ruff check .
+ruff format --check .
 python -m build
 ```
 
 Windows PowerShell 使用 `.venv/Scripts/Activate.ps1` 激活环境。
-不激活环境时，使用 `uv run --no-sync pytest`、`uv run --no-sync mypy` 和
+不激活环境时，使用 `uv run --no-sync pytest`、`uv run --no-sync mypy`、
+`uv run --no-sync ruff check .`、`uv run --no-sync ruff format --check .` 和
 `uv run --no-sync python -m build`。
 构建产物位于 `dist/`；隔离构建需要获取 Hatchling，但不需要安装运行时 SDK。
 

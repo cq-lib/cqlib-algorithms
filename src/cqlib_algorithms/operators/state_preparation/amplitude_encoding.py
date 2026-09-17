@@ -24,6 +24,7 @@ from ._state_synthesis import (
     build_mottonen_circuit,
     copy_complex_vector,
     normalize_nonzero,
+    validate_normalized_vector,
     validate_prefix,
 )
 
@@ -40,7 +41,7 @@ class AmplitudeEncoding(StatePreparation):
 
     def validate(self) -> None:
         """Validate the immutable normalized feature vector."""
-        normalize_nonzero(self._features, name="features")
+        validate_normalized_vector(self._features, name="features")
 
     def build_circuit(self, prefix: str) -> Circuit:
         """Return a new exact dense amplitude-encoding circuit."""

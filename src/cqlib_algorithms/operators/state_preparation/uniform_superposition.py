@@ -29,7 +29,8 @@ class UniformSuperposition(StatePreparation):
     __slots__ = ("_num_qubits",)
 
     def __init__(self, num_qubits: int) -> None:
-        self._num_qubits = validate_positive_qubit_count(num_qubits)
+        validate_positive_qubit_count(num_qubits)
+        self._num_qubits = num_qubits
 
     def validate(self) -> None:
         """Validate the fixed component configuration."""

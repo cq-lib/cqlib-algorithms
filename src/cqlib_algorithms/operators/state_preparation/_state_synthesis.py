@@ -41,13 +41,12 @@ def _stable_norm(values: Iterable[complex]) -> float:
     return norm
 
 
-def validate_positive_qubit_count(num_qubits: int) -> int:
-    """Return a strictly validated positive qubit count."""
+def validate_positive_qubit_count(num_qubits: int) -> None:
+    """Validate a strictly positive qubit count."""
     if type(num_qubits) is not int:
         raise TypeError("num_qubits must be an int")
     if num_qubits < 1:
         raise ValueError("num_qubits must be at least 1")
-    return num_qubits
 
 
 def validate_prefix(prefix: str) -> None:
@@ -93,8 +92,8 @@ def normalize_nonzero(values: ComplexVector, *, name: str) -> ComplexVector:
     return tuple(value / scaled_norm for value in scaled)
 
 
-def require_normalized(values: ComplexVector, *, name: str) -> ComplexVector:
-    """Require unit norm to 1e-12 and correct accepted roundoff to unit norm."""
+def normalize_unit_vector(values: ComplexVector, *, name: str) -> ComplexVector:
+    """Validate a unit vector and correct accepted roundoff in a new tuple."""
     scale = _component_scale(values)
     if scale == 0.0:
         raise ValueError(f"{name} must not be the zero vector")
@@ -109,6 +108,22 @@ def require_normalized(values: ComplexVector, *, name: str) -> ComplexVector:
     ):
         raise ValueError(f"{name} must have unit norm within 1e-12")
     return tuple(value / scaled_norm for value in scaled)
+
+
+def validate_normalized_vector(values: ComplexVector, *, name: str) -> None:
+    """Validate that an existing finite vector has unit norm within 1e-12."""
+    scale = _component_scale(values)
+    if scale == 0.0:
+        raise ValueError(f"{name} must not be the zero vector")
+    scaled_norm = _stable_norm(value / scale for value in values)
+    norm = scale * scaled_norm
+    if not math.isfinite(norm) or not math.isclose(
+        norm,
+        1.0,
+        rel_tol=_NORMALIZATION_TOLERANCE,
+        abs_tol=_NORMALIZATION_TOLERANCE,
+    ):
+        raise ValueError(f"{name} must have unit norm within 1e-12")
 
 
 def build_mottonen_circuit(amplitudes: ComplexVector) -> Circuit:
@@ -185,10 +200,10 @@ def build_mottonen_circuit(amplitudes: ComplexVector) -> Circuit:
     return circuit
 
 
-def copy_sparse_entries(
+def canonicalize_sparse_entries(
     num_qubits: int, entries: Sequence[tuple[int, complex]]
 ) -> tuple[SparseEntry, ...]:
-    """Validate, copy, normalize, sort, and return sparse amplitudes."""
+    """Validate, copy, normalize, and sort sparse amplitudes."""
     validate_positive_qubit_count(num_qubits)
     if isinstance(entries, (str, bytes)) or not isinstance(entries, Sequence):
         raise TypeError("entries must be a sequence")
@@ -235,6 +250,37 @@ def copy_sparse_entries(
     normalized = [(index, amplitude / scaled_norm) for index, amplitude in scaled]
     normalized.sort(key=lambda item: item[0])
     return tuple(normalized)
+
+
+def validate_sparse_entries(num_qubits: int, entries: tuple[SparseEntry, ...]) -> None:
+    """Validate an existing canonical sparse-amplitude snapshot."""
+    validate_positive_qubit_count(num_qubits)
+    if not entries:
+        raise ValueError("entries must not be empty")
+
+    maximum_index = 1 << num_qubits
+    previous_index = -1
+    amplitudes: list[complex] = []
+    for position, entry in enumerate(entries):
+        if not isinstance(entry, tuple) or len(entry) != 2:
+            raise TypeError(f"entries[{position}] must be an (index, amplitude) pair")
+        index, amplitude = entry
+        if type(index) is not int:
+            raise TypeError(f"entries[{position}][0] must be an int")
+        if index < 0 or index >= maximum_index:
+            raise ValueError(f"entries[{position}][0] must be in [0, {maximum_index})")
+        if index <= previous_index:
+            raise ValueError("entries must have unique indices in ascending order")
+        previous_index = index
+        if not isinstance(amplitude, complex):
+            raise TypeError(f"entries[{position}][1] must be a complex value")
+        if not math.isfinite(amplitude.real) or not math.isfinite(amplitude.imag):
+            raise ValueError(f"entries[{position}][1] must be finite")
+        if amplitude == 0.0:
+            raise ValueError(f"entries[{position}][1] must not be zero")
+        amplitudes.append(amplitude)
+
+    validate_normalized_vector(tuple(amplitudes), name="entries")
 
 
 def build_sparse_two_level_circuit(

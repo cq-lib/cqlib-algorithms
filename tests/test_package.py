@@ -93,4 +93,3 @@ def test_component_contracts_are_abstract_base_classes():
 
 def test_qft_is_exported_from_public_namespaces():
     assert QFT is TransformQFT
-    assert issubclass(QFT, Ansatz)

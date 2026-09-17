@@ -23,7 +23,8 @@ from ...protocols.state_preparation import StatePreparation
 from ._state_synthesis import (
     build_mottonen_circuit,
     copy_complex_vector,
-    require_normalized,
+    normalize_unit_vector,
+    validate_normalized_vector,
     validate_prefix,
 )
 
@@ -42,11 +43,11 @@ class ArbitraryStatePreparation(StatePreparation):
 
     def __init__(self, amplitudes: Sequence[complex]) -> None:
         copied = copy_complex_vector(amplitudes, name="amplitudes")
-        self._amplitudes = require_normalized(copied, name="amplitudes")
+        self._amplitudes = normalize_unit_vector(copied, name="amplitudes")
 
     def validate(self) -> None:
         """Validate the immutable normalized state data."""
-        require_normalized(self._amplitudes, name="amplitudes")
+        validate_normalized_vector(self._amplitudes, name="amplitudes")
 
     def build_circuit(self, prefix: str) -> Circuit:
         """Return a new exact Möttönen state-preparation circuit."""

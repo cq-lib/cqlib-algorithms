@@ -15,16 +15,14 @@
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import KW_ONLY, dataclass
 
 from cqlib import Circuit
 from cqlib.circuit.gates import StandardGate
 
-from ..protocols.ansatz import Ansatz
 
-
-@dataclass(frozen=True, slots=True, init=False)
-class QFT(Ansatz):
+@dataclass(frozen=True, slots=True)
+class QFT:
     """Configuration for a quantum Fourier transform circuit.
 
     The forward transform uses the convention
@@ -53,37 +51,23 @@ class QFT(Ansatz):
         ValueError: If a numeric field is outside its valid range.
     """
 
-    _num_qubits: int
-    approximation_degree: int
-    do_swaps: bool
-    inverse: bool
+    num_qubits: int
+    _: KW_ONLY
+    approximation_degree: int = 0
+    do_swaps: bool = True
+    inverse: bool = False
 
-    def __init__(
-        self,
-        num_qubits: int,
-        *,
-        approximation_degree: int = 0,
-        do_swaps: bool = True,
-        inverse: bool = False,
-    ) -> None:
-        object.__setattr__(self, "_num_qubits", num_qubits)
-        object.__setattr__(self, "approximation_degree", approximation_degree)
-        object.__setattr__(self, "do_swaps", do_swaps)
-        object.__setattr__(self, "inverse", inverse)
-        self.validate()
-
-    def validate(self) -> None:
-        """Validate the QFT configuration."""
-        if isinstance(self._num_qubits, bool) or not isinstance(self._num_qubits, int):
+    def __post_init__(self) -> None:
+        if isinstance(self.num_qubits, bool) or not isinstance(self.num_qubits, int):
             raise TypeError("num_qubits must be an integer")
-        if self._num_qubits <= 0:
+        if self.num_qubits <= 0:
             raise ValueError("num_qubits must be greater than zero")
 
         if isinstance(self.approximation_degree, bool) or not isinstance(
             self.approximation_degree, int
         ):
             raise TypeError("approximation_degree must be an integer")
-        if not 0 <= self.approximation_degree < self._num_qubits:
+        if not 0 <= self.approximation_degree < self.num_qubits:
             raise ValueError(
                 "approximation_degree must satisfy "
                 "0 <= approximation_degree < num_qubits"
@@ -94,15 +78,12 @@ class QFT(Ansatz):
         if not isinstance(self.inverse, bool):
             raise TypeError("inverse must be a boolean")
 
-    def build_circuit(self, prefix: str = "") -> Circuit:
+    def build_circuit(self) -> Circuit:
         """Build and return a new circuit for the configured transform."""
-        if not isinstance(prefix, str):
-            raise TypeError("prefix must be a string")
+        circuit = Circuit(self.num_qubits)
+        distance_cutoff = self.num_qubits - self.approximation_degree
 
-        circuit = Circuit(self._num_qubits)
-        distance_cutoff = self._num_qubits - self.approximation_degree
-
-        for target in range(self._num_qubits - 1, -1, -1):
+        for target in range(self.num_qubits - 1, -1, -1):
             circuit.h(target)
             for control in range(target):
                 distance = target - control
@@ -113,15 +94,7 @@ class QFT(Ansatz):
                 circuit.append_mc_gate(controlled_phase, [control, target])
 
         if self.do_swaps:
-            for low in range(self._num_qubits // 2):
-                circuit.swap(low, self._num_qubits - 1 - low)
+            for low in range(self.num_qubits // 2):
+                circuit.swap(low, self.num_qubits - 1 - low)
 
         return circuit.inverse() if self.inverse else circuit
-
-    def num_parameters(self) -> int:
-        """Return zero because QFT contains no logical parameter slots."""
-        return 0
-
-    def num_qubits(self) -> int:
-        """Return the number of qubits in the generated circuit."""
-        return self._num_qubits

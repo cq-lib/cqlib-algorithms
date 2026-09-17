@@ -44,7 +44,8 @@ class AngleEncoding(StatePreparation):
     __slots__ = ("_inner", "_num_qubits", "_rotation_gate")
 
     def __init__(self, num_qubits: int, rotation_gate: StandardGate) -> None:
-        self._num_qubits = validate_positive_qubit_count(num_qubits)
+        validate_positive_qubit_count(num_qubits)
+        self._num_qubits = num_qubits
         if not isinstance(rotation_gate, StandardGate):
             raise TypeError("rotation_gate must be a StandardGate")
         if rotation_gate not in _SUPPORTED_ROTATION_GATES:

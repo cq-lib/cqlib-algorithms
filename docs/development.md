@@ -7,7 +7,7 @@
 - 不设置泛化的 `components` 或 `contracts` 层；`protocols` 只收纳已经冻结并被多个实现复用的公共契约。
 - `StatePreparation`、`Ansatz`、`Sampler`、`Estimator` 和 `Gradient` 是首批公共抽象基类；请求和结果类型与对应契约放在同一模块。
 - 稳定协议同时从 `cqlib_algorithms.protocols` 和包顶层导出，具体实现从所属功能模块导出。
-- 具体组件必须显式继承对应抽象基类。`StatePreparation` 与 `Ansatz` 具有相同抽象操作，但属于不同的名义类型层级，并分别约束状态制备参数和可训练参数语义。
+- 受公共抽象基类约束的具体组件必须显式继承对应基类。`StatePreparation` 与 `Ansatz` 具有相同抽象操作，但属于不同的名义类型层级，并分别约束状态制备参数和可训练参数语义。线路变换等独立值类型不为满足名义类型而强行继承不匹配的抽象基类。
 - 本库批量 `Estimator` 与 `cqlib.error_mitigation.Estimator` 回调类型属于不同契约；同时使用时必须显式别名，避免短名覆盖。
 - 测试放在 `tests/` 并镜像源码功能结构；协议测试位于 `tests/protocols/`，不修改 `sys.path` 绕过包安装。
 
@@ -23,7 +23,7 @@
 
 ## QFT 约定
 
-- `QFT` 继承 `Ansatz`，实现统一的验证、线路构建、参数数量和量子比特数量接口；其逻辑参数数量为 0。
+- `QFT` 是冻结且使用 slots 的标准 dataclass，通过 `__post_init__` 校验配置并保留 dataclass 的标准构造、比较、哈希和 `dataclasses.replace` 行为；它是线路变换，不继承 `Ansatz`。
 - 正向 QFT 使用 `F[y, x] = exp(2π i x y / 2**n) / sqrt(2**n)`，量子位 `0` 是最低有效位。
 - 精确受控相位使用 `StandardGate.Phase(theta).control(1)` 与 `Circuit.append_mc_gate`；`CRZ` 的相对相位不同，不能替代。
 - `approximation_degree=d` 时仅保留满足 `distance < n - d` 的受控相位门。
@@ -46,6 +46,9 @@
   `build_circuit(prefix)`、`num_parameters()` 与 `num_qubits()` 四个公共方法。
 - 输入在构造时复制。固定数值态不公开可变配置，`build_circuit` 每次返回独立线路；
   数值组件不创建符号参数，因此 `num_parameters()` 返回 0。
+- `validate_*` 辅助函数和组件 `validate()` 只检查现有值、成功时返回 `None`，不得复制、
+  排序、归一化或丢弃转换结果；`copy_*`、`normalize_*`、`canonicalize_*` 只在构造阶段
+  生成并返回内部标准快照。
 - 基态索引和幅度索引遵循 Cqlib 小端约定：量子比特 0 是最低有效位；乘积态输入的
   第 `q` 项对应量子比特 `q`。数值输出测试必须比较 `Circuit.to_matrix()` 的第一列，
   逐幅度核验相位，不以保真度忽略全局相位。

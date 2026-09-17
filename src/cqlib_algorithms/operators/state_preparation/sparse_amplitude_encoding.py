@@ -22,8 +22,9 @@ from cqlib.circuit import Circuit
 from ...protocols.state_preparation import StatePreparation
 from ._state_synthesis import (
     build_sparse_two_level_circuit,
-    copy_sparse_entries,
+    canonicalize_sparse_entries,
     validate_prefix,
+    validate_sparse_entries,
 )
 
 
@@ -48,12 +49,12 @@ class SparseAmplitudeEncoding(StatePreparation):
     __slots__ = ("_entries", "_num_qubits")
 
     def __init__(self, num_qubits: int, entries: Sequence[tuple[int, complex]]) -> None:
-        self._entries = copy_sparse_entries(num_qubits, entries)
+        self._entries = canonicalize_sparse_entries(num_qubits, entries)
         self._num_qubits = num_qubits
 
     def validate(self) -> None:
         """Validate the immutable sparse support and amplitudes."""
-        copy_sparse_entries(self._num_qubits, self._entries)
+        validate_sparse_entries(self._num_qubits, self._entries)
 
     def build_circuit(self, prefix: str) -> Circuit:
         """Return a new exact support-set two-level preparation circuit."""

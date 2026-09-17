@@ -34,7 +34,8 @@ class BasisStateInitialization(StatePreparation):
     __slots__ = ("_basis_index", "_encoding", "_num_qubits")
 
     def __init__(self, num_qubits: int, basis_index: int) -> None:
-        self._num_qubits = validate_positive_qubit_count(num_qubits)
+        validate_positive_qubit_count(num_qubits)
+        self._num_qubits = num_qubits
         if type(basis_index) is not int:
             raise TypeError("basis_index must be an int")
         if basis_index < 0 or basis_index >= 1 << self._num_qubits:
