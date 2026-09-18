@@ -27,9 +27,7 @@ from .state_preparation import (
     UserCircuitPreparation,
 )
 
-
 __all__ = [
-    "arithmetic",
     "AmplitudeEncoding",
     "AngleEncoding",
     "ArbitraryStatePreparation",
@@ -41,5 +39,6 @@ __all__ = [
     "SparseAmplitudeEncoding",
     "UniformSuperposition",
     "UserCircuitPreparation",
+    "arithmetic",
 ]
 

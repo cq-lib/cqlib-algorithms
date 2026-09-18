@@ -17,6 +17,7 @@ from __future__ import annotations
 import cmath
 import math
 from collections.abc import Iterable, Sequence
+from itertools import pairwise
 from typing import TypeAlias
 
 from cqlib.circuit import Circuit
@@ -431,7 +432,7 @@ def _append_two_level_allocation(
         current ^= 1 << qubit
         path.append(current)
 
-    for first, second in zip(path, path[1:]):
+    for first, second in pairwise(path):
         _append_adjacent_basis_swap(circuit, num_qubits, first, second)
 
     mapped_reference = path[-1]
@@ -451,7 +452,7 @@ def _append_two_level_allocation(
         basis_pattern=mapped_reference,
     )
 
-    for first, second in reversed(tuple(zip(path, path[1:]))):
+    for first, second in reversed(tuple(pairwise(path))):
         _append_adjacent_basis_swap(circuit, num_qubits, first, second)
 
 
