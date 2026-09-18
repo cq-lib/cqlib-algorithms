@@ -38,3 +38,23 @@ def test_state_preparation_operators_are_exported_from_functional_packages():
     for name in expected:
         assert getattr(operators, name) is getattr(state_preparation, name)
         assert issubclass(getattr(state_preparation, name), StatePreparation)
+
+
+def test_oracle_operators_are_exported_from_functional_packages():
+    operators = import_module("cqlib_algorithms.operators")
+    oracle = import_module("cqlib_algorithms.operators.oracle")
+    state_preparation = import_module("cqlib_algorithms.operators.state_preparation")
+    expected = {
+        "BitFlipOracle",
+        "BooleanFunction",
+        "BooleanVectorFunction",
+        "GeneralStateReflection",
+        "GroverDiffusion",
+        "PhaseOracle",
+        "ZeroStateReflection",
+    }
+
+    assert set(oracle.__all__) == expected
+    assert expected | set(state_preparation.__all__) <= set(operators.__all__)
+    for name in expected:
+        assert getattr(operators, name) is getattr(oracle, name)

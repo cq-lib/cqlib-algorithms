@@ -2,7 +2,8 @@
 
 面向 Cqlib 的量子算法组件库。支持 Python 3.10+，使用 uv 管理依赖、pytest 测试，
 采用 Apache-2.0 开源协议。当前提供第一批公共组件协议、请求与结果数据结构，以及
-首批状态制备、数据编码组件和可复用的量子傅里叶变换线路构造器。
+首批状态制备、数据编码组件、布尔 Oracle 与反射算子，以及可复用的量子傅里叶
+变换线路构造器。
 
 ## 目录
 
@@ -20,6 +21,14 @@ src/cqlib_algorithms/
 │   ├── estimator.py
 │   └── gradient.py
 ├── operators/
+│   ├── oracle/
+│   │   ├── boolean_function.py
+│   │   ├── boolean_vector_function.py
+│   │   ├── phase_oracle.py
+│   │   ├── bit_flip_oracle.py
+│   │   ├── zero_state_reflection.py
+│   │   ├── general_state_reflection.py
+│   │   └── grover_diffusion.py
 │   └── state_preparation/
 │       ├── basis_state_initialization.py
 │       ├── uniform_superposition.py
@@ -92,6 +101,34 @@ from cqlib_algorithms import (
 
 完整接口、数值约定、综合方法和已知 Core 边界见
 [状态制备与数据编码组件](docs/state_preparation.md)。
+
+## 布尔 Oracle 与反射算子
+
+`BooleanFunction` 表示单输出布尔函数；`BooleanVectorFunction` 表示至少两个输出且
+共用输入变量顺序的向量函数。输入量子比特 0 对应最低有效位。`BitFlipOracle` 计算
+`|x>|y> → |x>|y XOR F(x)>`，每个输出位都有独立的输出量子比特；`PhaseOracle`
+在单输出时施加 `(-1)**f(x)` 相位。在多输出时，必须显式给出非零 `output_mask`，
+施加被选输出位的奇偶相位，不是逻辑 OR 标记。
+
+```python
+from cqlib_algorithms.operators.oracle import (
+    BitFlipOracle,
+    BooleanVectorFunction,
+    PhaseOracle,
+)
+
+function = BooleanVectorFunction.from_truth_table(
+    [(False, False), (True, False), (False, True), (True, True)]
+)
+bit_flip = BitFlipOracle(function).build_circuit()  # 2 inputs + 2 outputs
+phase = PhaseOracle(function, output_mask=0b11).build_circuit()
+```
+
+`ZeroStateReflection`、`GeneralStateReflection` 和 `GroverDiffusion` 分别构建
+`2|0><0|-I`、`2|ψ><ψ|-I` 与 `2|s><s|-I` 的精确反射线路。上述算子不执行
+测量或后台任务。有限真值表综合需要指数规模的经典预处理，不提供高效黑盒 Oracle
+或任意多输出 OR 标记。接口、边界、数学约定与可运行示例见
+[布尔 Oracle 与反射算子](docs/oracle.md)。
 
 ## 量子傅里叶变换
 

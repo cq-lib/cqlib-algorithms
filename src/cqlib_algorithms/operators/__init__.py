@@ -13,6 +13,15 @@
 """Operator subpackage for algorithmic quantum building blocks."""
 
 from . import arithmetic
+from .oracle import (
+    BitFlipOracle,
+    BooleanFunction,
+    BooleanVectorFunction,
+    GeneralStateReflection,
+    GroverDiffusion,
+    PhaseOracle,
+    ZeroStateReflection,
+)
 from .state_preparation import (
     AmplitudeEncoding,
     AngleEncoding,
@@ -33,12 +42,18 @@ __all__ = [
     "ArbitraryStatePreparation",
     "BasisEncoding",
     "BasisStateInitialization",
+    "BitFlipOracle",
+    "BooleanFunction",
+    "BooleanVectorFunction",
     "FeatureMapPreparation",
     "GHZStatePreparation",
+    "GeneralStateReflection",
+    "GroverDiffusion",
+    "PhaseOracle",
     "ProductStatePreparation",
     "SparseAmplitudeEncoding",
     "UniformSuperposition",
     "UserCircuitPreparation",
+    "ZeroStateReflection",
     "arithmetic",
 ]
-

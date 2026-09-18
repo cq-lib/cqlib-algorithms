@@ -1,0 +1,62 @@
+# This code is part of Cqlib.
+#
+# (C) Copyright China Telecom Quantum Group 2026
+#
+# This code is licensed under the Apache License, Version 2.0. You may
+# obtain a copy of this license in the LICENSE.txt file in the root directory
+# of this source tree or at http://www.apache.org/licenses/LICENSE-2.0.
+#
+# Any modifications or derivative works of this code must retain this
+# copyright notice, and modified files need to carry a notice indicating
+# that they have been altered from the originals.
+
+"""Reflection about the all-zero computational-basis state."""
+
+from __future__ import annotations
+
+import math
+from dataclasses import dataclass
+
+from cqlib import Circuit
+from cqlib.circuit.gates import StandardGate
+
+
+@dataclass(frozen=True, slots=True)
+class ZeroStateReflection:
+    """Construct ``R0 = 2|0...0><0...0| - I`` exactly.
+
+    The global phase is part of this contract and is retained explicitly; the
+    returned circuit is not merely equivalent up to global phase.
+
+    Args:
+        num_qubits: Positive number of reflected qubits.
+
+    Raises:
+        TypeError: If ``num_qubits`` is not an integer or is a Boolean.
+        ValueError: If ``num_qubits`` is not positive.
+    """
+
+    num_qubits: int
+
+    def __post_init__(self) -> None:
+        if isinstance(self.num_qubits, bool) or not isinstance(self.num_qubits, int):
+            raise TypeError("num_qubits must be an integer")
+        if self.num_qubits <= 0:
+            raise ValueError("num_qubits must be greater than zero")
+
+    def build_circuit(self) -> Circuit:
+        """Build and return a fresh exact zero-state reflection circuit."""
+        circuit = Circuit(self.num_qubits)
+        for qubit in range(self.num_qubits):
+            circuit.x(qubit)
+
+        if self.num_qubits == 1:
+            circuit.z(0)
+        else:
+            controlled_z = StandardGate.Z.control(self.num_qubits - 1)
+            circuit.append_mc_gate(controlled_z, list(range(self.num_qubits)))
+
+        for qubit in range(self.num_qubits - 1, -1, -1):
+            circuit.x(qubit)
+        circuit.set_global_phase(math.pi)
+        return circuit
