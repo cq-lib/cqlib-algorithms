@@ -13,6 +13,34 @@
 """Operator subpackage for algorithmic quantum building blocks."""
 
 from . import arithmetic
+from .ansatz import (
+    BaseAnsatz,
+    EfficientSU2Ansatz,
+    HardwareEfficientAnsatz,
+    PauliTwoDesignAnsatz,
+    QAOACostEvolution,
+    QAOAMixerEvolution,
+    RealAmplitudesAnsatz,
+    TwoLocalAnsatz,
+)
+from .estimator import SamplingEstimator, StatevectorEstimator
+from .measurement import (
+    CommutingObservableGrouping,
+    MeasurementGroup,
+    MeasurementPlan,
+    PauliGroupingStrategy,
+    PauliMeasurementPlanner,
+)
+from .oracle import (
+    BitFlipOracle,
+    BooleanFunction,
+    BooleanVectorFunction,
+    GeneralStateReflection,
+    GroverDiffusion,
+    PhaseOracle,
+    ZeroStateReflection,
+)
+from .sampler import BackendSampler, StatevectorSampler
 from .state_preparation import (
     AmplitudeEncoding,
     AngleEncoding,
@@ -33,12 +61,35 @@ __all__ = [
     "ArbitraryStatePreparation",
     "BasisEncoding",
     "BasisStateInitialization",
+    "BaseAnsatz",
+    "BackendSampler",
+    "BitFlipOracle",
+    "CommutingObservableGrouping",
+    "EfficientSU2Ansatz",
+    "BooleanFunction",
+    "BooleanVectorFunction",
     "FeatureMapPreparation",
     "GHZStatePreparation",
+    "GeneralStateReflection",
+    "HardwareEfficientAnsatz",
+    "MeasurementGroup",
+    "MeasurementPlan",
+    "GroverDiffusion",
+    "PhaseOracle",
     "ProductStatePreparation",
+    "PauliTwoDesignAnsatz",
+    "PauliGroupingStrategy",
+    "PauliMeasurementPlanner",
+    "QAOACostEvolution",
+    "QAOAMixerEvolution",
+    "RealAmplitudesAnsatz",
+    "SamplingEstimator",
     "SparseAmplitudeEncoding",
+    "StatevectorEstimator",
+    "StatevectorSampler",
+    "TwoLocalAnsatz",
     "UniformSuperposition",
     "UserCircuitPreparation",
+    "ZeroStateReflection",
     "arithmetic",
 ]
-

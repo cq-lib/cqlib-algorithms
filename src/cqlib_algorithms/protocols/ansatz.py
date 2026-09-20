@@ -22,9 +22,10 @@ from cqlib.circuit import Circuit
 class Ansatz(ABC):
     """Nominal base class for variational parameterized circuit families.
 
-    Implementations must inherit from this class and implement its four
-    abstract methods. Runtime ``isinstance`` checks therefore express actual
-    membership in the ansatz hierarchy.
+    Implementations must inherit from this class and satisfy its four abstract
+    methods. Library-provided components do so through the shared
+    ``BaseAnsatz`` template implementation. Runtime ``isinstance`` checks
+    therefore express actual membership in the ansatz hierarchy.
 
     ``Ansatz`` and
     :class:`cqlib_algorithms.protocols.state_preparation.StatePreparation`
