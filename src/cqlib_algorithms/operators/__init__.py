@@ -13,6 +13,15 @@
 """Operator subpackage for algorithmic quantum building blocks."""
 
 from . import arithmetic
+from .ansatz import (
+    EfficientSU2Ansatz,
+    HardwareEfficientAnsatz,
+    PauliTwoDesignAnsatz,
+    QAOACostEvolution,
+    QAOAMixerEvolution,
+    RealAmplitudesAnsatz,
+    TwoLocalAnsatz,
+)
 from .oracle import (
     BitFlipOracle,
     BooleanFunction,
@@ -43,15 +52,22 @@ __all__ = [
     "BasisEncoding",
     "BasisStateInitialization",
     "BitFlipOracle",
+    "EfficientSU2Ansatz",
     "BooleanFunction",
     "BooleanVectorFunction",
     "FeatureMapPreparation",
     "GHZStatePreparation",
     "GeneralStateReflection",
+    "HardwareEfficientAnsatz",
     "GroverDiffusion",
     "PhaseOracle",
     "ProductStatePreparation",
+    "PauliTwoDesignAnsatz",
+    "QAOACostEvolution",
+    "QAOAMixerEvolution",
+    "RealAmplitudesAnsatz",
     "SparseAmplitudeEncoding",
+    "TwoLocalAnsatz",
     "UniformSuperposition",
     "UserCircuitPreparation",
     "ZeroStateReflection",

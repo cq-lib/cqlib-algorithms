@@ -14,7 +14,7 @@
 
 from importlib import import_module
 
-from cqlib_algorithms.protocols import StatePreparation
+from cqlib_algorithms.protocols import Ansatz, StatePreparation
 
 
 def test_state_preparation_operators_are_exported_from_functional_packages():
@@ -58,3 +58,22 @@ def test_oracle_operators_are_exported_from_functional_packages():
     assert expected | set(state_preparation.__all__) <= set(operators.__all__)
     for name in expected:
         assert getattr(operators, name) is getattr(oracle, name)
+
+
+def test_ansatz_operators_are_exported_from_functional_packages():
+    operators = import_module("cqlib_algorithms.operators")
+    ansatz = import_module("cqlib_algorithms.operators.ansatz")
+    expected = {
+        "EfficientSU2Ansatz",
+        "HardwareEfficientAnsatz",
+        "PauliTwoDesignAnsatz",
+        "QAOACostEvolution",
+        "QAOAMixerEvolution",
+        "RealAmplitudesAnsatz",
+        "TwoLocalAnsatz",
+    }
+    assert expected <= set(operators.__all__)
+    assert set(ansatz.__all__) == expected
+    for name in expected:
+        assert getattr(operators, name) is getattr(ansatz, name)
+        assert issubclass(getattr(ansatz, name), Ansatz)

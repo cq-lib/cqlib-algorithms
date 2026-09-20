@@ -2,8 +2,8 @@
 
 面向 Cqlib 的量子算法组件库。支持 Python 3.10+，使用 uv 管理依赖、pytest 测试，
 采用 Apache-2.0 开源协议。当前提供第一批公共组件协议、请求与结果数据结构，以及
-首批状态制备、数据编码组件、布尔 Oracle 与反射算子，以及可复用的量子傅里叶
-变换线路构造器。
+首批状态制备、数据编码组件、变分拟设、QAOA 演化层、布尔 Oracle 与反射算子，
+以及可复用的量子傅里叶变换线路构造器。
 
 ## 目录
 
@@ -21,6 +21,14 @@ src/cqlib_algorithms/
 │   ├── estimator.py
 │   └── gradient.py
 ├── operators/
+│   ├── ansatz/
+│   │   ├── two_local_ansatz.py
+│   │   ├── real_amplitudes_ansatz.py
+│   │   ├── efficient_su2_ansatz.py
+│   │   ├── hardware_efficient_ansatz.py
+│   │   ├── pauli_two_design_ansatz.py
+│   │   ├── qaoa_cost_evolution.py
+│   │   └── qaoa_mixer_evolution.py
 │   ├── oracle/
 │   │   ├── boolean_function.py
 │   │   ├── boolean_vector_function.py
@@ -44,6 +52,7 @@ src/cqlib_algorithms/
 └── algorithms/
 tests/protocols/
 tests/operators/state_preparation/
+tests/operators/ansatz/
 docs/development.md
 AGENTS.md
 pyproject.toml
@@ -101,6 +110,25 @@ from cqlib_algorithms import (
 
 完整接口、数值约定、综合方法和已知 Core 边界见
 [状态制备与数据编码组件](docs/state_preparation.md)。
+
+## Ansatz 与 QAOA 演化层组件
+
+具体实现从 `cqlib_algorithms.operators` 或
+`cqlib_algorithms.operators.ansatz` 导入：
+
+- TwoLocal 系列：`TwoLocalAnsatz`、`RealAmplitudesAnsatz`、
+  `EfficientSU2Ansatz`、`HardwareEfficientAnsatz`。
+- 随机线路：`PauliTwoDesignAnsatz`。
+- QAOA 单层构件：`QAOACostEvolution`、`QAOAMixerEvolution`。
+
+TwoLocal 系列委托 Cqlib Core 的 `TwoLocal`，并统一采用“旋转层、量子比特、旋转门
+位置”的参数顺序。Pauli two-design 在构造时冻结随机 Pauli 轴；QAOA 组件分别表示
+单个成本哈密顿量演化层和混合哈密顿量演化层，并对传入 Hamiltonian 做防御性复制。
+UCCSD 与 k-UpCCGSD 因当前 Core 尚缺少必要的费米算子和映射能力而暂不提供。
+
+完整接口、线路结构、参数约定、理论来源和 Core 能力边界见
+[Ansatz 与 QAOA 演化层组件](docs/ansatz.md)及
+[UCC 类 Ansatz 的 Core 能力缺口](docs/ansatz-core-gap-report.md)。
 
 ## 布尔 Oracle 与反射算子
 

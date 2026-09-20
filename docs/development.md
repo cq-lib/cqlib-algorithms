@@ -68,3 +68,21 @@
   重置、动态控制及 Core 当前不能求逆的三量子比特以上数值酉门会被拒绝。
 - 数值组件忽略合法字符串 `prefix`，Core 参数化编码及 Feature Map 使用它命名符号；
   User Circuit 保留用户原有符号名，不进行重命名。
+
+## Ansatz 实现约定
+
+- 每个公共拟设或演化层独占一个模块，显式继承 `Ansatz`；Core 中标记为 final 的
+  `TwoLocal`、`PauliEvolutionAnsatz` 等类型仅通过组合和委托复用。
+- `num_qubits` 必须为正整数，`reps` 必须为非负整数，且 `bool` 不作为整数接受；
+  组件在构造时完成输入复制、随机配置冻结和验证，重复构建返回独立线路。
+- TwoLocal 系列参数顺序固定为旋转层、量子比特、旋转门位置。旋转门仅接受未绑定
+  `RX`、`RY`、`RZ`，纠缠门仅接受未绑定 `CX`、`CY`、`CZ`；拓扑使用 Core
+  `EntanglementTopology` 并由 Core 继续验证自定义边。
+- `PauliTwoDesignAnsatz` 在构造时抽样并冻结随机轴，使用 `RY(pi/4)` 初始层、
+  `RX`/`RY`/`RZ` 参数层和 even/odd 最近邻 `CZ` brickwork。测试固定 seed 的
+  操作快照，同时用独立矩阵验证，而不要求与其他框架共享随机数序列。
+- QAOA 成本层和混合层分别使用 `{prefix}_gamma` 与 `{prefix}_beta`，防御性复制
+  Hamiltonian，并委托 Core `PauliEvolutionAnsatz`。单层组件不隐式添加初态或组合
+  为完整 QAOA。
+- UCCSD 与 k-UpCCGSD 在具备经过评审的费米算子、参考态、激发枚举和映射器前不建
+  占位实现；相关 Core 能力边界记录在 `docs/ansatz-core-gap-report.md`。
