@@ -2,8 +2,8 @@
 
 面向 Cqlib 的量子算法组件库。支持 Python 3.10+，使用 uv 管理依赖、pytest 测试，
 采用 Apache-2.0 开源协议。当前提供第一批公共组件协议、请求与结果数据结构，以及
-首批状态制备、数据编码组件、变分拟设、QAOA 演化层、布尔 Oracle 与反射算子，
-以及可复用的量子傅里叶变换线路构造器。
+首批状态制备、数据编码组件、变分拟设、QAOA 演化层、布尔 Oracle、反射算子、
+同步采样器，以及可复用的量子傅里叶变换线路构造器。
 
 ## 目录
 
@@ -37,6 +37,9 @@ src/cqlib_algorithms/
 │   │   ├── zero_state_reflection.py
 │   │   ├── general_state_reflection.py
 │   │   └── grover_diffusion.py
+│   ├── sampler/
+│   │   ├── statevector_sampler.py
+│   │   └── backend_sampler.py
 │   └── state_preparation/
 │       ├── basis_state_initialization.py
 │       ├── uniform_superposition.py
@@ -53,6 +56,7 @@ src/cqlib_algorithms/
 tests/protocols/
 tests/operators/state_preparation/
 tests/operators/ansatz/
+tests/operators/sampler/
 docs/development.md
 AGENTS.md
 pyproject.toml
@@ -129,6 +133,16 @@ UCCSD 与 k-UpCCGSD 因当前 Core 尚缺少必要的费米算子和映射能力
 完整接口、线路结构、参数约定、理论来源和 Core 能力边界见
 [Ansatz 与 QAOA 演化层组件](docs/ansatz.md)及
 [UCC 类 Ansatz 的 Core 能力缺口](docs/ansatz-core-gap-report.md)。
+
+## Sampler 组件
+
+`StatevectorSampler` 使用 Cqlib 态矢量模拟器执行有限-shot 本地采样；
+`BackendSampler` 通过外部同步执行回调连接具体后端。两者均实现批量 `Sampler`
+契约，在私有线路副本上添加测量，并保持请求中的量子比特顺序，不负责平台认证、
+异步任务管理或测量误差缓解。
+
+接口、结果语义、端序约定和边界条件见
+[Sampler 实现](docs/sampler.md)。
 
 ## 布尔 Oracle 与反射算子
 

@@ -31,6 +31,7 @@ from .oracle import (
     PhaseOracle,
     ZeroStateReflection,
 )
+from .sampler import BackendSampler, StatevectorSampler
 from .state_preparation import (
     AmplitudeEncoding,
     AngleEncoding,
@@ -51,6 +52,7 @@ __all__ = [
     "ArbitraryStatePreparation",
     "BasisEncoding",
     "BasisStateInitialization",
+    "BackendSampler",
     "BitFlipOracle",
     "EfficientSU2Ansatz",
     "BooleanFunction",
@@ -67,6 +69,7 @@ __all__ = [
     "QAOAMixerEvolution",
     "RealAmplitudesAnsatz",
     "SparseAmplitudeEncoding",
+    "StatevectorSampler",
     "TwoLocalAnsatz",
     "UniformSuperposition",
     "UserCircuitPreparation",

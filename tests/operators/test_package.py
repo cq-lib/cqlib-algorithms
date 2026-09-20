@@ -14,7 +14,7 @@
 
 from importlib import import_module
 
-from cqlib_algorithms.protocols import Ansatz, StatePreparation
+from cqlib_algorithms.protocols import Ansatz, Sampler, StatePreparation
 
 
 def test_state_preparation_operators_are_exported_from_functional_packages():
@@ -77,3 +77,15 @@ def test_ansatz_operators_are_exported_from_functional_packages():
     for name in expected:
         assert getattr(operators, name) is getattr(ansatz, name)
         assert issubclass(getattr(ansatz, name), Ansatz)
+
+
+def test_sampler_operators_are_exported_from_functional_packages():
+    operators = import_module("cqlib_algorithms.operators")
+    sampler = import_module("cqlib_algorithms.operators.sampler")
+    expected = {"BackendSampler", "StatevectorSampler"}
+
+    assert expected <= set(operators.__all__)
+    assert set(sampler.__all__) == expected
+    for name in expected:
+        assert getattr(operators, name) is getattr(sampler, name)
+        assert issubclass(getattr(sampler, name), Sampler)
