@@ -14,6 +14,8 @@
 
 from __future__ import annotations
 
+from dataclasses import is_dataclass
+
 import numpy as np
 import pytest
 from cqlib import Circuit, Qubit
@@ -92,3 +94,13 @@ def test_zero_state_reflection_rejects_non_integer_counts(num_qubits):
 def test_zero_state_reflection_rejects_non_positive_counts(num_qubits):
     with pytest.raises(ValueError, match="greater than zero"):
         ZeroStateReflection(num_qubits)
+
+
+def test_zero_state_reflection_is_a_slotted_component_with_read_only_config():
+    reflection = ZeroStateReflection(2)
+
+    assert not is_dataclass(reflection)
+    assert not hasattr(reflection, "__dict__")
+    assert reflection.num_qubits == 2
+    with pytest.raises(AttributeError):
+        reflection.num_qubits = 3  # type: ignore[misc]

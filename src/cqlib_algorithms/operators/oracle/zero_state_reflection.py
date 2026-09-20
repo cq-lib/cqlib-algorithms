@@ -15,13 +15,11 @@
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
 
 from cqlib import Circuit
 from cqlib.circuit.gates import StandardGate
 
 
-@dataclass(frozen=True, slots=True)
 class ZeroStateReflection:
     """Construct ``R0 = 2|0...0><0...0| - I`` exactly.
 
@@ -36,13 +34,21 @@ class ZeroStateReflection:
         ValueError: If ``num_qubits`` is not positive.
     """
 
-    num_qubits: int
+    __slots__ = ("_num_qubits",)
 
-    def __post_init__(self) -> None:
-        if isinstance(self.num_qubits, bool) or not isinstance(self.num_qubits, int):
+    _num_qubits: int
+
+    def __init__(self, num_qubits: int) -> None:
+        if isinstance(num_qubits, bool) or not isinstance(num_qubits, int):
             raise TypeError("num_qubits must be an integer")
-        if self.num_qubits <= 0:
+        if num_qubits <= 0:
             raise ValueError("num_qubits must be greater than zero")
+        self._num_qubits = num_qubits
+
+    @property
+    def num_qubits(self) -> int:
+        """Return the number of reflected qubits."""
+        return self._num_qubits
 
     def build_circuit(self) -> Circuit:
         """Build and return a fresh exact zero-state reflection circuit."""

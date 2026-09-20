@@ -68,10 +68,12 @@ XOR 的相位回踢与选择 `k = 2**i` 的 Phase Oracle 一致；多个被选�
 `0..n-1`。测量、重置、延时、动态控制等不能静态求逆的操作被拒绝。
 参数化线路可先构建反射，再通过 Core 的 `assign_parameters` 绑定。
 
-`GeneralStateReflection` 是带 slots 的普通线路封装类，不是 dataclass；
-公开属性只读，内部线路不直接暴露。不提供 dataclass 的值比较或 `replace()`
-语义。需要派生配置时，取得 `state_preparation` 的独立副本，修改后传入新的
-`GeneralStateReflection`；已有对象及其线路快照不受影响。
+`BooleanFunction` 和 `BooleanVectorFunction` 是冻结的 dataclass 值对象。
+`BitFlipOracle`、`PhaseOracle`、`ZeroStateReflection`、`GroverDiffusion` 和
+`GeneralStateReflection` 则是带 slots、公开配置只读的普通行为组件，不提供
+dataclass 的值比较或 `replace()` 语义。`GeneralStateReflection` 的内部线路不直接
+暴露；需要派生配置时，取得 `state_preparation` 的独立副本，修改后传入新的
+`GeneralStateReflection`，已有对象及其线路快照不受影响。
 
 `GeneralStateReflection.from_state_preparation(component, prefix=...)` 也接受
 显式继承本库 `StatePreparation` 抽象基类的组件：先调用 `validate()`，再核验

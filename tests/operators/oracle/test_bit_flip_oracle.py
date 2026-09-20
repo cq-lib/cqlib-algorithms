@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import itertools
 import math
+from dataclasses import is_dataclass
 
 import numpy as np
 import pytest
@@ -255,3 +256,14 @@ def test_vector_bit_flip_composes_positionally_onto_non_contiguous_qubits():
 def test_bit_flip_oracle_rejects_non_boolean_function():
     with pytest.raises(TypeError, match="function must be a BooleanFunction"):
         BitFlipOracle(object())  # type: ignore[arg-type]
+
+
+def test_bit_flip_oracle_is_a_slotted_component_with_read_only_configuration():
+    function = BooleanFunction.from_marked_states(1, [1])
+    oracle = BitFlipOracle(function)
+
+    assert not is_dataclass(oracle)
+    assert not hasattr(oracle, "__dict__")
+    assert oracle.function is function
+    with pytest.raises(AttributeError):
+        oracle.function = BooleanFunction.from_marked_states(1, [0])  # type: ignore[misc]

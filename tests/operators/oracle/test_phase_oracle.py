@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import inspect
 import itertools
-from dataclasses import FrozenInstanceError
+from dataclasses import is_dataclass
 
 import numpy as np
 import pytest
@@ -239,12 +239,15 @@ def test_phase_oracle_mask_is_keyword_only_and_configuration_is_immutable():
     oracle = PhaseOracle(function)
 
     assert signature.parameters["output_mask"].kind is inspect.Parameter.KEYWORD_ONLY
+    assert not is_dataclass(oracle)
     assert oracle.output_mask == 1
     assert not hasattr(oracle, "__dict__")
     with pytest.raises(TypeError):
         PhaseOracle(function, 1)  # type: ignore[misc]
-    with pytest.raises(FrozenInstanceError):
+    with pytest.raises(AttributeError):
         oracle.output_mask = 0  # type: ignore[misc]
+    with pytest.raises(AttributeError):
+        oracle.function = BooleanFunction.from_marked_states(1, [0])  # type: ignore[misc]
 
 
 @pytest.mark.parametrize("output_mask", [True, 1.5, "1"])

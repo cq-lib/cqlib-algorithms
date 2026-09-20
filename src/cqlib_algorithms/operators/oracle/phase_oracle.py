@@ -15,7 +15,6 @@
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
 
 from cqlib import Circuit
 from cqlib.circuit.gates import StandardGate
@@ -24,7 +23,6 @@ from .boolean_function import BooleanFunction
 from .boolean_vector_function import BooleanVectorFunction
 
 
-@dataclass(frozen=True, slots=True, init=False)
 class PhaseOracle:
     """Construct a scalar or output-mask parity phase oracle.
 
@@ -45,8 +43,10 @@ class PhaseOracle:
         ValueError: If the mask is missing or outside its valid range.
     """
 
-    function: BooleanFunction | BooleanVectorFunction
-    output_mask: int
+    __slots__ = ("_function", "_output_mask")
+
+    _function: BooleanFunction | BooleanVectorFunction
+    _output_mask: int
 
     def __init__(
         self,
@@ -74,8 +74,18 @@ class PhaseOracle:
             if not 1 <= mask < 1 << function.num_outputs:
                 raise ValueError("output_mask must select one or more existing outputs")
 
-        object.__setattr__(self, "function", function)
-        object.__setattr__(self, "output_mask", mask)
+        self._function = function
+        self._output_mask = mask
+
+    @property
+    def function(self) -> BooleanFunction | BooleanVectorFunction:
+        """Return the immutable Boolean function marked by the oracle."""
+        return self._function
+
+    @property
+    def output_mask(self) -> int:
+        """Return the selected output-bit mask."""
+        return self._output_mask
 
     def build_circuit(self) -> Circuit:
         """Build and return a fresh phase-oracle circuit."""

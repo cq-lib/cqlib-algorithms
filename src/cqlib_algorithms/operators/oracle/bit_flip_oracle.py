@@ -14,8 +14,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-
 from cqlib import Circuit
 from cqlib.circuit.gates import StandardGate
 
@@ -23,7 +21,6 @@ from .boolean_function import BooleanFunction
 from .boolean_vector_function import BooleanVectorFunction
 
 
-@dataclass(frozen=True, slots=True)
 class BitFlipOracle:
     """Construct ``U_F|x>|y> = |x>|y xor F(x)>`` without ancillas.
 
@@ -38,13 +35,21 @@ class BitFlipOracle:
         TypeError: If ``function`` is not a supported Boolean function.
     """
 
-    function: BooleanFunction | BooleanVectorFunction
+    __slots__ = ("_function",)
 
-    def __post_init__(self) -> None:
-        if not isinstance(self.function, (BooleanFunction, BooleanVectorFunction)):
+    _function: BooleanFunction | BooleanVectorFunction
+
+    def __init__(self, function: BooleanFunction | BooleanVectorFunction) -> None:
+        if not isinstance(function, (BooleanFunction, BooleanVectorFunction)):
             raise TypeError(
                 "function must be a BooleanFunction or BooleanVectorFunction"
             )
+        self._function = function
+
+    @property
+    def function(self) -> BooleanFunction | BooleanVectorFunction:
+        """Return the immutable Boolean function computed by the oracle."""
+        return self._function
 
     def build_circuit(self) -> Circuit:
         """Build and return a fresh bit-flip-oracle circuit."""
