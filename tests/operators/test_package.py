@@ -63,7 +63,7 @@ def test_oracle_operators_are_exported_from_functional_packages():
 def test_ansatz_operators_are_exported_from_functional_packages():
     operators = import_module("cqlib_algorithms.operators")
     ansatz = import_module("cqlib_algorithms.operators.ansatz")
-    expected = {
+    concrete = {
         "EfficientSU2Ansatz",
         "HardwareEfficientAnsatz",
         "PauliTwoDesignAnsatz",
@@ -72,11 +72,14 @@ def test_ansatz_operators_are_exported_from_functional_packages():
         "RealAmplitudesAnsatz",
         "TwoLocalAnsatz",
     }
+    expected = concrete | {"BaseAnsatz"}
     assert expected <= set(operators.__all__)
     assert set(ansatz.__all__) == expected
-    for name in expected:
+    assert operators.BaseAnsatz is ansatz.BaseAnsatz
+    for name in concrete:
         assert getattr(operators, name) is getattr(ansatz, name)
         assert issubclass(getattr(ansatz, name), Ansatz)
+        assert issubclass(getattr(ansatz, name), ansatz.BaseAnsatz)
 
 
 def test_measurement_operators_are_exported_from_functional_packages():

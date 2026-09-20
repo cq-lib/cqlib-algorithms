@@ -21,18 +21,17 @@ from typing import final
 from cqlib.circuit import Circuit, Parameter
 from cqlib.circuit.gates import StandardGate
 
-from ...protocols.ansatz import Ansatz
 from ._validation import (
     validate_positive_qubit_count,
-    validate_prefix,
     validate_repetitions,
 )
+from .base_ansatz import BaseAnsatz
 
 _PAULI_ROTATIONS = (StandardGate.RX, StandardGate.RY, StandardGate.RZ)
 
 
 @final
-class PauliTwoDesignAnsatz(Ansatz):
+class PauliTwoDesignAnsatz(BaseAnsatz):
     """Build a random-axis Pauli two-design-style variational circuit.
 
     Construction begins with ``RY(pi / 4)`` on every qubit. It then applies
@@ -56,8 +55,10 @@ class PauliTwoDesignAnsatz(Ansatz):
         reps: int = 3,
         seed: int | None = None,
     ) -> None:
-        self._num_qubits = validate_positive_qubit_count(num_qubits)
-        self._reps = validate_repetitions(reps)
+        validate_positive_qubit_count(num_qubits)
+        validate_repetitions(reps)
+        self._num_qubits = num_qubits
+        self._reps = reps
         if seed is not None:
             if isinstance(seed, bool) or not isinstance(seed, int):
                 raise TypeError("seed must be an integer or None")
@@ -71,7 +72,7 @@ class PauliTwoDesignAnsatz(Ansatz):
         )
         self.validate()
 
-    def validate(self) -> None:
+    def _validate_configuration(self) -> None:
         """Validate the frozen Pauli two-design configuration."""
         expected = self._num_qubits * (self._reps + 1)
         if len(self._rotation_axes) != expected:
@@ -79,9 +80,8 @@ class PauliTwoDesignAnsatz(Ansatz):
         if any(gate not in _PAULI_ROTATIONS for gate in self._rotation_axes):
             raise ValueError("rotation-axis snapshot contains an invalid gate")
 
-    def build_circuit(self, prefix: str) -> Circuit:
+    def _build_circuit(self, prefix: str) -> Circuit:
         """Return a new circuit with parameters ordered by layer and qubit."""
-        validate_prefix(prefix)
         circuit = Circuit(self._num_qubits)
         for qubit in range(self._num_qubits):
             circuit.ry(qubit, math.pi / 4)
@@ -107,10 +107,10 @@ class PauliTwoDesignAnsatz(Ansatz):
 
         return circuit
 
-    def num_parameters(self) -> int:
+    def _parameter_count(self) -> int:
         """Return one parameter per qubit in every rotation layer."""
         return self._num_qubits * (self._reps + 1)
 
-    def num_qubits(self) -> int:
+    def _qubit_count(self) -> int:
         """Return the configured register width."""
         return self._num_qubits

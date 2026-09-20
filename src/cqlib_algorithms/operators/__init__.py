@@ -14,6 +14,7 @@
 
 from . import arithmetic
 from .ansatz import (
+    BaseAnsatz,
     EfficientSU2Ansatz,
     HardwareEfficientAnsatz,
     PauliTwoDesignAnsatz,
@@ -59,6 +60,7 @@ __all__ = [
     "ArbitraryStatePreparation",
     "BasisEncoding",
     "BasisStateInitialization",
+    "BaseAnsatz",
     "BackendSampler",
     "BitFlipOracle",
     "CommutingObservableGrouping",

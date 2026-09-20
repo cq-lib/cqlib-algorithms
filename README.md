@@ -22,6 +22,7 @@ src/cqlib_algorithms/
 │   └── gradient.py
 ├── operators/
 │   ├── ansatz/
+│   │   ├── base_ansatz.py
 │   │   ├── two_local_ansatz.py
 │   │   ├── real_amplitudes_ansatz.py
 │   │   ├── efficient_su2_ansatz.py
@@ -125,13 +126,18 @@ from cqlib_algorithms import (
 具体实现从 `cqlib_algorithms.operators` 或
 `cqlib_algorithms.operators.ansatz` 导入：
 
+- 公共基础实现：`BaseAnsatz`。
 - TwoLocal 系列：`TwoLocalAnsatz`、`RealAmplitudesAnsatz`、
   `EfficientSU2Ansatz`、`HardwareEfficientAnsatz`。
 - 随机线路：`PauliTwoDesignAnsatz`。
 - QAOA 单层构件：`QAOACostEvolution`、`QAOAMixerEvolution`。
 
-TwoLocal 系列委托 Cqlib Core 的 `TwoLocal`，并统一采用“旋转层、量子比特、旋转门
-位置”的参数顺序。Pauli two-design 在构造时冻结随机 Pauli 轴；QAOA 组件分别表示
+`BaseAnsatz` 继承公共 `Ansatz` 抽象契约，集中执行 prefix、配置和 Core 线路校验，
+并直接提供线路构建及计数的公共代理实现；普通组件只保留构造配置，特殊组件只覆盖
+自身不同的行为。
+TwoLocal 系列委托 Cqlib Core 的 `TwoLocal`，
+并统一采用“旋转层、量子比特、旋转门位置”的参数顺序。Pauli two-design 在构造时
+冻结随机 Pauli 轴；QAOA 组件分别表示
 单个成本哈密顿量演化层和混合哈密顿量演化层，并对传入 Hamiltonian 做防御性复制。
 UCCSD 与 k-UpCCGSD 因当前 Core 尚缺少必要的费米算子和映射能力而暂不提供。
 

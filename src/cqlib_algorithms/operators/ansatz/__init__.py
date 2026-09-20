@@ -10,8 +10,9 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Reusable variational ansatz and QAOA-layer components."""
+"""Reusable variational ansatz components."""
 
+from .base_ansatz import BaseAnsatz
 from .efficient_su2_ansatz import EfficientSU2Ansatz
 from .hardware_efficient_ansatz import HardwareEfficientAnsatz
 from .pauli_two_design_ansatz import PauliTwoDesignAnsatz
@@ -21,6 +22,7 @@ from .real_amplitudes_ansatz import RealAmplitudesAnsatz
 from .two_local_ansatz import TwoLocalAnsatz
 
 __all__ = [
+    "BaseAnsatz",
     "EfficientSU2Ansatz",
     "HardwareEfficientAnsatz",
     "PauliTwoDesignAnsatz",

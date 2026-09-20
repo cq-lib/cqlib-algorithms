@@ -16,22 +16,21 @@ from __future__ import annotations
 
 from typing import final
 
-from cqlib.circuit import Circuit
 from cqlib.circuit.ansatz import EntanglementTopology
 from cqlib.circuit.gates import StandardGate
 
-from ...protocols.ansatz import Ansatz
+from .base_ansatz import BaseAnsatz
 from .two_local_ansatz import TwoLocalAnsatz
 
 
 @final
-class EfficientSU2Ansatz(Ansatz):
+class EfficientSU2Ansatz(BaseAnsatz):
     """Two-local ansatz specialized to RY/RZ rotations and CX entanglers.
 
     Parameters are ordered by rotation layer, qubit, then RY followed by RZ.
     """
 
-    __slots__ = ("_inner",)
+    __slots__ = ()
 
     def __init__(
         self,
@@ -41,28 +40,14 @@ class EfficientSU2Ansatz(Ansatz):
         entanglement: EntanglementTopology | None = None,
         skip_final_rotation_layer: bool = False,
     ) -> None:
-        self._inner = TwoLocalAnsatz(
-            num_qubits,
-            reps=reps,
-            rotation_gates=(StandardGate.RY, StandardGate.RZ),
-            entanglement_gate=StandardGate.CX,
-            entanglement=entanglement,
-            skip_final_rotation_layer=skip_final_rotation_layer,
+        super().__init__(
+            TwoLocalAnsatz(
+                num_qubits,
+                reps=reps,
+                rotation_gates=(StandardGate.RY, StandardGate.RZ),
+                entanglement_gate=StandardGate.CX,
+                entanglement=entanglement,
+                skip_final_rotation_layer=skip_final_rotation_layer,
+            )
         )
         self.validate()
-
-    def validate(self) -> None:
-        """Validate the delegated two-local configuration."""
-        self._inner.validate()
-
-    def build_circuit(self, prefix: str) -> Circuit:
-        """Return a new RY/RZ/CX efficient-SU(2) circuit."""
-        return self._inner.build_circuit(prefix)
-
-    def num_parameters(self) -> int:
-        """Return the number of RY and RZ parameter slots."""
-        return self._inner.num_parameters()
-
-    def num_qubits(self) -> int:
-        """Return the configured register width."""
-        return self._inner.num_qubits()

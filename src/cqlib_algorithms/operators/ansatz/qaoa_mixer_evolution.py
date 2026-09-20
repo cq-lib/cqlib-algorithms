@@ -15,14 +15,14 @@
 from __future__ import annotations
 
 import copy
-from typing import final
+from typing import cast, final
 
 from cqlib.circuit import Circuit
 from cqlib.circuit.ansatz import EvolutionStrategy, PauliEvolutionAnsatz
 from cqlib.qis import Hamiltonian, Pauli, PauliString
 
-from ...protocols.ansatz import Ansatz
-from ._validation import validate_positive_qubit_count, validate_prefix
+from ._validation import validate_positive_qubit_count
+from .base_ansatz import BaseAnsatz
 
 
 def _x_mixer(num_qubits: int) -> Hamiltonian:
@@ -35,7 +35,7 @@ def _x_mixer(num_qubits: int) -> Hamiltonian:
 
 
 @final
-class QAOAMixerEvolution(Ansatz):
+class QAOAMixerEvolution(BaseAnsatz):
     """Build one QAOA mixer layer ``exp(-i beta H_M)``.
 
     By default, ``H_M`` is the transverse-field mixer ``sum_i X_i``. A custom
@@ -43,7 +43,7 @@ class QAOAMixerEvolution(Ansatz):
     ``num_qubits``. Caller-owned Hamiltonians and strategies are copied.
     """
 
-    __slots__ = ("_inner",)
+    __slots__ = ()
 
     def __init__(
         self,
@@ -52,36 +52,30 @@ class QAOAMixerEvolution(Ansatz):
         mixer_operator: Hamiltonian | None = None,
         strategy: EvolutionStrategy | None = None,
     ) -> None:
-        width = validate_positive_qubit_count(num_qubits)
+        validate_positive_qubit_count(num_qubits)
         if mixer_operator is not None and not isinstance(mixer_operator, Hamiltonian):
             raise TypeError("mixer_operator must be a Hamiltonian or None")
         if strategy is not None and not isinstance(strategy, EvolutionStrategy):
             raise TypeError("strategy must be an EvolutionStrategy or None")
 
-        mixer = _x_mixer(width) if mixer_operator is None else mixer_operator.copy()
-        if mixer.num_qubits != width:
+        mixer = (
+            _x_mixer(num_qubits) if mixer_operator is None else mixer_operator.copy()
+        )
+        if mixer.num_qubits != num_qubits:
             raise ValueError("mixer_operator must act on num_qubits qubits")
 
         frozen_strategy = (
             EvolutionStrategy.auto(1) if strategy is None else copy.copy(strategy)
         )
         inner = PauliEvolutionAnsatz(mixer).with_strategy(frozen_strategy)
-        self._inner = inner
+        super().__init__(inner)
         self.validate()
 
-    def validate(self) -> None:
-        """Validate the delegated Hamiltonian-evolution configuration."""
-        self._inner.validate()
-
-    def build_circuit(self, prefix: str) -> Circuit:
+    def _build_circuit(self, prefix: str) -> Circuit:
         """Return a new mixer-evolution circuit using ``{prefix}_beta``."""
-        validate_prefix(prefix)
-        return self._inner.with_time_param_name(f"{prefix}_beta").build_circuit(prefix)
+        inner = cast(PauliEvolutionAnsatz, self._inner)
+        return inner.with_time_param_name(f"{prefix}_beta").build_circuit(prefix)
 
-    def num_parameters(self) -> int:
+    def _parameter_count(self) -> int:
         """Return one mixer-evolution parameter slot."""
         return 1
-
-    def num_qubits(self) -> int:
-        """Return the mixer Hamiltonian width."""
-        return self._inner.num_qubits()

@@ -17,24 +17,22 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import final
 
-from cqlib.circuit import Circuit
 from cqlib.circuit.ansatz import EntanglementTopology, TwoLocal
 from cqlib.circuit.gates import StandardGate
 
-from ...protocols.ansatz import Ansatz
 from ._validation import (
     resolve_entanglement,
     validate_boolean,
     validate_entanglement_gate,
     validate_positive_qubit_count,
-    validate_prefix,
     validate_repetitions,
-    validate_rotation_gates,
+    snapshot_rotation_gates,
 )
+from .base_ansatz import BaseAnsatz
 
 
 @final
-class TwoLocalAnsatz(Ansatz):
+class TwoLocalAnsatz(BaseAnsatz):
     """Alternate local rotations with topology-defined entanglement layers.
 
     Parameter slots are ordered by rotation layer, qubit, and then position in
@@ -43,7 +41,7 @@ class TwoLocalAnsatz(Ansatz):
     ``skip_final_rotation_layer`` is true.
     """
 
-    __slots__ = ("_inner",)
+    __slots__ = ()
 
     def __init__(
         self,
@@ -55,38 +53,20 @@ class TwoLocalAnsatz(Ansatz):
         entanglement: EntanglementTopology | None = None,
         skip_final_rotation_layer: bool = False,
     ) -> None:
-        width = validate_positive_qubit_count(num_qubits)
-        repetitions = validate_repetitions(reps)
-        rotations = validate_rotation_gates(rotation_gates)
-        entangler = validate_entanglement_gate(entanglement_gate)
+        validate_positive_qubit_count(num_qubits)
+        validate_repetitions(reps)
+        rotations = snapshot_rotation_gates(rotation_gates)
+        validate_entanglement_gate(entanglement_gate)
         topology = resolve_entanglement(entanglement)
-        skip_final = validate_boolean(
-            skip_final_rotation_layer, "skip_final_rotation_layer"
-        )
+        validate_boolean(skip_final_rotation_layer, "skip_final_rotation_layer")
 
-        self._inner = (
-            TwoLocal(width)
-            .reps(repetitions)
+        inner = (
+            TwoLocal(num_qubits)
+            .reps(reps)
             .rotation_gates(list(rotations))
-            .entanglement_gate(entangler)
+            .entanglement_gate(entanglement_gate)
             .entanglement(topology)
-            .skip_final_rotation_layer(skip_final)
+            .skip_final_rotation_layer(skip_final_rotation_layer)
         )
+        super().__init__(inner)
         self.validate()
-
-    def validate(self) -> None:
-        """Validate the delegated Core two-local configuration."""
-        self._inner.validate()
-
-    def build_circuit(self, prefix: str) -> Circuit:
-        """Return a new two-local circuit with ``prefix``-named parameters."""
-        validate_prefix(prefix)
-        return self._inner.build_circuit(prefix)
-
-    def num_parameters(self) -> int:
-        """Return the number of logical rotation-parameter slots."""
-        return self._inner.num_parameters()
-
-    def num_qubits(self) -> int:
-        """Return the configured register width."""
-        return self._inner.num_qubits()

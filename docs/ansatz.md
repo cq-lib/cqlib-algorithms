@@ -2,11 +2,15 @@
 
 本文档描述 `cqlib_algorithms.operators.ansatz` 中已经实现的公共组件。实现及测试基于
 Cqlib Core `develop` 提交 `c3abe91a4adf804b6fb3304fab6ec3dc24a4ad85` 的
-Python 接口。所有组件均显式继承 `cqlib_algorithms.protocols.Ansatz`，每次构建均
-返回独立的 `Circuit`。
+Python 接口。所有具体组件均显式继承公共实现类 `BaseAnsatz`，后者继承
+`cqlib_algorithms.protocols.Ansatz`；每次构建均返回独立的 `Circuit`。
 
 ## 公共约定
 
+- `BaseAnsatz` 统一实现 `validate()`、`build_circuit()`、`num_parameters()` 与
+  `num_qubits()`，并直接提供内部构建器的默认代理钩子。普通组件只保留构造配置，
+  只有行为不同或自行构建线路的组件才覆盖相应钩子。
+- 公共构建流程统一校验 prefix、重新校验组件配置和 Core 线路。
 - `num_qubits` 必须是大于零的 Python `int`，`bool` 不作为整数接受。
 - `reps` 必须是非负 Python `int`。`reps=0` 是合法退化配置。
 - `prefix` 必须是字符串，用于为新建的符号参数命名。

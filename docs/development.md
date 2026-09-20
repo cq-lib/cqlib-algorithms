@@ -71,8 +71,11 @@
 
 ## Ansatz 实现约定
 
-- 每个公共拟设或演化层独占一个模块，显式继承 `Ansatz`；Core 中标记为 final 的
-  `TwoLocal`、`PauliEvolutionAnsatz` 等类型仅通过组合和委托复用。
+- `Ansatz` 只定义公共抽象契约；`BaseAnsatz` 提供公共实现，统一 prefix、配置和 Core
+  线路校验，并直接代理兼容的内部构建器。每个公共拟设或演化层独占一个模块并继承
+  `BaseAnsatz`，仅在语义确有差异时覆盖受保护钩子。
+- Core 中标记为 final 的 `TwoLocal`、`PauliEvolutionAnsatz` 等类型仅通过组合和委托
+  复用，不通过继承绕过 Core 类型边界。
 - `num_qubits` 必须为正整数，`reps` 必须为非负整数，且 `bool` 不作为整数接受；
   组件在构造时完成输入复制、随机配置冻结和验证，重复构建返回独立线路。
 - TwoLocal 系列参数顺序固定为旋转层、量子比特、旋转门位置。旋转门仅接受未绑定

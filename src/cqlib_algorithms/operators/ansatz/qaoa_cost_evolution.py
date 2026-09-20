@@ -15,18 +15,17 @@
 from __future__ import annotations
 
 import copy
-from typing import final
+from typing import cast, final
 
 from cqlib.circuit import Circuit
 from cqlib.circuit.ansatz import EvolutionStrategy, PauliEvolutionAnsatz
 from cqlib.qis import Hamiltonian
 
-from ...protocols.ansatz import Ansatz
-from ._validation import validate_prefix
+from .base_ansatz import BaseAnsatz
 
 
 @final
-class QAOACostEvolution(Ansatz):
+class QAOACostEvolution(BaseAnsatz):
     """Build one QAOA cost layer ``exp(-i gamma H_C)``.
 
     The Hamiltonian and optional evolution strategy are copied at
@@ -35,7 +34,7 @@ class QAOACostEvolution(Ansatz):
     uses the configured product-formula strategy.
     """
 
-    __slots__ = ("_inner",)
+    __slots__ = ()
 
     def __init__(
         self,
@@ -56,22 +55,14 @@ class QAOACostEvolution(Ansatz):
         inner = PauliEvolutionAnsatz(cost_operator.copy()).with_strategy(
             frozen_strategy
         )
-        self._inner = inner
+        super().__init__(inner)
         self.validate()
 
-    def validate(self) -> None:
-        """Validate the delegated Hamiltonian-evolution configuration."""
-        self._inner.validate()
-
-    def build_circuit(self, prefix: str) -> Circuit:
+    def _build_circuit(self, prefix: str) -> Circuit:
         """Return a new cost-evolution circuit using ``{prefix}_gamma``."""
-        validate_prefix(prefix)
-        return self._inner.with_time_param_name(f"{prefix}_gamma").build_circuit(prefix)
+        inner = cast(PauliEvolutionAnsatz, self._inner)
+        return inner.with_time_param_name(f"{prefix}_gamma").build_circuit(prefix)
 
-    def num_parameters(self) -> int:
+    def _parameter_count(self) -> int:
         """Return one cost-evolution parameter slot."""
         return 1
-
-    def num_qubits(self) -> int:
-        """Return the cost Hamiltonian width."""
-        return self._inner.num_qubits()

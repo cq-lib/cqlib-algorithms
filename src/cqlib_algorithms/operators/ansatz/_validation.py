@@ -24,22 +24,20 @@ _ROTATION_GATES = (StandardGate.RX, StandardGate.RY, StandardGate.RZ)
 _ENTANGLEMENT_GATES = (StandardGate.CX, StandardGate.CY, StandardGate.CZ)
 
 
-def validate_positive_qubit_count(num_qubits: int) -> int:
-    """Return a validated positive qubit count."""
+def validate_positive_qubit_count(num_qubits: int) -> None:
+    """Validate a positive qubit count."""
     if isinstance(num_qubits, bool) or not isinstance(num_qubits, int):
         raise TypeError("num_qubits must be an integer")
     if num_qubits <= 0:
         raise ValueError("num_qubits must be greater than zero")
-    return num_qubits
 
 
-def validate_repetitions(reps: int) -> int:
-    """Return a validated non-negative repetition count."""
+def validate_repetitions(reps: int) -> None:
+    """Validate a non-negative repetition count."""
     if isinstance(reps, bool) or not isinstance(reps, int):
         raise TypeError("reps must be an integer")
     if reps < 0:
         raise ValueError("reps must be non-negative")
-    return reps
 
 
 def validate_prefix(prefix: str) -> None:
@@ -48,14 +46,13 @@ def validate_prefix(prefix: str) -> None:
         raise TypeError("prefix must be a string")
 
 
-def validate_boolean(value: bool, name: str) -> bool:
-    """Return a validated Boolean option."""
+def validate_boolean(value: bool, name: str) -> None:
+    """Validate a Boolean option."""
     if not isinstance(value, bool):
         raise TypeError(f"{name} must be a boolean")
-    return value
 
 
-def validate_rotation_gates(
+def snapshot_rotation_gates(
     gates: Sequence[StandardGate],
 ) -> tuple[StandardGate, ...]:
     """Validate and freeze unbound one-parameter rotation gates."""
@@ -70,13 +67,12 @@ def validate_rotation_gates(
     return frozen
 
 
-def validate_entanglement_gate(gate: StandardGate) -> StandardGate:
+def validate_entanglement_gate(gate: StandardGate) -> None:
     """Validate an unbound Core two-qubit entangling gate."""
     if not isinstance(gate, StandardGate):
         raise TypeError("entanglement_gate must be a StandardGate")
     if gate not in _ENTANGLEMENT_GATES:
         raise ValueError("entanglement_gate must be an unbound CX, CY, or CZ")
-    return gate
 
 
 def resolve_entanglement(
