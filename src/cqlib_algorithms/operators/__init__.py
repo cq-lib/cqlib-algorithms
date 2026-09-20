@@ -23,6 +23,7 @@ from .ansatz import (
     RealAmplitudesAnsatz,
     TwoLocalAnsatz,
 )
+from .estimator import SamplingEstimator, StatevectorEstimator
 from .measurement import (
     CommutingObservableGrouping,
     MeasurementGroup,
@@ -82,7 +83,9 @@ __all__ = [
     "QAOACostEvolution",
     "QAOAMixerEvolution",
     "RealAmplitudesAnsatz",
+    "SamplingEstimator",
     "SparseAmplitudeEncoding",
+    "StatevectorEstimator",
     "StatevectorSampler",
     "TwoLocalAnsatz",
     "UniformSuperposition",

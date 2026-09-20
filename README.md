@@ -30,6 +30,9 @@ src/cqlib_algorithms/
 │   │   ├── pauli_two_design_ansatz.py
 │   │   ├── qaoa_cost_evolution.py
 │   │   └── qaoa_mixer_evolution.py
+│   ├── estimator/
+│   │   ├── statevector_estimator.py
+│   │   └── sampling_estimator.py
 │   ├── measurement/
 │   │   ├── pauli_grouping_strategy.py
 │   │   ├── commuting_observable_grouping.py
@@ -61,6 +64,7 @@ src/cqlib_algorithms/
 tests/protocols/
 tests/operators/state_preparation/
 tests/operators/ansatz/
+tests/operators/estimator/
 tests/operators/measurement/
 tests/operators/sampler/
 docs/development.md
@@ -165,6 +169,16 @@ UCCSD 与 k-UpCCGSD 因当前 Core 尚缺少必要的费米算子和映射能力
 
 接口、结果语义、端序约定和边界条件见
 [Sampler 实现](docs/sampler.md)。
+
+## Estimator 组件
+
+`StatevectorEstimator` 使用 Cqlib 态矢量精确计算 Hermitian Pauli 与 Hamiltonian
+期望值；`SamplingEstimator` 注入任意符合公共契约的 `Sampler`，以有限 shots 的
+局域 Pauli 基测量估计期望值及估计量方差。两者均实现批量 `Estimator` 契约，重新
+核验可变请求对象，并保持参数绑定、线路量子比特插入顺序和结果顺序。
+
+精确和采样路径的数学定义、shots 分配、方差语义、Core 兼容处理与边界条件见
+[Estimator 实现](docs/estimator.md)。
 
 ## 布尔 Oracle 与反射算子
 
