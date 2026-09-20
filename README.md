@@ -3,7 +3,7 @@
 面向 Cqlib 的量子算法组件库。支持 Python 3.10+，使用 uv 管理依赖、pytest 测试，
 采用 Apache-2.0 开源协议。当前提供第一批公共组件协议、请求与结果数据结构，以及
 首批状态制备、数据编码组件、变分拟设、QAOA 演化层、布尔 Oracle、反射算子、
-同步采样器，以及可复用的量子傅里叶变换线路构造器。
+Pauli 测量规划与同步采样器，以及可复用的量子傅里叶变换线路构造器。
 
 ## 目录
 
@@ -29,6 +29,10 @@ src/cqlib_algorithms/
 │   │   ├── pauli_two_design_ansatz.py
 │   │   ├── qaoa_cost_evolution.py
 │   │   └── qaoa_mixer_evolution.py
+│   ├── measurement/
+│   │   ├── pauli_grouping_strategy.py
+│   │   ├── commuting_observable_grouping.py
+│   │   └── pauli_measurement_planner.py
 │   ├── oracle/
 │   │   ├── boolean_function.py
 │   │   ├── boolean_vector_function.py
@@ -56,6 +60,7 @@ src/cqlib_algorithms/
 tests/protocols/
 tests/operators/state_preparation/
 tests/operators/ansatz/
+tests/operators/measurement/
 tests/operators/sampler/
 docs/development.md
 AGENTS.md
@@ -133,6 +138,17 @@ UCCSD 与 k-UpCCGSD 因当前 Core 尚缺少必要的费米算子和映射能力
 完整接口、线路结构、参数约定、理论来源和 Core 能力边界见
 [Ansatz 与 QAOA 演化层组件](docs/ansatz.md)及
 [UCC 类 Ansatz 的 Core 能力缺口](docs/ansatz-core-gap-report.md)。
+
+## Measurement 组件
+
+`PauliGroupingStrategy` 提供稳定的 none/QWC 分组，
+`CommutingObservableGrouping` 提供全局对易关系的代数分组，
+`PauliMeasurementPlanner` 根据 QWC 分组生成未测量的局域基变换线路。规划结果保留
+原始 Pauli 项位置、相位和量子比特插入顺序；终端测量由 Sampler 在私有线路副本上
+添加，避免重复测量并保持两层契约一致。
+
+接口、分组规则、端序和 Sampler 组合方式见
+[Pauli 测量规划与分组](docs/measurement.md)。
 
 ## Sampler 组件
 

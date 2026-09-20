@@ -22,6 +22,13 @@ from .ansatz import (
     RealAmplitudesAnsatz,
     TwoLocalAnsatz,
 )
+from .measurement import (
+    CommutingObservableGrouping,
+    MeasurementGroup,
+    MeasurementPlan,
+    PauliGroupingStrategy,
+    PauliMeasurementPlanner,
+)
 from .oracle import (
     BitFlipOracle,
     BooleanFunction,
@@ -54,6 +61,7 @@ __all__ = [
     "BasisStateInitialization",
     "BackendSampler",
     "BitFlipOracle",
+    "CommutingObservableGrouping",
     "EfficientSU2Ansatz",
     "BooleanFunction",
     "BooleanVectorFunction",
@@ -61,10 +69,14 @@ __all__ = [
     "GHZStatePreparation",
     "GeneralStateReflection",
     "HardwareEfficientAnsatz",
+    "MeasurementGroup",
+    "MeasurementPlan",
     "GroverDiffusion",
     "PhaseOracle",
     "ProductStatePreparation",
     "PauliTwoDesignAnsatz",
+    "PauliGroupingStrategy",
+    "PauliMeasurementPlanner",
     "QAOACostEvolution",
     "QAOAMixerEvolution",
     "RealAmplitudesAnsatz",

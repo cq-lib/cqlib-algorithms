@@ -79,6 +79,23 @@ def test_ansatz_operators_are_exported_from_functional_packages():
         assert issubclass(getattr(ansatz, name), Ansatz)
 
 
+def test_measurement_operators_are_exported_from_functional_packages():
+    operators = import_module("cqlib_algorithms.operators")
+    measurement = import_module("cqlib_algorithms.operators.measurement")
+    expected = {
+        "CommutingObservableGrouping",
+        "MeasurementGroup",
+        "MeasurementPlan",
+        "PauliGroupingStrategy",
+        "PauliMeasurementPlanner",
+    }
+
+    assert expected <= set(operators.__all__)
+    assert set(measurement.__all__) == expected
+    for name in expected:
+        assert getattr(operators, name) is getattr(measurement, name)
+
+
 def test_sampler_operators_are_exported_from_functional_packages():
     operators = import_module("cqlib_algorithms.operators")
     sampler = import_module("cqlib_algorithms.operators.sampler")
