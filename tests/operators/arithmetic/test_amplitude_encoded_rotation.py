@@ -17,12 +17,14 @@ Scope of this module:
     and the ``ExactReciprocal`` function-table rotation class are tested
     against the design document
     ``docs/design_md/test_design/aef_test_cases_1.md``.  The
-    ``LinearPauliRotation`` and ``PolynomialPauliRotation`` classes are
-    intentionally omitted from this suite because their synthesis strategy
-    is *not* a pure alpha table look-up; they will be rewritten via
-    controlled-monomial construction and re-added once ready.
+    ``ArbitraryFunction`` multiplexed table is covered by cases
+    ``MUX-FUNC-001 .. MUX-FUNC-005`` and a dedicated validation battery.
+    ``LinearPauliRotation`` is cross-checked against
+    ``ArbitraryFunction`` in ``MUX-FUNC-005`` as the reference (golden)
+    table look-up.
 
-Coverage map (each tag references a section / case ID in the doc):
+Coverage map (each tag references a section / case ID in the doc or the
+``MUX-FUNC-nnn`` table at the top of the source-code listing file):
 
     * Section 0   Helper infrastructure for statevector / gate counting
     * Section 1   Level 0 — ``UCRY`` Gate (UCRY-001 .. UCRY-005)
@@ -38,11 +40,14 @@ Coverage map (each tag references a section / case ID in the doc):
                        INT-005 gate-count scaling curve;
                        INT-004 Qiskit comparison is skipped if Qiskit absent)
     * Section 6   UCRX / UCRZ — symmetric sanity checks vs UCRY
+    * Section 7   ArbitraryFunction validation & regular properties
+    * Section 8   Multiplexed function table (MUX-FUNC-001 .. MUX-FUNC-005)
 """
 
 from __future__ import annotations
 
 import math
+import warnings
 from collections import Counter
 
 import numpy as np
@@ -51,10 +56,12 @@ from cqlib.qis.state import Statevector
 
 from cqlib import Circuit
 from cqlib_algorithms.operators.arithmetic import (
+    ArbitraryFunction,
+    ExactReciprocal,
+    LinearPauliRotation,
     UCRX,
     UCRY,
     UCRZ,
-    ExactReciprocal,
 )
 
 AMPLITUDE_ATOL = 1e-10
@@ -825,6 +832,369 @@ class TestUCRXUCRZSymmetry:
             amp_1 = amp_1_of(a)  # type: ignore[misc]
             _assert_branch_amplitudes(
                 circ, n, x, amp_0=amp_0, amp_1=amp_1
+            )
+
+
+# ---------------------------------------------------------------------------
+# Section 7.  ArbitraryFunction — validation & regular properties -----------
+# ---------------------------------------------------------------------------
+
+
+class TestArbitraryFunctionValidation:
+    """Regularity checks for the multiplexed ArbitraryFunction table.
+
+    Covers V1–V12 from the design-notes validation matrix plus a couple
+    of positive-path sanity tests (alpha defensive copy, shape
+    invariants, etc.).
+    """
+
+    # -- V1 / V2: num_state_qubits --------------------------------------
+
+    @staticmethod
+    @pytest.mark.parametrize("bad", [True, False, "2", 3.5, -1, 0])
+    def test_v1_v2_num_state_qubits(bad: object) -> None:
+        """V1: bool / non-int / negative / zero must raise."""
+
+        with pytest.raises((TypeError, ValueError)):
+            ArbitraryFunction(bad, np.ones(4))  # type: ignore[arg-type]
+
+    # -- V3 / V4 / V5: values ------------------------------------------
+
+    @staticmethod
+    def test_v3_values_not_sequence() -> None:
+        with pytest.raises(TypeError):
+            ArbitraryFunction(2, "0.1 0.2 0.3 0.4")  # type: ignore[arg-type]
+
+    @staticmethod
+    def test_v4_values_wrong_length() -> None:
+        with pytest.raises(ValueError, match="length must equal 2"):
+            ArbitraryFunction(2, np.ones(3))
+
+    @staticmethod
+    def test_v5_values_nonfinite() -> None:
+        with pytest.raises(ValueError, match="finite floats"):
+            ArbitraryFunction(2, np.array([0.0, 1.0, float("nan"), 2.0]))
+
+    # -- V6: mode ------------------------------------------------------
+
+    @staticmethod
+    @pytest.mark.parametrize("bad_mode", [1, None, True, "ampl", "angle_mode"])
+    def test_v6_invalid_mode(bad_mode: object) -> None:
+        with pytest.raises((TypeError, ValueError)):
+            ArbitraryFunction(
+                2, np.ones(4), mode=bad_mode  # type: ignore[arg-type]
+            )
+
+    # -- V7: axis ------------------------------------------------------
+
+    @staticmethod
+    @pytest.mark.parametrize("bad_axis", [1, None, "w", "yy", True])
+    def test_v7_invalid_axis(bad_axis: object) -> None:
+        with pytest.raises((TypeError, ValueError)):
+            ArbitraryFunction(
+                2, np.ones(4), axis=bad_axis  # type: ignore[arg-type]
+            )
+
+    # -- V8 / V9: amplitude mode domain --------------------------------
+
+    @staticmethod
+    def test_v8_amplitude_strictly_outside() -> None:
+        """max|f| = 1.1 strictly exceeds 1 + 1e-8."""
+
+        fs = np.array([1.1, 0.5, 0.3, 0.2])
+        with pytest.raises(ValueError, match="amplitude-encoding domain"):
+            ArbitraryFunction(2, fs, mode="amplitude")
+
+    @staticmethod
+    def test_v9_amplitude_within_atol_clamps() -> None:
+        """1.0000000005 is still within the tolerance band -> no error."""
+
+        fs = np.array([1.0000000005, 0.2, 0.3, 0.4])
+        op = ArbitraryFunction(2, fs, mode="amplitude")
+        assert np.max(op.values) <= 1.0 + 1e-9
+        # alpha should correspond to arcsin(1.0) = pi for the clamped entry
+        assert abs(op.alpha[0] - np.pi) < 1e-8
+
+    # -- V10: angle mode oversized -> UserWarning + mod 2pi -------------
+
+    @staticmethod
+    def test_v10_angle_oversized_emits_warning() -> None:
+        fs = np.array([0.0, 1.0, 100.0, -3.0])
+        with pytest.warns(UserWarning, match="exceed 2"):
+            op = ArbitraryFunction(2, fs, mode="angle")
+        # all entries must now be in [0, 2pi)
+        assert np.all(op.alpha >= 0.0) and np.all(op.alpha < 2 * np.pi)
+        # entry that was exactly 100 -> must equal 100 mod 2pi
+        expected_100 = float(np.mod(100.0, 2 * np.pi))
+        assert abs(op.alpha[2] - expected_100) < 1e-12
+
+    # -- V11: defensive copy of alpha / values ------------------------
+
+    @staticmethod
+    def test_v11_alpha_values_defensive_copy() -> None:
+        fs = np.array([0.1, 0.2, 0.3, 0.4])
+        op = ArbitraryFunction(2, fs, mode="amplitude")
+        a1 = op.alpha
+        v1 = op.values
+        a1[0] = 999.0  # type: ignore[call-overload]
+        v1[0] = -0.5  # type: ignore[call-overload]
+        assert abs(op.alpha[0] - 2.0 * math.asin(0.1)) < 1e-12
+        assert abs(op.values[0] - 0.1) < 1e-12
+
+    # -- V12: shape invariants ----------------------------------------
+
+    @staticmethod
+    @pytest.mark.parametrize("n", [1, 2, 3])
+    def test_v12_shape_invariants(n: int) -> None:
+        fs = np.zeros(1 << n, dtype=float)
+        op = ArbitraryFunction(n, fs, mode="angle")
+        assert op.num_state_qubits == n
+        assert op.num_qubits == n + 1
+        assert op.result_qubit_index == n
+        assert op.control_register_indices == list(range(n))
+        circ = op.build_circuit()
+        assert circ.num_qubits == n + 1
+
+    # -- INT-001 style unitary + INT-004 style matrix for ArbitraryFunction
+
+    @pytest.mark.parametrize(
+        "mode,axis,n",
+        [
+            pytest.param("amplitude", "y", 2, id="ArbFunc_amp_y_n2"),
+            pytest.param("angle", "x", 2, id="ArbFunc_angle_x_n2"),
+            pytest.param("amplitude", "z", 3, id="ArbFunc_amp_z_n3"),
+            pytest.param("angle", "y", 3, id="ArbFunc_angle_y_n3"),
+        ],
+    )
+    def test_arbfunc_unitarity_and_block_diagonal(
+        self, mode: str, axis: str, n: int
+    ) -> None:
+        """U†U = I and block-diagonal Frobenius equivalence (parallel to
+        INT-001 + INT-004 for ExactReciprocal/UCR)."""
+
+        rng = np.random.default_rng(20260921 + n)
+        if mode == "amplitude":
+            fs = np.clip(rng.uniform(-1.0, 1.0, 1 << n), -1.0, 1.0)
+        else:
+            fs = rng.uniform(-np.pi, np.pi, 1 << n)
+        op = ArbitraryFunction(n, fs, mode=mode, axis=axis)  # type: ignore[arg-type]
+        circ = op.build_circuit()
+        u = _matrix_from_circuit(circ)
+        dim = u.shape[0]
+        product = u.conj().T @ u
+        np.testing.assert_allclose(
+            product,
+            np.eye(dim, dtype=np.complex128),
+            atol=UNITARITY_ATOL,
+            rtol=AMPLITUDE_RTOL,
+        )
+        u_exact = _exact_ucr_matrix(axis, op.alpha)
+        diff = float(np.linalg.norm(u - u_exact, "fro"))
+        norm = float(np.linalg.norm(u_exact, "fro")) or 1.0
+        assert diff / norm <= max(AMPLITUDE_ATOL * 1e3, 1e-8)
+
+
+# ---------------------------------------------------------------------------
+# Section 8.  Multiplexed function table (MUX-FUNC-001 .. MUX-FUNC-005) ----
+# ---------------------------------------------------------------------------
+
+
+def _assert_branch_against_alpha(
+    circuit: Circuit, n: int, axis: str, alpha: np.ndarray
+) -> None:
+    """Probe every basis state ``|k>|0>`` against the block-diagonal table."""
+
+    for k, theta in enumerate(alpha):
+        r = _rot_2x2(axis, float(theta))
+        amp_0 = r[0, 0]
+        amp_1 = r[1, 0]
+        _assert_branch_amplitudes(circuit, n, k, amp_0=amp_0, amp_1=amp_1)
+
+
+class TestMultiplexedFunctionTable:
+    """Test-cases ``MUX-FUNC-001..005`` against ArbitraryFunction.
+
+    Design table recap:
+
+    MUX-FUNC-001 sin(x)                 angle    nonlinear, ± alternating
+    MUX-FUNC-002 exp(−x/4)              amplitude, auto-scaling @ test side
+    MUX-FUNC-003 sin(πx/4)·cos(πx/8)   angle    bimodal, symmetric
+    MUX-FUNC-004 step / ladder function amplitude discontinuous table
+    MUX-FUNC-005 gold-standard reference vs LinearPauliRotation (exact);
+                                         Chebyshev-style comparison is left
+                                         as a TODO-stub until a polynomial
+                                         table operator (beyond linear) is
+                                         implemented.
+    """
+
+    # -- MUX-FUNC-001 sin(x), angle mode -------------------------------
+
+    @staticmethod
+    def test_mux_func_001_sin_x_angle() -> None:
+        """``f(k) = sin(k)`` on n=3 (k ∈ [0, 7]) as angle-mode Y-rotation."""
+
+        n = 3
+        ks = np.arange(1 << n, dtype=np.float64)
+        fs = np.sin(ks)
+        op = ArbitraryFunction(n, fs, mode="angle", axis="y")
+        alpha_expected = np.mod(fs, 2 * np.pi)
+        # alpha[k] must equal the mod-2pi version of f(k) up to period;
+        # compare via sin/cos equality to avoid boundary issues.
+        np.testing.assert_allclose(
+            np.sin(op.alpha / 2.0), np.sin(alpha_expected / 2.0), atol=1e-12
+        )
+        np.testing.assert_allclose(
+            np.cos(op.alpha / 2.0), np.cos(alpha_expected / 2.0), atol=1e-12
+        )
+        circ = op.build_circuit()
+        _assert_branch_against_alpha(circ, n, "y", op.alpha)
+
+    # -- MUX-FUNC-002 exp(−x/4), amplitude + TEST-SIDE auto-scaling ---
+
+    @staticmethod
+    def test_mux_func_002_exp_decay_amplitude_autoscale() -> None:
+        """``f_raw(k) = exp(-k/4)`` on n=3.
+
+        NOTE: ``ArbitraryFunction(mode="amplitude")`` never re-scales
+        inputs (strict domain check).  The "auto scaling" requested by
+        the case is performed on the **test side** by dividing the raw
+        values by ``max|f_raw| + eps``.
+        """
+
+        n = 3
+        ks = np.arange(1 << n, dtype=np.float64)
+        f_raw = np.exp(-ks / 4.0)
+        max_abs = float(np.max(np.abs(f_raw)))
+        # Divide by (1.001 * max_abs) so every entry stays strictly below
+        # 1.0 - ~1e-3, keeping the value well inside arcsin's strict
+        # domain interior while preserving the exp decay shape.
+        scale_factor = 1.001 * max_abs
+        fs_scaled = f_raw / scale_factor
+        assert np.all(np.abs(fs_scaled) <= 0.9999)
+        op = ArbitraryFunction(n, fs_scaled, mode="amplitude", axis="y")
+        circ = op.build_circuit()
+        # the |1> amplitude after applying R_y(2·arcsin(fs)) on |0> is fs
+        for k, fk in enumerate(fs_scaled):
+            a0 = math.sqrt(max(0.0, 1.0 - fk * fk))
+            a1 = fk
+            _assert_branch_amplitudes(circ, n, k, amp_0=a0, amp_1=a1)
+
+    # -- MUX-FUNC-003 bimodal sin·cos product, angle mode --------------
+
+    @staticmethod
+    def test_mux_func_003_bimodal_product_angle() -> None:
+        """``f(k) = sin(π·k/4) · cos(π·k/8)`` on n=4 (k ∈ [0, 15])."""
+
+        n = 4
+        ks = np.arange(1 << n, dtype=np.float64)
+        fs = np.sin(np.pi * ks / 4.0) * np.cos(np.pi * ks / 8.0)
+        op = ArbitraryFunction(n, fs, mode="angle", axis="x")
+        circ = op.build_circuit()
+        _assert_branch_against_alpha(circ, n, "x", op.alpha)
+        # Symmetry spot-checks: product is 2π·8 = 16 periodic (trivial on
+        # n=4) and f(16−k) mirrors behaviour for k=1..7 vs k=9..15.
+        for k in range(1, 8):
+            fk = float(np.sin(np.pi * k / 4.0) * np.cos(np.pi * k / 8.0))
+            f2k = float(
+                np.sin(np.pi * (16 - k) / 4.0) * np.cos(np.pi * (16 - k) / 8.0)
+            )
+            # sin(4π - πk/4) = -sin(πk/4); cos(2π - πk/8) = +cos(πk/8).
+            assert abs(f2k - (-fk)) < 1e-12, (
+                f"Symmetry failure at k={k}: f(k)={fk}, f(16-k)={f2k}"
+            )
+
+    # -- MUX-FUNC-004 step function, amplitude mode --------------------
+
+    @staticmethod
+    def test_mux_func_004_step_function_amplitude() -> None:
+        """4-level step on n=3.
+
+        ``f(k) ∈ {−0.75, −0.25, +0.25, +0.75}`` for consecutive bins
+        of size 2, giving 2^3 = 8 basis states grouped into 4 plateaux.
+        """
+
+        n = 3
+        fs = np.zeros(1 << n, dtype=np.float64)
+        bins = [(-0.75, 0, 2), (-0.25, 2, 4), (0.25, 4, 6), (0.75, 6, 8)]
+        for val, lo, hi in bins:
+            fs[lo:hi] = val
+        op = ArbitraryFunction(n, fs, mode="amplitude", axis="y")
+        circ = op.build_circuit()
+        _assert_branch_against_alpha(circ, n, "y", op.alpha)
+        # Same-bin states must yield the exact same RY(2*arcsin(val)).
+        for val, lo, hi in bins:
+            expected_alpha = 2.0 * math.asin(val)
+            for k in range(lo, hi):
+                assert abs(op.alpha[k] - expected_alpha) < 1e-12, (
+                    f"k={k} alpha mismatch: got {op.alpha[k]}, "
+                    f"want {expected_alpha}"
+                )
+
+    # -- MUX-FUNC-005 gold-standard reference vs LinearPauliRotation ---
+
+    @staticmethod
+    @pytest.mark.parametrize("n", [2, 3, 4])
+    @pytest.mark.parametrize("axis", ["x", "y", "z"])
+    def test_mux_func_005_linear_gold_standard(n: int, axis: str) -> None:
+        """Linear inputs: ArbitraryFunction == LinearPauliRotation exactly.
+
+        For a linear function ``f(k) = slope * k + offset`` both
+        methods must produce the *same* block-diagonal rotation table
+        ``alpha[k]`` up to the mod-2pi folding convention, and their
+        circuits must be Frobenius-equivalent to the shared exact
+        block-diagonal matrix.
+
+        The Chebyshev / polynomial-order comparison called for by the
+        design table is left as a documented TODO because no
+        higher-order ``PolynomialPauliRotation`` operator exists yet.
+        """
+
+        slope = 0.3
+        offset = 0.2
+        ks = np.arange(1 << n, dtype=np.float64)
+        f_linear = slope * ks + offset
+
+        # Reference (multiplexed "gold"): feed the explicit table in
+        # angle mode.  Any oversized angles must also be mod 2pi on the
+        # ArbitraryFunction side so we compare the same quantities.
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", UserWarning)
+            op_ref = ArbitraryFunction(
+                n, f_linear, mode="angle", axis=axis  # type: ignore[arg-type]
+            )
+
+        # Polynomial (bit-wise linear) route.
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", UserWarning)
+            op_lin = LinearPauliRotation(
+                n, slope=slope, offset=offset, axis=axis  # type: ignore[arg-type]
+            )
+
+        # alpha tables must match mod 2pi (i.e. same point on circle).
+        np.testing.assert_allclose(
+            np.sin(op_ref.alpha / 2.0),
+            np.sin(op_lin.alpha / 2.0),
+            atol=1e-12,
+            err_msg="alpha mismatch: sin(a/2)",
+        )
+        np.testing.assert_allclose(
+            np.cos(op_ref.alpha / 2.0),
+            np.cos(op_lin.alpha / 2.0),
+            atol=1e-12,
+            err_msg="alpha mismatch: cos(a/2)",
+        )
+
+        # Block-diagonal Frobenius-equivalent for both circuits against
+        # the shared exact table.
+        u_ref = _matrix_from_circuit(op_ref.build_circuit())
+        u_lin = _matrix_from_circuit(op_lin.build_circuit())
+        u_exact = _exact_ucr_matrix(axis, op_lin.alpha)
+
+        for label, u in [("mux", u_ref), ("lin", u_lin)]:
+            diff = float(np.linalg.norm(u - u_exact, "fro"))
+            norm = float(np.linalg.norm(u_exact, "fro")) or 1.0
+            assert diff / norm <= max(AMPLITUDE_ATOL * 1e3, 1e-8), (
+                f"{label}-vs-exact rel Frobenius {diff/norm:.3e} > tol"
             )
 
 

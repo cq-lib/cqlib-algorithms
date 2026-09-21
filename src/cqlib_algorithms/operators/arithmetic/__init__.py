@@ -31,7 +31,9 @@ from .amplitude_encoded_rotation import (
     UCRX,
     UCRY,
     UCRZ,
+    ArbitraryFunction,
     ExactReciprocal,
+    LinearPauliRotation,
 )
 from .comparators import IntegerComparator
 from .multipliers import Multiplier
@@ -41,11 +43,13 @@ __all__ = [
     "UCRX",
     "UCRY",
     "UCRZ",
+    "ArbitraryFunction",
     "DraperConstantAdder",
     "ExactReciprocal",
     "FullAdder",
     "HalfAdder",
     "IntegerComparator",
+    "LinearPauliRotation",
     "ModularAdder",
     "Multiplier",
     "WeightedSum",

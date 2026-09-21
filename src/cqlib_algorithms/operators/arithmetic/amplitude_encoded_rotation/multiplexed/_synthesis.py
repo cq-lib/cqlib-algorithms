@@ -247,7 +247,9 @@ def solve_theta_from_alpha(
         of two.
     """
 
-    if isinstance(alpha, (str, bytes)) or not isinstance(alpha, (Sequence, np.ndarray)):
+    if isinstance(alpha, (str, bytes)) or not isinstance(
+        alpha, (Sequence, np.ndarray)
+    ):
         raise TypeError(
             "alpha must be a sequence of floats, got "
             f"{type(alpha).__name__}."
@@ -454,7 +456,9 @@ class _UCRBase:
                 f"num_controls must be >= 0, got {num_controls!r}."
             )
 
-        if isinstance(alpha, (str, bytes)) or not isinstance(alpha, (Sequence, np.ndarray)):
+        if isinstance(alpha, (str, bytes)) or not isinstance(
+            alpha, (Sequence, np.ndarray)
+        ):
             raise TypeError(
                 "alpha must be a sequence of floats, got "
                 f"{type(alpha).__name__}."

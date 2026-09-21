@@ -112,7 +112,9 @@ def _compute_reciprocal_alpha(
         Alpha table of length ``2**num_state_qubits`` with dtype float64.
     """
 
-    if isinstance(num_state_qubits, bool) or not isinstance(num_state_qubits, int):
+    if isinstance(num_state_qubits, bool) or not isinstance(
+        num_state_qubits, int
+    ):
         raise TypeError(
             f"num_state_qubits must be an int, got {num_state_qubits!r}."
         )
@@ -129,14 +131,10 @@ def _compute_reciprocal_alpha(
         raise ValueError(f"scaling must be finite, got {scaling!r}.")
     s = float(scaling)
     if s < 0.0:
-        raise ValueError(
-            f"scaling must be >= 0, got {s!r}."
-        )
+        raise ValueError(f"scaling must be >= 0, got {s!r}.")
 
     if not isinstance(neg_vals, bool):
-        raise TypeError(
-            f"neg_vals must be a bool, got {neg_vals!r}."
-        )
+        raise TypeError(f"neg_vals must be a bool, got {neg_vals!r}.")
 
     n = num_state_qubits
     dim = 2**n
@@ -147,8 +145,6 @@ def _compute_reciprocal_alpha(
                 "num_state_qubits must be >= 2 when neg_vals=True "
                 "(1 bit for sign + 1 bit for magnitude)."
             )
-        # Integer magnitude convention in lower (n-1) bits: normalise to
-        # f = s * 2**(n-1) / magnitude.
         norm_factor = 2 ** (n - 1)
         if s * norm_factor > 1.0 + _FPU_TOL:
             raise ValueError(
@@ -299,22 +295,14 @@ class ExactReciprocal(_FunctionalPauliRotation):
         name: str | None = None,
     ) -> None:
         super().__init__(num_state_qubits, axis=axis, name=name)
-        # Validate constructor parameters explicitly so that bad values
-        # raise immediately (before any alpha evaluation is scheduled).
         if isinstance(scaling, bool) or not isinstance(scaling, (int, float)):
-            raise TypeError(
-                f"scaling must be a float, got {scaling!r}."
-            )
+            raise TypeError(f"scaling must be a float, got {scaling!r}.")
         if not math.isfinite(float(scaling)):
             raise ValueError(f"scaling must be finite, got {scaling!r}.")
         if float(scaling) < 0.0:
-            raise ValueError(
-                f"scaling must be >= 0, got {scaling!r}."
-            )
+            raise ValueError(f"scaling must be >= 0, got {scaling!r}.")
         if not isinstance(neg_vals, bool):
-            raise TypeError(
-                f"neg_vals must be a bool, got {neg_vals!r}."
-            )
+            raise TypeError(f"neg_vals must be a bool, got {neg_vals!r}.")
         if neg_vals and num_state_qubits < 2:
             raise ValueError(
                 "num_state_qubits must be >= 2 when neg_vals=True; "
@@ -322,8 +310,6 @@ class ExactReciprocal(_FunctionalPauliRotation):
             )
         self._scaling = float(scaling)
         self._neg_vals = neg_vals
-        # Eagerly evaluate alpha once so that invalid parameter
-        # combinations are reported at construction time.
         self._alpha_cached = _compute_reciprocal_alpha(
             self._num_state_qubits,
             self._scaling,

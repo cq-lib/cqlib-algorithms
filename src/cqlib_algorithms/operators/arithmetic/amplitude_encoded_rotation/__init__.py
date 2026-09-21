@@ -10,31 +10,42 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Amplitude-encoded rotation operators.
+"""Amplitude-encoded functional rotations on an auxiliary qubit.
 
-Subpackage exposing three uniformly controlled Pauli rotation gates
-(UCRX / UCRY / UCRZ) and function-table controlled rotation families
-built on top of them:
+This package is organised into two subpackages that expose the same
+high-level shape (a control register plus an auxiliary result qubit)
+but use fundamentally different circuit families:
 
-* :class:`ExactReciprocal` — ``1 / x`` amplitude encoding (HHL-style
-  eigenvalue inversion).
-
-The synthesis helpers live inside the private ``_synthesis`` module and
-are not exported.  Each axis gate and each functional rotation exposes
-its own alpha-table construction as a module-private helper rather than
-promoting those routines to the generic synthesis layer.
+* :mod:`.multiplexed` — uniformly controlled (UCR / Gray-code)
+  multiplexors.  Families here build an arbitrary per-control table
+  with ``O(2**n)`` gates and include the base gates :class:`UCRX`,
+  :class:`UCRY`, :class:`UCRZ` together with the higher-level tables
+  :class:`ExactReciprocal` (HHL eigenvalue inversion) and
+  :class:`ArbitraryFunction` (user-supplied function table, two
+  encoding modes).
+* :mod:`.polynomial` — bit-wise controlled-rotation constructions
+  whose gate count scales **polynomially** with the control-register
+  bit width instead of exponentially.  Currently implements
+  :class:`LinearPauliRotation` (``theta(k) = slope*k + offset`` via
+  ``O(n)`` single-controlled gates).
 """
 
 from __future__ import annotations
 
-from .exact_reciprocal import ExactReciprocal
-from .ucrx import UCRX
-from .ucry import UCRY
-from .ucrz import UCRZ
+from .multiplexed import (
+    UCRX,
+    UCRY,
+    UCRZ,
+    ArbitraryFunction,
+    ExactReciprocal,
+)
+from .polynomial import LinearPauliRotation
 
 __all__ = [
     "UCRX",
     "UCRY",
     "UCRZ",
+    "ArbitraryFunction",
     "ExactReciprocal",
+    "LinearPauliRotation",
 ]
