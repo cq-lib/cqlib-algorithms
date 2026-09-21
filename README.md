@@ -3,9 +3,9 @@
 面向 Cqlib 的量子算法组件库。支持 Python 3.10+，使用 uv 管理依赖、pytest 测试，
 采用 Apache-2.0 开源协议。当前提供第一批公共组件协议、请求与结果数据结构，以及
 首批状态制备、数据编码组件、变分拟设、QAOA 演化层、布尔 Oracle、反射算子、
-Pauli 测量规划、同步采样器、期望值估计器、梯度、量子几何与经典优化组件，
-线路纯态保真度估计组件，
-以及可复用的量子傅里叶变换线路构造器。
+Pauli 测量规划、同步采样器、期望值估计器、梯度、量子几何、经典优化组件、
+线路纯态保真度估计组件、Grover 复合迭代单元，以及可复用的量子傅里叶变换
+线路构造器。
 
 ## 目录
 
@@ -33,6 +33,9 @@ src/cqlib_algorithms/
 │   │   ├── pauli_two_design_ansatz.py
 │   │   ├── qaoa_cost_evolution.py
 │   │   └── qaoa_mixer_evolution.py
+│   ├── composite/
+│   │   ├── __init__.py
+│   │   └── grover_operator.py
 │   ├── estimator/
 │   │   ├── statevector_estimator.py
 │   │   └── sampling_estimator.py
@@ -81,6 +84,7 @@ src/cqlib_algorithms/
 tests/protocols/
 tests/operators/state_preparation/
 tests/operators/ansatz/
+tests/operators/composite/
 tests/operators/estimator/
 tests/operators/gradient/
 tests/operators/optimizer/
@@ -258,6 +262,35 @@ phase = PhaseOracle(function, output_mask=0b11).build_circuit()
 测量或后台任务。有限真值表综合需要指数规模的经典预处理，不提供高效黑盒 Oracle
 或任意多输出 OR 标记。接口、边界、数学约定与可运行示例见
 [布尔 Oracle 与反射算子](docs/oracle.md)。
+
+## 复合算子组件
+
+具体实现从 `cqlib_algorithms.operators` 或
+`cqlib_algorithms.operators.composite` 导入：
+
+- `GroverOperator`：相位 Oracle 与扩散/态反射组合的 Grover 迭代单元 `Q = D O`。
+
+```python
+from cqlib_algorithms.operators import GroverOperator
+from cqlib_algorithms.operators.oracle import BooleanFunction, PhaseOracle
+
+function = BooleanFunction.from_truth_table([False] * 7 + [True])
+oracle = PhaseOracle(function).build_circuit()
+iteration = GroverOperator(oracle).build_circuit()
+```
+
+`GroverOperator` 接受可静态求逆的相位 Oracle 线路，默认在与 Oracle 相同量子比特
+集合上构造标准 Grover 扩散。`state_preparation` 用自定义 `A` 代替默认
+Hadamard 制备；全量子比特反射时这是关于 `A|0...0>` 的单态反射。
+`reflection_qubits` 是真子集时，实际算子为 `A S_{0,R} A†`，关于
+`A range(P_{0,R})` 子空间反射，不再是单态反射。线路时间顺序为 Oracle、
+`A†`、零子空间反射、`A`，保持矩阵意义上的精确全局相位。它不选择
+迭代次数、不执行测量，也不提供完整搜索算法。
+组件只验证 Oracle 线路合法且可静态求逆，不做指数规模的矩阵分析来证明其
+必然为对角相位 Oracle；Oracle 语义的正确性由调用方负责。
+
+接口、数学约定与边界条件见
+[复合算子组件](docs/composite.md)。
 
 ## 量子傅里叶变换
 

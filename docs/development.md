@@ -89,3 +89,20 @@
   为完整 QAOA。
 - UCCSD 与 k-UpCCGSD 在具备经过评审的费米算子、参考态、激发枚举和映射器前不建
   占位实现；相关 Core 能力边界记录在 `docs/ansatz-core-gap-report.md`。
+
+## 复合算子实现约定
+
+- 复合算子独占 `operators/composite/` 功能子包，由已冻结的基础算子组合而成，
+  不重复实现基础组件的线路构造；每个公共复合算子独占一个模块。
+- `GroverOperator` 构建单次 Grover 迭代 `Q = D_R O`：Oracle 线路在前，
+  `D_R = A S_{0,R} A†` 在后，其中 `S_{0,R} = 2P_{0,R}-I`，`P_{0,R}` 投影
+  到 `R` 中所有量子比特为零的子空间。时间顺序为 Oracle、`A†`、
+  零子空间反射、`A`；采用不带前置负号的相位约定。
+- Oracle 与 `state_preparation` 必须是合法且可静态求逆的 Cqlib `Circuit`，
+  构造时复制并归一化到连续量子比特 `0..n-1`；非酉或动态操作被拒绝。
+- 默认扩散在 `reflection_qubits` 子集上作用 Hadamard 与零态反射；子集为全部
+  搜索量子比特时必须与 `GroverDiffusion` 的矩阵一致，并且仅此时是关于
+  单一制备态的秩一反射。真子集路径是关于 `A range(P_{0,R})` 的子空间
+  反射。`reflection_qubits` 构造时校验、排序并冻结，不允许为空、
+  重复、越界或布尔值；重复值被拒绝，不会被静默去重。
+- 复合算子不选择迭代次数、不执行测量或采样，也不承诺查询复杂度。
