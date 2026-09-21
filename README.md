@@ -3,7 +3,8 @@
 面向 Cqlib 的量子算法组件库。支持 Python 3.10+，使用 uv 管理依赖、pytest 测试，
 采用 Apache-2.0 开源协议。当前提供第一批公共组件协议、请求与结果数据结构，以及
 首批状态制备、数据编码组件、变分拟设、QAOA 演化层、布尔 Oracle、反射算子、
-Pauli 测量规划与同步采样器，以及可复用的量子傅里叶变换线路构造器。
+Pauli 测量规划、同步采样器、期望值估计器、梯度与量子几何组件，以及可复用的
+量子傅里叶变换线路构造器。
 
 ## 目录
 
@@ -33,6 +34,14 @@ src/cqlib_algorithms/
 │   ├── estimator/
 │   │   ├── statevector_estimator.py
 │   │   └── sampling_estimator.py
+│   ├── gradient/
+│   │   ├── finite_difference.py
+│   │   ├── lin_comb.py
+│   │   ├── parameter_shift.py
+│   │   ├── spsa.py
+│   │   ├── qfi.py
+│   │   ├── qgt.py
+│   │   └── natural_gradient.py
 │   ├── measurement/
 │   │   ├── pauli_grouping_strategy.py
 │   │   ├── commuting_observable_grouping.py
@@ -65,6 +74,7 @@ tests/protocols/
 tests/operators/state_preparation/
 tests/operators/ansatz/
 tests/operators/estimator/
+tests/operators/gradient/
 tests/operators/measurement/
 tests/operators/sampler/
 docs/development.md
@@ -180,6 +190,15 @@ UCCSD 与 k-UpCCGSD 因当前 Core 尚缺少必要的费米算子和映射能力
 精确和采样路径的数学定义、shots 分配、方差语义、Core 兼容处理与边界条件见
 [Estimator 实现](docs/estimator.md)。
 
+## 梯度与量子几何组件
+
+`cqlib_algorithms.operators.gradient` 提供参数移位、线性组合、有限差分和 SPSA
+梯度，以及态矢量 QGT、QFI 与自然梯度方向。实现通过公共 `Estimator` 契约批量
+评估，不绑定具体执行后端；QGT/QFI 使用 Cqlib 态矢量和生成元插入路径。
+
+完整数学定义、支持门、边界行为和使用示例见
+[梯度、量子几何张量与自然梯度组件](docs/gradient.md)。
+
 ## 布尔 Oracle 与反射算子
 
 `BooleanFunction` 表示单输出布尔函数；`BooleanVectorFunction` 表示至少两个输出且
@@ -235,7 +254,7 @@ approximate = QFT(
 
 ## 开发
 
-运行依赖为 `cqlib>=1.4.0b1,<1.5`。首版协议已针对 Cqlib `develop`
+运行依赖为 `cqlib>=1.4.0b1,<1.5` 和 `numpy>=2.1.0`。首版协议已针对 Cqlib `develop`
 分支提交 `c3abe91a4adf804b6fb3304fab6ec3dc24a4ad85` 的 Python 接口核验。
 SDK 尚未发布期间由开发者手动安装。
 使用已有 `.venv` 时跳过创建环境的步骤：

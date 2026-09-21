@@ -14,7 +14,13 @@
 
 from importlib import import_module
 
-from cqlib_algorithms.protocols import Ansatz, Estimator, Sampler, StatePreparation
+from cqlib_algorithms.protocols import (
+    Ansatz,
+    Estimator,
+    Gradient,
+    Sampler,
+    StatePreparation,
+)
 
 
 def test_state_preparation_operators_are_exported_from_functional_packages():
@@ -121,3 +127,28 @@ def test_estimator_operators_are_exported_from_functional_packages():
     for name in expected:
         assert getattr(operators, name) is getattr(estimator, name)
         assert issubclass(getattr(estimator, name), Estimator)
+
+
+def test_gradient_operators_are_exported_from_functional_packages():
+    operators = import_module("cqlib_algorithms.operators")
+    gradient = import_module("cqlib_algorithms.operators.gradient")
+    concrete_gradients = {
+        "FiniteDifferenceGradient",
+        "LinCombEstimatorGradient",
+        "ParameterShiftGradient",
+        "SPSAGradient",
+    }
+    expected = concrete_gradients | {
+        "NaturalGradient",
+        "QFIResult",
+        "QGTResult",
+        "StatevectorQFI",
+        "StatevectorQGT",
+    }
+
+    assert expected <= set(operators.__all__)
+    assert set(gradient.__all__) == expected
+    for name in expected:
+        assert getattr(operators, name) is getattr(gradient, name)
+    for name in concrete_gradients:
+        assert issubclass(getattr(gradient, name), Gradient)
