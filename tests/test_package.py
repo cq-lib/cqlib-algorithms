@@ -30,12 +30,15 @@ from cqlib_algorithms.protocols import (
     Gradient,
     GradientRequest,
     GradientResult,
+    Optimizer,
+    OptimizerRequest,
+    OptimizerResult,
+    OptimizerStatus,
     Sampler,
     SamplerRequest,
     StatePreparation,
 )
 from cqlib_algorithms.transforms import QFT as TransformQFT
-
 
 PUBLIC_COMPONENTS = {
     "Ansatz": Ansatz,
@@ -45,6 +48,10 @@ PUBLIC_COMPONENTS = {
     "Gradient": Gradient,
     "GradientRequest": GradientRequest,
     "GradientResult": GradientResult,
+    "Optimizer": Optimizer,
+    "OptimizerRequest": OptimizerRequest,
+    "OptimizerResult": OptimizerResult,
+    "OptimizerStatus": OptimizerStatus,
     "Sampler": Sampler,
     "SamplerRequest": SamplerRequest,
     "StatePreparation": StatePreparation,
@@ -87,10 +94,16 @@ def test_estimator_contract_is_distinct_from_the_core_callback_alias():
 
 
 def test_component_contracts_are_abstract_base_classes():
-    for component in (Ansatz, Estimator, Gradient, Sampler, StatePreparation):
+    for component in (
+        Ansatz,
+        Estimator,
+        Gradient,
+        Optimizer,
+        Sampler,
+        StatePreparation,
+    ):
         assert inspect.isabstract(component)
 
 
 def test_qft_is_exported_from_public_namespaces():
     assert QFT is TransformQFT
-

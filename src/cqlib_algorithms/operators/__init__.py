@@ -23,7 +23,19 @@ from .ansatz import (
     RealAmplitudesAnsatz,
     TwoLocalAnsatz,
 )
+from .composite import GroverOperator
 from .estimator import SamplingEstimator, StatevectorEstimator
+from .gradient import (
+    FiniteDifferenceGradient,
+    LinCombEstimatorGradient,
+    NaturalGradient,
+    ParameterShiftGradient,
+    QFIResult,
+    QGTResult,
+    SPSAGradient,
+    StatevectorQFI,
+    StatevectorQGT,
+)
 from .measurement import (
     CommutingObservableGrouping,
     MeasurementGroup,
@@ -31,6 +43,7 @@ from .measurement import (
     PauliGroupingStrategy,
     PauliMeasurementPlanner,
 )
+from .optimizer import Adam, GradientDescent, SPSAOptimizer
 from .oracle import (
     BitFlipOracle,
     BooleanFunction,
@@ -41,6 +54,11 @@ from .oracle import (
     ZeroStateReflection,
 )
 from .sampler import BackendSampler, StatevectorSampler
+from .state_fidelity import (
+    CircuitFidelityRequest,
+    CircuitFidelityResult,
+    ComputeUncomputeFidelity,
+)
 from .state_preparation import (
     AmplitudeEncoding,
     AngleEncoding,
@@ -56,36 +74,52 @@ from .state_preparation import (
 )
 
 __all__ = [
+    "Adam",
     "AmplitudeEncoding",
     "AngleEncoding",
     "ArbitraryStatePreparation",
+    "BackendSampler",
+    "BaseAnsatz",
     "BasisEncoding",
     "BasisStateInitialization",
-    "BaseAnsatz",
-    "BackendSampler",
     "BitFlipOracle",
-    "CommutingObservableGrouping",
-    "EfficientSU2Ansatz",
     "BooleanFunction",
     "BooleanVectorFunction",
+    "CircuitFidelityRequest",
+    "CircuitFidelityResult",
+    "CommutingObservableGrouping",
+    "ComputeUncomputeFidelity",
+    "EfficientSU2Ansatz",
     "FeatureMapPreparation",
+    "FiniteDifferenceGradient",
     "GHZStatePreparation",
     "GeneralStateReflection",
+    "GradientDescent",
+    "GroverDiffusion",
+    "GroverOperator",
     "HardwareEfficientAnsatz",
+    "LinCombEstimatorGradient",
     "MeasurementGroup",
     "MeasurementPlan",
-    "GroverDiffusion",
-    "PhaseOracle",
-    "ProductStatePreparation",
-    "PauliTwoDesignAnsatz",
+    "NaturalGradient",
+    "ParameterShiftGradient",
     "PauliGroupingStrategy",
     "PauliMeasurementPlanner",
+    "PauliTwoDesignAnsatz",
+    "PhaseOracle",
+    "ProductStatePreparation",
     "QAOACostEvolution",
     "QAOAMixerEvolution",
+    "QFIResult",
+    "QGTResult",
     "RealAmplitudesAnsatz",
+    "SPSAGradient",
+    "SPSAOptimizer",
     "SamplingEstimator",
     "SparseAmplitudeEncoding",
     "StatevectorEstimator",
+    "StatevectorQFI",
+    "StatevectorQGT",
     "StatevectorSampler",
     "TwoLocalAnsatz",
     "UniformSuperposition",

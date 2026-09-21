@@ -10,7 +10,10 @@ readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE.txt"]
 requires-python = ">=3.10"
-dependencies = ["cqlib>=1.4.0b1,<1.5"]
+dependencies = [
+    "cqlib>=1.4.0b1,<1.5",
+    "numpy>=2.1.0",
+]
 
 classifiers = [
     "Development Status :: 1 - Planning",
