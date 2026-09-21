@@ -14,8 +14,9 @@
 
 from __future__ import annotations
 
-from cqlib import Circuit
 from cqlib.circuit.gates import StandardGate
+
+from cqlib import Circuit
 
 from .boolean_function import BooleanFunction
 from .boolean_vector_function import BooleanVectorFunction

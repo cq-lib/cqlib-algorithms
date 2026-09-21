@@ -19,19 +19,39 @@ each component is landed in its respective module / subpackage.
 
 from __future__ import annotations
 
-from . import adders, comparators, multipliers
+from . import (
+    adders,
+    amplitude_encoded_rotation,
+    comparators,
+    multipliers,
+    weighted_sums,
+)
 from .adders import DraperConstantAdder, FullAdder, HalfAdder, ModularAdder
+from .amplitude_encoded_rotation import (
+    UCRX,
+    UCRY,
+    UCRZ,
+    ExactReciprocal,
+)
 from .comparators import IntegerComparator
 from .multipliers import Multiplier
+from .weighted_sums import WeightedSum
 
 __all__ = [
+    "UCRX",
+    "UCRY",
+    "UCRZ",
     "DraperConstantAdder",
+    "ExactReciprocal",
     "FullAdder",
     "HalfAdder",
     "IntegerComparator",
     "ModularAdder",
     "Multiplier",
+    "WeightedSum",
     "adders",
+    "amplitude_encoded_rotation",
     "comparators",
     "multipliers",
+    "weighted_sums",
 ]

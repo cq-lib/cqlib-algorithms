@@ -16,8 +16,9 @@ from __future__ import annotations
 
 import math
 
-from cqlib import Circuit
 from cqlib.circuit.gates import StandardGate
+
+from cqlib import Circuit
 
 
 class ZeroStateReflection:

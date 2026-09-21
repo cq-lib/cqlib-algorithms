@@ -41,6 +41,7 @@ from collections.abc import Sequence
 from typing import Any, ClassVar, Literal
 
 import numpy as np
+import numpy.typing as npt
 
 from cqlib import Circuit
 
@@ -428,6 +429,15 @@ class _UCRBase:
     _ROTATION_AXIS: ClassVar[Literal["x", "y", "z"]]
     _DEFAULT_NAME: ClassVar[str] = "UCR"
 
+    _num_controls: int
+    _axis: Literal["x", "y", "z"]
+    _alpha: npt.NDArray[np.float64]
+    _theta: npt.NDArray[np.float64]
+    _gray_matrix: npt.NDArray[np.float64]
+    _gray_codes: list[int]
+    _controls: list[int]
+    _name: str
+
     def __init__(
         self,
         num_controls: int,
@@ -495,16 +505,16 @@ class _UCRBase:
         return self._num_controls
 
     @property
-    def alpha(self) -> np.ndarray[Any, Any]:
+    def alpha(self) -> npt.NDArray[np.float64]:
         """Return a defensive copy of the target angles ``alpha``."""
 
-        return self._alpha.copy()
+        return np.asarray(self._alpha.copy(), dtype=np.float64)
 
     @property
-    def theta(self) -> np.ndarray[Any, Any]:
+    def theta(self) -> npt.NDArray[np.float64]:
         """Return a defensive copy of the circuit angles ``theta``."""
 
-        return self._theta.copy()
+        return np.asarray(self._theta.copy(), dtype=np.float64)
 
     @property
     def axis(self) -> Literal["x", "y", "z"]:
@@ -525,10 +535,10 @@ class _UCRBase:
         return list(self._controls)
 
     @property
-    def gray_matrix(self) -> np.ndarray[Any, Any]:
+    def gray_matrix(self) -> npt.NDArray[np.float64]:
         """Return a defensive copy of the Gray matrix ``M^k``."""
 
-        return self._gray_matrix.copy()
+        return np.asarray(self._gray_matrix.copy(), dtype=np.float64)
 
     @property
     def num_state_qubits(self) -> int:
@@ -598,6 +608,10 @@ class _FunctionalPauliRotation:
 
     _DEFAULT_NAME: ClassVar[str] = "FunctionalPauliRotation"
 
+    _num_state_qubits: int
+    _axis: Literal["x", "y", "z"]
+    _name: str
+
     def __init__(
         self,
         num_state_qubits: int,
@@ -630,7 +644,7 @@ class _FunctionalPauliRotation:
     # Abstract hook
     # ------------------------------------------------------------------
 
-    def _compute_alpha(self) -> np.ndarray[Any, Any]:  # pragma: no cover
+    def _compute_alpha(self) -> npt.NDArray[np.float64]:  # pragma: no cover
         raise NotImplementedError(
             f"{type(self).__name__} must implement _compute_alpha."
         )
@@ -676,10 +690,10 @@ class _FunctionalPauliRotation:
         return self._name
 
     @property
-    def alpha(self) -> np.ndarray[Any, Any]:
+    def alpha(self) -> npt.NDArray[np.float64]:
         """Return a defensive copy of the evaluated angle table."""
 
-        return self._compute_alpha().copy()
+        return np.asarray(self._compute_alpha().copy(), dtype=np.float64)
 
     # ------------------------------------------------------------------
     # Circuit construction

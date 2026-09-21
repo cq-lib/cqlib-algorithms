@@ -38,6 +38,7 @@ import math
 from typing import Any, Literal
 
 import numpy as np
+import numpy.typing as npt
 
 from cqlib import Circuit
 
@@ -284,6 +285,10 @@ class ExactReciprocal(_FunctionalPauliRotation):
 
     _DEFAULT_NAME = "ExactReciprocal"
 
+    _scaling: float
+    _neg_vals: bool
+    _alpha_cached: npt.NDArray[np.float64]
+
     def __init__(
         self,
         num_state_qubits: int,
@@ -319,7 +324,7 @@ class ExactReciprocal(_FunctionalPauliRotation):
         self._neg_vals = neg_vals
         # Eagerly evaluate alpha once so that invalid parameter
         # combinations are reported at construction time.
-        self._alpha_cached: np.ndarray[Any, Any] = _compute_reciprocal_alpha(
+        self._alpha_cached = _compute_reciprocal_alpha(
             self._num_state_qubits,
             self._scaling,
             neg_vals=self._neg_vals,
@@ -345,8 +350,8 @@ class ExactReciprocal(_FunctionalPauliRotation):
     # Hooks.
     # ------------------------------------------------------------------
 
-    def _compute_alpha(self) -> np.ndarray[Any, Any]:
-        return self._alpha_cached.copy()
+    def _compute_alpha(self) -> npt.NDArray[np.float64]:
+        return np.asarray(self._alpha_cached.copy(), dtype=np.float64)
 
     # ------------------------------------------------------------------
     # Explicit override purely for documentation (super works fine).

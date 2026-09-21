@@ -18,9 +18,10 @@ from collections.abc import Sequence
 from copy import copy
 from typing import final
 
-from cqlib import Circuit
 from cqlib.device import ExecutionResult
 from cqlib.qis.state import Statevector
+
+from cqlib import Circuit
 
 from ...protocols.sampler import Sampler, SamplerRequest
 
