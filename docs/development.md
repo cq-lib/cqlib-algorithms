@@ -5,7 +5,7 @@
 - 使用 `src/cqlib_algorithms/` 布局。稳定的公共协议集中放在 `protocols/`，可复用的线路变换放在 `transforms/`，其他具体组件按实际功能增加模块或子包。
 - 完整算法放在 `algorithms/`，随实际实现按功能增加模块；不预建空分类目录。
 - 不设置泛化的 `components` 或 `contracts` 层；`protocols` 只收纳已经冻结并被多个实现复用的公共契约。
-- `StatePreparation`、`Ansatz`、`Sampler`、`Estimator` 和 `Gradient` 是首批公共抽象基类；请求和结果类型与对应契约放在同一模块。
+- `StatePreparation`、`Ansatz`、`Sampler`、`Estimator`、`Gradient` 和 `Optimizer` 是首批公共抽象基类；请求和结果类型与对应契约放在同一模块。
 - 稳定协议同时从 `cqlib_algorithms.protocols` 和包顶层导出，具体实现从所属功能模块导出。
 - 受公共抽象基类约束的具体组件必须显式继承对应基类。`StatePreparation` 与 `Ansatz` 具有相同抽象操作，但属于不同的名义类型层级，并分别约束状态制备参数和可训练参数语义。线路变换等独立值类型不为满足名义类型而强行继承不匹配的抽象基类。
 - 本库批量 `Estimator` 与 `cqlib.error_mitigation.Estimator` 回调类型属于不同契约；同时使用时必须显式别名，避免短名覆盖。
@@ -16,7 +16,7 @@
 - 复用 `cqlib` 的线路、门、算子和结果类型；调用前核对真实接口，不臆造 API。
 - 执行实现由外部提供，运行时传入符合统一 Cqlib 接口与结果语义的对象。
 - 本库不定义平台适配、登录、任务提交基础设施，也不依赖特定平台 SDK。仅使用相同名称的方法不足以保证兼容。
-- 算法侧只定义 Sampler、Estimator 和 Gradient 所需的最小同步批处理协议，不定义后端提交、轮询、认证或传输协议；平台能力由外部适配器实现。
+- 算法侧只定义 Sampler、Estimator、Gradient 和 Optimizer 所需的最小同步批处理协议，不定义后端提交、轮询、认证或传输协议；平台能力由外部适配器实现。
 - 请求数据结构仅浅冻结；Cqlib 的线路和可观测量仍可变，调用方不得在请求生命周期内修改它们，执行实现必须在运行前重新验证可检测的不变量。
 - 当前 Core 兼容基线为 Python 包 `cqlib>=1.4.0b1,<1.5`；扩大版本范围前必须通过兼容性测试。
 - 保持依赖无环；新增公共接口或第三方依赖时说明必要性。

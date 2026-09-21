@@ -15,6 +15,7 @@
 from .ansatz import Ansatz
 from .estimator import Estimator, EstimatorRequest, EstimatorResult
 from .gradient import Gradient, GradientRequest, GradientResult
+from .optimizer import Optimizer, OptimizerRequest, OptimizerResult, OptimizerStatus
 from .sampler import Sampler, SamplerRequest
 from .state_preparation import StatePreparation
 
@@ -26,8 +27,11 @@ __all__ = [
     "Gradient",
     "GradientRequest",
     "GradientResult",
+    "Optimizer",
+    "OptimizerRequest",
+    "OptimizerResult",
+    "OptimizerStatus",
     "Sampler",
     "SamplerRequest",
     "StatePreparation",
 ]
-

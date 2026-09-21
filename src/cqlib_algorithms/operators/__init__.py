@@ -42,6 +42,7 @@ from .measurement import (
     PauliGroupingStrategy,
     PauliMeasurementPlanner,
 )
+from .optimizer import Adam, GradientDescent, SPSAOptimizer
 from .oracle import (
     BitFlipOracle,
     BooleanFunction,
@@ -67,6 +68,7 @@ from .state_preparation import (
 )
 
 __all__ = [
+    "Adam",
     "AmplitudeEncoding",
     "AngleEncoding",
     "ArbitraryStatePreparation",
@@ -83,6 +85,7 @@ __all__ = [
     "FiniteDifferenceGradient",
     "GHZStatePreparation",
     "GeneralStateReflection",
+    "GradientDescent",
     "GroverDiffusion",
     "HardwareEfficientAnsatz",
     "LinCombEstimatorGradient",
@@ -101,6 +104,7 @@ __all__ = [
     "QGTResult",
     "RealAmplitudesAnsatz",
     "SPSAGradient",
+    "SPSAOptimizer",
     "SamplingEstimator",
     "SparseAmplitudeEncoding",
     "StatevectorEstimator",

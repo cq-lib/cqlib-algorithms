@@ -3,8 +3,8 @@
 面向 Cqlib 的量子算法组件库。支持 Python 3.10+，使用 uv 管理依赖、pytest 测试，
 采用 Apache-2.0 开源协议。当前提供第一批公共组件协议、请求与结果数据结构，以及
 首批状态制备、数据编码组件、变分拟设、QAOA 演化层、布尔 Oracle、反射算子、
-Pauli 测量规划、同步采样器、期望值估计器、梯度与量子几何组件，以及可复用的
-量子傅里叶变换线路构造器。
+Pauli 测量规划、同步采样器、期望值估计器、梯度、量子几何与经典优化组件，
+以及可复用的量子傅里叶变换线路构造器。
 
 ## 目录
 
@@ -20,7 +20,8 @@ src/cqlib_algorithms/
 │   ├── ansatz.py
 │   ├── sampler.py
 │   ├── estimator.py
-│   └── gradient.py
+│   ├── gradient.py
+│   └── optimizer.py
 ├── operators/
 │   ├── ansatz/
 │   │   ├── base_ansatz.py
@@ -42,6 +43,10 @@ src/cqlib_algorithms/
 │   │   ├── qfi.py
 │   │   ├── qgt.py
 │   │   └── natural_gradient.py
+│   ├── optimizer/
+│   │   ├── gradient_descent.py
+│   │   ├── adam.py
+│   │   └── spsa.py
 │   ├── measurement/
 │   │   ├── pauli_grouping_strategy.py
 │   │   ├── commuting_observable_grouping.py
@@ -75,6 +80,7 @@ tests/operators/state_preparation/
 tests/operators/ansatz/
 tests/operators/estimator/
 tests/operators/gradient/
+tests/operators/optimizer/
 tests/operators/measurement/
 tests/operators/sampler/
 docs/development.md
@@ -94,6 +100,7 @@ LICENSE.txt
 - `Sampler`：同步、批量的线路采样协议。
 - `Estimator`：同步、批量的期望值估计协议。
 - `Gradient`：基于 Estimator 期望值目标的同步、批量梯度协议。
+- `Optimizer`：对 Estimator 期望值目标执行同步、批量经典优化的协议。
 
 公共组件契约采用抽象基类，具体组件必须显式继承对应基类并实现其抽象方法。
 `StatePreparation` 与 `Ansatz` 具有相同的抽象操作，但属于不同的名义类型层级，
@@ -109,6 +116,7 @@ from cqlib_algorithms import (
     Ansatz,
     Estimator,
     Gradient,
+    Optimizer,
     Sampler,
     StatePreparation,
 )
@@ -198,6 +206,16 @@ UCCSD 与 k-UpCCGSD 因当前 Core 尚缺少必要的费米算子和映射能力
 
 完整数学定义、支持门、边界行为和使用示例见
 [梯度、量子几何张量与自然梯度组件](docs/gradient.md)。
+
+## 经典优化器组件
+
+`cqlib_algorithms.operators.optimizer` 提供 `GradientDescent`、`Adam` 和
+`SPSAOptimizer`。前两者通过公共 `Gradient` 契约取得梯度，SPSA 每轮对每个活跃
+请求执行两个目标函数评估。优化器保留未训练参数的绑定，并为每个请求独立记录
+最终参数、目标值、更新次数和终止状态。
+
+完整接口、更新公式、随机性和边界条件见
+[经典优化器组件](docs/optimizer.md)。
 
 ## 布尔 Oracle 与反射算子
 

@@ -18,6 +18,7 @@ from cqlib_algorithms.protocols import (
     Ansatz,
     Estimator,
     Gradient,
+    Optimizer,
     Sampler,
     StatePreparation,
 )
@@ -152,3 +153,15 @@ def test_gradient_operators_are_exported_from_functional_packages():
         assert getattr(operators, name) is getattr(gradient, name)
     for name in concrete_gradients:
         assert issubclass(getattr(gradient, name), Gradient)
+
+
+def test_optimizer_operators_are_exported_from_functional_packages():
+    operators = import_module("cqlib_algorithms.operators")
+    optimizer = import_module("cqlib_algorithms.operators.optimizer")
+    expected = {"Adam", "GradientDescent", "SPSAOptimizer"}
+
+    assert expected <= set(operators.__all__)
+    assert set(optimizer.__all__) == expected
+    for name in expected:
+        assert getattr(operators, name) is getattr(optimizer, name)
+        assert issubclass(getattr(optimizer, name), Optimizer)
