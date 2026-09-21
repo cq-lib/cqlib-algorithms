@@ -130,6 +130,21 @@ def test_estimator_operators_are_exported_from_functional_packages():
         assert issubclass(getattr(estimator, name), Estimator)
 
 
+def test_state_fidelity_operators_are_exported_from_functional_packages():
+    operators = import_module("cqlib_algorithms.operators")
+    state_fidelity = import_module("cqlib_algorithms.operators.state_fidelity")
+    expected = {
+        "CircuitFidelityRequest",
+        "CircuitFidelityResult",
+        "ComputeUncomputeFidelity",
+    }
+
+    assert expected <= set(operators.__all__)
+    assert set(state_fidelity.__all__) == expected
+    for name in expected:
+        assert getattr(operators, name) is getattr(state_fidelity, name)
+
+
 def test_gradient_operators_are_exported_from_functional_packages():
     operators = import_module("cqlib_algorithms.operators")
     gradient = import_module("cqlib_algorithms.operators.gradient")

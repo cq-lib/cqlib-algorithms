@@ -4,6 +4,7 @@
 采用 Apache-2.0 开源协议。当前提供第一批公共组件协议、请求与结果数据结构，以及
 首批状态制备、数据编码组件、变分拟设、QAOA 演化层、布尔 Oracle、反射算子、
 Pauli 测量规划、同步采样器、期望值估计器、梯度、量子几何与经典优化组件，
+线路纯态保真度估计组件，
 以及可复用的量子傅里叶变换线路构造器。
 
 ## 目录
@@ -62,6 +63,8 @@ src/cqlib_algorithms/
 │   ├── sampler/
 │   │   ├── statevector_sampler.py
 │   │   └── backend_sampler.py
+│   ├── state_fidelity/
+│   │   └── compute_uncompute.py
 │   └── state_preparation/
 │       ├── basis_state_initialization.py
 │       ├── uniform_superposition.py
@@ -197,6 +200,17 @@ UCCSD 与 k-UpCCGSD 因当前 Core 尚缺少必要的费米算子和映射能力
 
 精确和采样路径的数学定义、shots 分配、方差语义、Core 兼容处理与边界条件见
 [Estimator 实现](docs/estimator.md)。
+
+## 线路纯态保真度
+
+`ComputeUncomputeFidelity` 通过注入的 `Sampler` 执行
+`U_A† U_B` 线路，以全零测量概率估计两个线路制备纯态的重叠保真度。
+请求分别管理两个线路的精确参数绑定，并按量子比特插入位置建立对应关系；
+实现会在单次批量采样前完整验证线路的静态可逆性与采样请求。
+
+该组件仅面向由线路制备的纯态，不代替密度矩阵的 Uhlmann 保真度或
+混合态 SWAP 测试。数学定义、统计方差、端序、线路边界与可运行示例见
+[线路态保真度](docs/state_fidelity.md)。
 
 ## 梯度与量子几何组件
 

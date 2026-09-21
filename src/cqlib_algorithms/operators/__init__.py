@@ -53,6 +53,11 @@ from .oracle import (
     ZeroStateReflection,
 )
 from .sampler import BackendSampler, StatevectorSampler
+from .state_fidelity import (
+    CircuitFidelityRequest,
+    CircuitFidelityResult,
+    ComputeUncomputeFidelity,
+)
 from .state_preparation import (
     AmplitudeEncoding,
     AngleEncoding,
@@ -79,7 +84,10 @@ __all__ = [
     "BitFlipOracle",
     "BooleanFunction",
     "BooleanVectorFunction",
+    "CircuitFidelityRequest",
+    "CircuitFidelityResult",
     "CommutingObservableGrouping",
+    "ComputeUncomputeFidelity",
     "EfficientSU2Ansatz",
     "FeatureMapPreparation",
     "FiniteDifferenceGradient",
