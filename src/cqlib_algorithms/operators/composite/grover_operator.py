@@ -26,54 +26,30 @@ from ..oracle.zero_state_reflection import ZeroStateReflection
 
 
 class GroverOperator:
-    """Construct one Grover iteration unit ``Q = D O``.
+    """Construct one Grover iteration ``Q = A S_(0,R) A† O``.
 
-    ``O`` is a unitary phase oracle on ``n`` search qubits (qubit ``0`` is
-    the least significant bit). For the selected reflection-qubit set ``R``,
-    define ``P_(0,R)`` as the projector onto states whose qubits in ``R`` are
-    all zero and ``S_(0,R) = 2 P_(0,R) - I``. The diffusion part is
-    ``D_R = A S_(0,R) A†``. Its time order is therefore ``A†``, then
-    ``S_(0,R)``, then ``A``. This is the convention of
-    ``qiskit.circuit.library.grover_operator`` (used as an interface
-    reference only); some textbooks write ``-Q``, which differs by a global
-    phase only.
+    ``O`` is a phase-oracle circuit and ``S_(0,R) = 2 P_(0,R) - I`` is the
+    zero reflection on ``reflection_qubits``. Circuit time order is ``O``,
+    ``A†``, ``S_(0,R)``, then ``A``.
 
-    With no ``state_preparation``, ``A`` applies Hadamard gates on ``R`` only.
-    With a custom invertible ``state_preparation``, ``A`` is that circuit on
-    the entire search register. When ``R`` contains every search qubit,
-    ``P_(0,R) = |0...0><0...0|`` and ``D_R`` is the rank-one reflection
-    ``2 A|0...0><0...0|A† - I``. For a proper subset ``R``, ``D_R`` instead
-    reflects about the subspace ``A range(P_(0,R))``; it is not generally a
-    reflection about the single state ``A|0...0>``.
+    When all qubits are reflected, the diffusion part reflects about the
+    state ``A|0...0>``. For a proper subset, it instead reflects about the
+    subspace ``A range(P_(0,R))``. If ``state_preparation`` is omitted,
+    Hadamard gates on the reflection qubits are used for ``A``.
 
-    The oracle must be a valid, invertible circuit on the search register;
-    a typical input is ``PhaseOracle(function).build_circuit()``.
-    Non-unitary or dynamic operations are rejected because amplitude
-    amplification assumes a unitary oracle. Circuits are defensively copied
-    at construction; non-contiguous source-qubit IDs are mapped
-    positionally, in ``Circuit.qubits`` order, to ``q0, q1, ...``.
-    This component validates only that the input is a valid, statically
-    invertible :class:`Circuit`. It does not perform an exponentially sized
-    matrix analysis to prove that the circuit is a diagonal phase oracle;
-    supplying a circuit with the required oracle semantics is the caller's
-    responsibility.
+    Input circuits are defensively copied and must be statically invertible.
+    The caller is responsible for ensuring that ``oracle`` has phase-oracle
+    semantics.
 
     Args:
-        oracle: Valid invertible phase-oracle circuit on the search
-            register.
-        state_preparation: Optional valid invertible circuit ``A`` defining
-            the conjugated reflection, about a state for the full register
-            or a subspace for a proper reflection subset. ``None`` uses
-            Hadamard gates on the reflection qubits.
-        reflection_qubits: Optional non-empty subset of search qubits on
-            which the zero reflection acts. ``None`` selects all search
-            qubits.
+        oracle: Invertible phase-oracle circuit.
+        state_preparation: Optional invertible preparation circuit ``A``.
+        reflection_qubits: Optional non-empty reflection-qubit subset.
+            ``None`` selects all qubits.
 
     Raises:
-        TypeError: If an input has the wrong type.
-        ValueError: If a circuit is empty, invalid, not invertible, or has
-            a mismatched qubit count, or if ``reflection_qubits`` is empty,
-            duplicated, or out of range.
+        TypeError: If an argument has an invalid type.
+        ValueError: If a circuit or reflection-qubit selection is invalid.
     """
 
     __slots__ = ("_oracle", "_reflection_qubits", "_state_reflection")
