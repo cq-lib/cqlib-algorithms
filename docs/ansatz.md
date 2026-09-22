@@ -88,8 +88,8 @@ circuit = ansatz.build_circuit("theta")
 
 参数顺序为“旋转层、量子比特”，数量为 `num_qubits * (reps + 1)`。相同的非空
 `seed` 在本实现的不同实例间生成相同轴序列；同一实例重复构建始终确定。
-`seed=None` 允许不同实例使用不同轴。这里不承诺与 Qiskit 或其他框架在相同 seed
-下产生相同的随机轴序列。
+`seed=None` 允许不同实例使用不同轴。不同实现或不同随机数生成器即使使用相同
+seed，也不保证产生相同的随机轴序列。
 
 ## QAOA 单层演化
 
@@ -137,11 +137,6 @@ mixer_layer = QAOAMixerEvolution(2).build_circuit("qaoa")
   以及 McClean 等，
   [Barren plateaus in quantum neural network training landscapes](https://arxiv.org/abs/1803.11173)，
   是 Pauli two-design 类随机线路的理论和应用参考。
-- IBM Quantum 官方接口文档：
-  [TwoLocal](https://quantum.cloud.ibm.com/docs/api/qiskit/qiskit.circuit.library.TwoLocal)、
-  [RealAmplitudes](https://quantum.cloud.ibm.com/docs/api/qiskit/qiskit.circuit.library.RealAmplitudes)、
-  [EfficientSU2](https://quantum.cloud.ibm.com/docs/api/qiskit/qiskit.circuit.library.EfficientSU2)、
-  [PauliTwoDesign](https://quantum.cloud.ibm.com/docs/api/qiskit/qiskit.circuit.library.PauliTwoDesign)。
 
-这些资料用于核对数学结构和接口组织；实现不依赖 Qiskit，也不主张跨框架的默认值、
-随机序列或门顺序完全相同。
+这些论文用于核对数学结构和接口组织。本项目的默认值、随机序列和门顺序以本文档
+及 Cqlib 公共协议为准。
