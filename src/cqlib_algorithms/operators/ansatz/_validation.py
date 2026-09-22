@@ -15,13 +15,51 @@
 from __future__ import annotations
 
 import copy
+import math
 from collections.abc import Sequence
 
 from cqlib.circuit.ansatz import EntanglementTopology
 from cqlib.circuit.gates import StandardGate
+from cqlib.qis import Hamiltonian
 
 _ROTATION_GATES = (StandardGate.RX, StandardGate.RY, StandardGate.RZ)
 _ENTANGLEMENT_GATES = (StandardGate.CX, StandardGate.CY, StandardGate.CZ)
+
+
+def _is_finite_complex(value: complex) -> bool:
+    return math.isfinite(value.real) and math.isfinite(value.imag)
+
+
+def copy_hermitian_hamiltonian(
+    hamiltonian: Hamiltonian,
+    *,
+    name: str,
+) -> Hamiltonian:
+    """Return a simplified snapshot of a finite, non-empty Hamiltonian."""
+    if not isinstance(hamiltonian, Hamiltonian):
+        raise TypeError(f"{name} must be a Hamiltonian")
+
+    snapshot = hamiltonian.copy()
+    aggregated: dict[tuple[int, int, int], complex] = {}
+    for pauli, coefficient in snapshot.terms:
+        effective = complex(coefficient) * pauli.phase.to_complex()
+        if not _is_finite_complex(effective):
+            raise ValueError(f"{name} coefficients must be finite")
+
+        key = (pauli.num_qubits, pauli.x_mask, pauli.z_mask)
+        combined = aggregated.get(key, 0.0j) + effective
+        if not _is_finite_complex(combined):
+            raise ValueError(f"{name} coefficients must be finite")
+        aggregated[key] = combined
+
+    for coefficient in aggregated.values():
+        if coefficient != 0.0j and coefficient.imag != 0.0:
+            raise ValueError(f"{name} is not Hermitian")
+
+    snapshot.simplify()
+    if snapshot.num_terms == 0:
+        raise ValueError(f"{name} must not be empty after simplification")
+    return snapshot
 
 
 def validate_positive_qubit_count(num_qubits: int) -> None:

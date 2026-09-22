@@ -17,7 +17,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 from cqlib.circuit.ansatz import EvolutionStrategy
-from cqlib.qis import Hamiltonian, PauliString, TrotterMode
+from cqlib.qis import Hamiltonian, PauliString, Phase, TrotterMode
 
 from cqlib_algorithms.operators.ansatz import (
     QAOACostEvolution,
@@ -29,6 +29,21 @@ from cqlib_algorithms.protocols import Ansatz
 def _term(paulis: str, coefficient: complex = 1.0) -> Hamiltonian:
     hamiltonian = Hamiltonian(len(paulis))
     hamiltonian.add_term(PauliString.from_str(paulis), coefficient)
+    return hamiltonian
+
+
+def _duplicate_terms(
+    coefficients: tuple[complex, ...],
+    *,
+    phases: tuple[Phase, ...] | None = None,
+) -> Hamiltonian:
+    hamiltonian = Hamiltonian(1)
+    if phases is None:
+        phases = tuple(Phase.plus() for _ in coefficients)
+    for coefficient, phase in zip(coefficients, phases, strict=True):
+        pauli = PauliString.from_str("Z")
+        pauli.phase = phase
+        hamiltonian.add_term(pauli, coefficient)
     return hamiltonian
 
 
@@ -157,6 +172,106 @@ def test_qaoa_cost_rejects_invalid_operator_and_strategy():
         QAOACostEvolution(_term("Z", 1j))
 
 
+@pytest.mark.parametrize("coefficient", [float("nan"), float("inf"), float("-inf")])
+@pytest.mark.parametrize("component", ["cost", "mixer"])
+def test_qaoa_layers_reject_non_finite_coefficients(component, coefficient):
+    operator = _term("Z", coefficient)
+
+    with pytest.raises(
+        ValueError, match=rf"{component}_operator coefficients must be finite"
+    ):
+        if component == "cost":
+            QAOACostEvolution(operator)
+        else:
+            QAOAMixerEvolution(1, mixer_operator=operator)
+
+
+@pytest.mark.parametrize("component", ["cost", "mixer"])
+def test_qaoa_layers_reject_coefficient_overflow_during_aggregation(component):
+    maximum = np.finfo(float).max
+    operator = _duplicate_terms((maximum, maximum))
+
+    with pytest.raises(
+        ValueError, match=rf"{component}_operator coefficients must be finite"
+    ):
+        if component == "cost":
+            QAOACostEvolution(operator)
+        else:
+            QAOAMixerEvolution(1, mixer_operator=operator)
+
+
+@pytest.mark.parametrize("component", ["cost", "mixer"])
+def test_qaoa_layers_absorb_pauli_phase_into_real_coefficient(component):
+    operator = _duplicate_terms((-1j,), phases=(Phase.i(),))
+    expected = _term("Z")
+
+    if component == "cost":
+        circuit = QAOACostEvolution(operator).build_circuit("q")
+        bound = circuit.assign_parameters({"q_gamma": 0.37})
+    else:
+        circuit = QAOAMixerEvolution(1, mixer_operator=operator).build_circuit("q")
+        bound = circuit.assign_parameters({"q_beta": 0.37})
+
+    np.testing.assert_allclose(
+        bound.to_matrix(),
+        _matrix_exponential_hermitian(expected.to_matrix(), 0.37),
+        rtol=0.0,
+        atol=1e-12,
+    )
+
+
+@pytest.mark.parametrize("component", ["cost", "mixer"])
+def test_qaoa_layers_accept_duplicate_terms_with_canceling_imaginary_parts(component):
+    operator = _duplicate_terms((1.0 + 2.0j, 2.0 - 2.0j))
+    expected = _term("Z", 3.0)
+
+    if component == "cost":
+        circuit = QAOACostEvolution(operator).build_circuit("q")
+        bound = circuit.assign_parameters({"q_gamma": -0.19})
+    else:
+        circuit = QAOAMixerEvolution(1, mixer_operator=operator).build_circuit("q")
+        bound = circuit.assign_parameters({"q_beta": -0.19})
+
+    np.testing.assert_allclose(
+        bound.to_matrix(),
+        _matrix_exponential_hermitian(expected.to_matrix(), -0.19),
+        rtol=0.0,
+        atol=1e-12,
+    )
+
+
+@pytest.mark.parametrize("component", ["cost", "mixer"])
+def test_qaoa_layers_strictly_reject_residual_imaginary_coefficient(component):
+    operator = _duplicate_terms((1.0 + 1e-15j, 2.0))
+
+    with pytest.raises(ValueError, match=rf"{component}_operator is not Hermitian"):
+        if component == "cost":
+            QAOACostEvolution(operator)
+        else:
+            QAOAMixerEvolution(1, mixer_operator=operator)
+
+
+@pytest.mark.parametrize(
+    "operator",
+    [
+        Hamiltonian(1),
+        _duplicate_terms((1.0, -1.0)),
+        _duplicate_terms((1.0, 1.0), phases=(Phase.plus(), Phase.minus())),
+    ],
+    ids=["empty", "coefficient-cancellation", "phase-cancellation"],
+)
+@pytest.mark.parametrize("component", ["cost", "mixer"])
+def test_qaoa_layers_reject_operators_empty_after_simplification(component, operator):
+    with pytest.raises(
+        ValueError,
+        match=rf"{component}_operator must not be empty after simplification",
+    ):
+        if component == "cost":
+            QAOACostEvolution(operator)
+        else:
+            QAOAMixerEvolution(1, mixer_operator=operator)
+
+
 def test_qaoa_cost_rejects_zero_qubit_identity_hamiltonian():
     cost = Hamiltonian(0)
     cost.add_term(PauliString(0), 1.0)
@@ -182,3 +297,19 @@ def test_qaoa_mixer_rejects_invalid_inputs():
         QAOAMixerEvolution(2, mixer_operator=_term("X"))
     with pytest.raises(ValueError, match="not Hermitian"):
         QAOAMixerEvolution(1, mixer_operator=_term("X", 1j))
+
+
+def test_qaoa_mixer_reports_strategy_error_before_custom_width_error():
+    with pytest.raises(
+        TypeError, match="strategy must be an EvolutionStrategy or None"
+    ):
+        QAOAMixerEvolution(
+            2,
+            mixer_operator=_term("X"),
+            strategy="auto",  # type: ignore[arg-type]
+        )
+
+
+def test_qaoa_mixer_reports_custom_width_error_before_coefficient_error():
+    with pytest.raises(ValueError, match="act on num_qubits qubits"):
+        QAOAMixerEvolution(2, mixer_operator=_term("X", float("nan")))

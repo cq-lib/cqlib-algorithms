@@ -21,7 +21,7 @@ from cqlib.circuit import Circuit
 from cqlib.circuit.ansatz import EvolutionStrategy, PauliEvolutionAnsatz
 from cqlib.qis import Hamiltonian, Pauli, PauliString
 
-from ._validation import validate_positive_qubit_count
+from ._validation import copy_hermitian_hamiltonian, validate_positive_qubit_count
 from .base_ansatz import BaseAnsatz
 
 
@@ -58,16 +58,18 @@ class QAOAMixerEvolution(BaseAnsatz):
         if strategy is not None and not isinstance(strategy, EvolutionStrategy):
             raise TypeError("strategy must be an EvolutionStrategy or None")
 
-        mixer = (
-            _x_mixer(num_qubits) if mixer_operator is None else mixer_operator.copy()
-        )
-        if mixer.num_qubits != num_qubits:
+        if mixer_operator is not None and mixer_operator.num_qubits != num_qubits:
             raise ValueError("mixer_operator must act on num_qubits qubits")
 
+        mixer = _x_mixer(num_qubits) if mixer_operator is None else mixer_operator
+        mixer_snapshot = copy_hermitian_hamiltonian(
+            mixer,
+            name="mixer_operator",
+        )
         frozen_strategy = (
             EvolutionStrategy.auto(1) if strategy is None else copy.copy(strategy)
         )
-        inner = PauliEvolutionAnsatz(mixer).with_strategy(frozen_strategy)
+        inner = PauliEvolutionAnsatz(mixer_snapshot).with_strategy(frozen_strategy)
         super().__init__(inner)
         self.validate()
 
