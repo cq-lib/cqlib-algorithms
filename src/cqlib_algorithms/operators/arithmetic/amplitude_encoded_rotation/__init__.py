@@ -39,7 +39,14 @@ from .multiplexed import (
     ArbitraryFunction,
     ExactReciprocal,
 )
-from .polynomial import LinearPauliRotation
+from .polynomial import (
+    LinearAmplitudeRotation,
+    LinearPauliRotation,
+    PiecewiseChebyshev,
+    PiecewiseLinearPauliRotation,
+    PiecewisePolynomialPauliRotation,
+    PolynomialPauliRotation,
+)
 
 __all__ = [
     "UCRX",
@@ -47,5 +54,10 @@ __all__ = [
     "UCRZ",
     "ArbitraryFunction",
     "ExactReciprocal",
+    "LinearAmplitudeRotation",
     "LinearPauliRotation",
+    "PiecewiseChebyshev",
+    "PiecewiseLinearPauliRotation",
+    "PiecewisePolynomialPauliRotation",
+    "PolynomialPauliRotation",
 ]

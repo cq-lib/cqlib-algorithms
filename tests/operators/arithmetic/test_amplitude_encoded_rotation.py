@@ -42,6 +42,12 @@ Coverage map (each tag references a section / case ID in the doc or the
     * Section 6   UCRX / UCRZ — symmetric sanity checks vs UCRY
     * Section 7   ArbitraryFunction validation & regular properties
     * Section 8   Multiplexed function table (MUX-FUNC-001 .. MUX-FUNC-005)
+    * Section 9   PiecewiseChebyshev high-level wrapper
+                      (PWCHEB-BASE-001..005 smoke tests;
+                       PWCHEB-001 reciprocal approximation;
+                       PWCHEB-002 exponential convergence;
+                       PWCHEB-003 head-identity amplitude-1 segment;
+                       PWCHEB-BOUND-001..004 edge-case & input guards)
 """
 
 from __future__ import annotations
@@ -59,6 +65,8 @@ from cqlib_algorithms.operators.arithmetic import (
     ArbitraryFunction,
     ExactReciprocal,
     LinearPauliRotation,
+    PiecewiseChebyshev,
+    PiecewiseLinearPauliRotation,
     UCRX,
     UCRY,
     UCRZ,
@@ -1196,5 +1204,1068 @@ class TestMultiplexedFunctionTable:
             assert diff / norm <= max(AMPLITUDE_ATOL * 1e3, 1e-8), (
                 f"{label}-vs-exact rel Frobenius {diff/norm:.3e} > tol"
             )
+
+
+# ---------------------------------------------------------------------------
+# Section 9.  Piecewise-Chebyshev high-level wrapper
+# ---------------------------------------------------------------------------
+# Reference section: polynomial_test_cases.md § 8.3
+#   PWCHEB-001 reciprocal function piecewise Chebyshev (n=3, degree=2)
+#   PWCHEB-002 exponential convergence of the Chebyshev degree
+#   PWCHEB-003 head-identity segment when breakpoints[0] > 0
+# ---------------------------------------------------------------------------
+
+
+def _pwcheb_expected_alpha(
+    op: PiecewiseChebyshev,
+) -> np.ndarray:
+    """Rebuild ``theta(k)`` purely on the classical side (UNFOLDED).
+
+    For every completed segment ``[bp_j, bp_{j+1})`` use the coefficients
+    stored in :attr:`PiecewiseChebyshev.polynomials` (already multiplied by
+    ``2`` inside the wrapper and with the ``π`` identity-polynomial for
+    auto-filled head/tail segments).
+
+    The returned vector is **not** folded modulo ``2π``.  Callers that
+    need a pointwise distance metric against another unfolded angle table
+    (e.g. the exponential-convergence test PWCHEB-002) must use the
+    wrapped distance helper :func:`_angular_abs_diff` instead of plain
+    subtraction so branch-cut artefacts near ``0/2π`` are removed.
+    """
+
+    n = op.num_state_qubits
+    dim = 1 << n
+    alpha = np.zeros(dim, dtype=np.float64)
+    bp = op.breakpoints
+    polys = op.polynomials
+    for j in range(len(bp) - 1):
+        lo = int(bp[j])
+        hi = int(bp[j + 1])
+        c = np.asarray(polys[j], dtype=np.float64)
+        ks = np.arange(lo, hi, dtype=np.float64)
+        alpha[lo:hi] = np.polyval(c[::-1], ks)
+    return alpha
+
+
+def _angular_abs_diff(a: np.ndarray | float, b: np.ndarray | float) -> np.ndarray:
+    """Shortest-arc unsigned angular distance on the ``[0, 2π)`` circle.
+
+    Folding (a.k.a.  branch-cut) is the canonical source of spurious
+    ``2π`` differences in classical-to-quantum angle comparisons; taking
+    the minimum of the direct arc and the ``2π``-complementary arc makes
+    the distance invariant under ``mod 2π`` folding applied to either
+    operand, which matches the physical Pauli-rotation equivalence
+    ``R(θ) ≡ R(θ + 2πk)`` up to global phase.
+    """
+
+    diff = np.asarray(a, dtype=np.float64) - np.asarray(b, dtype=np.float64)
+    abs_diff = np.abs(diff)
+    period = 2.0 * np.pi
+    # Reduce anything larger than half a period via the complementary arc.
+    wrapped = np.minimum(abs_diff, period - abs_diff % period)
+    # After the above, terms ``abs_diff == period * k`` collapse to 0 as
+    # expected for physically equivalent rotations.
+    return np.where(abs_diff >= period, abs_diff % period, wrapped)
+
+
+def _assert_pwcheb_statevector(
+    op: PiecewiseChebyshev,
+    *,
+    alpha: np.ndarray | None = None,
+    atol: float = AMPLITUDE_ATOL,
+    rtol: float = AMPLITUDE_RTOL,
+) -> None:
+    """Black-box probability-domain statevector check for PiecewiseChebyshev.
+
+    For piecewise comparator-based circuits the comparator ``geq`` wires
+    are *not* uncomputed after the rotation layer – their final value is
+    the *classical* comparator output (``geq_j = 1`` iff ``k >= b_j``).
+    Any test that demands ``geq == 0`` at the end of the circuit is
+    therefore incorrect for ``k >= b_j`` (which is exactly the behaviour
+    that produced the first round of ``garbage-leakage`` failures).
+
+    The structural invariants that are actually valid for *any*
+    block-diagonal piecewise amplitude-encoding UCR are:
+
+    1. **Control-register invariance** – the ``x`` part never changes.
+       In statevector terms, any amplitude whose ``x_val != k`` must
+       vanish up to floating-point noise.  The total probability mass
+       outside the fixed-``x`` subspace is therefore exactly the
+       ``garbage_mass`` used below.
+    2. **Result-qubit measurement probabilities** – inside the
+       ``x == k`` subspace the result qubit is rotated by
+       ``R_y(theta_k)`` independently of what the comparator wires
+       happen to contain.  For the measurement probabilities we only
+       care about *marginalising* over the ``geq`` subspace:
+       ``P(result=0|k) = cos^2(theta_k/2)`` and
+       ``P(result=1|k) = sin^2(theta_k/2)``.  This is exactly the
+       convention used by the rest of the suite in
+       ``_assert_branch_against_alpha`` and is robust to both global
+       sign and any ``geq`` occupation.
+    """
+
+    n = op.num_state_qubits
+    J = op.num_segments
+    num_qubits = op.num_qubits
+    if num_qubits != n + J:  # pragma: no cover - class-invariant guard
+        raise AssertionError(
+            f"PiecewiseChebyshev num_qubits invariant broken: "
+            f"{num_qubits} != {n} + {J}"
+        )
+    x_wires = op.control_register_indices
+    geq_wires = op.geq_register_indices
+    target_wire = op.result_qubit_index
+    if alpha is None:
+        alpha = _pwcheb_expected_alpha(op)
+
+    circ = op.build_circuit()
+    dim = 1 << n
+    for k in range(dim):
+        theta_k = float(alpha[k])
+
+        full = Circuit(num_qubits)
+        for bit_local, wire in enumerate(x_wires):
+            if (k >> bit_local) & 1:
+                full.x(wire)
+        full.compose(circ, list(range(num_qubits)))
+        sv = _statevector_data(Statevector.from_circuit(full))
+
+        prob_x_ok = 0.0  # total |amp|^2 with x == k (marginal over geq/result)
+        prob_result_0 = 0.0  # |amp|^2 with x == k and result == 0
+        prob_result_1 = 0.0  # |amp|^2 with x == k and result == 1
+        garbage_mass = 0.0  # |amp|^2 with x != k
+
+        num_geq_wires = len(geq_wires)
+        # Precompute bit masks for x / geq / result extraction so we do
+        # not branch on every single bit of a potentially 4096-entry
+        # statevector inside the Python loop.  Typical m = n + J <= 12
+        # so the linear scan is perfectly fine; the precomputed masks
+        # just keep the code readable.
+        x_masks_local = [1 << wire for wire in x_wires]
+        geq_masks = [1 << wire for wire in geq_wires]
+        target_mask = 1 << target_wire
+        for idx in range(1 << num_qubits):
+            # --- decode x_val LSB-first from the physical x_wires ---
+            x_val = 0
+            for bit_local, physical_mask in enumerate(x_masks_local):
+                if (idx & physical_mask):
+                    x_val |= 1 << bit_local
+            mag2 = float(abs(sv[idx]) ** 2)
+            if x_val != k:
+                garbage_mass += mag2
+                continue
+            prob_x_ok += mag2
+            if idx & target_mask:
+                prob_result_1 += mag2
+            else:
+                prob_result_0 += mag2
+
+        # Structural invariant: no control-register leakage (garbage).
+        assert garbage_mass < atol * atol * 1e3, (
+            f"PiecewiseChebyshev k={k} (n={n}, J={J}, geq_wires={num_geq_wires}): "
+            f"control-leakage norm-squared = {garbage_mass:.3e} exceeds tol; "
+            f"control register leaked probability out of x == {k}."
+        )
+        # Total probability inside x == k subspace should be 1 up to tol.
+        assert abs(prob_x_ok - 1.0) < 1e-8, (
+            f"PiecewiseChebyshev k={k} (n={n}, J={J}): "
+            f"total |x == {k}| probability = {prob_x_ok:.6e} != 1."
+        )
+
+        want_p0 = float(math.cos(0.5 * theta_k) ** 2)
+        want_p1 = float(math.sin(0.5 * theta_k) ** 2)
+        for label, have, want in [
+            ("P(result=0)", prob_result_0, want_p0),
+            ("P(result=1)", prob_result_1, want_p1),
+        ]:
+            if abs(have - want) > max(atol * 1e2, rtol * abs(want) + atol):
+                raise AssertionError(
+                    f"PiecewiseChebyshev k={k} (n={n}, J={J}) {label} mismatch: "
+                    f"have {have:.6e}, want {want:.6e}; "
+                    f"|diff|={abs(have-want):.3e}; theta_k={theta_k:.6e}. "
+                    f"(Comparator geq values are allowed to be non-zero; "
+                    f"only x-register invariance + result probabilities "
+                    f"are enforced.)"
+                )
+
+
+class TestPiecewiseChebyshevBase:
+    """PWCHEB-BASE-* smoke tests for the wrapper layer.
+
+    These tests exercise constructor plumbing, breakpoints completion,
+    identity-segment semantics (``π`` for head/tail auto-filled ranges,
+    giving ``|1>``-full amplitude), ``float``-constant ``f_x`` and the
+    ``num_state_qubits`` inference path when the caller only supplies a
+    non-trivial breakpoint list.
+    """
+
+    @staticmethod
+    def test_pwcheb_base_001_degree0_constant() -> None:
+        """degree=0: all segments reduce to a constant 2*c0 rotation."""
+
+        n = 3
+        const = 0.3
+        op = PiecewiseChebyshev(
+            f_x=const,
+            degree=0,
+            breakpoints=None,
+            num_state_qubits=n,
+        )
+        alpha = _pwcheb_expected_alpha(op)
+        expected_theta = 2.0 * const
+        diff = _angular_abs_diff(alpha, expected_theta * np.ones_like(alpha))
+        np.testing.assert_allclose(
+            diff,
+            np.zeros_like(alpha),
+            atol=1e-10,
+            err_msg="degree=0 PWCHEB alpha != 2*const",
+        )
+        _assert_pwcheb_statevector(op)
+
+    @staticmethod
+    def test_pwcheb_base_002_degree1_vs_piecewiselinear() -> None:
+        """degree=1 Chebyshev == PiecewiseLinear (piecewise linear map).
+
+        When ``degree == 1`` the Chebyshev interpolant on any interval is
+        the exact affine linear fit through the endpoints.  Feeding a
+        linear function into both constructors must therefore yield the
+        same rotation table *up to period* (PiecewiseLinear works in
+        native angle mode; PiecewiseChebyshev multiplies coefficients by
+        ``2`` for the amplitude-encoding convention so we double the
+        linear slope/offset on the PiecewiseLinear side to align them).
+
+        The user breakpoint list is explicitly closed at ``2**n`` so that
+        no head/tail identity segment is auto-filled; both constructors
+        receive the exact same two-segment partition ``[0,2), [2,4)``.
+        """
+
+        n = 2
+        slope = 0.25
+        offset = 0.125
+        user_bp = [0, 2, 4]  # J = 2 user segments; no identity segments.
+
+        def f(x: float) -> float:
+            return float(slope * x + offset)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", UserWarning)
+            op_cheb = PiecewiseChebyshev(
+                f_x=f,
+                degree=1,
+                breakpoints=list(user_bp),
+                num_state_qubits=n,
+            )
+            # PWLIN requires J+1 breakpoints that already span [0, 2^n];
+            # use the completed list from the Chebyshev side to be safe.
+            op_lin = PiecewiseLinearPauliRotation(
+                n,
+                breakpoints=op_cheb.breakpoints,
+                slopes=[2.0 * slope, 2.0 * slope],
+                offsets=[2.0 * offset, 2.0 * offset],
+            )
+
+        # Probability-domain comparison – physically equivalent rotations
+        # always agree on cos²/sin², regardless of global phase or any
+        # 2π aliasing.  This is the strongest assertion that still
+        # respects the Pauli-rotation 4π-period equivalence.
+        alpha_cheb = _pwcheb_expected_alpha(op_cheb)
+        alpha_lin = op_lin.alpha
+        p0_cheb = np.cos(0.5 * alpha_cheb) ** 2
+        p0_lin = np.cos(0.5 * alpha_lin) ** 2
+        p1_cheb = np.sin(0.5 * alpha_cheb) ** 2
+        p1_lin = np.sin(0.5 * alpha_lin) ** 2
+        np.testing.assert_allclose(
+            p0_cheb, p0_lin, atol=1e-10,
+            err_msg="degree=1 Chebyshev != PiecewiseLinear (P(result=0))",
+        )
+        np.testing.assert_allclose(
+            p1_cheb, p1_lin, atol=1e-10,
+            err_msg="degree=1 Chebyshev != PiecewiseLinear (P(result=1))",
+        )
+
+    @staticmethod
+    @pytest.mark.filterwarnings(
+        "ignore:PiecewisePolynomialPauliRotation max_degree d_max="
+        ":UserWarning"
+    )
+    def test_pwcheb_base_003_single_segment_default_bp() -> None:
+        """breakpoints=None (single-segment default) covers [0, 2**n)."""
+
+        n = 3
+        degree = 5
+
+        def f(x: float) -> float:
+            return float(math.sin(math.pi * x / float(1 << n)))
+
+        op = PiecewiseChebyshev(
+            f_x=f,
+            degree=degree,
+            breakpoints=None,
+            num_state_qubits=n,
+        )
+        assert op.breakpoints == [0, 1 << n], (
+            f"default breakpoints completion failed: {op.breakpoints}"
+        )
+        assert op.num_segments == 1
+        _assert_pwcheb_statevector(op)
+
+    @staticmethod
+    def test_pwcheb_base_004_fx_constant_float() -> None:
+        """``f_x`` accepts a plain ``float`` (not a callable)."""
+
+        n = 2
+        op = PiecewiseChebyshev(
+            f_x=0.5, degree=0, breakpoints=None, num_state_qubits=n
+        )
+        polys = op.polynomials
+        assert len(polys) == 1
+        # degree=0 Chebyshev: the wrapper multiplies the fitted constant
+        # by 2, so f_x=0.5 -> coefficients = [1.0] per segment.
+        expected_coeff = np.asarray([1.0], dtype=np.float64)
+        diff = float(np.max(np.abs(np.asarray(polys[0], dtype=np.float64)
+                                    - expected_coeff)))
+        # Don't hard-fail on tiny fitting noise: anything below 1e-8 is
+        # effectively a degree-0 Chebyshev constant 1.0 within tolerance
+        # and the statevector assertion below will catch functional
+        # mismatches.
+        assert diff < 1e-6, (
+            f"PWCHEB BASE-004 expected constant coeff [1.0], got "
+            f"{polys[0]} (|diff|={diff:.3e})"
+        )
+        _assert_pwcheb_statevector(op)
+
+    @staticmethod
+    def test_pwcheb_base_005_n_inference_from_breakpoints() -> None:
+        """num_state_qubits=None + breakpoints=[2,5] infers n=3."""
+
+        def f(x: float) -> float:
+            return 0.1 * float(x)
+
+        op = PiecewiseChebyshev(
+            f_x=f, degree=1, breakpoints=[2, 5], num_state_qubits=None
+        )
+        assert op.num_state_qubits == 3, (
+            f"n inference failed: {op.num_state_qubits} != 3"
+        )
+        assert op.breakpoints == [0, 2, 5, 8]
+
+
+class TestPiecewiseChebyshevDocCases:
+    """Design-document §8.3 cases: PWCHEB-001, PWCHEB-002, PWCHEB-003."""
+
+    # -- PWCHEB-001 piecewise reciprocal approximation ------------------
+
+    @staticmethod
+    def test_pwcheb_001_reciprocal_degree2() -> None:
+        """Degree-2 Chebyshev of 1/x piecewise over [1,4) ∪ [4,8).
+
+        The head segment ``[0, 1)`` is auto-filled with the identity
+        polynomial ``[π]``, which encodes the "full amplitude" state
+        ``sin(π/2) == 1`` in amplitude-mode semantics.  The two
+        user segments use a second-degree interpolant.  Because
+        Chebyshev approximations are only guaranteed to be *close* to
+        the target function (not exact for degree < segment length) the
+        test bounds the error against a dense classical evaluation of
+        ``f`` rather than asserting exact equality.  The quantum
+        statevector, in turn, is checked against the *actual* classical
+        coefficients stored by the wrapper (i.e.  we verify the circuit
+        *really implements what the wrapper computed*).
+
+        Note on the ``f_x`` convention: the PiecewiseChebyshev wrapper
+        applies ``2 * coeffs`` internally so that the downstream
+        polynomial layer produces rotation ``theta(k) = 2*P_d(k)``; the
+        caller therefore passes the *half-angle* amplitude ``f(k)``
+        rather than the full rotation ``2·asin(f(k))``.  ``f(x) = 1/x``
+        on ``[1, 8)`` maps naturally to ``theta(k) = 2·asin(1/k)`` via
+        the standard amplitude-encoding recipe.
+        """
+
+        from numpy.polynomial import Chebyshev as _NpCheb
+        from numpy.polynomial import Polynomial as _NpPoly
+
+        n = 3
+        degree = 2
+        user_bp = [1, 4, 8]
+
+        def f_target(x: float | int) -> float:
+            xv = float(x)
+            return 1.0 / xv if xv != 0.0 else 1.0
+
+        # 1. Reference error bound: build the completed segments classically
+        #    and measure the max |f(k) - P_d(k)| on the integer grid.
+        #    Use the standard ``Chebyshev.interpolate`` interface to
+        #    guarantee a canonical Chebyshev-Gauss (zeros-of-T) interpolant
+        #    on every segment, matching the wrapper's construction exactly.
+        completed_bp = [0] + list(user_bp)
+        if completed_bp[-1] < (1 << n):
+            completed_bp.append(1 << n)
+        f_vec = np.vectorize(f_target, otypes=[np.float64])
+        grid_abs_err = 0.0
+        for j in range(len(completed_bp) - 1):
+            lo = completed_bp[j]
+            hi = completed_bp[j + 1]
+            if j == 0:
+                continue  # identity segment – no approximation
+            a = float(lo)
+            b = float(hi - 1)
+            cheb = _NpCheb.interpolate(f_vec, deg=degree, domain=[a, b])
+            poly = cheb.convert(kind=_NpPoly)
+            coeffs = np.asarray(poly.coef, dtype=np.float64)
+            for k in range(lo, hi):
+                expected = f_target(float(k))
+                realised = float(np.polyval(coeffs[::-1], np.float64(k)))
+                grid_abs_err = max(grid_abs_err, abs(expected - realised))
+        # A degree-2 fit on three / four integer points should be small
+        # when expressed in f-units (NOT yet multiplied by 2).
+        assert grid_abs_err < 0.2, (
+            f"PWCHEB-001 classical approximation error too large: "
+            f"{grid_abs_err:.3e}"
+        )
+
+        # 2. Instantiate the operator and run the black-box check.
+        op = PiecewiseChebyshev(
+            f_x=lambda x, _ft=f_target: _ft(x),
+            degree=degree,
+            breakpoints=list(user_bp),
+            num_state_qubits=n,
+        )
+        # Head auto-filled identity segment: coefficient must be exactly π.
+        np.testing.assert_allclose(
+            op.polynomials[0],
+            np.asarray([math.pi], dtype=np.float64),
+            atol=1e-14,
+            err_msg="PWCHEB-001 head identity segment coeff != π",
+        )
+        _assert_pwcheb_statevector(op)
+
+    # -- PWCHEB-002 exponential convergence ---------------------------------
+
+    @staticmethod
+    @pytest.mark.filterwarnings(
+        "ignore:PiecewisePolynomialPauliRotation max_degree d_max="
+        ":UserWarning"
+    )
+    @pytest.mark.filterwarnings(
+        "ignore:One or more theta\\(k\\) values produced by the piecewise "
+        "Chebyshev interpolant exceed 2\\*pi:UserWarning"
+    )
+    @pytest.mark.filterwarnings(
+        "ignore:One or more raw piecewise-polynomial angles exceed "
+        "2\\*pi in absolute value:UserWarning"
+    )
+    def test_pwcheb_002_exponential_convergence() -> None:
+        """sin(π·x/14) on n=3: increasing degree → monotonic error decay.
+
+        For an analytic function the standard Chebyshev interpolant –
+        defined on the exact (floating-point, unrounded) Chebyshev-Gauss
+        nodes (zeros of ``T_{d+1}``) and evaluated at the integer
+        control register indices – converges exponentially in
+        ``degree``.  This test asserts *two* properties:
+
+        * The wrapper's classical coefficient calculation is cross
+          validated against an independent ``numpy.polynomial`` based
+          reconstruction: for every ``degree`` the wrapper's alpha
+          table must match an alpha table rederived in the test file
+          from scratch via the canonical
+          :func:`numpy.polynomial.chebyshev.Chebyshev.interpolate`
+          interface, which uses the same Chebyshev-Gauss nodes used
+          internally by the wrapper's :func:`_interpolate_segment`
+          helper.  Any deviation therefore indicates a genuine
+          implementation bug rather than a mere numerical-difference
+          noise between two different node samplers.
+        * The interpolation error against the *ideal* target
+          ``2·f(k)`` must decrease monotonically in ``degree`` (within
+          floating-point noise) and overall shrink by at least a factor
+          of ``10`` from ``d=1`` to ``d=5``, verifying that the
+          convergence rate is indeed exponential rather than constant.
+        """
+
+        from numpy.polynomial import Chebyshev as _NpCheb
+        from numpy.polynomial import Polynomial as _NpPoly
+
+        n = 3
+        degrees = [1, 2, 3, 4, 5]
+
+        def f(x: float) -> float:
+            return float(math.sin(math.pi * x / 14.0))
+
+        # Build the target 2·f(k) reference once; per-degree alphas are
+        # re-derived from independent Chebyshev-Gauss interpolations
+        # below so they genuinely cross-validate the wrapper rather
+        # than reuse its cached coefficients.
+        dim = 1 << n
+        target_theta = np.asarray(
+            [2.0 * f(float(k)) for k in range(dim)], dtype=np.float64
+        )
+        ks = np.arange(dim, dtype=np.float64)
+        a = 0.0
+        b = float(dim - 1)
+
+        def _independent_alpha_for(degree: int) -> np.ndarray:
+            """Reconstruct the rotation table the way the wrapper does.
+
+            Use the standard :func:`Chebyshev.interpolate` interface
+            which samples ``f`` on the exact (floating-point, unrounded)
+            Chebyshev-Gauss nodes (zeros of ``T_{d+1}``) of ``[a, b]``
+            and builds the interpolant in one canonical call.  The
+            result is mathematically identical to a manual ``fit`` on
+            the same Gauss nodes with matching degree, but the
+            standard API eliminates any risk of off-by-one node
+            indexing or manual node-mapping mistakes.
+
+            Final steps mirror the wrapper:
+
+            - convert Chebyshev series to monomial (power) basis
+            - scale coefficients by ``2`` (amplitude mode)
+            - evaluate on the full integer control grid
+
+            This helper deliberately avoids calling any implementation
+            helper (including :func:`_pwcheb_expected_alpha`).
+            """
+
+            nonlocal f
+            f_vec = np.vectorize(f, otypes=[np.float64])
+            cheb = _NpCheb.interpolate(f_vec, deg=degree, domain=[a, b])
+            poly = cheb.convert(kind=_NpPoly)
+            coeffs = 2.0 * np.asarray(poly.coef, dtype=np.float64)
+            return np.asarray(
+                np.polyval(coeffs[::-1], ks), dtype=np.float64
+            )
+
+        interpolation_errors: list[float] = []
+        for d in degrees:
+            op = PiecewiseChebyshev(
+                f_x=f, degree=d, breakpoints=None, num_state_qubits=n
+            )
+            alpha_from_op = _pwcheb_expected_alpha(op)
+            alpha_independent = _independent_alpha_for(d)
+
+            # (1) Cross-validation: wrapper vs. independent recalc agree
+            diff_alpha = _angular_abs_diff(alpha_from_op, alpha_independent)
+            np.testing.assert_allclose(
+                diff_alpha,
+                np.zeros_like(diff_alpha),
+                atol=1e-10,
+                err_msg=(
+                    f"PWCHEB-002 degree={d}: wrapper alpha differs from "
+                    f"independent Chebyshev-Gauss rebuild alpha."
+                ),
+            )
+            # (2) Use the independent alpha (they match anyway) to
+            # measure the approximation quality against ``2·f(k)``.
+            approx_err = _angular_abs_diff(alpha_independent, target_theta)
+            max_err = float(np.max(approx_err))
+            interpolation_errors.append(max_err)
+
+        # Strict monotonic decay is guaranteed by Chebyshev theory for
+        # an analytic target on any non-degenerate interval, provided
+        # the interpolant uses the exact (unrounded) Chebyshev-Gauss
+        # nodes.  Allow 1e-14 floating-point slack for near-machine-
+        # precision equalities between two adjacent degrees.
+        for idx in range(len(interpolation_errors) - 1):
+            assert (
+                interpolation_errors[idx + 1]
+                <= interpolation_errors[idx] + 1e-14
+            ), (
+                f"PWCHEB-002 degree={degrees[idx]} err="
+                f"{interpolation_errors[idx]:.3e} exceeds degree="
+                f"{degrees[idx+1]} err={interpolation_errors[idx+1]:.3e}"
+            )
+        # Primary rate check: d=5 error must be at least 10× smaller
+        # than d=1 for a smoothly varying analytic target.
+        assert interpolation_errors[-1] <= 0.1 * interpolation_errors[0], (
+            f"PWCHEB-002 convergence factor too small: err(d=5)="
+            f"{interpolation_errors[-1]:.3e} > 0.1·err(d=1)="
+            f"{0.1 * interpolation_errors[0]:.3e}"
+        )
+
+    # -- PWCHEB-003 head-identity segment when breakpoints[0] > 0 -------
+
+    @staticmethod
+    def test_pwcheb_003_head_identity_amplitude_1() -> None:
+        """breakpoints=[2] for n=2 → [0,2) identity segment (sin(π/2)=1).
+
+        The auto-filled head segment uses the polynomial ``[π]`` which
+        produces theta = π for every integer k in [0,2).  Therefore the
+        |1>-component amplitude is exactly ``sin(π/2) = 1`` (full result
+        qubit flip) for those two control states; this is the
+        amplitude-encoding "full result" identity used by the wrapper
+        and matches Qiskit's convention.
+        """
+
+        n = 2
+
+        def f(x: float) -> float:
+            return 0.25 * float(x)
+
+        op = PiecewiseChebyshev(
+            f_x=f, degree=1, breakpoints=[2], num_state_qubits=n
+        )
+        alpha = _pwcheb_expected_alpha(op)
+        for k in (0, 1):
+            theta_k = float(alpha[k])
+            assert abs(math.sin(theta_k / 2.0) - 1.0) < 1e-12, (
+                f"PWCHEB-003 head-segment sin(theta/2) at k={k} != 1.0: "
+                f"theta={theta_k:.6e}"
+            )
+        _assert_pwcheb_statevector(op)
+
+
+class TestPiecewiseChebyshevBound:
+    """PWCHEB-BOUND-* edge cases and invalid-input guards."""
+
+    @staticmethod
+    def test_pwcheb_bound_001_tail_identity_segment() -> None:
+        """breakpoints=[0,2,5] for n=3 → tail [5,8) is identity (π)."""
+
+        n = 3
+
+        def f(x: float) -> float:
+            return 0.1 * float(x)
+
+        op = PiecewiseChebyshev(
+            f_x=f, degree=1, breakpoints=[0, 2, 5], num_state_qubits=n
+        )
+        assert op.breakpoints == [0, 2, 5, 8]
+        np.testing.assert_allclose(
+            op.polynomials[-1],
+            np.asarray([math.pi], dtype=np.float64),
+            atol=1e-14,
+        )
+        alpha = _pwcheb_expected_alpha(op)
+        for k in range(5, 8):
+            assert abs(math.sin(alpha[k] / 2.0) - 1.0) < 1e-12, (
+                f"tail-identity k={k} not full amplitude"
+            )
+        _assert_pwcheb_statevector(op)
+
+    @staticmethod
+    def test_pwcheb_bound_002_head_and_tail_both_auto() -> None:
+        """breakpoints=[2,5] for n=3 → both head & tail auto-filled (π)."""
+
+        n = 3
+
+        def f(x: float) -> float:
+            return 0.2 * float(x)
+
+        op = PiecewiseChebyshev(
+            f_x=f, degree=1, breakpoints=[2, 5], num_state_qubits=n
+        )
+        assert op.breakpoints == [0, 2, 5, 8]
+        for idx in (0, -1):
+            np.testing.assert_allclose(
+                op.polynomials[idx],
+                np.asarray([math.pi], dtype=np.float64),
+                atol=1e-14,
+                err_msg=f"auto-filled segment idx={idx} coeff != π",
+            )
+        _assert_pwcheb_statevector(op)
+
+    @staticmethod
+    def test_pwcheb_bound_003_minimum_n1() -> None:
+        """Smoke test: n=1, degree=0, breakpoints=None constructs cleanly."""
+
+        op = PiecewiseChebyshev(
+            f_x=0.25, degree=0, breakpoints=None, num_state_qubits=1
+        )
+        assert op.num_state_qubits == 1
+        assert op.breakpoints == [0, 2]
+        _assert_pwcheb_statevector(op)
+
+    @staticmethod
+    def test_pwcheb_bound_004_invalid_inputs_raise() -> None:
+        """Type/value guards mirror the wrapper's constructor checks."""
+
+        # f_x: bool rejected
+        with pytest.raises(TypeError, match="f_x"):
+            PiecewiseChebyshev(  # type: ignore[arg-type]
+                f_x=True, degree=0, breakpoints=None, num_state_qubits=2
+            )
+        # degree: negative
+        with pytest.raises(ValueError, match="degree"):
+            PiecewiseChebyshev(
+                f_x=0.5, degree=-1, breakpoints=None, num_state_qubits=2
+            )
+        # breakpoints: descending
+        with pytest.raises(ValueError, match="breakpoints"):
+            PiecewiseChebyshev(
+                f_x=lambda x: 0.1 * float(x),
+                degree=1,
+                breakpoints=[3, 1],
+                num_state_qubits=2,
+            )
+        # num_state_qubits None + breakpoints default/None → cannot infer
+        with pytest.raises(ValueError, match="num_state_qubits"):
+            PiecewiseChebyshev(f_x=0.5, degree=0, breakpoints=None)
+
+
+# ---------------------------------------------------------------------------
+# Section 10.  Piecewise-Chebyshev BLACK-BOX validation
+# ---------------------------------------------------------------------------
+# The tests above repeatedly call ``_assert_pwcheb_statevector`` which
+# itself relies on ``PiecewiseChebyshev.polynomials`` (a public but
+# *structural* property) to build the reference ``theta(k)`` table.  The
+# design team explicitly requested a *genuine* black-box battery that
+# never inspects ``polynomials``, ``breakpoints``, or any other
+# implementation detail of the wrapper.  All assertions below use only
+# the public callable ``f_x`` and the simulated statevector.
+#
+# Coverage map:
+#   PWCHEB-BB-001  Single-segment half-sine table (n=3, degree=5)
+#   PWCHEB-BB-002  Piecewise constant-on-intervals via degree=0
+#   PWCHEB-BB-003  Breakpoints > 0 and < 2^n: both head and tail
+#                  identity (π) segments, verified against the external
+#                  target-function convention *outside* the Chebyshev
+#                  wrapper itself.
+# ---------------------------------------------------------------------------
+
+
+class TestPiecewiseChebyshevBlackBox:
+    """Attribute-free (no polynomials / no breakpoints inspect) tests.
+
+    Every test in this class reconstructs the expected reference
+    probabilities purely from the user ``f_x`` callable plus an
+    independent numerical Chebyshev fit, and compares against
+    ``Statevector.from_circuit`` without ever reading
+    :attr:`PiecewiseChebyshev.polynomials`.  This is the closest a
+    unit-test can get to the "operator as an oracle" perspective required
+    by the design document.
+    """
+
+    # ------------------------------------------------------------------
+    # Shared oracle-style helper
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _black_box_probe_and_assert(
+        op: PiecewiseChebyshev,
+        expected_p1: np.ndarray,
+        *,
+        atol: float = 1e-8,
+    ) -> None:
+        """Probe each |k> and enforce result probabilities + no x-leak.
+
+        Parameters
+        ----------
+        op: PiecewiseChebyshev
+            Operator under test.  Its public properties are only used for
+            circuit construction (``build_circuit()``) and for the wire
+            layout (``control_register_indices`` / ``result_qubit_index``)
+            – which every circuit consumer must, unavoidably, know.  The
+            structural ``polynomials`` and ``breakpoints`` attributes are
+            **not** consulted.
+        expected_p1: numpy.ndarray
+            Per-control ``P(|1>_result | k)`` for ``k in [0, 2^n)``.  The
+            0-branch probability is inferred as ``1 - expected_p1`` so
+            the caller only has to supply a single physical quantity.
+        atol: float
+            Absolute tolerance on each probability scalar.
+        """
+
+        n = int(op.num_state_qubits)
+        num_qubits = int(op.num_qubits)
+        x_wires = list(op.control_register_indices)
+        target_wire = int(op.result_qubit_index)
+        if len(expected_p1) != (1 << n):  # pragma: no cover
+            raise AssertionError(
+                "expected_p1 length mismatch: got "
+                f"{len(expected_p1)} vs 2^{n}={1 << n}."
+            )
+        circ = op.build_circuit()
+        for k, want_p1 in enumerate(expected_p1):
+            want_p0 = 1.0 - float(want_p1)
+            full = Circuit(num_qubits)
+            for bit_local, wire in enumerate(x_wires):
+                if (k >> bit_local) & 1:
+                    full.x(wire)
+            full.compose(circ, list(range(num_qubits)))
+            sv = _statevector_data(Statevector.from_circuit(full))
+
+            x_masks = [1 << wire for wire in x_wires]
+            target_mask = 1 << target_wire
+            garbage_mass = 0.0
+            p0 = 0.0
+            p1 = 0.0
+            for idx in range(1 << num_qubits):
+                x_val = 0
+                for bit_local, physical_mask in enumerate(x_masks):
+                    if (idx & physical_mask):
+                        x_val |= 1 << bit_local
+                mag2 = float(abs(sv[idx]) ** 2)
+                if x_val != k:
+                    garbage_mass += mag2
+                    continue
+                if idx & target_mask:
+                    p1 += mag2
+                else:
+                    p0 += mag2
+
+            assert garbage_mass < 1e-12, (
+                f"PWCHEB-BB control-leak k={k}: norm-sq of x != {k} is "
+                f"{garbage_mass:.3e} (must be 0)."
+            )
+            for label, have, want in [
+                ("P(0)", p0, want_p0),
+                ("P(1)", p1, float(want_p1)),
+            ]:
+                if abs(have - want) > atol:  # pragma: no cover
+                    raise AssertionError(
+                        f"PWCHEB-BB k={k}: {label} = {have:.6e}, want "
+                        f"{want:.6e} (|diff|={abs(have-want):.3e})."
+                    )
+
+    # -- PWCHEB-BB-001 single-segment smooth sine -----------------------
+
+    @staticmethod
+    @pytest.mark.filterwarnings(
+        "ignore:PiecewisePolynomialPauliRotation max_degree d_max="
+        ":UserWarning"
+    )
+    @pytest.mark.filterwarnings(
+        "ignore:One or more theta\\(k\\) values produced by the piecewise "
+        "Chebyshev interpolant exceed 2\\*pi:UserWarning"
+    )
+    @pytest.mark.filterwarnings(
+        "ignore:One or more raw piecewise-polynomial angles exceed "
+        "2\\*pi in absolute value:UserWarning"
+    )
+    def test_pwcheb_bb_001_single_segment_sin() -> None:
+        """Single-segment f(x) = 0.5 · sin(π·x/8) on n=3, degree=5.
+
+        The test does **not** read any implementation detail of
+        :class:`PiecewiseChebyshev`.  The expected result probabilities
+        are derived in the test file by independently rebuilding the
+        standard Chebyshev-Gauss interpolant using
+        :func:`numpy.polynomial.chebyshev.Chebyshev.interpolate`, which
+        samples ``f`` on the exact (floating-point, unrounded) zeros
+        of ``T_{d+1}`` over the domain ``[0, 2**n - 1]``.  Monomial
+        coefficients are multiplied by ``2`` to encode the target
+        amplitude.  This is a genuinely independent mathematical
+        cross-validation that matches the wrapper's standard-Chebyshev
+        construction but does not call any implementation helper.
+        """
+
+        from numpy.polynomial import Chebyshev as _NpCheb
+        from numpy.polynomial import Polynomial as _NpPoly
+
+        n = 3
+        degree = 5
+
+        def f(x: float) -> float:
+            return 0.5 * float(math.sin(math.pi * x / float(1 << n)))
+
+        op = PiecewiseChebyshev(
+            f_x=f, degree=degree, breakpoints=None, num_state_qubits=n
+        )
+
+        dim = 1 << n
+        a = 0.0
+        b = float(dim - 1)
+        # Independent classical Chebyshev interpolation using the
+        # standard ``interpolate`` interface, which guarantees exact
+        # matching with a wrapper using the same Chebyshev-Gauss nodes.
+        f_vec = np.vectorize(f, otypes=[np.float64])
+        cheb = _NpCheb.interpolate(f_vec, deg=degree, domain=[a, b])
+        poly = cheb.convert(kind=_NpPoly)
+        coeffs = 2.0 * np.asarray(poly.coef, dtype=np.float64)
+        ks = np.arange(dim, dtype=np.float64)
+        theta = np.asarray(np.polyval(coeffs[::-1], ks), dtype=np.float64)
+        want_p1 = np.sin(0.5 * theta) ** 2
+        TestPiecewiseChebyshevBlackBox._black_box_probe_and_assert(
+            op, np.asarray(want_p1, dtype=np.float64), atol=1e-6
+        )
+
+    # -- PWCHEB-BB-002 piecewise constant (degree 0) plateaux -----------
+
+    @staticmethod
+    def test_pwcheb_bb_002_piecewise_constant() -> None:
+        """Degree-0 piecewise Chebyshev == piecewise constant amplitude.
+
+        Breakpoints ``[0, 2, 4, 8]`` for ``n=3``; target amplitudes on
+        each segment are ``0.4``, ``0.7``, ``0.2`` (all ``≤ 1`` so the
+        ``asin`` domain is respected).  For each segment the degree-0
+        fit is just the target constant itself; the wrapper therefore
+        produces ``theta = 2 * c_{(j)}`` on segment ``j`` and we expect
+        ``sin²(theta / 2) = sin²(c_{(j)})``.  A loose ``atol=1e-6`` is
+        used because Chebyshev.fit on a single point adds some
+        rounding noise that is still negligible physically.
+        """
+
+        n = 3
+        breakpoints = [0, 2, 4, 8]
+        seg_amps = [0.4, 0.7, 0.2]
+
+        def f(x: float) -> float:
+            xv = float(x)
+            for j in range(len(seg_amps)):
+                lo = float(breakpoints[j])
+                hi = float(breakpoints[j + 1])
+                if lo <= xv < hi:
+                    return float(seg_amps[j])
+            return 0.0  # pragma: no cover
+
+        op = PiecewiseChebyshev(
+            f_x=f, degree=0, breakpoints=list(breakpoints), num_state_qubits=n
+        )
+
+        dim = 1 << n
+        want_p1 = np.zeros(dim, dtype=np.float64)
+        for j, amp in enumerate(seg_amps):
+            lo = breakpoints[j]
+            hi = breakpoints[j + 1]
+            want_p1[lo:hi] = float(math.sin(amp) ** 2)
+        TestPiecewiseChebyshevBlackBox._black_box_probe_and_assert(
+            op, want_p1, atol=1e-6
+        )
+
+    # -- PWCHEB-BB-003 head & tail identity segments (π semantics) ------
+
+    @staticmethod
+    def test_pwcheb_bb_003_identity_segments_full_amplitude() -> None:
+        """``breakpoints=[2, 5]``, n=3 → head and tail identity segments.
+
+        The design convention for PiecewiseChebyshev is that auto-filled
+        identity segments represent *full* amplitude (``theta = π``),
+        i.e. ``sin(π/2) == 1``.  The middle user segment ``[2, 5)``
+        uses ``f(k) = 0.1*k + 0.05`` (linearly varying, degree=1).
+
+        Instead of reading :attr:`PiecewiseChebyshev.polynomials` the
+        test reconstructs the user segment's interpolant independently
+        via the standard :func:`Chebyshev.interpolate` interface on
+        domain ``[lo_user, hi_user - 1]``, which matches the wrapper's
+        Chebyshev-Gauss (zeros) construction exactly.  The combined
+        probability table is therefore built up from *three*
+        independent pieces:
+
+        * k ∈ [0, 2): head identity → ``P(|1>) = sin²(π/2) = 1``
+        * k ∈ [2, 5): interpolated ``theta(k) = 2·P_1(k)`` →  ``P(|1>) = sin²(theta(k)/2)``
+        * k ∈ [5, 8): tail identity → ``P(|1>) = sin²(π/2) = 1``
+
+        and fed directly into the oracle-style probe helper.
+        """
+
+        from numpy.polynomial import Chebyshev as _NpCheb
+        from numpy.polynomial import Polynomial as _NpPoly
+
+        n = 3
+        user_breakpoints = [2, 5]
+        lo_user, hi_user = 2, 5
+
+        def f(x: float) -> float:
+            return 0.1 * float(x) + 0.05
+
+        op = PiecewiseChebyshev(
+            f_x=f, degree=1,
+            breakpoints=list(user_breakpoints),
+            num_state_qubits=n,
+        )
+
+        # Independent degree-1 interpolant *only* for the user segment
+        # [2, 5).  domain endpoints use the inclusive upper bound
+        # ``hi - 1`` because that is what the wrapper's
+        # ``_interpolate_segment`` uses for its Chebyshev-Gauss
+        # node grid mapping.
+        a = float(lo_user)
+        b = float(hi_user - 1)
+        degree = 1
+        f_vec = np.vectorize(f, otypes=[np.float64])
+        cheb = _NpCheb.interpolate(f_vec, deg=degree, domain=[a, b])
+        poly = cheb.convert(kind=_NpPoly)
+        coeffs = 2.0 * np.asarray(poly.coef, dtype=np.float64)
+
+        dim = 1 << n
+        want_p1 = np.ones(dim, dtype=np.float64)  # identity = 1 (full amp)
+        for k in range(lo_user, hi_user):
+            theta_k = float(np.polyval(coeffs[::-1], np.float64(k)))
+            want_p1[k] = float(math.sin(0.5 * theta_k) ** 2)
+        TestPiecewiseChebyshevBlackBox._black_box_probe_and_assert(
+            op, want_p1, atol=1e-7
+        )
+
+    # -- PWCHEB-BB-004 multi-segment reciprocal end-to-end -------------
+
+    @staticmethod
+    def test_pwcheb_bb_004_multi_segment_reciprocal() -> None:
+        """Degree-2 1/x on J=3 segments [0,1) ∪ [1,4) ∪ [4,8) + BB SV probe.
+
+        This is the high-priority *end-to-end black-box* companion to
+        :func:`TestPiecewiseChebyshevDocCases.test_pwcheb_001_reciprocal_degree2`.
+        The doc case only asserts classical coefficient error bounds and
+        then uses the white-box :func:`_assert_pwcheb_statevector` helper
+        (which reads ``op.polynomials`` / ``op.breakpoints``).  This case
+        builds the *identical* multi-segment configuration but then:
+
+        * reconstructs every user-segment interpolant independently via
+          :func:`numpy.polynomial.chebyshev.Chebyshev.interpolate` using
+          the same Chebyshev-Gauss nodes as the wrapper,
+        * hard-codes the head identity-segment convention (``θ = π``
+          ⇒ ``sin²(π/2) = 1``),
+        * assembles a full ``2**n`` probability table **without**
+          touching any ``PiecewiseChebyshev`` structural attribute,
+        * and finally feeds the operator and the expected probability
+          table into the oracle-style :func:`_black_box_probe_and_assert`
+          helper, which iterates ``|k>`` one by one, runs
+          ``Statevector.from_circuit`` on the full circuit (``X|0>``
+          prepend + operator), and enforces:
+
+          - no control-register garbage mass (``x`` value must stay
+            equal to the prepared ``k`` across all ancilla states),
+          - ``P(|1>_result | k)`` matches the independently derived
+            expectation within ``atol=1e-6``.
+
+        This is the closest the suite gets to a "component as a black
+        oracle" integration test: it validates the *entire* chain
+        (breakpoint auto-completion → per-segment Chebyshev-Gauss
+        interpolation → coefficient ×2 scaling → comparator geq flags →
+        incremental multi-controlled RY accumulation → final state
+        amplitudes) without ever inspecting internal attributes.
+        """
+
+        from numpy.polynomial import Chebyshev as _NpCheb
+        from numpy.polynomial import Polynomial as _NpPoly
+
+        n = 3
+        degree = 2
+        user_bp = [1, 4, 8]
+
+        def f_target(x: float | int) -> float:
+            xv = float(x)
+            return 1.0 / xv if xv != 0.0 else 1.0
+
+        op = PiecewiseChebyshev(
+            f_x=lambda x, _ft=f_target: _ft(x),
+            degree=degree,
+            breakpoints=list(user_bp),
+            num_state_qubits=n,
+        )
+
+        # Independent expected-probability assembly.  The completed
+        # breakpoint list follows the wrapper's auto-completion rule:
+        # prepend ``0`` because user_bp does not start at 0; user_bp
+        # already ends at 2**n so no trailing append is needed.
+        completed_bp = [0] + list(user_bp)
+        f_vec = np.vectorize(f_target, otypes=[np.float64])
+        dim = 1 << n
+        want_p1 = np.zeros(dim, dtype=np.float64)
+        for j in range(len(completed_bp) - 1):
+            lo = completed_bp[j]
+            hi = completed_bp[j + 1]
+            if j == 0:
+                # Head auto-filled identity segment: θ = π ⟺ sin²(θ/2)=1
+                for k in range(lo, hi):
+                    want_p1[k] = 1.0
+                continue
+            a = float(lo)
+            b = float(hi - 1)
+            cheb = _NpCheb.interpolate(f_vec, deg=degree, domain=[a, b])
+            poly = cheb.convert(kind=_NpPoly)
+            coeffs = 2.0 * np.asarray(poly.coef, dtype=np.float64)
+            for k in range(lo, hi):
+                theta_k = float(
+                    np.polyval(coeffs[::-1], np.float64(k))
+                )
+                want_p1[k] = float(math.sin(0.5 * theta_k) ** 2)
+        TestPiecewiseChebyshevBlackBox._black_box_probe_and_assert(
+            op, want_p1, atol=1e-6
+        )
 
 

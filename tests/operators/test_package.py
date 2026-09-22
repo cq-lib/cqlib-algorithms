@@ -14,7 +14,14 @@
 
 from importlib import import_module
 
-from cqlib_algorithms.protocols import Ansatz, Estimator, Sampler, StatePreparation
+from cqlib_algorithms.protocols import (
+    Ansatz,
+    Estimator,
+    Gradient,
+    Optimizer,
+    Sampler,
+    StatePreparation,
+)
 
 
 def test_state_preparation_operators_are_exported_from_functional_packages():
@@ -58,6 +65,17 @@ def test_oracle_operators_are_exported_from_functional_packages():
     assert expected | set(state_preparation.__all__) <= set(operators.__all__)
     for name in expected:
         assert getattr(operators, name) is getattr(oracle, name)
+
+
+def test_composite_operators_are_exported_from_functional_packages():
+    operators = import_module("cqlib_algorithms.operators")
+    composite = import_module("cqlib_algorithms.operators.composite")
+    expected = {"GroverOperator"}
+
+    assert expected <= set(operators.__all__)
+    assert set(composite.__all__) == expected
+    for name in expected:
+        assert getattr(operators, name) is getattr(composite, name)
 
 
 def test_ansatz_operators_are_exported_from_functional_packages():
@@ -121,3 +139,55 @@ def test_estimator_operators_are_exported_from_functional_packages():
     for name in expected:
         assert getattr(operators, name) is getattr(estimator, name)
         assert issubclass(getattr(estimator, name), Estimator)
+
+
+def test_state_fidelity_operators_are_exported_from_functional_packages():
+    operators = import_module("cqlib_algorithms.operators")
+    state_fidelity = import_module("cqlib_algorithms.operators.state_fidelity")
+    expected = {
+        "CircuitFidelityRequest",
+        "CircuitFidelityResult",
+        "ComputeUncomputeFidelity",
+    }
+
+    assert expected <= set(operators.__all__)
+    assert set(state_fidelity.__all__) == expected
+    for name in expected:
+        assert getattr(operators, name) is getattr(state_fidelity, name)
+
+
+def test_gradient_operators_are_exported_from_functional_packages():
+    operators = import_module("cqlib_algorithms.operators")
+    gradient = import_module("cqlib_algorithms.operators.gradient")
+    concrete_gradients = {
+        "FiniteDifferenceGradient",
+        "LinCombEstimatorGradient",
+        "ParameterShiftGradient",
+        "SPSAGradient",
+    }
+    expected = concrete_gradients | {
+        "NaturalGradient",
+        "QFIResult",
+        "QGTResult",
+        "StatevectorQFI",
+        "StatevectorQGT",
+    }
+
+    assert expected <= set(operators.__all__)
+    assert set(gradient.__all__) == expected
+    for name in expected:
+        assert getattr(operators, name) is getattr(gradient, name)
+    for name in concrete_gradients:
+        assert issubclass(getattr(gradient, name), Gradient)
+
+
+def test_optimizer_operators_are_exported_from_functional_packages():
+    operators = import_module("cqlib_algorithms.operators")
+    optimizer = import_module("cqlib_algorithms.operators.optimizer")
+    expected = {"Adam", "GradientDescent", "SPSAOptimizer"}
+
+    assert expected <= set(operators.__all__)
+    assert set(optimizer.__all__) == expected
+    for name in expected:
+        assert getattr(operators, name) is getattr(optimizer, name)
+        assert issubclass(getattr(optimizer, name), Optimizer)

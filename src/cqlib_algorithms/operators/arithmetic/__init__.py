@@ -33,7 +33,12 @@ from .amplitude_encoded_rotation import (
     UCRZ,
     ArbitraryFunction,
     ExactReciprocal,
+    LinearAmplitudeRotation,
     LinearPauliRotation,
+    PiecewiseChebyshev,
+    PiecewiseLinearPauliRotation,
+    PiecewisePolynomialPauliRotation,
+    PolynomialPauliRotation,
 )
 from .comparators import IntegerComparator
 from .multipliers import Multiplier
@@ -49,9 +54,14 @@ __all__ = [
     "FullAdder",
     "HalfAdder",
     "IntegerComparator",
+    "LinearAmplitudeRotation",
     "LinearPauliRotation",
     "ModularAdder",
     "Multiplier",
+    "PiecewiseChebyshev",
+    "PiecewiseLinearPauliRotation",
+    "PiecewisePolynomialPauliRotation",
+    "PolynomialPauliRotation",
     "WeightedSum",
     "adders",
     "amplitude_encoded_rotation",

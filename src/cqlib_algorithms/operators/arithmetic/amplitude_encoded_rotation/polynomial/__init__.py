@@ -33,8 +33,20 @@ width.  Currently implemented families:
 
 from __future__ import annotations
 
+from .linear_amplitude_rotation import LinearAmplitudeRotation
 from .linear_pauli_rotation import LinearPauliRotation
+from .piecewise_chebyshev import PiecewiseChebyshev
+from .piecewise_linear_pauli_rotation import PiecewiseLinearPauliRotation
+from .piecewise_polynomial_pauli_rotation import (
+    PiecewisePolynomialPauliRotation,
+)
+from .polynomial_pauli_rotation import PolynomialPauliRotation
 
 __all__ = [
+    "LinearAmplitudeRotation",
     "LinearPauliRotation",
+    "PiecewiseChebyshev",
+    "PiecewiseLinearPauliRotation",
+    "PiecewisePolynomialPauliRotation",
+    "PolynomialPauliRotation",
 ]

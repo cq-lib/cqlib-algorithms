@@ -5,7 +5,7 @@
 - 使用 `src/cqlib_algorithms/` 布局。稳定的公共协议集中放在 `protocols/`，可复用的线路变换放在 `transforms/`，其他具体组件按实际功能增加模块或子包。
 - 完整算法放在 `algorithms/`，随实际实现按功能增加模块；不预建空分类目录。
 - 不设置泛化的 `components` 或 `contracts` 层；`protocols` 只收纳已经冻结并被多个实现复用的公共契约。
-- `StatePreparation`、`Ansatz`、`Sampler`、`Estimator` 和 `Gradient` 是首批公共抽象基类；请求和结果类型与对应契约放在同一模块。
+- `StatePreparation`、`Ansatz`、`Sampler`、`Estimator`、`Gradient` 和 `Optimizer` 是首批公共抽象基类；请求和结果类型与对应契约放在同一模块。
 - 稳定协议同时从 `cqlib_algorithms.protocols` 和包顶层导出，具体实现从所属功能模块导出。
 - 受公共抽象基类约束的具体组件必须显式继承对应基类。`StatePreparation` 与 `Ansatz` 具有相同抽象操作，但属于不同的名义类型层级，并分别约束状态制备参数和可训练参数语义。线路变换等独立值类型不为满足名义类型而强行继承不匹配的抽象基类。
 - 本库批量 `Estimator` 与 `cqlib.error_mitigation.Estimator` 回调类型属于不同契约；同时使用时必须显式别名，避免短名覆盖。
@@ -16,7 +16,7 @@
 - 复用 `cqlib` 的线路、门、算子和结果类型；调用前核对真实接口，不臆造 API。
 - 执行实现由外部提供，运行时传入符合统一 Cqlib 接口与结果语义的对象。
 - 本库不定义平台适配、登录、任务提交基础设施，也不依赖特定平台 SDK。仅使用相同名称的方法不足以保证兼容。
-- 算法侧只定义 Sampler、Estimator 和 Gradient 所需的最小同步批处理协议，不定义后端提交、轮询、认证或传输协议；平台能力由外部适配器实现。
+- 算法侧只定义 Sampler、Estimator、Gradient 和 Optimizer 所需的最小同步批处理协议，不定义后端提交、轮询、认证或传输协议；平台能力由外部适配器实现。
 - 请求数据结构仅浅冻结；Cqlib 的线路和可观测量仍可变，调用方不得在请求生命周期内修改它们，执行实现必须在运行前重新验证可检测的不变量。
 - 当前 Core 兼容基线为 Python 包 `cqlib>=1.4.0b1,<1.5`；扩大版本范围前必须通过兼容性测试。
 - 保持依赖无环；新增公共接口或第三方依赖时说明必要性。
@@ -89,3 +89,20 @@
   为完整 QAOA。
 - UCCSD 与 k-UpCCGSD 在具备经过评审的费米算子、参考态、激发枚举和映射器前不建
   占位实现；相关 Core 能力边界记录在 `docs/ansatz-core-gap-report.md`。
+
+## 复合算子实现约定
+
+- 复合算子独占 `operators/composite/` 功能子包，由已冻结的基础算子组合而成，
+  不重复实现基础组件的线路构造；每个公共复合算子独占一个模块。
+- `GroverOperator` 构建单次 Grover 迭代 `Q = D_R O`：Oracle 线路在前，
+  `D_R = A S_{0,R} A†` 在后，其中 `S_{0,R} = 2P_{0,R}-I`，`P_{0,R}` 投影
+  到 `R` 中所有量子比特为零的子空间。时间顺序为 Oracle、`A†`、
+  零子空间反射、`A`；采用不带前置负号的相位约定。
+- Oracle 与 `state_preparation` 必须是合法且可静态求逆的 Cqlib `Circuit`，
+  构造时复制并归一化到连续量子比特 `0..n-1`；非酉或动态操作被拒绝。
+- 默认扩散在 `reflection_qubits` 子集上作用 Hadamard 与零态反射；子集为全部
+  搜索量子比特时必须与 `GroverDiffusion` 的矩阵一致，并且仅此时是关于
+  单一制备态的秩一反射。真子集路径是关于 `A range(P_{0,R})` 的子空间
+  反射。`reflection_qubits` 构造时校验、排序并冻结，不允许为空、
+  重复、越界或布尔值；重复值被拒绝，不会被静默去重。
+- 复合算子不选择迭代次数、不执行测量或采样，也不承诺查询复杂度。
