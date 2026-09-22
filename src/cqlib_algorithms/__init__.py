@@ -14,6 +14,7 @@
 
 from importlib.metadata import version
 
+from .algorithms import VQE, VQEResult
 from .protocols import (
     Ansatz,
     Estimator,
@@ -36,6 +37,7 @@ __version__ = version("cqlib-algorithms")
 
 __all__ = [
     "QFT",
+    "VQE",
     "Ansatz",
     "Estimator",
     "EstimatorRequest",
@@ -50,5 +52,6 @@ __all__ = [
     "Sampler",
     "SamplerRequest",
     "StatePreparation",
+    "VQEResult",
     "__version__",
 ]

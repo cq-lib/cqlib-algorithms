@@ -12,3 +12,6 @@
 
 """Complete quantum algorithms composed from reusable components."""
 
+from .vqe import VQE, VQEResult
+
+__all__ = ["VQE", "VQEResult"]

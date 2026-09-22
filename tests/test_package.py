@@ -21,7 +21,9 @@ import pytest
 from cqlib.error_mitigation import Estimator as ErrorMitigationEstimator
 
 import cqlib_algorithms
-from cqlib_algorithms import QFT
+from cqlib_algorithms import QFT, VQE, VQEResult
+from cqlib_algorithms.algorithms import VQE as AlgorithmVQE
+from cqlib_algorithms.algorithms import VQEResult as AlgorithmVQEResult
 from cqlib_algorithms.protocols import (
     Ansatz,
     Estimator,
@@ -55,6 +57,8 @@ PUBLIC_COMPONENTS = {
     "Sampler": Sampler,
     "SamplerRequest": SamplerRequest,
     "StatePreparation": StatePreparation,
+    "VQE": VQE,
+    "VQEResult": VQEResult,
 }
 
 
@@ -107,3 +111,8 @@ def test_component_contracts_are_abstract_base_classes():
 
 def test_qft_is_exported_from_public_namespaces():
     assert QFT is TransformQFT
+
+
+def test_vqe_is_exported_from_public_namespaces():
+    assert VQE is AlgorithmVQE
+    assert VQEResult is AlgorithmVQEResult
