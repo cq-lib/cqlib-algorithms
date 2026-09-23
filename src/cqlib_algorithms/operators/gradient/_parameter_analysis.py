@@ -15,7 +15,7 @@
 This module walks a Core circuit's instruction list and, for one symbol,
 records every parameter-slot occurrence together with the signed spectrum
 of the gate's effective generator and a recipe for applying that generator
-to a state amplitude array.  It also derives exact parameter-shift
+to a state amplitude array.  It also derives exact local parameter-shift
 evaluation points and weights for expectation-value gradients.
 
 A parametric gate ``G(angle)`` is written as a spectral sum
@@ -23,22 +23,18 @@ A parametric gate ``G(angle)`` is written as a spectral sum
 eigenvalues ``lambda``.  For a symbol ``t`` entering a slot through an
 affine expression ``angle = a * t + b`` the branch phase becomes
 ``exp(-i * (a * lambda) * t)``, so the occurrence contributes the scaled
-spectrum ``{a * lambda}``.  An expectation value that depends on ``t``
-through occurrences ``k`` is a trigonometric polynomial whose frequencies
-are differences of sums of one scaled eigenvalue per occurrence, and the
-gradient is an exact linear combination of shifted evaluations whose
-weights solve ``sum_j w_j * exp(i * nu * s_j) == i * nu`` for every
-frequency ``nu``.
+spectrum ``{a * lambda}``.  Parameter-shift differentiates one gate slot at
+a time and adds its contribution according to the multivariate chain rule;
+this keeps the evaluation count linear when one symbol is shared by many
+gates.
 """
 
 from __future__ import annotations
 
 import math
-from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any, TypeAlias
 
-import numpy as np
 from cqlib.circuit import Circuit, Parameter
 
 _HALF = (0.5, -0.5)
@@ -81,8 +77,6 @@ _SLOT_SPECS: dict[str, GateSpec] = {
 _MC_ROTATION_BASES = ("RX", "RY", "RZ")
 
 _UNSUPPORTED_GATES = ("XY", "XY2P", "XY2M", "RXY", "FSIM")
-
-_WEIGHT_TOLERANCE = 1e-10
 
 
 @dataclass(frozen=True, slots=True)
@@ -236,6 +230,12 @@ def analyze_symbol(circuit: Circuit, symbol: str) -> tuple[Occurrence, ...]:
                     f"symbol {symbol!r} at operation {index}, slot {slot}"
                 )
             coefficient = float(derivative.evaluate())
+            if not math.isfinite(coefficient):
+                raise ValueError(
+                    "parameter expressions must have finite affine coefficients, "
+                    f"found {coefficient!r} for symbol {symbol!r} at operation "
+                    f"{index}, slot {slot}"
+                )
             if coefficient == 0.0:
                 continue
             if not spectrum:
@@ -256,81 +256,53 @@ def analyze_symbol(circuit: Circuit, symbol: str) -> tuple[Occurrence, ...]:
     return tuple(occurrences)
 
 
-def frequencies(occurrences: Sequence[Occurrence]) -> tuple[float, ...]:
-    """Return the distinct expectation frequencies of the symbol.
+def local_shift_plan(
+    occurrence: Occurrence,
+) -> tuple[tuple[float, ...], tuple[float, ...]]:
+    """Return an exact rule for one gate-parameter occurrence.
 
-    The result is the sorted tuple of differences of sums of one scaled
-    eigenvalue per non-zero occurrence.  Only ``{0.0}`` means the
-    expectation is symbol-independent.
+    Shifts are expressed in the gate slot's angle, not in the shared
+    circuit symbol.  The caller therefore multiplies the returned weights
+    by ``occurrence.coefficient`` to apply the affine chain rule.  Every
+    currently supported two-eigenvalue slot uses the ordinary two-point
+    rule.  Controlled rotations have the two positive local frequencies
+    ``1/2`` and ``1`` and use the corresponding four-point rule.
     """
-    sums: set[float] = {0.0}
-    for occurrence in occurrences:
-        if occurrence.zero:
-            continue
-        sums = {
-            value + eigenvalue for value in sums for eigenvalue in occurrence.spectrum
-        }
-    return tuple(sorted({first - second for first in sums for second in sums}))
-
-
-def _solve_weights(
-    freqs: Sequence[float], shifts: Sequence[float]
-) -> tuple[np.ndarray, float]:
-    cosines = np.array([[math.cos(w * s) for s in shifts] for w in freqs])
-    sines = np.array([[math.sin(w * s) for s in shifts] for w in freqs])
-    real_system = np.vstack((cosines, sines))
-    real_target = np.concatenate(
-        (np.zeros(len(freqs), dtype=np.float64), np.asarray(freqs, dtype=np.float64))
-    )
-    weights = np.linalg.lstsq(real_system, real_target, rcond=None)[0]
-    complex_system = cosines + 1j * sines
-    complex_target = 1j * np.asarray(freqs, dtype=np.float64)
-    residual = (
-        float(np.max(np.abs(complex_system @ weights - complex_target)))
-        if freqs
-        else 0.0
-    )
-    return weights, residual
-
-
-_SHIFT_CACHE: dict[
-    tuple[float, ...], tuple[tuple[float, ...], tuple[complex, ...]]
-] = {}
-
-
-def shift_plan(
-    occurrences: Sequence[Occurrence],
-) -> tuple[tuple[float, ...], tuple[complex, ...]]:
-    """Return exact shift points and weights for one symbol's gradient.
-
-    The plan satisfies ``sum_j w_j * exp(i * nu * s_j) == i * nu`` for
-    every expectation frequency of the symbol, so
-    ``dE/dt = sum_j w_j * E(t + s_j)`` holds exactly for any estimator
-    of the expectation.  Candidate shift sets are tried in order of
-    increasing evaluation count, starting with the classical two-point
-    rules; the first set with a numerically consistent solution is
-    accepted and cached per frequency set.
-    """
-    freqs = frequencies(occurrences)
-    if not any(freqs):
+    if occurrence.zero:
         return (), ()
-    cached = _SHIFT_CACHE.get(freqs)
-    if cached is not None:
-        return cached
+    if occurrence.coefficient == 0.0:
+        return (), ()
 
-    candidates: list[tuple[float, ...]] = [
-        (math.pi / 2, -math.pi / 2),
-        (0.0, math.pi),
-    ]
-    for count in range(3, len(freqs) + 5):
-        candidates.append(tuple(2.0 * math.pi * j / count for j in range(count)))
-
-    for shifts in candidates:
-        weights, residual = _solve_weights(freqs, shifts)
-        if residual <= _WEIGHT_TOLERANCE:
-            plan = (shifts, tuple(complex(weight) for weight in weights))
-            _SHIFT_CACHE[freqs] = plan
-            return plan
+    spectrum = tuple(value / occurrence.coefficient for value in occurrence.spectrum)
+    frequencies = sorted(
+        {
+            abs(first - second)
+            for first in spectrum
+            for second in spectrum
+            if first != second
+        }
+    )
+    if len(frequencies) == 1 and math.isclose(
+        frequencies[0], 1.0, rel_tol=1e-12, abs_tol=1e-12
+    ):
+        return (
+            (math.pi / 2.0, -math.pi / 2.0),
+            (0.5, -0.5),
+        )
+    if (
+        len(frequencies) == 2
+        and math.isclose(frequencies[0], 0.5, rel_tol=1e-12, abs_tol=1e-12)
+        and math.isclose(frequencies[1], 1.0, rel_tol=1e-12, abs_tol=1e-12)
+    ):
+        # Solve 2 * sum_j a_j sin(nu * s_j) = nu for
+        # s = (pi/2, pi).  The paired weights are (+a_j, -a_j).
+        first = 0.5
+        second = 0.25 - math.sqrt(2.0) / 4.0
+        return (
+            (math.pi / 2.0, -math.pi / 2.0, math.pi, -math.pi),
+            (first, -first, second, -second),
+        )
     raise ValueError(
-        f"failed to derive an exact parameter-shift rule for frequency set {freqs!r}"
+        "gate parameter occurrence has an unsupported local frequency set "
+        f"{tuple(frequencies)!r}"
     )
