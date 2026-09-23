@@ -5,7 +5,7 @@
 首批状态制备、数据编码组件、变分拟设、QAOA 演化层、布尔 Oracle、反射算子、
 Pauli 测量规划、同步采样器、期望值估计器、梯度、量子几何、经典优化组件、
 线路纯态保真度估计组件、Grover 复合迭代单元，以及可复用的量子傅里叶变换
-线路构造器，以及首个完整 VQE 算法。
+线路构造器，以及完整的 VQE 与 QAOA 算法。
 
 ## 目录
 
@@ -81,6 +81,7 @@ src/cqlib_algorithms/
 │       ├── user_circuit_preparation.py
 │       └── feature_map_preparation.py
 └── algorithms/
+    ├── qaoa.py
     └── vqe.py
 tests/protocols/
 tests/operators/state_preparation/
@@ -299,6 +300,12 @@ Hadamard 制备；全量子比特反射时这是关于 `A|0...0>` 的单态反�
 本征求解器。初值显式对应实际线路的活跃符号，算法不重复实现态矢量、期望值、
 梯度或优化逻辑，也不绑定具体后端。数学定义、组件组合、结果语义、示例与首版边界
 见 [VQE](docs/vqe.md)。
+
+`QAOA` 在固定初态之后逐层组合现有的成本演化与混合演化组件，并复用 VQE 的
+Estimator/Optimizer 桥接路径最大化计算基对角成本。默认使用均匀叠加初态和横场
+混合器，也支持同宽的固定初态、自定义有限 Hermitian 混合器与演化策略。参数按层采用
+`gamma, beta` 交错顺序。数学约定、结果符号、复用边界和示例见
+[QAOA](docs/qaoa.md)。
 
 ## 量子傅里叶变换
 

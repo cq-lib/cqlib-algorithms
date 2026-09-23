@@ -118,3 +118,15 @@
   Estimator。结果同时保留不可变最优参数映射、独立完全绑定线路和原始优化器结果。
 - VQE 只保证在拟设可达子空间中最小化 Hermitian 算子期望值；结果不构成全局基态
   或经典优化全局收敛保证。
+
+## QAOA 实现约定
+
+- `QAOA` 只接受非空、有限、Hermitian 且计算基对角的成本 Hamiltonian，并最大化
+  其原始期望值；公共 Optimizer 的内部目标是负成本，因此结果必须明确区分两个符号。
+- 默认初态复用 `UniformSuperposition`，每层依次复用 `QAOACostEvolution` 与
+  `QAOAMixerEvolution`；算法层不重新实现演化、期望值、梯度、优化或参数绑定。
+- 层参数顺序固定为 `{prefix}_{k}_gamma, {prefix}_{k}_beta`。自定义初态必须固定、
+  无活跃符号且同宽；自定义 mixer 必须非空、有限、Hermitian 且同宽，再由底层
+  演化组件验证线路语义。
+- 完整优化路径委托 `VQE` 最小化负成本。`QAOAResult.optimal_value` 恢复原始成本
+  符号，底层 `OptimizerResult.optimal_value` 保留负成本目标值。

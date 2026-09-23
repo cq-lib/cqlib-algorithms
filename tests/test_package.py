@@ -21,8 +21,10 @@ import pytest
 from cqlib.error_mitigation import Estimator as ErrorMitigationEstimator
 
 import cqlib_algorithms
-from cqlib_algorithms import QFT, VQE, VQEResult
+from cqlib_algorithms import QAOA, QFT, VQE, QAOAResult, VQEResult
+from cqlib_algorithms.algorithms import QAOA as AlgorithmQAOA
 from cqlib_algorithms.algorithms import VQE as AlgorithmVQE
+from cqlib_algorithms.algorithms import QAOAResult as AlgorithmQAOAResult
 from cqlib_algorithms.algorithms import VQEResult as AlgorithmVQEResult
 from cqlib_algorithms.protocols import (
     Ansatz,
@@ -54,6 +56,8 @@ PUBLIC_COMPONENTS = {
     "OptimizerRequest": OptimizerRequest,
     "OptimizerResult": OptimizerResult,
     "OptimizerStatus": OptimizerStatus,
+    "QAOA": QAOA,
+    "QAOAResult": QAOAResult,
     "Sampler": Sampler,
     "SamplerRequest": SamplerRequest,
     "StatePreparation": StatePreparation,
@@ -116,3 +120,8 @@ def test_qft_is_exported_from_public_namespaces():
 def test_vqe_is_exported_from_public_namespaces():
     assert VQE is AlgorithmVQE
     assert VQEResult is AlgorithmVQEResult
+
+
+def test_qaoa_is_exported_from_public_namespaces():
+    assert QAOA is AlgorithmQAOA
+    assert QAOAResult is AlgorithmQAOAResult
