@@ -100,15 +100,12 @@ fidelity operator.
 
 This operator estimates fidelity only for pure states represented by state-
 preparation circuits. It does not implement Uhlmann fidelity for density
-matrices, a mixed-state SWAP test, Qiskit's optional local-fidelity objective,
-or measurement-error mitigation. Numerical state and density-matrix fidelity
+matrices, a mixed-state SWAP test, a local-subsystem fidelity objective, or
+measurement-error mitigation. Numerical state and density-matrix fidelity
 already belongs to Cqlib Core rather than this circuit-execution component.
 
 The construction follows the compute-uncompute overlap used for quantum
 feature-map kernels in Havlíček et al., *Supervised learning with
 quantum-enhanced feature spaces*, Nature 567, 209-212 (2019),
-[arXiv:1804.11326](https://arxiv.org/abs/1804.11326). Interface organization
-was compared with Qiskit Algorithms 0.4's
-[`ComputeUncompute`](https://qiskit-community.github.io/qiskit-algorithms/stubs/qiskit_algorithms.state_fidelities.ComputeUncompute.html),
-but this implementation is independently designed for Cqlib's circuit,
-sampler, result, and qubit-order semantics and adds no Qiskit dependency.
+[arXiv:1804.11326](https://arxiv.org/abs/1804.11326). The interface is designed
+for Cqlib's circuit, sampler, result, and qubit-order semantics.

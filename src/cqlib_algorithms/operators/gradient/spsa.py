@@ -52,8 +52,8 @@ class SPSAGradient(Gradient):
     generator state advances across :meth:`run` calls, so repeated calls
     on one instance use different perturbations while rebuilding with
     the same seed replays the same sequence.  Multi-perturbation
-    averaging (qiskit's ``batch_size``) is a possible extension and is
-    intentionally not implemented here.
+    averaging with a configurable batch size is a possible extension and
+    is intentionally not implemented here.
 
     All evaluations of all requests are flattened into a single
     :meth:`Estimator.run` batch.  Requests with empty

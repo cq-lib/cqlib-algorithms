@@ -3,13 +3,10 @@
 本文档说明 `cqlib_algorithms.operators.composite` 中由基础算子组合而成的复合
 算子。它们也可从 `cqlib_algorithms.operators` 导入；具体算子不从包顶层导出。
 所有 `build_circuit()` 调用都返回新的 Cqlib `Circuit`，不执行采样、测量或后端
-任务。接口组织参考了 Qiskit `qiskit.circuit.library.grover_operator()` 的当前
-公开接口，但实现独立，不引入 Qiskit 运行时依赖。
-此处“参考”仅表示对齐 `Q = A S_0 A† O`、`state_preparation`、
-`reflection_qubits` 和精确全局相位约定，不表示复制或完整兼容 Qiskit API。
-当前组件不接受 Qiskit 支持的 Statevector oracle、Operator/DensityMatrix 等非
-Cqlib `Circuit` 输入，也不提供自定义 `zero_reflection`、`insert_barriers`、
-`name` 或 ancilla register metadata 等扩展参数。
+任务。接口以 `Q = A S_0 A† O`、`state_preparation`、`reflection_qubits` 和精确
+全局相位约定为核心。当前公共接口只接受 Cqlib `Circuit`，尚未提供态矢量、算子、
+密度矩阵等非线路输入的适配，也未提供自定义 `zero_reflection`、
+`insert_barriers`、`name` 或辅助寄存器元数据等扩展参数。
 
 ## Grover 迭代单元
 

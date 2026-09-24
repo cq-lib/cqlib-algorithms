@@ -14,6 +14,16 @@
 
 from importlib.metadata import version
 
+from .algorithms import (
+    QAOA,
+    VQE,
+    DeutschJozsa,
+    DeutschJozsaRequest,
+    DeutschJozsaResult,
+    QAOAResult,
+    VQAResult,
+    VQEResult,
+)
 from .protocols import (
     Ansatz,
     Estimator,
@@ -35,8 +45,13 @@ from .transforms import QFT
 __version__ = version("cqlib-algorithms")
 
 __all__ = [
+    "QAOA",
     "QFT",
+    "VQE",
     "Ansatz",
+    "DeutschJozsa",
+    "DeutschJozsaRequest",
+    "DeutschJozsaResult",
     "Estimator",
     "EstimatorRequest",
     "EstimatorResult",
@@ -47,8 +62,11 @@ __all__ = [
     "OptimizerRequest",
     "OptimizerResult",
     "OptimizerStatus",
+    "QAOAResult",
     "Sampler",
     "SamplerRequest",
     "StatePreparation",
+    "VQAResult",
+    "VQEResult",
     "__version__",
 ]

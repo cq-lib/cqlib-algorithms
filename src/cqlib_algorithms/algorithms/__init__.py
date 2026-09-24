@@ -12,3 +12,18 @@
 
 """Complete quantum algorithms composed from reusable components."""
 
+from .deutsch_jozsa import DeutschJozsa, DeutschJozsaRequest, DeutschJozsaResult
+from .qaoa import QAOA, QAOAResult
+from .vqa_result import VQAResult
+from .vqe import VQE, VQEResult
+
+__all__ = [
+    "QAOA",
+    "VQE",
+    "DeutschJozsa",
+    "DeutschJozsaRequest",
+    "DeutschJozsaResult",
+    "QAOAResult",
+    "VQAResult",
+    "VQEResult",
+]

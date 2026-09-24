@@ -21,6 +21,7 @@ from cqlib.circuit import Circuit
 from cqlib.circuit.ansatz import EvolutionStrategy, PauliEvolutionAnsatz
 from cqlib.qis import Hamiltonian
 
+from ._validation import copy_hermitian_hamiltonian
 from .base_ansatz import BaseAnsatz
 
 
@@ -52,9 +53,11 @@ class QAOACostEvolution(BaseAnsatz):
         frozen_strategy = (
             EvolutionStrategy.auto(1) if strategy is None else copy.copy(strategy)
         )
-        inner = PauliEvolutionAnsatz(cost_operator.copy()).with_strategy(
-            frozen_strategy
+        cost_snapshot = copy_hermitian_hamiltonian(
+            cost_operator,
+            name="cost_operator",
         )
+        inner = PauliEvolutionAnsatz(cost_snapshot).with_strategy(frozen_strategy)
         super().__init__(inner)
         self.validate()
 
