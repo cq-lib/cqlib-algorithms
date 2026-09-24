@@ -5,7 +5,7 @@
 首批状态制备、数据编码组件、变分拟设、QAOA 演化层、布尔 Oracle、反射算子、
 Pauli 测量规划、同步采样器、期望值估计器、梯度、量子几何、经典优化组件、
 线路纯态保真度估计组件、Grover 复合迭代单元，以及可复用的量子傅里叶变换
-线路构造器，以及完整的 VQE 与 QAOA 算法。
+线路构造器，以及完整的 VQE、QAOA 与 Deutsch-Jozsa 算法。
 
 ## 目录
 
@@ -81,6 +81,7 @@ src/cqlib_algorithms/
 │       ├── user_circuit_preparation.py
 │       └── feature_map_preparation.py
 └── algorithms/
+    ├── deutsch_jozsa.py
     ├── qaoa.py
     ├── vqa_result.py
     └── vqe.py
@@ -308,6 +309,15 @@ Estimator/Optimizer 契约最小化计算基对角成本；保留显式的最大
 `gamma, beta` 交错顺序。数学约定、结果符号、复用边界和示例见
 [QAOA](docs/qaoa.md)。两种算法共享 `VQAResult`，不嵌套另一种算法的结果；
 `VQEResult` 和 `QAOAResult` 仅为该类型的兼容导出名称。
+
+`DeutschJozsa` 的每条线路用一次相位 Oracle 调用判别布尔函数是常函数还是
+平衡函数：`H**n -> S_f -> H**n` 后全零振幅的模在两种情形下恰为 1 与 0。
+Oracle 由 `PhaseOracle` 从不可变布尔函数构建，执行注入任意 `Sampler` 组件。
+算法层不读取真值表做经典承诺预判，但显式真值表 Oracle 的线路综合仍会读取该表；
+理想无噪声承诺下单个 shot 即可确定判别，任意 Sampler 或噪声下结果只是观测判决。
+多输出输入按 `output_mask` 奇偶归约为派生标量函数，承诺作用于该函数。
+数学定义、查询模型、判别语义与边界见
+[Deutsch-Jozsa 算法](docs/deutsch_jozsa.md)。
 
 ## 量子傅里叶变换
 

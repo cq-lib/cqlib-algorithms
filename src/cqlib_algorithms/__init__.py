@@ -14,7 +14,16 @@
 
 from importlib.metadata import version
 
-from .algorithms import QAOA, VQE, QAOAResult, VQAResult, VQEResult
+from .algorithms import (
+    QAOA,
+    VQE,
+    DeutschJozsa,
+    DeutschJozsaRequest,
+    DeutschJozsaResult,
+    QAOAResult,
+    VQAResult,
+    VQEResult,
+)
 from .protocols import (
     Ansatz,
     Estimator,
@@ -40,6 +49,9 @@ __all__ = [
     "QFT",
     "VQE",
     "Ansatz",
+    "DeutschJozsa",
+    "DeutschJozsaRequest",
+    "DeutschJozsaResult",
     "Estimator",
     "EstimatorRequest",
     "EstimatorResult",

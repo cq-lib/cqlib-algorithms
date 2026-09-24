@@ -21,9 +21,28 @@ import pytest
 from cqlib.error_mitigation import Estimator as ErrorMitigationEstimator
 
 import cqlib_algorithms
-from cqlib_algorithms import QAOA, QFT, VQE, QAOAResult, VQAResult, VQEResult
+from cqlib_algorithms import (
+    QAOA,
+    QFT,
+    VQE,
+    DeutschJozsa,
+    DeutschJozsaRequest,
+    DeutschJozsaResult,
+    QAOAResult,
+    VQAResult,
+    VQEResult,
+)
 from cqlib_algorithms.algorithms import QAOA as AlgorithmQAOA
 from cqlib_algorithms.algorithms import VQE as AlgorithmVQE
+from cqlib_algorithms.algorithms import (
+    DeutschJozsa as AlgorithmDeutschJozsa,
+)
+from cqlib_algorithms.algorithms import (
+    DeutschJozsaRequest as AlgorithmDeutschJozsaRequest,
+)
+from cqlib_algorithms.algorithms import (
+    DeutschJozsaResult as AlgorithmDeutschJozsaResult,
+)
 from cqlib_algorithms.algorithms import QAOAResult as AlgorithmQAOAResult
 from cqlib_algorithms.algorithms import VQEResult as AlgorithmVQEResult
 from cqlib_algorithms.protocols import (
@@ -46,6 +65,9 @@ from cqlib_algorithms.transforms import QFT as TransformQFT
 
 PUBLIC_COMPONENTS = {
     "Ansatz": Ansatz,
+    "DeutschJozsa": DeutschJozsa,
+    "DeutschJozsaRequest": DeutschJozsaRequest,
+    "DeutschJozsaResult": DeutschJozsaResult,
     "Estimator": Estimator,
     "EstimatorRequest": EstimatorRequest,
     "EstimatorResult": EstimatorResult,
@@ -126,3 +148,9 @@ def test_vqe_is_exported_from_public_namespaces():
 def test_qaoa_is_exported_from_public_namespaces():
     assert QAOA is AlgorithmQAOA
     assert QAOAResult is AlgorithmQAOAResult
+
+
+def test_deutsch_jozsa_is_exported_from_public_namespaces():
+    assert DeutschJozsa is AlgorithmDeutschJozsa
+    assert DeutschJozsaRequest is AlgorithmDeutschJozsaRequest
+    assert DeutschJozsaResult is AlgorithmDeutschJozsaResult
