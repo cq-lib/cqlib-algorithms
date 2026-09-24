@@ -15,7 +15,10 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import final
+from typing import TypeAlias, final
+
+from cqlib.circuit import Circuit, Parameter, ValueOperation
+from cqlib.circuit.gates import StandardGate
 
 from ...protocols.estimator import Estimator, EstimatorRequest
 from ...protocols.gradient import (
@@ -23,23 +26,96 @@ from ...protocols.gradient import (
     GradientRequest,
     GradientResult,
 )
-from ._parameter_analysis import analyze_symbol, shift_plan, validate_circuit
+from ._parameter_analysis import (
+    Occurrence,
+    analyze_symbol,
+    local_shift_plan,
+    validate_circuit,
+)
 
-_IMAGINARY_TOLERANCE = 1e-12
+_Plan: TypeAlias = tuple[int, int, Occurrence, tuple[float, ...], tuple[float, ...]]
+
+
+def _numeric_angle(value: float | Parameter) -> float:
+    """Return a bound gate angle or reject an incomplete binding."""
+    if isinstance(value, Parameter):
+        raise TypeError("gate parameters must be fully bound before evaluation")
+    return float(value)
+
+
+def _shifted_operation(
+    operation: ValueOperation,
+    slot: int,
+    shift: float,
+) -> ValueOperation:
+    """Return ``operation`` with one numeric parameter slot shifted."""
+    params = list(operation.params)
+    if slot >= len(params):
+        raise ValueError(f"parameter slot {slot} is missing from {operation.name!r}")
+    params[slot] = _numeric_angle(params[slot]) + shift
+
+    if operation.instruction_type == "standard":
+        gate_factory = getattr(StandardGate, operation.name, None)
+        if gate_factory is None:
+            raise ValueError(f"standard gate {operation.name!r} is not supported")
+        gate = gate_factory(*params)
+        return ValueOperation.from_standard_gate(
+            gate,
+            operation.qubits,
+            operation.label,
+        )
+    if operation.instruction_type == "mcgate":
+        control_part, base_name = operation.name.split("-", 1)
+        num_controls = int(control_part[1:])
+        gate_factory = getattr(StandardGate, base_name, None)
+        if gate_factory is None:
+            raise ValueError(f"controlled gate {operation.name!r} is not supported")
+        gate = gate_factory(*params).control(num_controls)
+        return ValueOperation.from_mc_gate(
+            gate,
+            operation.qubits,
+            operation.label,
+        )
+    raise ValueError(
+        "parameter occurrence does not belong to a supported gate operation: "
+        f"{operation.name!r}"
+    )
+
+
+def _shifted_occurrence_circuit(
+    bound: Circuit,
+    occurrence: Occurrence,
+    shift: float,
+) -> Circuit:
+    """Copy a bound circuit while shifting exactly one parameter slot."""
+    operations: list[ValueOperation] = []
+    for index, operation in enumerate(bound.operations):
+        if index == occurrence.op_index:
+            operations.append(_shifted_operation(operation, occurrence.slot, shift))
+        else:
+            operations.append(operation)
+    shifted = Circuit.from_operations(
+        list(bound.qubits),
+        operations,
+        classical_vars=list(bound.classical_vars),
+        classical_values=list(bound.classical_values),
+    )
+    shifted.set_global_phase(bound.global_phase)
+    return shifted
 
 
 @final
 class ParameterShiftGradient(Gradient):
     """Batched gradient of expectation values via exact shift rules.
 
-    For every requested parameter the component analyzes the circuit to
-    derive the parameter's expectation frequencies, then evaluates the
-    expectation at exact shift points whose weights reproduce the
-    derivative.  Classical single-occurrence rotations and phase gates
-    reduce to the textbook two-point rules; symbols shared by several
-    gates use the generalized shift rules implied by their frequency
-    sets.  Global-phase-only parameters yield a zero gradient without
-    any estimator evaluation.
+    For every requested parameter the component analyzes each gate-slot
+    occurrence separately, evaluates that slot at its exact local shift
+    points, applies the affine chain coefficient, and sums the occurrence
+    derivatives.  Ordinary rotations and phase gates use two evaluations
+    per occurrence.  Controlled rotations use four.  Consequently symbols
+    shared by many gates have linear rather than combinatorial evaluation
+    cost.  Global-phase-only parameters yield a zero gradient without any
+    estimator evaluation.
 
     All shifted evaluations of all requests are flattened into a single
     :meth:`Estimator.run` batch.  Unsupported configurations (non-affine
@@ -74,28 +150,35 @@ class ParameterShiftGradient(Gradient):
         if any(not isinstance(request, GradientRequest) for request in request_list):
             raise TypeError("requests must contain only GradientRequest values")
 
-        plans: list[tuple[int, str, tuple[float, ...], tuple[complex, ...]]] = []
+        plans: list[_Plan] = []
         for position, request in enumerate(request_list):
             request.validate()
             circuit = request.estimator_request.circuit
             validate_circuit(circuit)
-            for name in request.parameter_names:
+            for name_index, name in enumerate(request.parameter_names):
                 occurrences = analyze_symbol(circuit, name)
-                plans.append((position, name, *shift_plan(occurrences)))
+                for occurrence in occurrences:
+                    shifts, weights = local_shift_plan(occurrence)
+                    plans.append((position, name_index, occurrence, shifts, weights))
 
         evaluations: list[EstimatorRequest] = []
         owners: list[tuple[int, int]] = []
-        for plan_index, (position, name, shifts, _) in enumerate(plans):
+        bound_circuits = [
+            request.estimator_request.circuit.assign_parameters(
+                dict(request.estimator_request.parameter_bindings)
+            )
+            for request in request_list
+        ]
+        for plan_index, (position, _, occurrence, shifts, _) in enumerate(plans):
             base = request_list[position].estimator_request
-            bindings = dict(base.parameter_bindings)
             for shift_index, shift in enumerate(shifts):
-                shifted = dict(bindings)
-                shifted[name] = bindings[name] + shift
                 evaluations.append(
                     type(base)(
-                        base.circuit,
+                        _shifted_occurrence_circuit(
+                            bound_circuits[position], occurrence, shift
+                        ),
                         base.observable,
-                        shifted,
+                        {},
                         base.shots,
                     )
                 )
@@ -108,29 +191,29 @@ class ParameterShiftGradient(Gradient):
                 f"expected {len(evaluations)}, got {len(results)}"
             )
 
-        totals = {plan_index: 0.0 + 0.0j for plan_index in range(len(plans))}
-        weights_sums = {
-            plan_index: sum(abs(weight) for weight in weights)
-            for plan_index, (_, _, _, weights) in enumerate(plans)
-        }
+        totals = {plan_index: 0.0 for plan_index in range(len(plans))}
         for (plan_index, shift_index), result in zip(owners, results):
-            totals[plan_index] += plans[plan_index][3][shift_index] * result.expectation
+            occurrence = plans[plan_index][2]
+            weights = plans[plan_index][4]
+            totals[plan_index] += (
+                occurrence.coefficient * weights[shift_index] * result.expectation
+            )
 
-        values: dict[tuple[int, str], float] = {}
-        for plan_index, (position, name, shifts, weights) in enumerate(plans):
-            total = totals[plan_index]
-            tolerance = _IMAGINARY_TOLERANCE * (1.0 + weights_sums[plan_index])
-            if abs(total.imag) > tolerance:
-                raise ValueError(
-                    "parameter-shift gradient has an unexpected imaginary "
-                    f"component {total.imag!r} for parameter {name!r}"
-                )
-            values[(position, name)] = float(total.real)
+        values: dict[tuple[int, int], float] = {}
+        for plan_index, (position, name_index, _, _, _) in enumerate(plans):
+            key = (position, name_index)
+            values[key] = values.get(key, 0.0) + totals[plan_index]
 
         gradient_results: list[GradientResult] = []
         for position, request in enumerate(request_list):
             names = request.parameter_names
             gradient_results.append(
-                GradientResult(names, tuple(values[(position, name)] for name in names))
+                GradientResult(
+                    names,
+                    tuple(
+                        values.get((position, name_index), 0.0)
+                        for name_index in range(len(names))
+                    ),
+                )
             )
         return gradient_results

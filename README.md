@@ -5,7 +5,7 @@
 首批状态制备、数据编码组件、变分拟设、QAOA 演化层、布尔 Oracle、反射算子、
 Pauli 测量规划、同步采样器、期望值估计器、梯度、量子几何、经典优化组件、
 线路纯态保真度估计组件、Grover 复合迭代单元，以及可复用的量子傅里叶变换
-线路构造器。
+线路构造器，以及完整的 VQE、QAOA 与 Deutsch-Jozsa 算法。
 
 ## 目录
 
@@ -81,6 +81,10 @@ src/cqlib_algorithms/
 │       ├── user_circuit_preparation.py
 │       └── feature_map_preparation.py
 └── algorithms/
+    ├── deutsch_jozsa.py
+    ├── qaoa.py
+    ├── vqa_result.py
+    └── vqe.py
 tests/protocols/
 tests/operators/state_preparation/
 tests/operators/ansatz/
@@ -291,6 +295,29 @@ Hadamard 制备；全量子比特反射时这是关于 `A|0...0>` 的单态反�
 
 接口、数学约定与边界条件见
 [复合算子组件](docs/composite.md)。
+
+## 完整算法
+
+`VQE` 将现有 `Ansatz`、`Estimator` 与 `Optimizer` 公共组件组合为变分量子
+本征求解器。初值显式对应实际线路的活跃符号，算法不重复实现态矢量、期望值、
+梯度或优化逻辑，也不绑定具体后端。数学定义、组件组合、结果语义、示例与首版边界
+见 [VQE](docs/vqe.md)。
+
+`QAOA` 在固定初态之后直接逐层组合现有的成本演化与混合演化组件，通过公共
+Estimator/Optimizer 契约最小化计算基对角成本；保留显式的最大化入口。默认使用均匀叠加初态和横场
+混合器，也支持同宽的固定初态、自定义有限 Hermitian 混合器与演化策略。参数按层采用
+`gamma, beta` 交错顺序。数学约定、结果符号、复用边界和示例见
+[QAOA](docs/qaoa.md)。两种算法共享 `VQAResult`，不嵌套另一种算法的结果；
+`VQEResult` 和 `QAOAResult` 仅为该类型的兼容导出名称。
+
+`DeutschJozsa` 的每条线路用一次相位 Oracle 调用判别布尔函数是常函数还是
+平衡函数：`H**n -> S_f -> H**n` 后全零振幅的模在两种情形下恰为 1 与 0。
+Oracle 由 `PhaseOracle` 从不可变布尔函数构建，执行注入任意 `Sampler` 组件。
+算法层不读取真值表做经典承诺预判，但显式真值表 Oracle 的线路综合仍会读取该表；
+理想无噪声承诺下单个 shot 即可确定判别，任意 Sampler 或噪声下结果只是观测判决。
+多输出输入按 `output_mask` 奇偶归约为派生标量函数，承诺作用于该函数。
+数学定义、查询模型、判别语义与边界见
+[Deutsch-Jozsa 算法](docs/deutsch_jozsa.md)。
 
 ## 量子傅里叶变换
 

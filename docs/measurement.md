@@ -71,5 +71,5 @@ The Core Python-interface baseline inspected for this component is Cqlib
 `develop` commit `c3abe91a4adf804b6fb3304fab6ec3dc24a4ad85`. The
 implementation uses `PauliString.get_pauli`, `PauliString.commutes_with`,
 `Circuit.qubits`, `Circuit.decompose`, `Circuit.__copy__`, `Circuit.h`,
-and `Circuit.sdg` from that baseline. No Qiskit runtime dependency is
-introduced.
+and `Circuit.sdg` from that baseline. The component introduces no additional
+runtime dependency.

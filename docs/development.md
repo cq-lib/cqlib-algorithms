@@ -106,3 +106,54 @@
   反射。`reflection_qubits` 构造时校验、排序并冻结，不允许为空、
   重复、越界或布尔值；重复值被拒绝，不会被静默去重。
 - 复合算子不选择迭代次数、不执行测量或采样，也不承诺查询复杂度。
+
+## VQE 实现约定
+
+- `VQE` 只组合公共 `Ansatz`、`Estimator` 和 `Optimizer` 契约；线路构建、期望值、
+  梯度和参数更新分别委托已有组件，不在算法层复制实现，也不绑定具体执行后端。
+- 初值必须显式、有限，并精确覆盖生成线路的活跃符号。训练顺序取
+  `tuple(circuit.used_symbols)`；不根据 `Ansatz.num_parameters()` 补造退化线路中
+  未激活的逻辑参数槽。
+- `eigenvalue` 直接采用 `OptimizerResult.optimal_value`，不为获取终态方差重复执行
+  Estimator。结果同时保留不可变最优参数映射、独立完全绑定线路和原始优化器结果。
+- VQE 只保证在拟设可达子空间中最小化 Hermitian 算子期望值；结果不构成全局基态
+  或经典优化全局收敛保证。
+
+## QAOA 实现约定
+
+- `QAOA` 只接受非空、有限、Hermitian 且计算基对角的成本 Hamiltonian。主入口
+  `compute_minimum_eigenvalue` 最小化原始期望值；`compute_maximum` 显式最小化
+  负成本，但演化线路仍使用原始成本。结果用 `objective_sense` 区分这两种语义。
+- 默认初态复用 `UniformSuperposition`，每层依次复用 `QAOACostEvolution` 与
+  `QAOAMixerEvolution`；算法层不重新实现演化、期望值、梯度、优化或参数绑定。
+- 层参数顺序固定为 `{prefix}_{k}_gamma, {prefix}_{k}_beta`。自定义初态必须固定、
+  无活跃符号且同宽；自定义 mixer 必须非空、有限、Hermitian 且同宽，再由底层
+  演化组件验证线路语义。
+- `QAOA.build_circuit` 直接拼装初态与演化层，不新建内部 Ansatz 包装；优化入口
+  调用该可覆盖方法，并直接使用 Estimator/Optimizer 契约，不委托另一算法。
+- VQE 与 QAOA 共享 `VQAResult`。`optimal_value` 表示原目标在最终迭代点的期望值，
+  不是历史最佳值；最小化时与优化器值相同，最大化时与优化器值相反。结果构造必须
+  校验该关系。不得虚构优化器未提供的 checkpoint、方差或收敛保证。
+- 公共结果 dataclass 保持标准构造与 `dataclasses.replace`，简短 repr 只显示
+  目标值、参数数量、方向、迭代次数与状态，不打印完整线路。
+
+## Deutsch-Jozsa 实现约定
+
+- `DeutschJozsa` 是注入 `Sampler` 的 Oracle 型算法：线路固定为未测量的
+  `H**n -> S_f -> H**n`，末端测量由 Sampler 在私有执行线路上追加；
+  Oracle 统一由 `PhaseOracle` 从布尔函数构建，函数与 `output_mask` 校验
+  委托该底层组件，算法层不重复实现标记合成。
+- 输入变量数至少为 1。向量函数通过 `output_mask` 奇偶定义派生标量函数，
+  常/平衡承诺作用于该派生函数。算法层不读取真值表做经典承诺预判，但
+  `PhaseOracle` 对显式真值表的线路综合仍然读取该表，查询复杂度结论不包含
+  该指数规模的经典输入与综合成本。
+- 判别只来自测量统计：仅当全零占满全部 shots 时判定"常"，否则判定"平衡"。
+  该规则在理想无噪声承诺下为确定性结论且单个 shot 已足够；任意 Sampler 或
+  噪声下仅表示观测判决。每条线路包含一次 Oracle 调用，多 shots 表示重复执行
+  该线路，不能表述为整个采样任务总共只进行一次物理 Oracle 求值。违反常/平衡
+  承诺的输入产生形式正确但语义未定义的结果。
+- 整批请求先全部校验和变换，再用一次压平的 Sampler 调用执行；采样结果契约
+  （返回列表、终态成功、shots 匹配、qubit 顺序、频数总数等于 shots）与库内
+  其他采样算法一致，不完整频数被拒绝。
+- 请求与结果是浅冻结 dataclass；结果只记录判别与全零统计，并强制判别和
+  `zero_count == shots` 一致，不虚构后端未提供的置信度或误差信息。

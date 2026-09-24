@@ -23,8 +23,7 @@ from cqlib.circuit.gates import CircuitGate, StandardGate
 from cqlib import Circuit, Parameter, Qubit
 from cqlib_algorithms.operators.gradient._parameter_analysis import (
     analyze_symbol,
-    frequencies,
-    shift_plan,
+    local_shift_plan,
 )
 
 
@@ -116,62 +115,53 @@ def test_affine_expression_scales_spectrum_by_chain_coefficient() -> None:
     assert occurrence.spectrum == (1.0, -1.0)
 
 
-def test_shared_symbol_accumulates_sum_frequencies() -> None:
+def test_shared_symbol_keeps_independent_occurrences() -> None:
     theta = Parameter("theta")
     circuit = Circuit(2)
     circuit.h(0)
     circuit.ry(1, theta)
     circuit.cx(0, 1)
     circuit.phase(1, theta)
-    freqs = frequencies(analyze_symbol(circuit, "theta"))
-    # Sums of one eigenvalue per occurrence: {-1.5, -0.5, 0.5}.
-    assert freqs == (-2.0, -1.0, 0.0, 1.0, 2.0)
+    occurrences = analyze_symbol(circuit, "theta")
+    assert len(occurrences) == 2
+    assert [occurrence.op_index for occurrence in occurrences] == [1, 3]
+    assert [local_shift_plan(occurrence)[0] for occurrence in occurrences] == [
+        (math.pi / 2, -math.pi / 2),
+        (math.pi / 2, -math.pi / 2),
+    ]
 
 
-def test_global_phase_only_symbol_frequencies_are_trivial() -> None:
+def test_global_phase_only_symbol_has_no_local_plans() -> None:
     theta = Parameter("theta")
     circuit = Circuit(1)
     circuit.x(0)
     circuit.set_global_phase(theta)
-    assert frequencies(analyze_symbol(circuit, "theta")) == (0.0,)
+    assert analyze_symbol(circuit, "theta") == ()
 
 
 def test_classic_rotation_yields_two_point_shift_rule() -> None:
     theta = Parameter("theta")
     circuit = Circuit(1)
     circuit.ry(0, theta)
-    shifts, weights = shift_plan(analyze_symbol(circuit, "theta"))
+    shifts, weights = local_shift_plan(analyze_symbol(circuit, "theta")[0])
     assert shifts == (math.pi / 2, -math.pi / 2)
-    assert weights == pytest.approx((0.5 + 0j, -0.5 + 0j), abs=1e-12)
+    assert weights == pytest.approx((0.5, -0.5), abs=1e-12)
 
 
-def test_shift_plan_is_cached_per_frequency_set() -> None:
-    first = Parameter("first")
-    second = Parameter("second")
-    circuit_one = Circuit(1)
-    circuit_one.ry(0, first)
-    circuit_two = Circuit(1)
-    circuit_two.rx(0, second)
-    plan_one = shift_plan(analyze_symbol(circuit_one, "first"))
-    plan_two = shift_plan(analyze_symbol(circuit_two, "second"))
-    assert plan_one == plan_two
-
-
-def test_shared_symbol_plan_covers_all_frequencies() -> None:
+def test_controlled_rotation_uses_four_point_local_rule() -> None:
     theta = Parameter("theta")
     circuit = Circuit(2)
-    circuit.h(0)
-    circuit.ry(1, theta)
-    circuit.cx(0, 1)
-    circuit.phase(1, theta)
-    shifts, weights = shift_plan(analyze_symbol(circuit, "theta"))
-    for frequency in frequencies(analyze_symbol(circuit, "theta")):
+    circuit.crx(0, 1, 3.0 * theta + 0.2)
+    occurrence = analyze_symbol(circuit, "theta")[0]
+    shifts, weights = local_shift_plan(occurrence)
+    assert len(shifts) == 4
+    for frequency in (0.5, 1.0):
         matched = sum(
             weight * complex(math.cos(frequency * shift), math.sin(frequency * shift))
             for weight, shift in zip(weights, shifts)
         )
         assert matched == pytest.approx(1j * frequency, abs=1e-10)
-    assert all(weight.imag == 0.0 for weight in weights)
+    assert occurrence.coefficient == 3.0
 
 
 @pytest.mark.parametrize(
