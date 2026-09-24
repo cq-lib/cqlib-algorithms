@@ -70,7 +70,7 @@ def test_oracle_operators_are_exported_from_functional_packages():
 def test_composite_operators_are_exported_from_functional_packages():
     operators = import_module("cqlib_algorithms.operators")
     composite = import_module("cqlib_algorithms.operators.composite")
-    expected = {"GroverOperator"}
+    expected = {"GroverOperator", "HadamardPhaseQuery"}
 
     assert expected <= set(operators.__all__)
     assert set(composite.__all__) == expected

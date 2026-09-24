@@ -23,7 +23,7 @@ from .ansatz import (
     RealAmplitudesAnsatz,
     TwoLocalAnsatz,
 )
-from .composite import GroverOperator
+from .composite import GroverOperator, HadamardPhaseQuery
 from .estimator import SamplingEstimator, StatevectorEstimator
 from .gradient import (
     FiniteDifferenceGradient,
@@ -97,6 +97,7 @@ __all__ = [
     "GradientDescent",
     "GroverDiffusion",
     "GroverOperator",
+    "HadamardPhaseQuery",
     "HardwareEfficientAnsatz",
     "LinCombEstimatorGradient",
     "MeasurementGroup",

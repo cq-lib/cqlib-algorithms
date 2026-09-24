@@ -13,7 +13,9 @@
 """Composite operator components built from primitive operators."""
 
 from .grover_operator import GroverOperator
+from .hadamard_phase_query import HadamardPhaseQuery
 
 __all__ = [
     "GroverOperator",
+    "HadamardPhaseQuery",
 ]

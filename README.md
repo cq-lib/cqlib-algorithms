@@ -4,8 +4,8 @@
 采用 Apache-2.0 开源协议。当前提供第一批公共组件协议、请求与结果数据结构，以及
 首批状态制备、数据编码组件、变分拟设、QAOA 演化层、布尔 Oracle、反射算子、
 Pauli 测量规划、同步采样器、期望值估计器、梯度、量子几何、经典优化组件、
-线路纯态保真度估计组件、Grover 复合迭代单元，以及可复用的量子傅里叶变换
-线路构造器，以及完整的 VQE、QAOA 与 Deutsch-Jozsa 算法。
+线路纯态保真度估计组件、Hadamard 相位查询、Grover 复合迭代单元，以及可复用的量子傅里叶变换
+线路构造器，以及完整的 VQE、QAOA、Deutsch-Jozsa 与 Bernstein-Vazirani 算法。
 
 ## 目录
 
@@ -35,7 +35,8 @@ src/cqlib_algorithms/
 │   │   └── qaoa_mixer_evolution.py
 │   ├── composite/
 │   │   ├── __init__.py
-│   │   └── grover_operator.py
+│   │   ├── grover_operator.py
+│   │   └── hadamard_phase_query.py
 │   ├── estimator/
 │   │   ├── statevector_estimator.py
 │   │   └── sampling_estimator.py
@@ -81,6 +82,7 @@ src/cqlib_algorithms/
 │       ├── user_circuit_preparation.py
 │       └── feature_map_preparation.py
 └── algorithms/
+    ├── bernstein_vazirani.py
     ├── deutsch_jozsa.py
     ├── qaoa.py
     ├── vqa_result.py
@@ -118,6 +120,8 @@ LICENSE.txt
 分别表达状态制备参数和可训练参数语义。
 请求对象只浅冻结字段；其中的 Cqlib 线路和可观测量仍然可变，执行实现必须在运行前
 重新核验请求约束，调用方不得在请求生命周期内修改这些 Core 对象。
+`protocols.sampler` 同时提供 `validate_sampler_result` 与
+`validate_sampler_results`，供要求完整原始频数的算法统一核验公共 Sampler 返回值。
 
 本库的 `Estimator` 是批量估计协议，与 `cqlib.error_mitigation.Estimator` 的
 单请求回调类型处于不同命名空间；同一模块需要同时使用时，应为后者设置明确别名。
@@ -273,14 +277,16 @@ phase = PhaseOracle(function, output_mask=0b11).build_circuit()
 `cqlib_algorithms.operators.composite` 导入：
 
 - `GroverOperator`：相位 Oracle 与扩散/态反射组合的 Grover 迭代单元 `Q = D O`。
+- `HadamardPhaseQuery`：组合 `H**n -> S_f -> H**n` 的未测量相位查询线路。
 
 ```python
-from cqlib_algorithms.operators import GroverOperator
+from cqlib_algorithms.operators import GroverOperator, HadamardPhaseQuery
 from cqlib_algorithms.operators.oracle import BooleanFunction, PhaseOracle
 
 function = BooleanFunction.from_truth_table([False] * 7 + [True])
 oracle = PhaseOracle(function).build_circuit()
 iteration = GroverOperator(oracle).build_circuit()
+query = HadamardPhaseQuery(function).build_circuit()
 ```
 
 `GroverOperator` 接受可静态求逆的相位 Oracle 线路，默认在与 Oracle 相同量子比特
@@ -318,6 +324,15 @@ Oracle 由 `PhaseOracle` 从不可变布尔函数构建，执行注入任意 `Sa
 多输出输入按 `output_mask` 奇偶归约为派生标量函数，承诺作用于该函数。
 数学定义、查询模型、判别语义与边界见
 [Deutsch-Jozsa 算法](docs/deutsch_jozsa.md)。
+
+`BernsteinVazirani` 用一次相位 Oracle 调用恢复线性函数 `f(x) = s·x` 的隐藏
+字符串：`H**n -> S_f -> H**n` 后末态恰好是 `|s>`。它与 `DeutschJozsa` 共享
+`HadamardPhaseQuery` 复合算子和公共 Sampler 结果校验协议，执行注入任意
+`Sampler` 组件。结果保留全部
+并列的经验众数字符串，只有唯一众数时才提供 `hidden_string`；`support` 如实记录
+每个众数的 shots 数。算法同样不做经典线性承诺预判，也不假定噪声模型或执行
+错误纠正。数学定义、结果语义与边界见
+[Bernstein-Vazirani 算法](docs/bernstein_vazirani.md)。
 
 ## 量子傅里叶变换
 

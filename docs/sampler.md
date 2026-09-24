@@ -26,6 +26,11 @@ print(result.counts, result.probabilities)
 不是态矢量的解析概率，也不是拟概率分布。Core 当前的 `Statevector.sample` 不提供种子
 参数，因此随机频数不保证可复现；计算基确定态的结果可精确验证。
 
+公共协议模块还提供 `validate_sampler_result(result, request)` 与
+`validate_sampler_results(results, requests)`。需要依据完整原始频数作出判定的算法
+应调用它们，统一核验成功终态、shots、宽度、量子比特顺序、二进制计数键、非负整数
+频数以及频数总和；允许过滤或后选择结果的应用不应调用这组严格校验函数。
+
 量子比特映射遵从源线路的插入顺序。运行时在独立线路上将原始 ID 映射到连续
 `0..n-1`，演化态矢量后才在这份私有线路上生成测量 receipt。输出的
 `ExecutionResult.qubits` 再恢复为请求中的原始 `Qubit` ID。测量结果的小端位串约定：

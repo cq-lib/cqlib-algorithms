@@ -25,6 +25,9 @@ from cqlib_algorithms import (
     QAOA,
     QFT,
     VQE,
+    BernsteinVazirani,
+    BernsteinVaziraniRequest,
+    BernsteinVaziraniResult,
     DeutschJozsa,
     DeutschJozsaRequest,
     DeutschJozsaResult,
@@ -34,6 +37,15 @@ from cqlib_algorithms import (
 )
 from cqlib_algorithms.algorithms import QAOA as AlgorithmQAOA
 from cqlib_algorithms.algorithms import VQE as AlgorithmVQE
+from cqlib_algorithms.algorithms import (
+    BernsteinVazirani as AlgorithmBernsteinVazirani,
+)
+from cqlib_algorithms.algorithms import (
+    BernsteinVaziraniRequest as AlgorithmBernsteinVaziraniRequest,
+)
+from cqlib_algorithms.algorithms import (
+    BernsteinVaziraniResult as AlgorithmBernsteinVaziraniResult,
+)
 from cqlib_algorithms.algorithms import (
     DeutschJozsa as AlgorithmDeutschJozsa,
 )
@@ -65,6 +77,9 @@ from cqlib_algorithms.transforms import QFT as TransformQFT
 
 PUBLIC_COMPONENTS = {
     "Ansatz": Ansatz,
+    "BernsteinVazirani": BernsteinVazirani,
+    "BernsteinVaziraniRequest": BernsteinVaziraniRequest,
+    "BernsteinVaziraniResult": BernsteinVaziraniResult,
     "DeutschJozsa": DeutschJozsa,
     "DeutschJozsaRequest": DeutschJozsaRequest,
     "DeutschJozsaResult": DeutschJozsaResult,
@@ -154,3 +169,9 @@ def test_deutsch_jozsa_is_exported_from_public_namespaces():
     assert DeutschJozsa is AlgorithmDeutschJozsa
     assert DeutschJozsaRequest is AlgorithmDeutschJozsaRequest
     assert DeutschJozsaResult is AlgorithmDeutschJozsaResult
+
+
+def test_bernstein_vazirani_is_exported_from_public_namespaces():
+    assert BernsteinVazirani is AlgorithmBernsteinVazirani
+    assert BernsteinVaziraniRequest is AlgorithmBernsteinVaziraniRequest
+    assert BernsteinVaziraniResult is AlgorithmBernsteinVaziraniResult
