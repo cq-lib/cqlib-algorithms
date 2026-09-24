@@ -17,6 +17,7 @@ from .boolean_function import BooleanFunction
 from .boolean_vector_function import BooleanVectorFunction
 from .general_state_reflection import GeneralStateReflection
 from .grover_diffusion import GroverDiffusion
+from .grover_long import GroverLong
 from .phase_oracle import PhaseOracle
 from .zero_state_reflection import ZeroStateReflection
 
@@ -26,6 +27,7 @@ __all__ = [
     "BooleanVectorFunction",
     "GeneralStateReflection",
     "GroverDiffusion",
+    "GroverLong",
     "PhaseOracle",
     "ZeroStateReflection",
 ]
