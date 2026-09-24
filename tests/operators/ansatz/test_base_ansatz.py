@@ -15,9 +15,9 @@
 from __future__ import annotations
 
 import pytest
-from cqlib import Circuit, Parameter
 from cqlib.circuit.gates import StandardGate
 
+from cqlib import Circuit, Parameter
 from cqlib_algorithms.operators.ansatz import BaseAnsatz
 from cqlib_algorithms.operators.ansatz._validation import (
     snapshot_rotation_gates,

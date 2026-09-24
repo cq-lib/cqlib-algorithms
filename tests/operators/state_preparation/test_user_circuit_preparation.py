@@ -14,9 +14,9 @@
 
 import numpy as np
 import pytest
+from cqlib.circuit.gates import UnitaryGate
 
 from cqlib import Circuit, Parameter
-from cqlib.circuit.gates import UnitaryGate
 from cqlib_algorithms.operators.state_preparation import UserCircuitPreparation
 
 

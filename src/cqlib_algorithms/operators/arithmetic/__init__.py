@@ -42,6 +42,7 @@ from .amplitude_encoded_rotation import (
 )
 from .comparators import IntegerComparator
 from .multipliers import Multiplier
+from .quadratic_form import QuadraticForm, build_quadratic_form
 from .weighted_sums import WeightedSum
 
 __all__ = [
@@ -62,9 +63,11 @@ __all__ = [
     "PiecewiseLinearPauliRotation",
     "PiecewisePolynomialPauliRotation",
     "PolynomialPauliRotation",
+    "QuadraticForm",
     "WeightedSum",
     "adders",
     "amplitude_encoded_rotation",
+    "build_quadratic_form",
     "comparators",
     "multipliers",
     "weighted_sums",

@@ -19,10 +19,10 @@ from dataclasses import is_dataclass
 
 import numpy as np
 import pytest
-from cqlib import Circuit, Parameter, Qubit
 from cqlib.circuit import ClassicalExpr
 from cqlib.circuit.gates import UnitaryGate
 
+from cqlib import Circuit, Parameter, Qubit
 from cqlib_algorithms.operators.composite import GroverOperator
 from cqlib_algorithms.operators.oracle import (
     BooleanFunction,

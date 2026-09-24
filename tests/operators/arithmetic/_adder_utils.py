@@ -22,13 +22,12 @@ computing frameworks unless an explicit difference comparison is requested.
 
 from __future__ import annotations
 
-from typing import Iterable
+from collections.abc import Iterable
 
 import numpy as np
-
-from cqlib import Circuit
 from cqlib.qis.state import Statevector
 
+from cqlib import Circuit
 from cqlib_algorithms.operators.arithmetic import (
     FullAdder,
     HalfAdder,

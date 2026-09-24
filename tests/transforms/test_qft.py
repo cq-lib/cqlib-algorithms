@@ -14,15 +14,15 @@
 
 from __future__ import annotations
 
-import math
 import inspect
+import math
 from dataclasses import FrozenInstanceError, replace
 
 import numpy as np
 import pytest
-from cqlib import Circuit, Qubit
 from cqlib.qis import Statevector
 
+from cqlib import Circuit, Qubit
 from cqlib_algorithms.transforms import QFT
 
 

@@ -15,8 +15,8 @@
 import copy
 
 import pytest
-
 from cqlib.circuit.gates import StandardGate
+
 from cqlib_algorithms.operators.state_preparation import AngleEncoding
 
 

@@ -112,6 +112,7 @@ __all__ = [
     "QAOAMixerEvolution",
     "QFIResult",
     "QGTResult",
+    "QuadraticForm",
     "RealAmplitudesAnsatz",
     "SPSAGradient",
     "SPSAOptimizer",

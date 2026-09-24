@@ -16,9 +16,9 @@ from dataclasses import FrozenInstanceError
 
 import numpy as np
 import pytest
-from cqlib import Circuit, Parameter
 from cqlib.qis import PauliString
 
+from cqlib import Circuit, Parameter
 from cqlib_algorithms.protocols import (
     EstimatorRequest,
     Optimizer,
