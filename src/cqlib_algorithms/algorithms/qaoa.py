@@ -16,8 +16,7 @@ from __future__ import annotations
 
 import copy
 from collections.abc import Mapping
-from dataclasses import dataclass, field
-from typing import final
+from typing import Literal
 
 from cqlib import Circuit
 from cqlib.circuit.ansatz import EvolutionStrategy
@@ -26,11 +25,12 @@ from cqlib.qis import Hamiltonian
 from ..operators.ansatz import QAOACostEvolution, QAOAMixerEvolution
 from ..operators.ansatz._validation import copy_hermitian_hamiltonian
 from ..operators.state_preparation import UniformSuperposition
-from ..protocols.ansatz import Ansatz
-from ..protocols.estimator import Estimator
-from ..protocols.optimizer import Optimizer, OptimizerResult
+from ..protocols.estimator import Estimator, EstimatorRequest
+from ..protocols.optimizer import Optimizer, OptimizerRequest, OptimizerResult
 from ..protocols.state_preparation import StatePreparation
-from .vqe import VQE, VQEResult
+from .vqa_result import VQAResult
+
+QAOAResult = VQAResult
 
 
 def _validate_reps(reps: int) -> None:
@@ -52,132 +52,8 @@ def _copy_cost_operator(cost_operator: Hamiltonian) -> Hamiltonian:
     return snapshot
 
 
-@final
-class _QAOAAnsatz(Ansatz):
-    """Compose an initial state and alternating cost and mixer layers."""
-
-    __slots__ = (
-        "_cost_layer",
-        "_initial_state",
-        "_mixer_layer",
-        "_num_qubits",
-        "_reps",
-    )
-
-    def __init__(
-        self,
-        cost_operator: Hamiltonian,
-        reps: int,
-        *,
-        mixer_operator: Hamiltonian | None,
-        initial_state: StatePreparation | None,
-        cost_strategy: EvolutionStrategy | None,
-        mixer_strategy: EvolutionStrategy | None,
-    ) -> None:
-        _validate_reps(reps)
-        self._num_qubits = cost_operator.num_qubits
-        self._reps = reps
-        self._initial_state = (
-            UniformSuperposition(self._num_qubits)
-            if initial_state is None
-            else initial_state
-        )
-        if self._initial_state.num_qubits() != self._num_qubits:
-            raise ValueError("initial_state and cost_operator must have the same width")
-
-        self._cost_layer = QAOACostEvolution(
-            cost_operator,
-            strategy=cost_strategy,
-        )
-        self._mixer_layer = QAOAMixerEvolution(
-            self._num_qubits,
-            mixer_operator=mixer_operator,
-            strategy=mixer_strategy,
-        )
-        self.validate()
-
-    def validate(self) -> None:
-        """Validate all composed components and fixed-state requirements."""
-        self._initial_state.validate()
-        self._cost_layer.validate()
-        self._mixer_layer.validate()
-        if self._initial_state.num_qubits() != self._num_qubits:
-            raise ValueError("initial_state and cost_operator must have the same width")
-        if self._cost_layer.num_qubits() != self._num_qubits:
-            raise ValueError("cost evolution width changed after construction")
-        if self._mixer_layer.num_qubits() != self._num_qubits:
-            raise ValueError("mixer evolution width changed after construction")
-
-        initial_circuit = self._initial_state.build_circuit("qaoa_initial")
-        initial_circuit.validate()
-        if initial_circuit.num_qubits != self._num_qubits:
-            raise ValueError("initial_state circuit has an inconsistent width")
-        if initial_circuit.used_symbols:
-            raise ValueError("initial_state must not contain active symbols")
-
-    def build_circuit(self, prefix: str) -> Circuit:
-        """Build a fresh circuit in initial, cost, mixer time order."""
-        if not isinstance(prefix, str):
-            raise TypeError("prefix must be a str")
-        self.validate()
-        circuit = self._initial_state.build_circuit(f"{prefix}_initial")
-        for layer in range(self._reps):
-            layer_prefix = f"{prefix}_{layer}"
-            circuit.compose(self._cost_layer.build_circuit(layer_prefix))
-            circuit.compose(self._mixer_layer.build_circuit(layer_prefix))
-        circuit.validate()
-        return circuit
-
-    def num_parameters(self) -> int:
-        """Return two logical angles per alternating layer."""
-        return 2 * self._reps
-
-    def num_qubits(self) -> int:
-        """Return the cost-register width."""
-        return self._num_qubits
-
-
-@dataclass(frozen=True, slots=True)
-class QAOAResult:
-    """Maximum cost and the complete delegated variational result.
-
-    ``optimal_value`` is the expectation of the original cost operator.
-    ``optimizer_result.optimal_value`` is its negative because the delegated
-    optimizer minimizes the negated cost objective.
-    """
-
-    vqe_result: VQEResult = field(repr=False)
-
-    __hash__ = None  # type: ignore[assignment]
-
-    def __post_init__(self) -> None:
-        if not isinstance(self.vqe_result, VQEResult):
-            raise TypeError("vqe_result must be a VQEResult")
-
-    @property
-    def optimal_value(self) -> float:
-        """Return the maximum expectation of the original cost operator."""
-        return -self.vqe_result.eigenvalue
-
-    @property
-    def optimal_parameters(self) -> Mapping[str, float]:
-        """Return the immutable optimal parameter mapping."""
-        return self.vqe_result.optimal_parameters
-
-    @property
-    def optimal_circuit(self) -> Circuit:
-        """Return the independent, fully bound optimal circuit."""
-        return self.vqe_result.optimal_circuit
-
-    @property
-    def optimizer_result(self) -> OptimizerResult:
-        """Return metadata for minimizing the negated cost objective."""
-        return self.vqe_result.optimizer_result
-
-
-@final
 class QAOA:
-    """Maximize a diagonal classical cost with alternating evolutions.
+    """Optimize a diagonal classical cost with alternating evolutions.
 
     Each of ``reps`` layers applies ``exp(-i gamma H_C)`` followed by
     ``exp(-i beta H_M)``. The default initial state is the uniform
@@ -185,8 +61,10 @@ class QAOA:
     A custom initial state must be fixed and a custom Hermitian mixer must act
     on the cost register.
 
-    Optimization is delegated to :class:`VQE` by minimizing ``-H_C``. The
-    injected optimizer continues to own any gradient implementation.
+    The primary entry point minimizes H_C; compute_maximum explicitly
+    minimizes -H_C while preserving the original cost evolution. The
+    injected optimizer owns the update rule and any gradient implementation.
+    Subclasses may override build_circuit to construct related variants.
     """
 
     __slots__ = (
@@ -271,40 +149,125 @@ class QAOA:
         """Return the parameter-name prefix."""
         return self._prefix
 
+    def build_circuit(self, cost_operator: Hamiltonian) -> Circuit:
+        """Build a fresh initial-state, cost, mixer circuit without optimizing.
+
+        The cost must be non-empty, finite, Hermitian and computational-basis
+        diagonal. Active symbols follow layer order: prefix_k_gamma,
+        prefix_k_beta; degenerate evolutions may omit inactive symbols.
+        Subclasses may override this construction.
+        """
+        cost = _copy_cost_operator(cost_operator)
+        width = cost.num_qubits
+        initial_state = (
+            UniformSuperposition(width)
+            if self._initial_state is None
+            else self._initial_state
+        )
+        initial_state.validate()
+        if initial_state.num_qubits() != width:
+            raise ValueError("initial_state and cost_operator must have the same width")
+        circuit = initial_state.build_circuit(f"{self._prefix}_initial")
+        if not isinstance(circuit, Circuit):
+            raise TypeError("initial_state must build a cqlib.Circuit")
+        circuit.validate()
+        if circuit.num_qubits != width:
+            raise ValueError("initial_state circuit has an inconsistent width")
+        if circuit.used_symbols:
+            raise ValueError("initial_state must not contain active symbols")
+        circuit = copy.copy(circuit)
+        cost_layer = QAOACostEvolution(cost, strategy=self._cost_strategy)
+        mixer_layer = QAOAMixerEvolution(
+            width,
+            mixer_operator=self._mixer_operator,
+            strategy=self._mixer_strategy,
+        )
+        for layer in range(self._reps):
+            layer_prefix = f"{self._prefix}_{layer}"
+            circuit.compose(cost_layer.build_circuit(layer_prefix))
+            circuit.compose(mixer_layer.build_circuit(layer_prefix))
+        circuit.validate()
+        return circuit
+
+    def compute_minimum_eigenvalue(
+        self,
+        cost_operator: Hamiltonian,
+        initial_point: Mapping[str, float],
+        *,
+        shots: int | None = None,
+    ) -> VQAResult:
+        """Minimize the original cost expectation and return the final iterate.
+
+        Initial bindings must exactly cover the built circuit's active symbols.
+        Shots and objective evaluation are delegated to the supplied components.
+        No global optimum or exact eigenstate is guaranteed.
+
+        Raises:
+            TypeError: If input types or the optimizer response are invalid.
+            ValueError: If the cost, bindings, shots or response violates its
+                component contract.
+        """
+        return self._compute(cost_operator, initial_point, shots, "minimize")
+
     def compute_maximum(
         self,
         cost_operator: Hamiltonian,
         initial_point: Mapping[str, float],
         *,
         shots: int | None = None,
-    ) -> QAOAResult:
-        """Optimize and return the maximum reachable cost expectation.
+    ) -> VQAResult:
+        """Maximize original cost by minimizing its negative objective.
 
-        The cost must be a non-empty, finite Hermitian Hamiltonian containing
-        only ``I`` and ``Z`` Pauli factors. Its computational-basis diagonal
-        therefore defines a classical objective. The initial point must bind
-        exactly ``prefix_{k}_gamma`` and ``prefix_{k}_beta`` for every layer
-        ``k``, in that order.
-
-        The result is the final optimizer iterate and does not assert global
-        optimality. ``shots`` is passed unchanged through the delegated
-        estimator request.
+        Cost evolution still uses the original Hamiltonian. The returned
+        value has the original sign, while optimizer metadata retains the
+        minimized negative value. Input constraints match the minimum entry
+        point. This preserves the previous maximum-solving operation.
         """
-        cost_snapshot = _copy_cost_operator(cost_operator)
-        ansatz = _QAOAAnsatz(
-            cost_snapshot,
-            self._reps,
-            mixer_operator=self._mixer_operator,
-            initial_state=self._initial_state,
-            cost_strategy=self._cost_strategy,
-            mixer_strategy=self._mixer_strategy,
+        return self._compute(cost_operator, initial_point, shots, "maximize")
+
+    def _compute(
+        self,
+        cost_operator: Hamiltonian,
+        initial_point: Mapping[str, float],
+        shots: int | None,
+        objective_sense: Literal["minimize", "maximize"],
+    ) -> VQAResult:
+        cost = _copy_cost_operator(cost_operator)
+        circuit = self.build_circuit(cost.copy())
+        if not isinstance(circuit, Circuit):
+            raise TypeError("build_circuit must return a cqlib.Circuit")
+        circuit.validate()
+        parameter_names = tuple(circuit.used_symbols)
+        objective = cost.copy()
+        if objective_sense == "maximize":
+            objective.scale(-1.0)
+        request = OptimizerRequest(
+            EstimatorRequest(circuit, objective, initial_point, shots),
+            parameter_names,
         )
-        objective = cost_snapshot.copy()
-        objective.scale(-1.0)
-        vqe_result = VQE(
-            self._estimator,
-            ansatz,
-            self._optimizer,
-            prefix=self._prefix,
-        ).compute_minimum_eigenvalue(objective, initial_point, shots=shots)
-        return QAOAResult(vqe_result)
+        results = self._optimizer.run(self._estimator, [request])
+        if not isinstance(results, list):
+            raise TypeError("optimizer must return a list of OptimizerResult values")
+        if len(results) != 1:
+            raise ValueError("optimizer must return exactly one result for QAOA")
+        result = results[0]
+        if not isinstance(result, OptimizerResult):
+            raise TypeError("optimizer must return OptimizerResult values")
+        if result.parameter_names != parameter_names:
+            raise ValueError(
+                "optimizer result parameter names must match the QAOA request"
+            )
+        parameters = dict(
+            zip(result.parameter_names, result.optimal_parameters, strict=True)
+        )
+        optimal_circuit = circuit.assign_parameters(parameters)
+        value = result.optimal_value
+        if objective_sense == "maximize":
+            value = -value
+        return VQAResult(
+            value,
+            parameters,
+            optimal_circuit,
+            result,
+            objective_sense=objective_sense,
+        )

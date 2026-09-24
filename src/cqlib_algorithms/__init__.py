@@ -14,7 +14,7 @@
 
 from importlib.metadata import version
 
-from .algorithms import QAOA, VQE, QAOAResult, VQEResult
+from .algorithms import QAOA, VQE, QAOAResult, VQAResult, VQEResult
 from .protocols import (
     Ansatz,
     Estimator,
@@ -54,6 +54,7 @@ __all__ = [
     "Sampler",
     "SamplerRequest",
     "StatePreparation",
+    "VQAResult",
     "VQEResult",
     "__version__",
 ]

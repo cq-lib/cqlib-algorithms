@@ -379,7 +379,7 @@ def test_vqe_result_validates_optimizer_consistency() -> None:
         VQEResult(-0.5, {"y": 0.25}, Circuit(1), optimizer_result)
     with pytest.raises(ValueError, match="values must match"):
         VQEResult(-0.5, {"x": 0.5}, Circuit(1), optimizer_result)
-    with pytest.raises(ValueError, match="eigenvalue must match"):
+    with pytest.raises(ValueError, match="optimal_value must match"):
         VQEResult(-0.25, {"x": 0.25}, Circuit(1), optimizer_result)
     parameterized = Circuit(1)
     parameterized.ry(0, Parameter("x"))

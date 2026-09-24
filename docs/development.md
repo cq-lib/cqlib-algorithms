@@ -121,12 +121,18 @@
 
 ## QAOA 实现约定
 
-- `QAOA` 只接受非空、有限、Hermitian 且计算基对角的成本 Hamiltonian，并最大化
-  其原始期望值；公共 Optimizer 的内部目标是负成本，因此结果必须明确区分两个符号。
+- `QAOA` 只接受非空、有限、Hermitian 且计算基对角的成本 Hamiltonian。主入口
+  `compute_minimum_eigenvalue` 最小化原始期望值；`compute_maximum` 显式最小化
+  负成本，但演化线路仍使用原始成本。结果用 `objective_sense` 区分这两种语义。
 - 默认初态复用 `UniformSuperposition`，每层依次复用 `QAOACostEvolution` 与
   `QAOAMixerEvolution`；算法层不重新实现演化、期望值、梯度、优化或参数绑定。
 - 层参数顺序固定为 `{prefix}_{k}_gamma, {prefix}_{k}_beta`。自定义初态必须固定、
   无活跃符号且同宽；自定义 mixer 必须非空、有限、Hermitian 且同宽，再由底层
   演化组件验证线路语义。
-- 完整优化路径委托 `VQE` 最小化负成本。`QAOAResult.optimal_value` 恢复原始成本
-  符号，底层 `OptimizerResult.optimal_value` 保留负成本目标值。
+- `QAOA.build_circuit` 直接拼装初态与演化层，不新建内部 Ansatz 包装；优化入口
+  调用该可覆盖方法，并直接使用 Estimator/Optimizer 契约，不委托另一算法。
+- VQE 与 QAOA 共享 `VQAResult`。`optimal_value` 表示原目标在最终迭代点的期望值，
+  不是历史最佳值；最小化时与优化器值相同，最大化时与优化器值相反。结果构造必须
+  校验该关系。不得虚构优化器未提供的 checkpoint、方差或收敛保证。
+- 公共结果 dataclass 保持标准构造与 `dataclasses.replace`，简短 repr 只显示
+  目标值、参数数量、方向、迭代次数与状态，不打印完整线路。

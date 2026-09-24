@@ -23,7 +23,7 @@ from cqlib import Circuit, Parameter
 from cqlib.circuit.ansatz import EvolutionStrategy
 from cqlib.qis import Hamiltonian, Pauli, PauliString
 
-from cqlib_algorithms.algorithms import QAOA, QAOAResult, VQEResult
+from cqlib_algorithms.algorithms import QAOA, QAOAResult, VQAResult, VQEResult
 from cqlib_algorithms.operators.estimator import StatevectorEstimator
 from cqlib_algorithms.operators.gradient import ParameterShiftGradient
 from cqlib_algorithms.operators.optimizer import GradientDescent
@@ -529,11 +529,127 @@ def test_initial_point_validation_is_delegated_to_variational_path() -> None:
         )
 
 
-def test_result_wraps_and_delegates_the_validated_variational_result() -> None:
+def test_algorithms_share_a_flat_variational_result() -> None:
     result, _, _ = _recording_run(reps=1)
-    assert isinstance(result.vqe_result, VQEResult)
-    assert result.optimal_parameters is result.vqe_result.optimal_parameters
-    assert result.optimal_circuit is result.vqe_result.optimal_circuit
-    assert result.optimizer_result is result.vqe_result.optimizer_result
-    with pytest.raises(TypeError, match="vqe_result must be a VQEResult"):
-        QAOAResult(object())  # type: ignore[arg-type]
+    assert QAOAResult is VQEResult is VQAResult
+    assert isinstance(result, VQAResult)
+    assert result.objective_sense == "maximize"
+    assert not hasattr(result, "vqe_result")
+
+
+def test_minimum_uses_original_cost_and_same_circuit_as_maximum() -> None:
+    optimizer = RecordingOptimizer()
+    algorithm = QAOA(RecordingEstimator(), optimizer)
+    cost = _maxcut_cost(2, [(0, 1)])
+    point = {"qaoa_0_gamma": 0.2, "qaoa_0_beta": -0.3}
+    minimum = algorithm.compute_minimum_eigenvalue(cost, point, shots=123)
+    maximum = algorithm.compute_maximum(cost, point, shots=123)
+    assert minimum.optimal_value == -0.75
+    assert maximum.optimal_value == 0.75
+    assert minimum.objective_sense == "minimize"
+    assert minimum.eigenvalue == minimum.optimal_value
+    positive = optimizer.batches[0][0].estimator_request
+    negative = optimizer.batches[1][0].estimator_request
+    assert positive.shots == negative.shots == 123
+    assert positive.circuit == negative.circuit
+    np.testing.assert_allclose(positive.observable.to_matrix(), cost.to_matrix())
+    np.testing.assert_allclose(negative.observable.to_matrix(), -cost.to_matrix())
+
+
+@pytest.mark.reference
+def test_minimum_reaches_known_single_edge_minimum() -> None:
+    algorithm = QAOA(
+        StatevectorEstimator(),
+        GradientDescent(ParameterShiftGradient(), maxiter=1, tolerance=1e-12),
+    )
+    result = algorithm.compute_minimum_eigenvalue(
+        _maxcut_cost(2, [(0, 1)]),
+        {"qaoa_0_gamma": math.pi / 2, "qaoa_0_beta": -math.pi / 8},
+    )
+    probabilities = np.abs(result.optimal_circuit.to_matrix()[:, 0]) ** 2
+    assert result.optimal_value == pytest.approx(0.0, abs=1e-12)
+    assert probabilities[0] + probabilities[3] == pytest.approx(1.0, abs=1e-12)
+
+
+def test_subclass_build_hook_is_used_by_both_optimization_paths() -> None:
+    class Variant(QAOA):
+        def build_circuit(self, cost_operator: Hamiltonian) -> Circuit:
+            circuit = Circuit(cost_operator.num_qubits)
+            circuit.ry(0, Parameter("custom"))
+            return circuit
+
+    optimizer = RecordingOptimizer()
+    algorithm = Variant(RecordingEstimator(), optimizer)
+    cost = Hamiltonian.from_pauli(PauliString.from_str("Z"))
+    for method in (algorithm.compute_minimum_eigenvalue, algorithm.compute_maximum):
+        result = method(cost, {"custom": 0.2})
+        assert tuple(result.optimal_parameters) == ("custom",)
+        assert optimizer.batches[-1][0].parameter_names == ("custom",)
+
+
+def test_public_build_returns_fresh_circuits_without_optimization() -> None:
+    optimizer = RecordingOptimizer()
+    algorithm = QAOA(RecordingEstimator(), optimizer)
+    cost = _maxcut_cost(2, [(0, 1)])
+    first = algorithm.build_circuit(cost)
+    second = algorithm.build_circuit(cost)
+    assert first == second
+    first.x(0)
+    assert first != second
+    assert optimizer.batches == []
+
+
+@pytest.mark.parametrize("response", [(), [], [object()]])
+def test_invalid_optimizer_responses_are_rejected(response: object) -> None:
+    class BrokenOptimizer(RecordingOptimizer):
+        def run(
+            self, estimator: Estimator, requests: Sequence[OptimizerRequest], /
+        ) -> list[OptimizerResult]:
+            return response  # type: ignore[return-value]
+
+    algorithm = QAOA(RecordingEstimator(), BrokenOptimizer())
+    with pytest.raises((TypeError, ValueError)):
+        algorithm.compute_minimum_eigenvalue(
+            _maxcut_cost(2, [(0, 1)]),
+            {"qaoa_0_gamma": 0.2, "qaoa_0_beta": -0.3},
+        )
+
+
+def test_optimizer_parameter_order_must_match_request() -> None:
+    class ReorderedOptimizer(RecordingOptimizer):
+        def run(
+            self, estimator: Estimator, requests: Sequence[OptimizerRequest], /
+        ) -> list[OptimizerResult]:
+            return [
+                OptimizerResult(
+                    ("qaoa_0_beta", "qaoa_0_gamma"),
+                    (0.1, 0.2),
+                    0.0,
+                    0,
+                    OptimizerStatus.MAX_ITERATIONS,
+                )
+            ]
+
+    with pytest.raises(ValueError, match="names must match"):
+        QAOA(RecordingEstimator(), ReorderedOptimizer()).compute_maximum(
+            _maxcut_cost(2, [(0, 1)]),
+            {"qaoa_0_gamma": 0.2, "qaoa_0_beta": -0.3},
+        )
+
+
+def test_minimization_updates_nonoptimal_initial_point_to_z_ground_state() -> None:
+    algorithm = QAOA(
+        StatevectorEstimator(),
+        GradientDescent(
+            ParameterShiftGradient(), learning_rate=0.2, maxiter=80, tolerance=1e-10
+        ),
+    )
+    result = algorithm.compute_minimum_eigenvalue(
+        Hamiltonian.from_pauli(PauliString.from_str("Z")),
+        {"qaoa_0_gamma": 0.31, "qaoa_0_beta": -0.14},
+    )
+    assert result.optimizer_result.iterations > 0
+    assert result.optimal_value == pytest.approx(-1.0, abs=1e-10)
+    assert abs(result.optimal_circuit.to_matrix()[1, 0]) ** 2 == pytest.approx(
+        1.0, abs=1e-10
+    )

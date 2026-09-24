@@ -21,7 +21,7 @@ import pytest
 from cqlib.error_mitigation import Estimator as ErrorMitigationEstimator
 
 import cqlib_algorithms
-from cqlib_algorithms import QAOA, QFT, VQE, QAOAResult, VQEResult
+from cqlib_algorithms import QAOA, QFT, VQE, QAOAResult, VQAResult, VQEResult
 from cqlib_algorithms.algorithms import QAOA as AlgorithmQAOA
 from cqlib_algorithms.algorithms import VQE as AlgorithmVQE
 from cqlib_algorithms.algorithms import QAOAResult as AlgorithmQAOAResult
@@ -63,6 +63,7 @@ PUBLIC_COMPONENTS = {
     "StatePreparation": StatePreparation,
     "VQE": VQE,
     "VQEResult": VQEResult,
+    "VQAResult": VQAResult,
 }
 
 

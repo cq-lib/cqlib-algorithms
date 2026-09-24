@@ -14,81 +14,17 @@
 
 from __future__ import annotations
 
-import math
 from collections.abc import Mapping
-from dataclasses import dataclass, field
-from numbers import Real
-from types import MappingProxyType
 from typing import final
 
-from cqlib import Circuit
 from cqlib.qis import Hamiltonian, PauliString
 
 from ..protocols.ansatz import Ansatz
 from ..protocols.estimator import Estimator, EstimatorRequest
 from ..protocols.optimizer import Optimizer, OptimizerRequest, OptimizerResult
+from .vqa_result import VQAResult
 
-
-def _immutable_parameters(parameters: Mapping[str, float]) -> Mapping[str, float]:
-    if not isinstance(parameters, Mapping):
-        raise TypeError("optimal_parameters must be a mapping")
-
-    normalized: dict[str, float] = {}
-    for name, value in parameters.items():
-        if not isinstance(name, str):
-            raise TypeError("optimal parameter names must be strings")
-        if isinstance(value, bool) or not isinstance(value, Real):
-            raise TypeError("optimal parameter values must be real numbers")
-        numeric_value = float(value)
-        if not math.isfinite(numeric_value):
-            raise ValueError("optimal parameter values must be finite")
-        normalized[name] = numeric_value
-    return MappingProxyType(normalized)
-
-
-@dataclass(frozen=True, slots=True)
-class VQEResult:
-    """A VQE energy, optimal point, bound circuit and optimizer metadata.
-
-    ``optimal_parameters`` preserves the optimizer's parameter order and is
-    defensively copied into an immutable mapping. ``optimal_circuit`` is a
-    separate, fully bound circuit; like other Core objects in this package it
-    remains mutable even though this result dataclass is frozen.
-    """
-
-    eigenvalue: float
-    optimal_parameters: Mapping[str, float]
-    optimal_circuit: Circuit
-    optimizer_result: OptimizerResult = field(repr=False)
-
-    __hash__ = None  # type: ignore[assignment]
-
-    def __post_init__(self) -> None:
-        if isinstance(self.eigenvalue, bool) or not isinstance(self.eigenvalue, Real):
-            raise TypeError("eigenvalue must be a real number")
-        eigenvalue = float(self.eigenvalue)
-        if not math.isfinite(eigenvalue):
-            raise ValueError("eigenvalue must be finite")
-        object.__setattr__(self, "eigenvalue", eigenvalue)
-
-        if not isinstance(self.optimizer_result, OptimizerResult):
-            raise TypeError("optimizer_result must be an OptimizerResult")
-        parameters = _immutable_parameters(self.optimal_parameters)
-        object.__setattr__(self, "optimal_parameters", parameters)
-
-        names = tuple(parameters)
-        if names != self.optimizer_result.parameter_names:
-            raise ValueError("optimal parameter names must match the optimizer result")
-        if tuple(parameters.values()) != self.optimizer_result.optimal_parameters:
-            raise ValueError("optimal parameter values must match the optimizer result")
-        if eigenvalue != self.optimizer_result.optimal_value:
-            raise ValueError("eigenvalue must match the optimizer result")
-
-        if not isinstance(self.optimal_circuit, Circuit):
-            raise TypeError("optimal_circuit must be a cqlib.Circuit")
-        self.optimal_circuit.validate()
-        if self.optimal_circuit.used_symbols:
-            raise ValueError("optimal_circuit must be fully bound")
+VQEResult = VQAResult
 
 
 @final

@@ -1,7 +1,7 @@
 # QAOA
 
 `QAOA` 组合既有的状态制备、成本演化、混合演化、期望值估计与经典优化组件，
-用于最大化计算基对角的经典成本 Hamiltonian。算法层不重新实现线路模拟、期望值、
+主入口用于最小化计算基对角的经典成本 Hamiltonian，另保留显式最大化入口。算法层不重新实现线路模拟、期望值、
 梯度、参数更新或参数绑定。
 
 ## 数学约定
@@ -49,10 +49,11 @@ algorithm = QAOA(
     StatevectorEstimator(),
     GradientDescent(ParameterShiftGradient(), learning_rate=0.2),
 )
-result = algorithm.compute_maximum(
+cost.scale(-1.0)  # Minimize negative cut size.
+result = algorithm.compute_minimum_eigenvalue(
     cost,
     {
-        "qaoa_0_gamma": math.pi / 2,
+        "qaoa_0_gamma": -math.pi / 2,
         "qaoa_0_beta": math.pi / 8,
     },
 )
@@ -77,26 +78,56 @@ prefix_{p-1}_beta`。初值必须精确覆盖线路中的活跃参数。
 成本和混合 Hamiltonian 的有限性、Hermitian 性、有效 Pauli 相位聚合与非空快照
 统一复用 Ansatz 层的共享校验；QAOA 仅额外约束成本的正宽度和计算基对角性。
 
-## 最大化与结果语义
+## 最小化、最大化与结果语义
 
-公共优化器协议统一执行最小化，因此 `QAOA` 把 `-H_C` 交给既有 `VQE` 路径，
-而成本演化线路仍使用原始 `H_C`。这两个符号约定不能混淆：
+原始 QAOA 论文常用最大化组合优化收益的表述，这并不要求算法接口只能最大化。
+本库统一以 `compute_minimum_eigenvalue(cost, initial_point, shots=None)` 为主入口，
+直接最小化原始 `H_C`；不保证结果是精确本征态或全局最优解。
 
-- `QAOAResult.optimal_value` 是原始成本期望值的最大化结果；
-- `QAOAResult.optimizer_result.optimal_value` 是负成本目标值，数值上是前者的相反数；
-- `optimal_parameters` 是不可变参数映射；
-- `optimal_circuit` 是独立且完全绑定的线路；
-- `vqe_result` 保留完整的被委托结果，避免复制或弱化其校验。
+兼容入口 `compute_maximum` 仍最小化 `-H_C`，但成本演化线路使用原始 `H_C`。
+不能仅改方法名称而保持隐藏负号。上方 MaxCut 示例显式编码负收益；原有调用
+`compute_maximum(positive_cut_cost, ...)` 则不需要自行取负。
 
-结果表示优化器的最终迭代点，不承诺找到全局经典最优解。`shots=None` 申请精确
-期望值；正整数 shots 原样传给 Estimator，实际支持范围由注入的 Estimator 决定。
+两种算法直接返回同一个 `VQAResult` dataclass：
+
+- `optimal_value`：原始目标在最终优化迭代点的期望值，而非历史最佳值；
+- `objective_sense`：`"minimize"` 或 `"maximize"`，仅关键字参数；
+- `optimizer_result`：原始优化器元数据；最小化时其目标值等于结果值，
+  最大化时为结果值的相反数，构造时检查这一关系；
+- `optimal_parameters`：按实际活跃符号顺序复制的不可变参数映射；
+- `optimal_circuit`：算法生成的独立、完全绑定线路。结果 dataclass 仅浅冻结，
+  不复制手动传入的 Core 线路，线路本身仍可变；
+- `eigenvalue`：`optimal_value` 的兼容只读别名，不表示保证得到精确本征值。
+
+`QAOAResult` 与 `VQEResult` 仅为 `VQAResult` 的导出别名，不是包装类或不同
+运行时类型。原 `QAOAResult(vqe_result)` 构造和 `.vqe_result` 属性已移除；
+手动构造时直接传入值、参数映射、绑定线路、优化器结果，并指定方向。
+原 `VQEResult(eigenvalue=...)` 改用 `optimal_value=...`。
+`dataclasses.replace` 保持标准行为并重新执行一致性检查。
+
+`print(result)` 简要显示目标值、参数数量、优化方向、迭代次数和状态，不打印完整
+线路或参数数组。当前优化器没有完整 checkpoint 状态，也没有终态方差接口，因此
+结果不加入虚构字段、不重复调用 Estimator 获取额外测量。优化器的最终迭代点
+不承诺全局经典最优解。`shots=None` 申请精确期望值；正整数 shots 原样传给
+Estimator，实际支持范围由注入的 Estimator 决定。
+
+## 构建线路与变体
+
+`algorithm.build_circuit(cost_operator)` 只构建独立参数化线路，不执行优化：
+`tuple(circuit.used_symbols)` 是初值需要覆盖的真实参数名与顺序。通常每层具有
+gamma/beta 两个符号，但退化演化可能不包含某些逻辑参数槽，不应额外补造参数。
+
+`QAOA` 不标记为 final；变体可覆盖该方法，优化入口会调用覆盖后的方法，再通过
+公共请求契约检查线路宽度、可观测量和精确参数绑定。没有内部 `_QAOAAnsatz`、
+单独的 VQA 参数封装或 VQE 结果嵌套。变体负责自身线路的算法语义，不会因此自动
+解除本版本计算基对角成本的限制。
 
 ## 组件复用边界
 
 - `UniformSuperposition` 负责默认初态；
 - `QAOACostEvolution` 负责每层 `exp(-i gamma H_C)`；
 - `QAOAMixerEvolution` 负责每层 `exp(-i beta H_M)`；
-- `VQE` 负责 Estimator 请求、Optimizer 请求、结果校验和完全参数绑定；
+- `QAOA` 直接创建 Estimator/Optimizer 请求，校验返回结果并完成参数绑定；
 - 注入的 Optimizer 继续拥有梯度组件及其更新规则。
 
 当前接口面向由对角 Pauli Hamiltonian 表达的无约束经典成本。约束保持型混合器可

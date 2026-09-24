@@ -13,6 +13,7 @@
 """Complete quantum algorithms composed from reusable components."""
 
 from .qaoa import QAOA, QAOAResult
+from .vqa_result import VQAResult
 from .vqe import VQE, VQEResult
 
-__all__ = ["QAOA", "VQE", "QAOAResult", "VQEResult"]
+__all__ = ["QAOA", "VQE", "QAOAResult", "VQAResult", "VQEResult"]

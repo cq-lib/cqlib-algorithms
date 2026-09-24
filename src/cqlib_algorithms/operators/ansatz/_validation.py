@@ -93,7 +93,12 @@ def validate_boolean(value: bool, name: str) -> None:
 def snapshot_rotation_gates(
     gates: Sequence[StandardGate],
 ) -> tuple[StandardGate, ...]:
-    """Validate and freeze unbound one-parameter rotation gates."""
+    """Validate RX/RY/RZ templates and snapshot their sequence as a tuple.
+
+    The tuple isolates the container from later edits to the caller's list;
+    this is not a deep copy or a claim that arbitrary gate objects are frozen.
+    Bound rotations and unsupported gate templates are rejected.
+    """
     if isinstance(gates, (str, bytes)) or not isinstance(gates, Sequence):
         raise TypeError("rotation_gates must be a sequence of StandardGate values")
     frozen = tuple(gates)
