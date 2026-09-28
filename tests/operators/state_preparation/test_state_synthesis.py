@@ -14,6 +14,7 @@
 
 from cqlib.circuit import Circuit
 from cqlib.circuit.gates import StandardGate
+
 from cqlib_algorithms.operators.state_preparation._state_synthesis import (
     _append_uniformly_controlled_rotation,
     validate_normalized_vector,

@@ -17,8 +17,8 @@ import math
 
 import numpy as np
 import pytest
-
 from cqlib.circuit import Circuit
+
 from cqlib_algorithms.operators.state_preparation import SparseAmplitudeEncoding
 from cqlib_algorithms.operators.state_preparation._state_synthesis import (
     _append_two_level_allocation,

@@ -20,8 +20,8 @@ from dataclasses import is_dataclass
 
 import numpy as np
 import pytest
-from cqlib import Circuit, Qubit
 
+from cqlib import Circuit, Qubit
 from cqlib_algorithms.operators.oracle import (
     BooleanFunction,
     BooleanVectorFunction,

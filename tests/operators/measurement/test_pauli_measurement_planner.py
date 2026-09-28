@@ -18,9 +18,9 @@ from math import sqrt
 
 import numpy as np
 import pytest
-from cqlib import Circuit, Qubit
 from cqlib.qis import PauliString
 
+from cqlib import Circuit, Qubit
 from cqlib_algorithms.operators.measurement import (
     PauliMeasurementPlanner,
 )

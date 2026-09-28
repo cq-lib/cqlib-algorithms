@@ -62,14 +62,14 @@ from cqlib.qis.state import Statevector
 
 from cqlib import Circuit
 from cqlib_algorithms.operators.arithmetic import (
+    UCRX,
+    UCRY,
+    UCRZ,
     ArbitraryFunction,
     ExactReciprocal,
     LinearPauliRotation,
     PiecewiseChebyshev,
     PiecewiseLinearPauliRotation,
-    UCRX,
-    UCRY,
-    UCRZ,
 )
 
 AMPLITUDE_ATOL = 1e-10
@@ -1587,7 +1587,7 @@ class TestPiecewiseChebyshevDocCases:
         degree = 2
         user_bp = [1, 4, 8]
 
-        def f_target(x: float | int) -> float:
+        def f_target(x: float) -> float:
             xv = float(x)
             return 1.0 / xv if xv != 0.0 else 1.0
 
@@ -2227,7 +2227,7 @@ class TestPiecewiseChebyshevBlackBox:
         degree = 2
         user_bp = [1, 4, 8]
 
-        def f_target(x: float | int) -> float:
+        def f_target(x: float) -> float:
             xv = float(x)
             return 1.0 / xv if xv != 0.0 else 1.0
 

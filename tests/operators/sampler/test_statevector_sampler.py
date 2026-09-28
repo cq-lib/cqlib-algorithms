@@ -17,8 +17,8 @@ from __future__ import annotations
 import math
 
 import pytest
-from cqlib import Circuit, Parameter, Qubit
 
+from cqlib import Circuit, Parameter, Qubit
 from cqlib_algorithms.operators.sampler import StatevectorSampler
 from cqlib_algorithms.protocols.sampler import Sampler, SamplerRequest
 

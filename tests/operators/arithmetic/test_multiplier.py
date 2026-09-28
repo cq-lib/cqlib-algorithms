@@ -29,10 +29,9 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
-
-from cqlib import Circuit
 from cqlib.qis import Statevector
 
+from cqlib import Circuit
 from cqlib_algorithms.operators.arithmetic import (
     Multiplier,
 )

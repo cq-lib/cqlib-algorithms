@@ -20,9 +20,9 @@ from typing import cast
 
 import numpy as np
 import pytest
-from cqlib import Circuit, Parameter
 from cqlib.circuit import ClassicalExpr
 
+from cqlib import Circuit, Parameter
 from cqlib_algorithms.operators.oracle import GeneralStateReflection
 from cqlib_algorithms.protocols import StatePreparation
 
