@@ -5,7 +5,8 @@
 首批状态制备、数据编码组件、变分拟设、QAOA 演化层、布尔 Oracle、反射算子、
 Pauli 测量规划、同步采样器、期望值估计器、梯度、量子几何、经典优化组件、
 线路纯态保真度估计组件、Hadamard 相位查询、Grover 复合迭代单元，以及可复用的量子傅里叶变换
-线路构造器，以及完整的 VQE、QAOA、Deutsch-Jozsa、Bernstein-Vazirani 与 Simon 算法。
+线路构造器，以及完整的 VQE、QAOA、Deutsch-Jozsa、Bernstein-Vazirani、Simon
+与 CHSH 不等式验证算法。
 
 ## 目录
 
@@ -83,6 +84,7 @@ src/cqlib_algorithms/
 │       └── feature_map_preparation.py
 └── algorithms/
     ├── bernstein_vazirani.py
+    ├── chsh.py
     ├── deutsch_jozsa.py
     ├── qaoa.py
     ├── simon.py
@@ -342,6 +344,13 @@ Oracle 由 `PhaseOracle` 从不可变布尔函数构建，执行注入任意 `Sa
 本实现不提供鲁棒解码。算法接受单输出和多输出布尔函数，
 不要求输出宽度等于输入宽度，也不经典检查承诺。数学定义、端序、结果语义与边界见
 [Simon 算法](docs/simon.md)。
+
+`CHSH` 复用 `GHZStatePreparation(2)` 制备默认 Bell 态，通过公共 `Estimator`
+一次批量计算 `E00`、`E01`、`E10`、`E11` 四个 X–Z 平面乘积可观测量，并返回
+`S = E00 + E01 + E10 - E11`、经典界违反判定及 Estimator 方差。也可传入固定的
+二量子比特制备线路和自定义双方测量角度。数值容差只用于经典界比较，不代表统计
+显著性；组件不处理实验漏洞、误差缓解或置信区间。数学定义、批处理语义和边界见
+[CHSH 不等式验证](docs/chsh.md)。
 
 ## 量子傅里叶变换
 

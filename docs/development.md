@@ -196,3 +196,20 @@
 - DJ/BV 的经典函数到查询线路能力已由
   `BooleanFunction/BooleanVectorFunction -> PhaseOracle -> HadamardPhaseQuery`
   覆盖，不增加同义构造器；显式 XOR 输出 Oracle 使用 `BitFlipOracle`。
+
+## CHSH 实现约定
+
+- `CHSH` 默认复用 `GHZStatePreparation(2)` 制备 `|Phi+>`，也接受固定、无活跃
+  符号、可展开、静态酉且恰含两个量子比特的自定义 Cqlib 线路；直接或嵌套的
+  测量、重置、延迟和经典控制在构造时与执行前均被拒绝。线路按 `Circuit.qubits`
+  插入位置将 Alice 映射到位置 0、Bob 映射到位置 1，算法只操作独立副本。
+- 每方的测量轴限制在 X–Z 平面，`M(theta) = cos(theta) Z + sin(theta) X`。
+  相关函数固定按 `E00, E01, E10, E11` 排列，见证量定义为
+  `S = E00 + E01 + E10 - E11`；默认角度在 `|Phi+>` 上得到正的 `2 sqrt(2)`。
+- 每个请求展开为四个 Hamiltonian 期望值请求，整个输入批次必须先验证和构造，
+  再通过一次压平的 Estimator 调用执行。shots 原样逐项传递；返回容器、长度和
+  `EstimatorResult` 类型必须严格核验。
+- 违反判定使用 `abs(S) > 2 + tolerance`。容差只处理数值边界，不表示统计置信度。
+  经验相关值不按物理理想界裁剪或拒绝；Estimator 的有限-shot、噪声或缓解输出
+  必须如实保留。方差齐全时只提供无协方差信息下的标准差保守上界。
+- 首版不支持一般三维测量轴、统计显著性、实验漏洞分析、误差缓解或未绑定参数态。

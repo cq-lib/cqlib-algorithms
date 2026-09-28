@@ -17,6 +17,7 @@ from .bernstein_vazirani import (
     BernsteinVaziraniRequest,
     BernsteinVaziraniResult,
 )
+from .chsh import CHSH, CHSHRequest, CHSHResult
 from .deutsch_jozsa import DeutschJozsa, DeutschJozsaRequest, DeutschJozsaResult
 from .qaoa import QAOA, QAOAResult
 from .simon import Simon, SimonRequest, SimonResult
@@ -24,11 +25,14 @@ from .vqa_result import VQAResult
 from .vqe import VQE, VQEResult
 
 __all__ = [
+    "CHSH",
     "QAOA",
     "VQE",
     "BernsteinVazirani",
     "BernsteinVaziraniRequest",
     "BernsteinVaziraniResult",
+    "CHSHRequest",
+    "CHSHResult",
     "DeutschJozsa",
     "DeutschJozsaRequest",
     "DeutschJozsaResult",

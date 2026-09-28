@@ -22,12 +22,15 @@ from cqlib.error_mitigation import Estimator as ErrorMitigationEstimator
 
 import cqlib_algorithms
 from cqlib_algorithms import (
+    CHSH,
     QAOA,
     QFT,
     VQE,
     BernsteinVazirani,
     BernsteinVaziraniRequest,
     BernsteinVaziraniResult,
+    CHSHRequest,
+    CHSHResult,
     DeutschJozsa,
     DeutschJozsaRequest,
     DeutschJozsaResult,
@@ -38,6 +41,7 @@ from cqlib_algorithms import (
     VQAResult,
     VQEResult,
 )
+from cqlib_algorithms.algorithms import CHSH as AlgorithmCHSH
 from cqlib_algorithms.algorithms import QAOA as AlgorithmQAOA
 from cqlib_algorithms.algorithms import VQE as AlgorithmVQE
 from cqlib_algorithms.algorithms import (
@@ -49,6 +53,8 @@ from cqlib_algorithms.algorithms import (
 from cqlib_algorithms.algorithms import (
     BernsteinVaziraniResult as AlgorithmBernsteinVaziraniResult,
 )
+from cqlib_algorithms.algorithms import CHSHRequest as AlgorithmCHSHRequest
+from cqlib_algorithms.algorithms import CHSHResult as AlgorithmCHSHResult
 from cqlib_algorithms.algorithms import (
     DeutschJozsa as AlgorithmDeutschJozsa,
 )
@@ -86,6 +92,9 @@ PUBLIC_COMPONENTS = {
     "BernsteinVazirani": BernsteinVazirani,
     "BernsteinVaziraniRequest": BernsteinVaziraniRequest,
     "BernsteinVaziraniResult": BernsteinVaziraniResult,
+    "CHSH": CHSH,
+    "CHSHRequest": CHSHRequest,
+    "CHSHResult": CHSHResult,
     "DeutschJozsa": DeutschJozsa,
     "DeutschJozsaRequest": DeutschJozsaRequest,
     "DeutschJozsaResult": DeutschJozsaResult,
@@ -184,6 +193,12 @@ def test_bernstein_vazirani_is_exported_from_public_namespaces():
     assert BernsteinVazirani is AlgorithmBernsteinVazirani
     assert BernsteinVaziraniRequest is AlgorithmBernsteinVaziraniRequest
     assert BernsteinVaziraniResult is AlgorithmBernsteinVaziraniResult
+
+
+def test_chsh_is_exported_from_public_namespaces():
+    assert CHSH is AlgorithmCHSH
+    assert CHSHRequest is AlgorithmCHSHRequest
+    assert CHSHResult is AlgorithmCHSHResult
 
 
 def test_simon_is_exported_from_public_namespaces():
