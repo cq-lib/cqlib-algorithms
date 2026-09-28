@@ -23,6 +23,7 @@ from .ansatz import (
     RealAmplitudesAnsatz,
     TwoLocalAnsatz,
 )
+from .arithmetic import QuadraticForm
 from .composite import GroverOperator
 from .estimator import SamplingEstimator, StatevectorEstimator
 from .gradient import (
@@ -50,6 +51,7 @@ from .oracle import (
     BooleanVectorFunction,
     GeneralStateReflection,
     GroverDiffusion,
+    GroverLong,
     PhaseOracle,
     ZeroStateReflection,
 )
@@ -96,6 +98,7 @@ __all__ = [
     "GeneralStateReflection",
     "GradientDescent",
     "GroverDiffusion",
+    "GroverLong",
     "GroverOperator",
     "HardwareEfficientAnsatz",
     "LinCombEstimatorGradient",
@@ -112,6 +115,7 @@ __all__ = [
     "QAOAMixerEvolution",
     "QFIResult",
     "QGTResult",
+    "QuadraticForm",
     "RealAmplitudesAnsatz",
     "SPSAGradient",
     "SPSAOptimizer",

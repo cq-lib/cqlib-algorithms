@@ -18,9 +18,9 @@ from collections.abc import Sequence
 from copy import copy
 
 import pytest
-from cqlib import Circuit, Parameter, Qubit
 from cqlib.device import ExecutionResult
 
+from cqlib import Circuit, Parameter, Qubit
 from cqlib_algorithms.protocols.sampler import Sampler, SamplerRequest
 
 

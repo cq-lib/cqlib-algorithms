@@ -31,16 +31,14 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
-
-from cqlib import Circuit
-from cqlib.qis.state import Statevector
-
 from _adder_utils import (
     _assert_clean_register_layout,
     _expected_num_qubits,
     _run_adder,
 )
+from cqlib.qis.state import Statevector
 
+from cqlib import Circuit
 from cqlib_algorithms.operators.arithmetic import (
     DraperConstantAdder,
     FullAdder,

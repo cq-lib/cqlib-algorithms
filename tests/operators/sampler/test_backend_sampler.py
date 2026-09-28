@@ -15,10 +15,10 @@
 from __future__ import annotations
 
 import pytest
-from cqlib import Circuit, Parameter, Qubit
 from cqlib.circuit import Measurement
 from cqlib.device import ExecutionResult
 
+from cqlib import Circuit, Parameter, Qubit
 from cqlib_algorithms.operators.sampler import BackendSampler
 from cqlib_algorithms.operators.sampler.backend_sampler import (
     BackendSampler as ModuleBackendSampler,

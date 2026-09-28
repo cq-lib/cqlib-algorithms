@@ -18,8 +18,9 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import final
 
-from cqlib import Circuit
 from cqlib.device import ExecutionResult
+
+from cqlib import Circuit
 
 from ..operators.oracle import (
     BooleanFunction,

@@ -13,13 +13,13 @@
 """Tests for the stable Cqlib feature-map adapter."""
 
 import pytest
-
 from cqlib.circuit.ansatz import (
     IQPFeatureMap,
     PauliFeatureMap,
     ZFeatureMap,
     ZZFeatureMap,
 )
+
 from cqlib_algorithms.operators.state_preparation import FeatureMapPreparation
 
 
