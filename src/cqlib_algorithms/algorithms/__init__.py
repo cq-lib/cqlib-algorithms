@@ -12,6 +12,7 @@
 
 """Complete quantum algorithms composed from reusable components."""
 
+from .bb84 import BB84, BB84Basis, BB84Request, BB84Result
 from .bernstein_vazirani import (
     BernsteinVazirani,
     BernsteinVaziraniRequest,
@@ -25,9 +26,13 @@ from .vqa_result import VQAResult
 from .vqe import VQE, VQEResult
 
 __all__ = [
+    "BB84",
     "CHSH",
     "QAOA",
     "VQE",
+    "BB84Basis",
+    "BB84Request",
+    "BB84Result",
     "BernsteinVazirani",
     "BernsteinVaziraniRequest",
     "BernsteinVaziraniResult",

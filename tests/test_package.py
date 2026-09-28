@@ -22,10 +22,14 @@ from cqlib.error_mitigation import Estimator as ErrorMitigationEstimator
 
 import cqlib_algorithms
 from cqlib_algorithms import (
+    BB84,
     CHSH,
     QAOA,
     QFT,
     VQE,
+    BB84Basis,
+    BB84Request,
+    BB84Result,
     BernsteinVazirani,
     BernsteinVaziraniRequest,
     BernsteinVaziraniResult,
@@ -41,9 +45,13 @@ from cqlib_algorithms import (
     VQAResult,
     VQEResult,
 )
+from cqlib_algorithms.algorithms import BB84 as AlgorithmBB84
 from cqlib_algorithms.algorithms import CHSH as AlgorithmCHSH
 from cqlib_algorithms.algorithms import QAOA as AlgorithmQAOA
 from cqlib_algorithms.algorithms import VQE as AlgorithmVQE
+from cqlib_algorithms.algorithms import BB84Basis as AlgorithmBB84Basis
+from cqlib_algorithms.algorithms import BB84Request as AlgorithmBB84Request
+from cqlib_algorithms.algorithms import BB84Result as AlgorithmBB84Result
 from cqlib_algorithms.algorithms import (
     BernsteinVazirani as AlgorithmBernsteinVazirani,
 )
@@ -89,6 +97,10 @@ from cqlib_algorithms.transforms import QFT as TransformQFT
 
 PUBLIC_COMPONENTS = {
     "Ansatz": Ansatz,
+    "BB84": BB84,
+    "BB84Basis": BB84Basis,
+    "BB84Request": BB84Request,
+    "BB84Result": BB84Result,
     "BernsteinVazirani": BernsteinVazirani,
     "BernsteinVaziraniRequest": BernsteinVaziraniRequest,
     "BernsteinVaziraniResult": BernsteinVaziraniResult,
@@ -199,6 +211,13 @@ def test_chsh_is_exported_from_public_namespaces():
     assert CHSH is AlgorithmCHSH
     assert CHSHRequest is AlgorithmCHSHRequest
     assert CHSHResult is AlgorithmCHSHResult
+
+
+def test_bb84_is_exported_from_public_namespaces():
+    assert BB84 is AlgorithmBB84
+    assert BB84Basis is AlgorithmBB84Basis
+    assert BB84Request is AlgorithmBB84Request
+    assert BB84Result is AlgorithmBB84Result
 
 
 def test_simon_is_exported_from_public_namespaces():

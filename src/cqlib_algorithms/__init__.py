@@ -15,9 +15,13 @@
 from importlib.metadata import version
 
 from .algorithms import (
+    BB84,
     CHSH,
     QAOA,
     VQE,
+    BB84Basis,
+    BB84Request,
+    BB84Result,
     BernsteinVazirani,
     BernsteinVaziraniRequest,
     BernsteinVaziraniResult,
@@ -54,11 +58,15 @@ from .transforms import QFT
 __version__ = version("cqlib-algorithms")
 
 __all__ = [
+    "BB84",
     "CHSH",
     "QAOA",
     "QFT",
     "VQE",
     "Ansatz",
+    "BB84Basis",
+    "BB84Request",
+    "BB84Result",
     "BernsteinVazirani",
     "BernsteinVaziraniRequest",
     "BernsteinVaziraniResult",

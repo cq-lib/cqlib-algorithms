@@ -5,8 +5,8 @@
 首批状态制备、数据编码组件、变分拟设、QAOA 演化层、布尔 Oracle、反射算子、
 Pauli 测量规划、同步采样器、期望值估计器、梯度、量子几何、经典优化组件、
 线路纯态保真度估计组件、Hadamard 相位查询、Grover 复合迭代单元，以及可复用的量子傅里叶变换
-线路构造器，以及完整的 VQE、QAOA、Deutsch-Jozsa、Bernstein-Vazirani、Simon
-与 CHSH 不等式验证算法。
+线路构造器，以及完整的 VQE、QAOA、Deutsch-Jozsa、Bernstein-Vazirani、Simon、
+CHSH 不等式验证与 BB84 协议实验算法。
 
 ## 目录
 
@@ -84,6 +84,7 @@ src/cqlib_algorithms/
 │       └── feature_map_preparation.py
 └── algorithms/
     ├── bernstein_vazirani.py
+    ├── bb84.py
     ├── chsh.py
     ├── deutsch_jozsa.py
     ├── qaoa.py
@@ -351,6 +352,13 @@ Oracle 由 `PhaseOracle` 从不可变布尔函数构建，执行注入任意 `Sa
 二量子比特制备线路和自定义双方测量角度。数值容差只用于经典界比较，不代表统计
 显著性；组件不处理实验漏洞、误差缓解或置信区间。数学定义、批处理语义和边界见
 [CHSH 不等式验证](docs/chsh.md)。
+
+`BB84` 将四态制备、共轭基测量、基筛选和抽样 QBER 检查组合为
+显式可复现的协议实验。所有比特和基由调用方提供；量子线路复用
+`BasisStateInitialization`，终端测量委托公共 `Sampler`。可选教材式
+截获—重发路径使用 Eve 的实际测量结果构建重发信号。结果仅是筛选数据、
+抽样误码率和候选原始密钥材料，不表示已完成认证、纠错、隐私放大或安全密钥
+生成。完整协议语义与边界见 [BB84 协议实验](docs/bb84.md)。
 
 ## 量子傅里叶变换
 
