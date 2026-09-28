@@ -32,6 +32,9 @@ from cqlib_algorithms import (
     DeutschJozsaRequest,
     DeutschJozsaResult,
     QAOAResult,
+    Simon,
+    SimonRequest,
+    SimonResult,
     VQAResult,
     VQEResult,
 )
@@ -56,6 +59,9 @@ from cqlib_algorithms.algorithms import (
     DeutschJozsaResult as AlgorithmDeutschJozsaResult,
 )
 from cqlib_algorithms.algorithms import QAOAResult as AlgorithmQAOAResult
+from cqlib_algorithms.algorithms import Simon as AlgorithmSimon
+from cqlib_algorithms.algorithms import SimonRequest as AlgorithmSimonRequest
+from cqlib_algorithms.algorithms import SimonResult as AlgorithmSimonResult
 from cqlib_algorithms.algorithms import VQEResult as AlgorithmVQEResult
 from cqlib_algorithms.protocols import (
     Ansatz,
@@ -97,6 +103,9 @@ PUBLIC_COMPONENTS = {
     "QAOAResult": QAOAResult,
     "Sampler": Sampler,
     "SamplerRequest": SamplerRequest,
+    "Simon": Simon,
+    "SimonRequest": SimonRequest,
+    "SimonResult": SimonResult,
     "StatePreparation": StatePreparation,
     "VQE": VQE,
     "VQEResult": VQEResult,
@@ -175,3 +184,9 @@ def test_bernstein_vazirani_is_exported_from_public_namespaces():
     assert BernsteinVazirani is AlgorithmBernsteinVazirani
     assert BernsteinVaziraniRequest is AlgorithmBernsteinVaziraniRequest
     assert BernsteinVaziraniResult is AlgorithmBernsteinVaziraniResult
+
+
+def test_simon_is_exported_from_public_namespaces():
+    assert Simon is AlgorithmSimon
+    assert SimonRequest is AlgorithmSimonRequest
+    assert SimonResult is AlgorithmSimonResult

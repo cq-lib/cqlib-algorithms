@@ -13,6 +13,12 @@
 函数是否满足常/平衡或线性承诺，也不追加测量；Deutsch-Jozsa、
 Bernstein-Vazirani 及后续同类查询算法可在其上实现各自的采样与经典判定。
 
+这条现有组合链路同时就是 Deutsch-Jozsa/Bernstein-Vazirani 的 Oracle 构造能力：
+`BooleanFunction` / `BooleanVectorFunction` 表示经典函数，`PhaseOracle` 将其变换为
+相位 Oracle，`HadamardPhaseQuery` 再组成完整查询线路，因此不另设语义重复的
+“DJ/BV Oracle Constructor”类型。需要保留显式输出寄存器的标准 XOR Oracle 时，
+使用基础算子 `BitFlipOracle`。
+
 ```python
 from cqlib_algorithms.operators import HadamardPhaseQuery
 from cqlib_algorithms.operators.oracle import BooleanFunction

@@ -178,3 +178,21 @@
   承诺预判，违反承诺的输入结果语义未定义。
 - 其余约定（多输出奇偶归约、请求/结果浅冻结、整批校验后一次压平调用、不虚构
   置信度）与 Deutsch-Jozsa 一致。
+
+## Simon 实现约定
+
+- `Simon` 接受 `BooleanFunction` 或 `BooleanVectorFunction`，复用 `BitFlipOracle`
+  构建 `H**n -> U_F -> H**n` 未测量线路；仅输入寄存器交给公共 `Sampler` 测量，
+  输出寄存器不测量。函数输出宽度 `m` 不要求等于输入宽度 `n`。
+- 承诺是存在 `s`，且 `F(x) = F(y)` 当且仅当 `x = y` 或
+  `x xor y = s`；`s = 0` 表示一一函数。算法层不读取真值表做经典承诺检查；
+  违反承诺的输入只保证返回形式正确的方程结果，不具有周期恢复语义。
+- Sampler 位串最右字符对应输入量子比特 0。经典后处理在 GF(2) 上生成规范 RREF
+  独立方程和规范零空间基；零、重复与相关样本不增加秩。仅当秩为 `n - 1` 且
+  零空间存在唯一非零方向时公开非零 `period`；满秩时公开全零周期，秩低于
+  `n - 1` 时返回 `None`。噪声可能伪造秩，本实现不提供鲁棒解码。
+- 实现不自动追加 shots、不进行噪声鲁棒解码或置信度估计。整批请求必须先验证与
+  构建，再进行一次 Sampler 调用；结果使用公共完整频数契约验证。
+- DJ/BV 的经典函数到查询线路能力已由
+  `BooleanFunction/BooleanVectorFunction -> PhaseOracle -> HadamardPhaseQuery`
+  覆盖，不增加同义构造器；显式 XOR 输出 Oracle 使用 `BitFlipOracle`。

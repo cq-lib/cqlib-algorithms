@@ -5,7 +5,7 @@
 首批状态制备、数据编码组件、变分拟设、QAOA 演化层、布尔 Oracle、反射算子、
 Pauli 测量规划、同步采样器、期望值估计器、梯度、量子几何、经典优化组件、
 线路纯态保真度估计组件、Hadamard 相位查询、Grover 复合迭代单元，以及可复用的量子傅里叶变换
-线路构造器，以及完整的 VQE、QAOA、Deutsch-Jozsa 与 Bernstein-Vazirani 算法。
+线路构造器，以及完整的 VQE、QAOA、Deutsch-Jozsa、Bernstein-Vazirani 与 Simon 算法。
 
 ## 目录
 
@@ -85,6 +85,7 @@ src/cqlib_algorithms/
     ├── bernstein_vazirani.py
     ├── deutsch_jozsa.py
     ├── qaoa.py
+    ├── simon.py
     ├── vqa_result.py
     └── vqe.py
 tests/protocols/
@@ -333,6 +334,14 @@ Oracle 由 `PhaseOracle` 从不可变布尔函数构建，执行注入任意 `Sa
 每个众数的 shots 数。算法同样不做经典线性承诺预判，也不假定噪声模型或执行
 错误纠正。数学定义、结果语义与边界见
 [Bernstein-Vazirani 算法](docs/bernstein_vazirani.md)。
+
+`Simon` 复用 `BitFlipOracle` 构建 `H**n -> U_F -> H**n` 查询线路，只测量输入
+寄存器，并对观测结果执行 GF(2) 消元。在二对一 XOR 周期承诺下，测量方程均满足
+`z·s=0`；秩为 `n-1` 时可唯一恢复非零周期，秩为 `n` 时对应一一函数的零周期。
+结果同时保留规范独立方程和零空间基；样本不足时不虚构周期，噪声则可能改变秩，
+本实现不提供鲁棒解码。算法接受单输出和多输出布尔函数，
+不要求输出宽度等于输入宽度，也不经典检查承诺。数学定义、端序、结果语义与边界见
+[Simon 算法](docs/simon.md)。
 
 ## 量子傅里叶变换
 
