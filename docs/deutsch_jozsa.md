@@ -39,15 +39,15 @@ Proc. R. Soc. Lond. A 454, 339 (1998)。
 `DeutschJozsa(sampler)` 构造时注入任意显式继承 `Sampler` 的组件，不绑定本地
 模拟器或具体平台：
 
-- Oracle 由 `PhaseOracle` 从不可变布尔函数构建，函数校验（类型、
-  `output_mask` 规则）直接委托该底层组件；输入变量数必须至少为 1；
+- 查询线路由 `HadamardPhaseQuery` 组合两层 Hadamard 与 `PhaseOracle`；函数校验
+  （类型、`output_mask` 规则）最终委托该底层 Oracle；输入变量数必须至少为 1；
 - 多输出扩展定义派生标量函数
   \(g(x)=\bigoplus_{j:\,m_j=1} f_j(x)\)，其中 \(m\) 是 `output_mask`，
   常/平衡承诺作用于 \(g\)，而不是分别作用于每个输出位；
 - `DeutschJozsa.build_circuit(function, output_mask=None)` 构建未测量的
   `H**n -> S_f -> H**n` 查询线路，末端测量由 Sampler 在私有执行线路上追加；
 - `run(requests)` 先把整批请求全部校验和变换，再用一次压平的 Sampler 调用
-  执行，结果按请求顺序返回。
+  执行，并用 `protocols.sampler` 的公共结果校验函数核验，结果按请求顺序返回。
 
 `DeutschJozsaRequest(function, shots, output_mask=None)` 是浅冻结的查询值对象，
 `shots` 必须为正整数。`DeutschJozsaResult(is_constant, zero_count, shots)`

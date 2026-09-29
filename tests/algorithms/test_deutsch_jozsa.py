@@ -26,13 +26,16 @@ from cqlib_algorithms.algorithms import (
     DeutschJozsaRequest,
     DeutschJozsaResult,
 )
-from cqlib_algorithms.algorithms.deutsch_jozsa import _validate_sample_result
 from cqlib_algorithms.operators.oracle import (
     BooleanFunction,
     BooleanVectorFunction,
 )
 from cqlib_algorithms.operators.sampler import StatevectorSampler
-from cqlib_algorithms.protocols import Sampler, SamplerRequest
+from cqlib_algorithms.protocols import (
+    Sampler,
+    SamplerRequest,
+    validate_sampler_result,
+)
 
 
 def _truth_table(num_qubits, marked_states):
@@ -513,7 +516,7 @@ def test_run_rejects_malformed_count_entries(counts, message):
     )
 
     with pytest.raises(ValueError, match=message):
-        _validate_sample_result(malformed, request)  # type: ignore[arg-type]
+        validate_sampler_result(malformed, request)  # type: ignore[arg-type]
 
 
 def test_verdict_comes_from_counts_not_truth_table():

@@ -18,16 +18,14 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import final
 
-from cqlib.device import ExecutionResult
-
 from cqlib import Circuit
 
+from ..operators.composite import HadamardPhaseQuery
 from ..operators.oracle import (
     BooleanFunction,
     BooleanVectorFunction,
-    PhaseOracle,
 )
-from ..protocols.sampler import Sampler, SamplerRequest
+from ..protocols.sampler import Sampler, SamplerRequest, validate_sampler_results
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,7 +63,7 @@ class DeutschJozsaRequest:
             raise TypeError("shots must be an integer")
         if self.shots <= 0:
             raise ValueError("shots must be greater than zero")
-        PhaseOracle(self.function, output_mask=self.output_mask)
+        HadamardPhaseQuery(self.function, output_mask=self.output_mask)
 
 
 @dataclass(frozen=True, slots=True)
@@ -108,34 +106,6 @@ class DeutschJozsaResult:
     def is_balanced(self) -> bool:
         """Return the complementary balanced verdict."""
         return not self.is_constant
-
-
-def _validate_sample_result(
-    result: ExecutionResult,
-    request: SamplerRequest,
-) -> None:
-    """Validate all sampler metadata and counts used by the verdict."""
-    if not result.status.is_terminal() or not result.status.is_success():
-        raise ValueError("sampler must return successful terminal results")
-    if result.shots != request.shots:
-        raise ValueError("sampler result shots must match the request")
-    if result.num_qubits != len(request.qubits):
-        raise ValueError("sampler result width must match the requested qubits")
-    if result.qubits != list(request.qubits):
-        raise ValueError("sampler result qubits must preserve request order")
-
-    width = len(request.qubits)
-    total = 0
-    for bitstring, count in result.counts.items():
-        if not isinstance(bitstring, str) or len(bitstring) != width:
-            raise ValueError("sampler count keys must match the requested width")
-        if any(bit not in "01" for bit in bitstring):
-            raise ValueError("sampler count keys must be binary strings")
-        if isinstance(count, bool) or not isinstance(count, int) or count < 0:
-            raise ValueError("sampler counts must be non-negative integers")
-        total += count
-    if total != request.shots:
-        raise ValueError("sampler counts must sum to the requested shots")
 
 
 @final
@@ -203,15 +173,10 @@ class DeutschJozsa:
         The returned circuit contains no terminal measurement; the Sampler
         appends it on a private execution circuit.
         """
-        marker = PhaseOracle(function, output_mask=output_mask)
-        num_qubits = marker.function.num_variables
-        circuit = Circuit(num_qubits)
-        for qubit in range(num_qubits):
-            circuit.h(qubit)
-        circuit.compose(marker.build_circuit(), circuit.qubits)
-        for qubit in range(num_qubits):
-            circuit.h(qubit)
-        return circuit
+        return HadamardPhaseQuery(
+            function,
+            output_mask=output_mask,
+        ).build_circuit()
 
     def run(
         self,
@@ -234,17 +199,12 @@ class DeutschJozsa:
         if not sampler_requests:
             return []
 
-        sample_results = self._sampler.run(sampler_requests)
-        if not isinstance(sample_results, list):
-            raise TypeError("sampler must return a list of ExecutionResult values")
-        if len(sample_results) != len(sampler_requests):
-            raise ValueError("sampler must return one result per request")
+        sample_results = validate_sampler_results(
+            self._sampler.run(sampler_requests), sampler_requests
+        )
 
         results: list[DeutschJozsaResult] = []
         for result, sampler_request in zip(sample_results, sampler_requests):
-            if not isinstance(result, ExecutionResult):
-                raise TypeError("sampler results must be cqlib.device.ExecutionResult")
-            _validate_sample_result(result, sampler_request)
             zero_count = result.counts.get("0" * len(sampler_request.qubits), 0)
             results.append(
                 DeutschJozsaResult(

@@ -3,10 +3,31 @@
 本文档说明 `cqlib_algorithms.operators.composite` 中由基础算子组合而成的复合
 算子。它们也可从 `cqlib_algorithms.operators` 导入；具体算子不从包顶层导出。
 所有 `build_circuit()` 调用都返回新的 Cqlib `Circuit`，不执行采样、测量或后端
-任务。接口以 `Q = A S_0 A† O`、`state_preparation`、`reflection_qubits` 和精确
-全局相位约定为核心。当前公共接口只接受 Cqlib `Circuit`，尚未提供态矢量、算子、
-密度矩阵等非线路输入的适配，也未提供自定义 `zero_reflection`、
-`insert_barriers`、`name` 或辅助寄存器元数据等扩展参数。
+任务。组件只负责可复用的线路组合；算法承诺、执行策略和经典后处理仍由算法层负责。
+
+## Hadamard 相位查询
+
+`HadamardPhaseQuery(function, output_mask=None)` 构建未测量线路
+`H**n -> S_f -> H**n`。`S_f` 完全复用 `PhaseOracle`，因此单输出函数和多输出
+`output_mask` 奇偶归约的类型、端序与边界语义都与基础 Oracle 一致。该组件不判断
+函数是否满足常/平衡或线性承诺，也不追加测量；Deutsch-Jozsa、
+Bernstein-Vazirani 及后续同类查询算法可在其上实现各自的采样与经典判定。
+
+这条现有组合链路同时就是 Deutsch-Jozsa/Bernstein-Vazirani 的 Oracle 构造能力：
+`BooleanFunction` / `BooleanVectorFunction` 表示经典函数，`PhaseOracle` 将其变换为
+相位 Oracle，`HadamardPhaseQuery` 再组成完整查询线路，因此不另设语义重复的
+“DJ/BV Oracle Constructor”类型。需要保留显式输出寄存器的标准 XOR Oracle 时，
+使用基础算子 `BitFlipOracle`。
+
+```python
+from cqlib_algorithms.operators import HadamardPhaseQuery
+from cqlib_algorithms.operators.oracle import BooleanFunction
+
+function = BooleanFunction.from_truth_table([False, True, True, False])
+query = HadamardPhaseQuery(function).build_circuit()
+```
+
+## Grover 迭代单元
 
 ## Grover 迭代单元
 

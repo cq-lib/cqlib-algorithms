@@ -16,12 +16,19 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from copy import copy
+from types import SimpleNamespace
 
 import pytest
+from cqlib import Circuit, Parameter, Qubit
 from cqlib.device import ExecutionResult
 
-from cqlib import Circuit, Parameter, Qubit
-from cqlib_algorithms.protocols.sampler import Sampler, SamplerRequest
+from cqlib_algorithms import protocols
+from cqlib_algorithms.protocols.sampler import (
+    Sampler,
+    SamplerRequest,
+    validate_sampler_result,
+    validate_sampler_results,
+)
 
 
 def _sample_request(shots: int = 4) -> SamplerRequest:
@@ -152,3 +159,97 @@ def test_sampler_preserves_batch_order_and_supports_empty_batches():
 
 def test_sampler_uses_nominal_runtime_membership():
     assert isinstance(_FakeSampler(), Sampler)
+
+
+def test_result_validators_are_exported_from_protocol_namespace():
+    assert protocols.validate_sampler_result is validate_sampler_result
+    assert protocols.validate_sampler_results is validate_sampler_results
+
+
+def test_public_result_validators_accept_and_preserve_a_valid_batch():
+    requests = [_sample_request(2), _sample_request(3)]
+    results = _FakeSampler().run(requests)
+
+    validate_sampler_result(results[0], requests[0])
+    assert validate_sampler_results(results, requests) is results
+
+
+def test_batch_validator_rejects_invalid_container_size_and_entry_type():
+    request = _sample_request()
+
+    with pytest.raises(TypeError, match="sampler must return a list"):
+        validate_sampler_results(tuple(_FakeSampler().run([request])), [request])
+    with pytest.raises(ValueError, match="one result per request"):
+        validate_sampler_results([], [request])
+    with pytest.raises(TypeError, match="cqlib.device.ExecutionResult"):
+        validate_sampler_results([{"00": 4}], [request])
+
+
+def test_result_validator_rejects_wrong_request_type():
+    request = _sample_request()
+    result = _FakeSampler().run([request])[0]
+
+    with pytest.raises(TypeError, match="request must be a SamplerRequest"):
+        validate_sampler_result(result, object())  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize("mode", ["queued", "failed"])
+def test_result_validator_rejects_nonterminal_or_failed_results(mode):
+    request = _sample_request()
+    result = ExecutionResult(
+        mode,
+        list(request.qubits),
+        request.shots,
+        len(request.qubits),
+    )
+    if mode == "failed":
+        result.fail("deliberate failure", 1)
+
+    with pytest.raises(ValueError, match="successful terminal"):
+        validate_sampler_result(result, request)
+
+
+def test_result_validator_rejects_metadata_mismatches():
+    request = _sample_request()
+    wrong_shots = ExecutionResult.from_counts(
+        "shots", list(request.qubits), 5, 2, {"00": 5}, "fake"
+    )
+    wrong_width = ExecutionResult.from_counts(
+        "width", [request.qubits[0]], 4, 1, {"0": 4}, "fake"
+    )
+    wrong_order = ExecutionResult.from_counts(
+        "order", list(reversed(request.qubits)), 4, 2, {"00": 4}, "fake"
+    )
+
+    with pytest.raises(ValueError, match="shots must match"):
+        validate_sampler_result(wrong_shots, request)
+    with pytest.raises(ValueError, match="width"):
+        validate_sampler_result(wrong_width, request)
+    with pytest.raises(ValueError, match="preserve request order"):
+        validate_sampler_result(wrong_order, request)
+
+
+@pytest.mark.parametrize(
+    ("counts", "message"),
+    [
+        ({"0": 4}, "width"),
+        ({"0x": 4}, "binary"),
+        ({"00": True, "11": 3}, "non-negative integers"),
+        ({"00": 1.5, "11": 2.5}, "non-negative integers"),
+        ({"00": -1, "11": 5}, "non-negative integers"),
+        ({"00": 3}, "sum to the requested shots"),
+    ],
+)
+def test_result_validator_rejects_malformed_or_incomplete_counts(counts, message):
+    request = _sample_request()
+    valid = _FakeSampler().run([request])[0]
+    result = SimpleNamespace(
+        status=valid.status,
+        shots=valid.shots,
+        num_qubits=valid.num_qubits,
+        qubits=valid.qubits,
+        counts=counts,
+    )
+
+    with pytest.raises(ValueError, match=message):
+        validate_sampler_result(result, request)  # type: ignore[arg-type]

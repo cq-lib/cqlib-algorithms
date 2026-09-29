@@ -22,18 +22,47 @@ from cqlib.error_mitigation import Estimator as ErrorMitigationEstimator
 
 import cqlib_algorithms
 from cqlib_algorithms import (
+    BB84,
+    CHSH,
     QAOA,
     QFT,
     VQE,
+    BB84Basis,
+    BB84Request,
+    BB84Result,
+    BernsteinVazirani,
+    BernsteinVaziraniRequest,
+    BernsteinVaziraniResult,
+    CHSHRequest,
+    CHSHResult,
     DeutschJozsa,
     DeutschJozsaRequest,
     DeutschJozsaResult,
     QAOAResult,
+    Simon,
+    SimonRequest,
+    SimonResult,
     VQAResult,
     VQEResult,
 )
+from cqlib_algorithms.algorithms import BB84 as AlgorithmBB84
+from cqlib_algorithms.algorithms import CHSH as AlgorithmCHSH
 from cqlib_algorithms.algorithms import QAOA as AlgorithmQAOA
 from cqlib_algorithms.algorithms import VQE as AlgorithmVQE
+from cqlib_algorithms.algorithms import BB84Basis as AlgorithmBB84Basis
+from cqlib_algorithms.algorithms import BB84Request as AlgorithmBB84Request
+from cqlib_algorithms.algorithms import BB84Result as AlgorithmBB84Result
+from cqlib_algorithms.algorithms import (
+    BernsteinVazirani as AlgorithmBernsteinVazirani,
+)
+from cqlib_algorithms.algorithms import (
+    BernsteinVaziraniRequest as AlgorithmBernsteinVaziraniRequest,
+)
+from cqlib_algorithms.algorithms import (
+    BernsteinVaziraniResult as AlgorithmBernsteinVaziraniResult,
+)
+from cqlib_algorithms.algorithms import CHSHRequest as AlgorithmCHSHRequest
+from cqlib_algorithms.algorithms import CHSHResult as AlgorithmCHSHResult
 from cqlib_algorithms.algorithms import (
     DeutschJozsa as AlgorithmDeutschJozsa,
 )
@@ -44,6 +73,9 @@ from cqlib_algorithms.algorithms import (
     DeutschJozsaResult as AlgorithmDeutschJozsaResult,
 )
 from cqlib_algorithms.algorithms import QAOAResult as AlgorithmQAOAResult
+from cqlib_algorithms.algorithms import Simon as AlgorithmSimon
+from cqlib_algorithms.algorithms import SimonRequest as AlgorithmSimonRequest
+from cqlib_algorithms.algorithms import SimonResult as AlgorithmSimonResult
 from cqlib_algorithms.algorithms import VQEResult as AlgorithmVQEResult
 from cqlib_algorithms.protocols import (
     Ansatz,
@@ -65,6 +97,16 @@ from cqlib_algorithms.transforms import QFT as TransformQFT
 
 PUBLIC_COMPONENTS = {
     "Ansatz": Ansatz,
+    "BB84": BB84,
+    "BB84Basis": BB84Basis,
+    "BB84Request": BB84Request,
+    "BB84Result": BB84Result,
+    "BernsteinVazirani": BernsteinVazirani,
+    "BernsteinVaziraniRequest": BernsteinVaziraniRequest,
+    "BernsteinVaziraniResult": BernsteinVaziraniResult,
+    "CHSH": CHSH,
+    "CHSHRequest": CHSHRequest,
+    "CHSHResult": CHSHResult,
     "DeutschJozsa": DeutschJozsa,
     "DeutschJozsaRequest": DeutschJozsaRequest,
     "DeutschJozsaResult": DeutschJozsaResult,
@@ -82,6 +124,9 @@ PUBLIC_COMPONENTS = {
     "QAOAResult": QAOAResult,
     "Sampler": Sampler,
     "SamplerRequest": SamplerRequest,
+    "Simon": Simon,
+    "SimonRequest": SimonRequest,
+    "SimonResult": SimonResult,
     "StatePreparation": StatePreparation,
     "VQE": VQE,
     "VQEResult": VQEResult,
@@ -154,3 +199,28 @@ def test_deutsch_jozsa_is_exported_from_public_namespaces():
     assert DeutschJozsa is AlgorithmDeutschJozsa
     assert DeutschJozsaRequest is AlgorithmDeutschJozsaRequest
     assert DeutschJozsaResult is AlgorithmDeutschJozsaResult
+
+
+def test_bernstein_vazirani_is_exported_from_public_namespaces():
+    assert BernsteinVazirani is AlgorithmBernsteinVazirani
+    assert BernsteinVaziraniRequest is AlgorithmBernsteinVaziraniRequest
+    assert BernsteinVaziraniResult is AlgorithmBernsteinVaziraniResult
+
+
+def test_chsh_is_exported_from_public_namespaces():
+    assert CHSH is AlgorithmCHSH
+    assert CHSHRequest is AlgorithmCHSHRequest
+    assert CHSHResult is AlgorithmCHSHResult
+
+
+def test_bb84_is_exported_from_public_namespaces():
+    assert BB84 is AlgorithmBB84
+    assert BB84Basis is AlgorithmBB84Basis
+    assert BB84Request is AlgorithmBB84Request
+    assert BB84Result is AlgorithmBB84Result
+
+
+def test_simon_is_exported_from_public_namespaces():
+    assert Simon is AlgorithmSimon
+    assert SimonRequest is AlgorithmSimonRequest
+    assert SimonResult is AlgorithmSimonResult

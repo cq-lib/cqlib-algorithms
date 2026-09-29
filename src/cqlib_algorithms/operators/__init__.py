@@ -24,7 +24,7 @@ from .ansatz import (
     TwoLocalAnsatz,
 )
 from .arithmetic import QuadraticForm
-from .composite import GroverOperator
+from .composite import GroverOperator, HadamardPhaseQuery
 from .estimator import SamplingEstimator, StatevectorEstimator
 from .gradient import (
     FiniteDifferenceGradient,
@@ -100,6 +100,7 @@ __all__ = [
     "GroverDiffusion",
     "GroverLong",
     "GroverOperator",
+    "HadamardPhaseQuery",
     "HardwareEfficientAnsatz",
     "LinCombEstimatorGradient",
     "MeasurementGroup",

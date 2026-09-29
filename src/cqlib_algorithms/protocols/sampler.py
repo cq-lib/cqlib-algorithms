@@ -18,9 +18,8 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from cqlib.device import ExecutionResult
-
 from cqlib import Circuit, Qubit
+from cqlib.device import ExecutionResult
 
 
 @dataclass(frozen=True, slots=True)
@@ -113,3 +112,77 @@ class Sampler(ABC):
     ) -> list[ExecutionResult]:
         """Execute a batch and return terminal results in input order."""
         raise NotImplementedError
+
+
+def validate_sampler_result(
+    result: ExecutionResult,
+    request: SamplerRequest,
+) -> None:
+    """Validate one result against its sampling request.
+
+    This helper defines the result-side half of the public synchronous
+    :class:`Sampler` contract. It checks execution status and metadata as well
+    as the complete, unfiltered count distribution used by algorithms.
+
+    Args:
+        result: Terminal Core execution result returned by a Sampler.
+        request: Sampling request that produced ``result``.
+
+    Raises:
+        TypeError: If ``request`` has the wrong type.
+        ValueError: If result status, metadata, or counts violate the request.
+    """
+    if not isinstance(request, SamplerRequest):
+        raise TypeError("request must be a SamplerRequest")
+    if not result.status.is_terminal() or not result.status.is_success():
+        raise ValueError("sampler must return successful terminal results")
+    if result.shots != request.shots:
+        raise ValueError("sampler result shots must match the request")
+    if result.num_qubits != len(request.qubits):
+        raise ValueError("sampler result width must match the requested qubits")
+    if result.qubits != list(request.qubits):
+        raise ValueError("sampler result qubits must preserve request order")
+
+    width = len(request.qubits)
+    total = 0
+    for bitstring, count in result.counts.items():
+        if not isinstance(bitstring, str) or len(bitstring) != width:
+            raise ValueError("sampler count keys must match the requested width")
+        if any(bit not in "01" for bit in bitstring):
+            raise ValueError("sampler count keys must be binary strings")
+        if isinstance(count, bool) or not isinstance(count, int) or count < 0:
+            raise ValueError("sampler counts must be non-negative integers")
+        total += count
+    if total != request.shots:
+        raise ValueError("sampler counts must sum to the requested shots")
+
+
+def validate_sampler_results(
+    results: object,
+    requests: Sequence[SamplerRequest],
+) -> list[ExecutionResult]:
+    """Validate a complete ordered result batch from a Sampler.
+
+    Args:
+        results: Object returned by :meth:`Sampler.run`.
+        requests: Requests passed to the Sampler in the same order.
+
+    Returns:
+        The validated result list, unchanged.
+
+    Raises:
+        TypeError: If the result container, one of its entries, or a request
+            has the wrong type.
+        ValueError: If the batch size or an individual result violates the
+            public Sampler contract.
+    """
+    if not isinstance(results, list):
+        raise TypeError("sampler must return a list of ExecutionResult values")
+    if len(results) != len(requests):
+        raise ValueError("sampler must return one result per request")
+
+    for result, request in zip(results, requests):
+        if not isinstance(result, ExecutionResult):
+            raise TypeError("sampler results must be cqlib.device.ExecutionResult")
+        validate_sampler_result(result, request)
+    return results
