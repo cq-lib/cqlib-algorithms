@@ -39,6 +39,9 @@ from cqlib_algorithms import (
     DeutschJozsaRequest,
     DeutschJozsaResult,
     QAOAResult,
+    QuantumTeleportation,
+    QuantumTeleportationRequest,
+    QuantumTeleportationResult,
     Simon,
     SimonRequest,
     SimonResult,
@@ -73,6 +76,15 @@ from cqlib_algorithms.algorithms import (
     DeutschJozsaResult as AlgorithmDeutschJozsaResult,
 )
 from cqlib_algorithms.algorithms import QAOAResult as AlgorithmQAOAResult
+from cqlib_algorithms.algorithms import (
+    QuantumTeleportation as AlgorithmQuantumTeleportation,
+)
+from cqlib_algorithms.algorithms import (
+    QuantumTeleportationRequest as AlgorithmQuantumTeleportationRequest,
+)
+from cqlib_algorithms.algorithms import (
+    QuantumTeleportationResult as AlgorithmQuantumTeleportationResult,
+)
 from cqlib_algorithms.algorithms import Simon as AlgorithmSimon
 from cqlib_algorithms.algorithms import SimonRequest as AlgorithmSimonRequest
 from cqlib_algorithms.algorithms import SimonResult as AlgorithmSimonResult
@@ -122,6 +134,9 @@ PUBLIC_COMPONENTS = {
     "OptimizerStatus": OptimizerStatus,
     "QAOA": QAOA,
     "QAOAResult": QAOAResult,
+    "QuantumTeleportation": QuantumTeleportation,
+    "QuantumTeleportationRequest": QuantumTeleportationRequest,
+    "QuantumTeleportationResult": QuantumTeleportationResult,
     "Sampler": Sampler,
     "SamplerRequest": SamplerRequest,
     "Simon": Simon,
@@ -193,6 +208,12 @@ def test_vqe_is_exported_from_public_namespaces():
 def test_qaoa_is_exported_from_public_namespaces():
     assert QAOA is AlgorithmQAOA
     assert QAOAResult is AlgorithmQAOAResult
+
+
+def test_quantum_teleportation_is_exported_from_public_namespaces():
+    assert QuantumTeleportation is AlgorithmQuantumTeleportation
+    assert QuantumTeleportationRequest is AlgorithmQuantumTeleportationRequest
+    assert QuantumTeleportationResult is AlgorithmQuantumTeleportationResult
 
 
 def test_deutsch_jozsa_is_exported_from_public_namespaces():

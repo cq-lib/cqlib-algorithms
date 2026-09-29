@@ -6,7 +6,7 @@
 Pauli 测量规划、同步采样器、期望值估计器、梯度、量子几何、经典优化组件、
 线路纯态保真度估计组件、Hadamard 相位查询、Grover 复合迭代单元，以及可复用的量子傅里叶变换
 线路构造器，以及完整的 VQE、QAOA、Deutsch-Jozsa、Bernstein-Vazirani、Simon、
-CHSH 不等式验证与 BB84 协议实验算法。
+CHSH 不等式验证、BB84 协议实验与量子隐形传态算法。
 
 ## 目录
 
@@ -88,6 +88,7 @@ src/cqlib_algorithms/
     ├── chsh.py
     ├── deutsch_jozsa.py
     ├── qaoa.py
+    ├── quantum_teleportation.py
     ├── simon.py
     ├── vqa_result.py
     └── vqe.py
@@ -359,6 +360,13 @@ Oracle 由 `PhaseOracle` 从不可变布尔函数构建，执行注入任意 `Sa
 截获—重发路径使用 Eve 的实际测量结果构建重发信号。结果仅是筛选数据、
 抽样误码率和候选原始密钥材料，不表示已完成认证、纠错、隐私放大或安全密钥
 生成。完整协议语义与边界见 [BB84 协议实验](docs/bb84.md)。
+
+`QuantumTeleportation` 复用 `GHZStatePreparation(2)` 建立一对 Bell 纠缠，
+对未知单量子比特输入执行 Bell 基分析，并使用 Core 的真实中间测量结果驱动 Bob 端
+X/Z 纠正。每个 shot 都通过约化密度矩阵和纯态—混合态保真度验证还原结果；支持固定、
+无活跃参数且静态酉的一量子比特用户线路。该组件是理想本地协议模拟，不代表远程后端
+动态线路、真实量子网络或超光速通信。数学定义、结果语义与边界见
+[量子隐形传态](docs/quantum_teleportation.md)。
 
 ## 量子傅里叶变换
 
