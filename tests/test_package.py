@@ -45,6 +45,9 @@ from cqlib_algorithms import (
     Simon,
     SimonRequest,
     SimonResult,
+    SuperdenseCoding,
+    SuperdenseCodingRequest,
+    SuperdenseCodingResult,
     VQAResult,
     VQEResult,
 )
@@ -88,6 +91,15 @@ from cqlib_algorithms.algorithms import (
 from cqlib_algorithms.algorithms import Simon as AlgorithmSimon
 from cqlib_algorithms.algorithms import SimonRequest as AlgorithmSimonRequest
 from cqlib_algorithms.algorithms import SimonResult as AlgorithmSimonResult
+from cqlib_algorithms.algorithms import (
+    SuperdenseCoding as AlgorithmSuperdenseCoding,
+)
+from cqlib_algorithms.algorithms import (
+    SuperdenseCodingRequest as AlgorithmSuperdenseCodingRequest,
+)
+from cqlib_algorithms.algorithms import (
+    SuperdenseCodingResult as AlgorithmSuperdenseCodingResult,
+)
 from cqlib_algorithms.algorithms import VQEResult as AlgorithmVQEResult
 from cqlib_algorithms.protocols import (
     Ansatz,
@@ -143,6 +155,9 @@ PUBLIC_COMPONENTS = {
     "SimonRequest": SimonRequest,
     "SimonResult": SimonResult,
     "StatePreparation": StatePreparation,
+    "SuperdenseCoding": SuperdenseCoding,
+    "SuperdenseCodingRequest": SuperdenseCodingRequest,
+    "SuperdenseCodingResult": SuperdenseCodingResult,
     "VQE": VQE,
     "VQEResult": VQEResult,
     "VQAResult": VQAResult,
@@ -245,3 +260,9 @@ def test_simon_is_exported_from_public_namespaces():
     assert Simon is AlgorithmSimon
     assert SimonRequest is AlgorithmSimonRequest
     assert SimonResult is AlgorithmSimonResult
+
+
+def test_superdense_coding_is_exported_from_public_namespaces():
+    assert SuperdenseCoding is AlgorithmSuperdenseCoding
+    assert SuperdenseCodingRequest is AlgorithmSuperdenseCodingRequest
+    assert SuperdenseCodingResult is AlgorithmSuperdenseCodingResult
