@@ -39,9 +39,15 @@ from cqlib_algorithms import (
     DeutschJozsaRequest,
     DeutschJozsaResult,
     QAOAResult,
+    QuantumTeleportation,
+    QuantumTeleportationRequest,
+    QuantumTeleportationResult,
     Simon,
     SimonRequest,
     SimonResult,
+    SuperdenseCoding,
+    SuperdenseCodingRequest,
+    SuperdenseCodingResult,
     VQAResult,
     VQEResult,
 )
@@ -73,9 +79,27 @@ from cqlib_algorithms.algorithms import (
     DeutschJozsaResult as AlgorithmDeutschJozsaResult,
 )
 from cqlib_algorithms.algorithms import QAOAResult as AlgorithmQAOAResult
+from cqlib_algorithms.algorithms import (
+    QuantumTeleportation as AlgorithmQuantumTeleportation,
+)
+from cqlib_algorithms.algorithms import (
+    QuantumTeleportationRequest as AlgorithmQuantumTeleportationRequest,
+)
+from cqlib_algorithms.algorithms import (
+    QuantumTeleportationResult as AlgorithmQuantumTeleportationResult,
+)
 from cqlib_algorithms.algorithms import Simon as AlgorithmSimon
 from cqlib_algorithms.algorithms import SimonRequest as AlgorithmSimonRequest
 from cqlib_algorithms.algorithms import SimonResult as AlgorithmSimonResult
+from cqlib_algorithms.algorithms import (
+    SuperdenseCoding as AlgorithmSuperdenseCoding,
+)
+from cqlib_algorithms.algorithms import (
+    SuperdenseCodingRequest as AlgorithmSuperdenseCodingRequest,
+)
+from cqlib_algorithms.algorithms import (
+    SuperdenseCodingResult as AlgorithmSuperdenseCodingResult,
+)
 from cqlib_algorithms.algorithms import VQEResult as AlgorithmVQEResult
 from cqlib_algorithms.protocols import (
     Ansatz,
@@ -122,12 +146,18 @@ PUBLIC_COMPONENTS = {
     "OptimizerStatus": OptimizerStatus,
     "QAOA": QAOA,
     "QAOAResult": QAOAResult,
+    "QuantumTeleportation": QuantumTeleportation,
+    "QuantumTeleportationRequest": QuantumTeleportationRequest,
+    "QuantumTeleportationResult": QuantumTeleportationResult,
     "Sampler": Sampler,
     "SamplerRequest": SamplerRequest,
     "Simon": Simon,
     "SimonRequest": SimonRequest,
     "SimonResult": SimonResult,
     "StatePreparation": StatePreparation,
+    "SuperdenseCoding": SuperdenseCoding,
+    "SuperdenseCodingRequest": SuperdenseCodingRequest,
+    "SuperdenseCodingResult": SuperdenseCodingResult,
     "VQE": VQE,
     "VQEResult": VQEResult,
     "VQAResult": VQAResult,
@@ -195,6 +225,12 @@ def test_qaoa_is_exported_from_public_namespaces():
     assert QAOAResult is AlgorithmQAOAResult
 
 
+def test_quantum_teleportation_is_exported_from_public_namespaces():
+    assert QuantumTeleportation is AlgorithmQuantumTeleportation
+    assert QuantumTeleportationRequest is AlgorithmQuantumTeleportationRequest
+    assert QuantumTeleportationResult is AlgorithmQuantumTeleportationResult
+
+
 def test_deutsch_jozsa_is_exported_from_public_namespaces():
     assert DeutschJozsa is AlgorithmDeutschJozsa
     assert DeutschJozsaRequest is AlgorithmDeutschJozsaRequest
@@ -224,3 +260,9 @@ def test_simon_is_exported_from_public_namespaces():
     assert Simon is AlgorithmSimon
     assert SimonRequest is AlgorithmSimonRequest
     assert SimonResult is AlgorithmSimonResult
+
+
+def test_superdense_coding_is_exported_from_public_namespaces():
+    assert SuperdenseCoding is AlgorithmSuperdenseCoding
+    assert SuperdenseCodingRequest is AlgorithmSuperdenseCodingRequest
+    assert SuperdenseCodingResult is AlgorithmSuperdenseCodingResult

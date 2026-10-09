@@ -21,7 +21,17 @@ from .bernstein_vazirani import (
 from .chsh import CHSH, CHSHRequest, CHSHResult
 from .deutsch_jozsa import DeutschJozsa, DeutschJozsaRequest, DeutschJozsaResult
 from .qaoa import QAOA, QAOAResult
+from .quantum_teleportation import (
+    QuantumTeleportation,
+    QuantumTeleportationRequest,
+    QuantumTeleportationResult,
+)
 from .simon import Simon, SimonRequest, SimonResult
+from .superdense_coding import (
+    SuperdenseCoding,
+    SuperdenseCodingRequest,
+    SuperdenseCodingResult,
+)
 from .vqa_result import VQAResult
 from .vqe import VQE, VQEResult
 
@@ -42,9 +52,15 @@ __all__ = [
     "DeutschJozsaRequest",
     "DeutschJozsaResult",
     "QAOAResult",
+    "QuantumTeleportation",
+    "QuantumTeleportationRequest",
+    "QuantumTeleportationResult",
     "Simon",
     "SimonRequest",
     "SimonResult",
+    "SuperdenseCoding",
+    "SuperdenseCodingRequest",
+    "SuperdenseCodingResult",
     "VQAResult",
     "VQEResult",
 ]
