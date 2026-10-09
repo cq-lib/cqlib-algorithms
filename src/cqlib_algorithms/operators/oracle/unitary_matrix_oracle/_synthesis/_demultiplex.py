@@ -6,7 +6,6 @@ import numpy as np
 import numpy.typing as npt
 
 from ._common import (
-    assert_square_unitary,
     build_unitary_diagonal_sqrt,
     is_diagonal,
     is_unitary,

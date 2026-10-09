@@ -14,8 +14,8 @@
 
 from __future__ import annotations
 
-from dataclasses import is_dataclass
 import math
+from dataclasses import is_dataclass
 
 import numpy as np
 import pytest

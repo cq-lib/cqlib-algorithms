@@ -6,20 +6,21 @@ import math
 from numbers import Real
 from typing import final
 
-from cqlib import Circuit
 from cqlib.circuit.gates import StandardGate
+
+from cqlib import Circuit
 
 
 @final
 class ProjectorControlledPhase:
-    """Build ``exp(i phase (2 Pi - I))`` for a standard zero-projector ``Pi``.
+    """Build ``exp(i phase (2 \\Pi - I))`` for a standard zero-projector ``\\Pi``.
 
     The local qubit layout is always ``[system..., ancilla...]``. For a
     standard block encoding, the projector is
 
     .. math::
 
-        \Pi = |0\rangle\langle 0|^{\otimes a} \otimes I,
+        \\Pi = |0\\rangle\\langle 0|^{\\otimes a} \\otimes I,
 
     so the phase rotation multiplies the all-zero ancilla subspace by
     ``exp(i phase)`` and the orthogonal complement by ``exp(-i phase)``.
@@ -102,7 +103,7 @@ class ProjectorControlledPhase:
 
         return list(range(self.num_system_qubits, self.num_qubits))
 
-    def with_phase(self, phase: float) -> "ProjectorControlledPhase":
+    def with_phase(self, phase: float) -> ProjectorControlledPhase:
         """Return a new projector-phase operator with the same registers."""
 
         return ProjectorControlledPhase(

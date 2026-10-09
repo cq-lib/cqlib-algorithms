@@ -33,6 +33,8 @@ Coverage map (case IDs match the design document):
 
 from __future__ import annotations
 
+from itertools import pairwise
+
 import numpy as np
 import pytest
 from cqlib.qis import Statevector
@@ -1012,7 +1014,7 @@ class TestQuadraticFormApproximation:
             self._frob_distance(ops[d].build_circuit(), op_exact)
             for d in range(m)
         ]
-        for prev, nxt in zip(distances, distances[1:]):
+        for prev, nxt in pairwise(distances):
             assert nxt <= prev + 1e-12
 
 

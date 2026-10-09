@@ -33,6 +33,7 @@ def test_state_preparation_operators_are_exported_from_functional_packages():
         "ArbitraryStatePreparation",
         "BasisEncoding",
         "BasisStateInitialization",
+        "DickeStatePreparation",
         "FeatureMapPreparation",
         "GHZStatePreparation",
         "ProductStatePreparation",
@@ -52,13 +53,22 @@ def test_oracle_operators_are_exported_from_functional_packages():
     oracle = import_module("cqlib_algorithms.operators.oracle")
     state_preparation = import_module("cqlib_algorithms.operators.state_preparation")
     expected = {
+        "BlockEncoding",
         "BitFlipOracle",
         "BooleanFunction",
         "BooleanVectorFunction",
+        "DickeUnitary",
         "GeneralStateReflection",
         "GroverDiffusion",
         "GroverLong",
         "PhaseOracle",
+        "ProjectorControlledPhase",
+        "QuantumSignalProcessing",
+        "QuantumSingularValueTransformation",
+        "SplitCycleShift",
+        "UnitaryDilation",
+        "UnitaryMatrixOracle",
+        "WeightDistributionBlock",
         "ZeroStateReflection",
     }
 

@@ -164,7 +164,7 @@ class QuantumSignalProcessing:
         tolerance: float = 1e-12,
         max_iterations: int = 300,
         gradient_tolerance: float = 1e-10,
-    ) -> "QuantumSignalProcessing":
+    ) -> QuantumSignalProcessing:
         """Solve a real-QSP instance and bind it to one signal value.
 
         Parameters

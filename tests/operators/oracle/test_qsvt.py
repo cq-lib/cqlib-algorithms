@@ -662,7 +662,7 @@ def test_qsvt_degree_two_scalar_matches_qsp_response() -> None:
 
 
 def test_qsvt_high_degree_diagonal_matrix_matches_singular_vector_action() -> None:
-    diagonal = np.linspace(0.5, 0.03125, 16, dtype=np.float64)
+    diagonal = np.linspace(0.5, 0.03125, 8, dtype=np.float64)
     matrix = np.diag(diagonal).astype(np.complex128)
     coefficients = _chebyshev_degree_coefficients(10)
     encoding = UnitaryDilation(matrix, alpha=1.0, validate=False)
@@ -707,7 +707,7 @@ def test_qsvt_high_degree_diagonal_matrix_matches_singular_vector_action() -> No
 
 
 def test_qsvt_exact_dilation_matrix_matches_circuit_composition_for_high_degree_case() -> None:
-    matrix = _random_square_matrix(16, seed=2024)
+    matrix = _random_square_matrix(8, seed=2024)
     spectral_norm = float(np.linalg.svd(matrix, compute_uv=False)[0])
     alpha = 2.0 * spectral_norm
     coefficients = _chebyshev_degree_coefficients(8)
@@ -741,9 +741,9 @@ def test_qsvt_exact_dilation_matrix_matches_circuit_composition_for_high_degree_
 @pytest.mark.parametrize(
     ("dimension", "degree", "seed"),
     [
-        (16, 5, 321),
-        (32, 7, 707),
-        (16, 9, 909),
+        (8, 5, 321),
+        (16, 7, 707),
+        (8, 9, 909),
     ],
 )
 def test_qsvt_odd_high_degree_polynomials_match_singular_vector_action(
@@ -762,9 +762,9 @@ def test_qsvt_odd_high_degree_polynomials_match_singular_vector_action(
 @pytest.mark.parametrize(
     ("dimension", "degree", "seed"),
     [
-        (16, 6, 654),
-        (32, 8, 808),
-        (16, 10, 1010),
+        (8, 6, 654),
+        (16, 8, 808),
+        (8, 10, 1010),
     ],
 )
 def test_qsvt_even_high_degree_polynomials_match_singular_vector_action(

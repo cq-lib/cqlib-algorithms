@@ -19,9 +19,10 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from numbers import Real
 
-from cqlib import Circuit
 from cqlib.qis import metrics
 from cqlib.qis.state import DensityMatrix, Statevector
+
+from cqlib import Circuit
 
 from ..operators.estimator._circuit_validation import (
     validate_unitary_state_preparation,

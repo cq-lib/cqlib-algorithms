@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
 import math
+from collections.abc import Sequence
 from numbers import Real
-from typing import final
 
 import numpy as np
 import numpy.typing as npt
@@ -24,7 +23,7 @@ class QuantumSingularValueTransformation:
 
     .. math::
 
-        \Pi = \tilde{\Pi} = |0\rangle\langle 0|^{\otimes a} \otimes I.
+        \\Pi = \\tilde{\\Pi} = |0\\rangle\\langle 0|^{\\otimes a} \\otimes I.
 
     The alternating sequence follows Definition 15 in Ref. [1]. The phases are
     computed by the real-QSP phase synthesis solver implemented in
@@ -229,7 +228,7 @@ class QuantumSingularValueTransformation:
         tolerance: float = 1e-12,
         max_iterations: int = 300,
         gradient_tolerance: float = 1e-10,
-    ) -> "QuantumSingularValueTransformation":
+    ) -> QuantumSingularValueTransformation:
         """Solve QSP phases, convert and bind them to a block encoding."""
 
         return cls(
@@ -292,7 +291,7 @@ def _resolve_expected_matrix(
                 "expected_matrix must be provided when block_encoding does not "
                 "expose a matrix attribute"
             )
-        candidate = getattr(block_encoding, "matrix")
+        candidate = block_encoding.matrix
     else:
         candidate = expected_matrix
 

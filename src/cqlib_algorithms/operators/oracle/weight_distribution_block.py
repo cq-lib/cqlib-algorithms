@@ -18,6 +18,14 @@ act on two ``k``-qubit windows arranged as ``A[0:k]`` followed by ``B[k:2k]``
 in paper order, while the full WDB embeds those windows into the rightmost
 ``k`` qubits of the actual ``m``-qubit left register and ``(n-m)``-qubit
 right register.
+
+References
+----------
+.. [1] Bärtschi, A., and Eidenbenz, S. (2019). Deterministic Preparation of
+       Dicke States. In *Fundamentals of Computation Theory (FCT 2019)*,
+       LNCS 11651, pp. 126-139. Springer.
+.. [2] Bärtschi, A., and Eidenbenz, S. (2022). Deterministic Preparation of
+       Dicke States. *Quantum Information Processing*, 21, 282.
 """
 
 from __future__ import annotations
@@ -268,8 +276,8 @@ class WeightDistributionBlock:
         \\otimes
         |0^{(n-m)-(\\ell-i)}1^{\\ell-i}\\rangle.
 
-    The implementation follows the four-step construction in the local design
-    documents:
+    The implementation follows the four-step construction described by
+    Bärtschi and Eidenbenz [1]_ [2]_:
 
     1. convert the active unary tail of the right register to one-hot form,
     2. run the controlled-addition staircase on the active ``k+k`` window,
@@ -287,6 +295,14 @@ class WeightDistributionBlock:
     Raises:
         TypeError: If any argument is not an integer or is a Boolean.
         ValueError: If the numeric ranges are invalid.
+
+    References
+    ----------
+    .. [1] Bärtschi, A., and Eidenbenz, S. (2019). Deterministic Preparation
+           of Dicke States. In *Fundamentals of Computation Theory (FCT 2019)*,
+           LNCS 11651, pp. 126-139. Springer.
+    .. [2] Bärtschi, A., and Eidenbenz, S. (2022). Deterministic Preparation
+           of Dicke States. *Quantum Information Processing*, 21, 282.
     """
 
     def __init__(self, n: int, m: int, k: int) -> None:

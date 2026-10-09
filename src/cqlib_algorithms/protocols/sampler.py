@@ -18,8 +18,9 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from cqlib import Circuit, Qubit
 from cqlib.device import ExecutionResult
+
+from cqlib import Circuit, Qubit
 
 
 @dataclass(frozen=True, slots=True)

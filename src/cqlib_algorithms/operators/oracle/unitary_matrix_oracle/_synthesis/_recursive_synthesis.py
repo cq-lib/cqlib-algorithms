@@ -6,12 +6,12 @@ import math
 
 import numpy as np
 import numpy.typing as npt
-
-from cqlib import Circuit, Qubit
 from cqlib.compile.transform.decompose.unitary import (
     synthesize_numeric_1q_unitary,
     synthesize_numeric_2q_unitary,
 )
+
+from cqlib import Circuit, Qubit
 
 from ....arithmetic.amplitude_encoded_rotation.multiplexed import UCRZ
 from ._block_factors import factor_block_zxz

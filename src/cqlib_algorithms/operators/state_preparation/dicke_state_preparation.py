@@ -10,7 +10,22 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Divide-and-conquer Dicke-state preparation."""
+"""Divide-and-conquer Dicke-state preparation.
+
+This module implements the deterministic divide-and-conquer preparation of
+Dicke states introduced by Bärtschi and Eidenbenz. The construction starts
+from a unary basis state, recursively applies the Weight Distribution Block to
+split the Hamming weight across two subregisters, and finishes each leaf
+subproblem with the unary-to-Dicke unitary ``U_{n,k}``.
+
+References
+----------
+.. [1] Bärtschi, A., and Eidenbenz, S. (2019). Deterministic Preparation of
+       Dicke States. In *Fundamentals of Computation Theory (FCT 2019)*,
+       LNCS 11651, pp. 126-139. Springer.
+.. [2] Bärtschi, A., and Eidenbenz, S. (2022). Deterministic Preparation of
+       Dicke States. *Quantum Information Processing*, 21, 282.
+"""
 
 from __future__ import annotations
 
@@ -48,7 +63,8 @@ class DickeStatePreparation(StatePreparation):
     :math:`|0^{n-k}1^k\rangle`. It then recursively applies the Weight
     Distribution Block to split the Hamming weight across two halves until the
     subproblem width is at most ``2 * k``. At that point the implementation
-    finishes with the existing unary-to-Dicke unitary on that subregister.
+    finishes with the existing unary-to-Dicke unitary on that subregister, as
+    described by Bärtschi and Eidenbenz [1]_ [2]_.
 
     Args:
         num_qubits: Total number of qubits in the prepared state.
@@ -58,6 +74,14 @@ class DickeStatePreparation(StatePreparation):
         TypeError: If either argument is not an integer or is a Boolean.
         ValueError: If ``num_qubits`` is not positive or if ``weight`` falls
             outside ``0 <= weight <= num_qubits``.
+
+    References
+    ----------
+    .. [1] Bärtschi, A., and Eidenbenz, S. (2019). Deterministic Preparation
+           of Dicke States. In *Fundamentals of Computation Theory (FCT 2019)*,
+           LNCS 11651, pp. 126-139. Springer.
+    .. [2] Bärtschi, A., and Eidenbenz, S. (2022). Deterministic Preparation
+           of Dicke States. *Quantum Information Processing*, 21, 282.
     """
 
     __slots__ = ("_num_qubits", "_weight")

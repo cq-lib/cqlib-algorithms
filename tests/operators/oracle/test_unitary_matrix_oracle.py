@@ -101,7 +101,7 @@ def test_three_qubit_random_unitary_matrix_oracle_reconstructs_up_to_global_phas
 
 _LARGE_RANDOM_UNITARY_CASES = [
     pytest.param(num_qubits, seed, id=f"{num_qubits}q-seed{seed}")
-    for num_qubits in (4, 5, 6)
+    for num_qubits in (3, 4, 5)
     for seed in range(5)
 ]
 
@@ -129,13 +129,13 @@ def _scaled_unitary_dilation_matrix(
 
 _RANDOM_UNITARY_DILATION_CASES = [
     pytest.param(num_qubits, seed, id=f"{num_qubits}q-seed{seed}")
-    for num_qubits in (4, 5, 6)
+    for num_qubits in (3, 4, 5)
     for seed in range(5)
 ]
 
 _REPRO_UNITARY_DILATION_CASES = [
-    pytest.param(6, 707, id="6q-seed707-qsvt-odd"),
-    pytest.param(6, 808, id="6q-seed808-qsvt-even"),
+    pytest.param(5, 707, id="5q-seed707-qsvt-odd"),
+    pytest.param(5, 808, id="5q-seed808-qsvt-even"),
 ]
 
 

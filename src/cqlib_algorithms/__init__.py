@@ -12,7 +12,7 @@
 
 """Composable quantum algorithm components for Cqlib."""
 
-from importlib.metadata import version
+from importlib.metadata import PackageNotFoundError, version
 
 from .algorithms import (
     BB84,
@@ -61,7 +61,10 @@ from .protocols import (
 )
 from .transforms import QFT
 
-__version__ = version("cqlib-algorithms")
+try:
+    __version__ = version("cqlib-algorithms")
+except PackageNotFoundError:
+    __version__ = "0.0.0+local"
 
 __all__ = [
     "BB84",
