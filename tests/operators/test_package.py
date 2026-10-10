@@ -84,11 +84,16 @@ def test_ansatz_operators_are_exported_from_functional_packages():
     ansatz = import_module("cqlib_algorithms.operators.ansatz")
     concrete = {
         "EfficientSU2Ansatz",
+        "EvolvedOperatorAnsatz",
+        "ExcitationPreservingAnsatz",
+        "HamiltonianVariationalAnsatz",
         "HardwareEfficientAnsatz",
         "PauliTwoDesignAnsatz",
         "QAOACostEvolution",
         "QAOAMixerEvolution",
+        "RandomLayersAnsatz",
         "RealAmplitudesAnsatz",
+        "SimplifiedTwoDesignAnsatz",
         "TwoLocalAnsatz",
     }
     expected = concrete | {"BaseAnsatz"}

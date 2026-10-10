@@ -87,6 +87,21 @@
 - `PauliTwoDesignAnsatz` 在构造时抽样并冻结随机轴，使用 `RY(pi/4)` 初始层、
   `RX`/`RY`/`RZ` 参数层和 even/odd 最近邻 `CZ` brickwork。测试固定 seed 的
   操作快照，同时用独立矩阵验证，而不要求与其他框架共享随机数序列。
+- `EvolvedOperatorAnsatz` 对有限、非空、Hermitian、同宽 Hamiltonian 序列按输入
+  顺序逐一委托 `PauliEvolutionAnsatz`；参数按 repetition、operator 排列。默认移除
+  纯 identity Hamiltonian，显式保留时必须保留其参数化全局相位。
+- `HamiltonianVariationalAnsatz` 对单一 Hamiltonian 使用
+  `CommutingObservableGrouping` 形成稳定全局对易块；显式块必须各自内部对易。线路
+  与参数管理委托 `EvolvedOperatorAnsatz`，不得重写演化综合。
+- `ExcitationPreservingAnsatz` 每条边共享一个参数于 `RXX(theta/2)` 与
+  `RYY(theta/2)`；fsim 模式再追加受控 `Phase(-phi)`。拓扑边在构造时校验并冻结，
+  测试必须验证线路与总激发数算符对易以及固定 Hamming-weight 子空间不泄漏。
+- `SimplifiedTwoDesignAnsatz` 使用全局初始 RY 层，并在每个 even/odd 最近邻 CZ 后
+  对两个端点分别施加新 RY 参数；不得将其表述为严格 unitary two-design。
+- `RandomLayersAnsatz` 在构造时用私有随机数生成器一次性冻结门、目标和顺序；同一
+  实例重复构建或参数绑定不得重新抽样。每个旋转槽前最多插入一个纠缠门，因此每层
+  门数不超过旋转槽数的两倍；`entanglement_ratio=1` 仍必须有界终止。单量子比特
+  配置不生成双比特门。
 - QAOA 成本层和混合层分别使用 `{prefix}_gamma` 与 `{prefix}_beta`，防御性复制
   Hamiltonian，并委托 Core `PauliEvolutionAnsatz`。单层组件不隐式添加初态或组合
   为完整 QAOA。

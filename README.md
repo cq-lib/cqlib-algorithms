@@ -33,6 +33,11 @@ src/cqlib_algorithms/
 │   │   ├── efficient_su2_ansatz.py
 │   │   ├── hardware_efficient_ansatz.py
 │   │   ├── pauli_two_design_ansatz.py
+│   │   ├── evolved_operator_ansatz.py
+│   │   ├── hamiltonian_variational_ansatz.py
+│   │   ├── excitation_preserving_ansatz.py
+│   │   ├── simplified_two_design_ansatz.py
+│   │   ├── random_layers_ansatz.py
 │   │   ├── qaoa_cost_evolution.py
 │   │   └── qaoa_mixer_evolution.py
 │   ├── composite/
@@ -182,15 +187,19 @@ from cqlib_algorithms import (
 - 公共基础实现：`BaseAnsatz`。
 - TwoLocal 系列：`TwoLocalAnsatz`、`RealAmplitudesAnsatz`、
   `EfficientSU2Ansatz`、`HardwareEfficientAnsatz`。
-- 随机线路：`PauliTwoDesignAnsatz`。
+- 算符演化：`EvolvedOperatorAnsatz`、`HamiltonianVariationalAnsatz`。
+- 守恒线路：`ExcitationPreservingAnsatz`。
+- 结构与随机基线：`PauliTwoDesignAnsatz`、`SimplifiedTwoDesignAnsatz`、
+  `RandomLayersAnsatz`。
 - QAOA 单层构件：`QAOACostEvolution`、`QAOAMixerEvolution`。
 
 `BaseAnsatz` 继承公共 `Ansatz` 抽象契约，集中执行 prefix、配置和 Core 线路校验，
 并直接提供线路构建及计数的公共代理实现；普通组件只保留构造配置，特殊组件只覆盖
 自身不同的行为。
-TwoLocal 系列委托 Cqlib Core 的 `TwoLocal`，
-并统一采用“旋转层、量子比特、旋转门位置”的参数顺序。Pauli two-design 在构造时
-冻结随机 Pauli 轴；QAOA 组件分别表示
+TwoLocal 系列委托 Cqlib Core 的 `TwoLocal`，并统一采用“旋转层、量子比特、旋转门
+位置”的参数顺序。算符演化系列复用 Hamiltonian 校验、全局对易分组和 Core Pauli
+演化；激发守恒线路使用共享参数的 XX/YY 交换块。两种随机线路均在构造时冻结架构，
+重复构建不会重新抽样。QAOA 组件分别表示
 单个成本哈密顿量演化层和混合哈密顿量演化层，并对传入 Hamiltonian 做防御性复制。
 UCCSD 与 k-UpCCGSD 因当前 Core 尚缺少必要的费米算子和映射能力而暂不提供。
 

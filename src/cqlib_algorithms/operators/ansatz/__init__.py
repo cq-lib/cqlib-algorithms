@@ -14,20 +14,30 @@
 
 from .base_ansatz import BaseAnsatz
 from .efficient_su2_ansatz import EfficientSU2Ansatz
+from .evolved_operator_ansatz import EvolvedOperatorAnsatz
+from .excitation_preserving_ansatz import ExcitationPreservingAnsatz
+from .hamiltonian_variational_ansatz import HamiltonianVariationalAnsatz
 from .hardware_efficient_ansatz import HardwareEfficientAnsatz
 from .pauli_two_design_ansatz import PauliTwoDesignAnsatz
 from .qaoa_cost_evolution import QAOACostEvolution
 from .qaoa_mixer_evolution import QAOAMixerEvolution
+from .random_layers_ansatz import RandomLayersAnsatz
 from .real_amplitudes_ansatz import RealAmplitudesAnsatz
+from .simplified_two_design_ansatz import SimplifiedTwoDesignAnsatz
 from .two_local_ansatz import TwoLocalAnsatz
 
 __all__ = [
     "BaseAnsatz",
     "EfficientSU2Ansatz",
+    "EvolvedOperatorAnsatz",
+    "ExcitationPreservingAnsatz",
+    "HamiltonianVariationalAnsatz",
     "HardwareEfficientAnsatz",
     "PauliTwoDesignAnsatz",
     "QAOACostEvolution",
     "QAOAMixerEvolution",
+    "RandomLayersAnsatz",
     "RealAmplitudesAnsatz",
+    "SimplifiedTwoDesignAnsatz",
     "TwoLocalAnsatz",
 ]
