@@ -12,6 +12,18 @@
 
 """Complete quantum algorithms composed from reusable components."""
 
+from .amplitude_estimation import (
+    AmplitudeEstimationProblem,
+    IterativeAmplitudeEstimation,
+    IterativeAmplitudeEstimationRequest,
+    IterativeAmplitudeEstimationResult,
+    MaximumLikelihoodAmplitudeEstimation,
+    MaximumLikelihoodAmplitudeEstimationRequest,
+    MaximumLikelihoodAmplitudeEstimationResult,
+    StandardAmplitudeEstimation,
+    StandardAmplitudeEstimationRequest,
+    StandardAmplitudeEstimationResult,
+)
 from .bb84 import BB84, BB84Basis, BB84Request, BB84Result
 from .bernstein_vazirani import (
     BernsteinVazirani,
@@ -40,6 +52,7 @@ __all__ = [
     "CHSH",
     "QAOA",
     "VQE",
+    "AmplitudeEstimationProblem",
     "BB84Basis",
     "BB84Request",
     "BB84Result",
@@ -51,6 +64,12 @@ __all__ = [
     "DeutschJozsa",
     "DeutschJozsaRequest",
     "DeutschJozsaResult",
+    "IterativeAmplitudeEstimation",
+    "IterativeAmplitudeEstimationRequest",
+    "IterativeAmplitudeEstimationResult",
+    "MaximumLikelihoodAmplitudeEstimation",
+    "MaximumLikelihoodAmplitudeEstimationRequest",
+    "MaximumLikelihoodAmplitudeEstimationResult",
     "QAOAResult",
     "QuantumTeleportation",
     "QuantumTeleportationRequest",
@@ -58,6 +77,9 @@ __all__ = [
     "Simon",
     "SimonRequest",
     "SimonResult",
+    "StandardAmplitudeEstimation",
+    "StandardAmplitudeEstimationRequest",
+    "StandardAmplitudeEstimationResult",
     "SuperdenseCoding",
     "SuperdenseCodingRequest",
     "SuperdenseCodingResult",

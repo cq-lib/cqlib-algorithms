@@ -7,6 +7,7 @@ Pauli 测量规划、同步采样器、期望值估计器、梯度、量子几�
 线路纯态保真度估计组件、Hadamard 相位查询、Grover 复合迭代单元，以及可复用的量子傅里叶变换
 线路构造器，以及完整的 VQE、QAOA、Deutsch-Jozsa、Bernstein-Vazirani、Simon、
 CHSH 不等式验证、BB84 协议实验、量子隐形传态与超密编码算法。
+现亦提供标准、迭代与最大似然三种振幅估计算法。
 
 ## 目录
 
@@ -83,6 +84,13 @@ src/cqlib_algorithms/
 │       ├── user_circuit_preparation.py
 │       └── feature_map_preparation.py
 └── algorithms/
+    ├── amplitude_estimation/
+    │   ├── __init__.py
+    │   ├── _common.py
+    │   ├── iterative.py
+    │   ├── maximum_likelihood.py
+    │   ├── problem.py
+    │   └── standard.py
     ├── bernstein_vazirani.py
     ├── bb84.py
     ├── chsh.py
@@ -309,6 +317,12 @@ Hadamard 制备；全量子比特反射时这是关于 `A|0...0>` 的单态反�
 [复合算子组件](docs/composite.md)。
 
 ## 完整算法
+
+三种振幅估计算法共享显式的状态制备线路、Grover 迭代线路、目标量子比特与好态
+谓词。标准版本用完整稠密矩阵构造受控 Grover 幂并复用逆 QFT；迭代版本通过
+Chernoff--Hoeffding 区间自适应选择普通 `Q^k A`；最大似然版本批量执行固定幂次，
+再对完整物理角度区间执行多峰似然搜索。接口、端序、查询计数、置信区间语义和
+指数规模限制见 [振幅估计](docs/amplitude_estimation.md)。
 
 `VQE` 将现有 `Ansatz`、`Estimator` 与 `Optimizer` 公共组件组合为变分量子
 本征求解器。初值显式对应实际线路的活跃符号，算法不重复实现态矢量、期望值、
