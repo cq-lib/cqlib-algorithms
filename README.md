@@ -91,16 +91,18 @@ src/cqlib_algorithms/
     │   ├── maximum_likelihood.py
     │   ├── problem.py
     │   └── standard.py
+    ├── variational/
+    │   ├── __init__.py
+    │   ├── qaoa.py
+    │   ├── result.py
+    │   └── vqe.py
     ├── bernstein_vazirani.py
     ├── bb84.py
     ├── chsh.py
     ├── deutsch_jozsa.py
-    ├── qaoa.py
     ├── quantum_teleportation.py
     ├── simon.py
-    ├── superdense_coding.py
-    ├── vqa_result.py
-    └── vqe.py
+    └── superdense_coding.py
 tests/protocols/
 tests/operators/state_preparation/
 tests/operators/ansatz/

@@ -140,7 +140,19 @@ from cqlib_algorithms.algorithms import (
 from cqlib_algorithms.algorithms import (
     SuperdenseCodingResult as AlgorithmSuperdenseCodingResult,
 )
+from cqlib_algorithms.algorithms import VQAResult as AlgorithmVQAResult
 from cqlib_algorithms.algorithms import VQEResult as AlgorithmVQEResult
+from cqlib_algorithms.algorithms.variational import QAOA as VariationalQAOA
+from cqlib_algorithms.algorithms.variational import VQE as VariationalVQE
+from cqlib_algorithms.algorithms.variational import (
+    QAOAResult as VariationalQAOAResult,
+)
+from cqlib_algorithms.algorithms.variational import (
+    VQAResult as VariationalVQAResult,
+)
+from cqlib_algorithms.algorithms.variational import (
+    VQEResult as VariationalVQEResult,
+)
 from cqlib_algorithms.protocols import (
     Ansatz,
     Estimator,
@@ -266,8 +278,9 @@ def test_qft_is_exported_from_public_namespaces():
 
 
 def test_vqe_is_exported_from_public_namespaces():
-    assert VQE is AlgorithmVQE
-    assert VQEResult is AlgorithmVQEResult
+    assert VQE is AlgorithmVQE is VariationalVQE
+    assert VQEResult is AlgorithmVQEResult is VariationalVQEResult
+    assert VQAResult is AlgorithmVQAResult is VariationalVQAResult
 
 
 def test_amplitude_estimation_is_exported_from_public_namespaces():
@@ -304,8 +317,8 @@ def test_amplitude_estimation_is_exported_from_public_namespaces():
 
 
 def test_qaoa_is_exported_from_public_namespaces():
-    assert QAOA is AlgorithmQAOA
-    assert QAOAResult is AlgorithmQAOAResult
+    assert QAOA is AlgorithmQAOA is VariationalQAOA
+    assert QAOAResult is AlgorithmQAOAResult is VariationalQAOAResult
 
 
 def test_quantum_teleportation_is_exported_from_public_namespaces():

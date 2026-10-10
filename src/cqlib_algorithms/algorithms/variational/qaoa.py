@@ -18,18 +18,17 @@ import copy
 from collections.abc import Mapping
 from typing import Literal
 
+from cqlib import Circuit
 from cqlib.circuit.ansatz import EvolutionStrategy
 from cqlib.qis import Hamiltonian
 
-from cqlib import Circuit
-
-from ..operators.ansatz import QAOACostEvolution, QAOAMixerEvolution
-from ..operators.ansatz._validation import copy_hermitian_hamiltonian
-from ..operators.state_preparation import UniformSuperposition
-from ..protocols.estimator import Estimator, EstimatorRequest
-from ..protocols.optimizer import Optimizer, OptimizerRequest, OptimizerResult
-from ..protocols.state_preparation import StatePreparation
-from .vqa_result import VQAResult
+from ...operators.ansatz import QAOACostEvolution, QAOAMixerEvolution
+from ...operators.ansatz._validation import copy_hermitian_hamiltonian
+from ...operators.state_preparation import UniformSuperposition
+from ...protocols.estimator import Estimator, EstimatorRequest
+from ...protocols.optimizer import Optimizer, OptimizerRequest, OptimizerResult
+from ...protocols.state_preparation import StatePreparation
+from .result import VQAResult
 
 QAOAResult = VQAResult
 

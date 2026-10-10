@@ -32,7 +32,6 @@ from .bernstein_vazirani import (
 )
 from .chsh import CHSH, CHSHRequest, CHSHResult
 from .deutsch_jozsa import DeutschJozsa, DeutschJozsaRequest, DeutschJozsaResult
-from .qaoa import QAOA, QAOAResult
 from .quantum_teleportation import (
     QuantumTeleportation,
     QuantumTeleportationRequest,
@@ -44,8 +43,7 @@ from .superdense_coding import (
     SuperdenseCodingRequest,
     SuperdenseCodingResult,
 )
-from .vqa_result import VQAResult
-from .vqe import VQE, VQEResult
+from .variational import QAOA, VQE, QAOAResult, VQAResult, VQEResult
 
 __all__ = [
     "BB84",

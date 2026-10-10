@@ -19,10 +19,10 @@ from typing import final
 
 from cqlib.qis import Hamiltonian, PauliString
 
-from ..protocols.ansatz import Ansatz
-from ..protocols.estimator import Estimator, EstimatorRequest
-from ..protocols.optimizer import Optimizer, OptimizerRequest, OptimizerResult
-from .vqa_result import VQAResult
+from ...protocols.ansatz import Ansatz
+from ...protocols.estimator import Estimator, EstimatorRequest
+from ...protocols.optimizer import Optimizer, OptimizerRequest, OptimizerResult
+from .result import VQAResult
 
 VQEResult = VQAResult
 
