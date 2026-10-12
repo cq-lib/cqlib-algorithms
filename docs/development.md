@@ -179,11 +179,13 @@
 - `QAOA` 只接受非空、有限、Hermitian 且计算基对角的成本 Hamiltonian。主入口
   `compute_minimum_eigenvalue` 最小化原始期望值；`compute_maximum` 显式最小化
   负成本，但演化线路仍使用原始成本。结果用 `objective_sense` 区分这两种语义。
-- 默认初态复用 `UniformSuperposition`，每层依次复用 `QAOACostEvolution` 与
-  `QAOAMixerEvolution`；算法层不重新实现演化、期望值、梯度、优化或参数绑定。
+- 默认初态复用 `UniformSuperposition`，成本层复用 `QAOACostEvolution`；
+  Hamiltonian mixer 路径复用 `QAOAMixerEvolution`，线路 mixer 路径直接组合其
+  `Ansatz` 线路。算法层不重新实现演化、期望值、梯度、优化或参数绑定。
 - 层参数顺序固定为 `{prefix}_{k}_gamma, {prefix}_{k}_beta`。自定义初态必须固定、
-  无活跃符号且同宽；自定义 mixer 必须非空、有限、Hermitian 且同宽，再由底层
-  演化组件验证线路语义。
+  无活跃符号且同宽；自定义 `mixer_operator` 必须非空、有限、Hermitian 且同宽，
+  再由底层演化组件验证线路语义。线路 `mixer` 必须同宽、恰有一个逻辑参数，并遵守
+  每层 beta 命名契约；其酉结构与综合顺序由 Mixer 组件自身负责。
 - `QAOA.build_circuit` 直接拼装初态与演化层，不新建内部 Ansatz 包装；优化入口
   调用该可覆盖方法，并直接使用 Estimator/Optimizer 契约，不委托另一算法。
 - VQE 与 QAOA 共享 `VQAResult`。`optimal_value` 表示原目标在最终迭代点的期望值，
@@ -191,6 +193,29 @@
   校验该关系。不得虚构优化器未提供的 checkpoint、方差或收敛保证。
 - 公共结果 dataclass 保持标准构造与 `dataclasses.replace`，简短 repr 只显示
   目标值、参数数量、方向、迭代次数与状态，不打印完整线路。
+
+## Mixer 实现约定
+
+- 公共 Mixer 位于 `operators/mixer/`，实现 `Ansatz` 的单参数契约；线路唯一活跃符号
+  固定为 `{prefix}_beta`。局部交换生成元统一为 `(XX+YY)/2`，精确块使用共享 beta
+  的 `RXX(beta)` 与 `RYY(beta)`，不得混用不同的角度缩放。
+- simultaneous Hamiltonian 演化必须复用 `QAOAMixerEvolution` 和 Core
+  `PauliEvolutionAnsatz` 的 Hamiltonian 校验与策略元数据，并显式接受
+  `EvolutionStrategy`；实际乘积公式以完整 XY exchange 为原子项，不能将 XX/YY
+  Pauli 子项打散后破坏 one-hot 子空间。非对易默认路径只能声明为乘积公式近似，
+  randomized Pauli 子项策略必须拒绝。partitioned Mixer 是共享 beta 的有序精确
+  局部块乘积，两者不得混称。
+- `NullSwapMixer` 表示所有 null/value 交换之和，不得偷换成单个 partial mixer。
+  受控 null/value 和 value/value 组件是计算基谓词控制的局部构件。
+- 四体排列或时间交换使用系数 `+/-1/8` 的八项 commuting Pauli 展开，并复用
+  `QAOAMixerEvolution` 的 exact 策略。direct one-hot 的 value-independent 组合只在
+  合法编码子空间声明与 simultaneous 生成元等价。
+- parity、color-parity、time-color 和通用 `PartitionedMixer` 的应用顺序属于公共
+  语义；输入容器在构造时冻结，重复构建返回独立线路。测试必须独立验证矩阵、全局
+  相位、可行子空间不泄漏和顺序，不得用实现自身作参考。
+- `QAOA` 的 Hamiltonian mixer 与线路 Mixer 接口互斥。线路 Mixer 必须同宽、恰有
+  一个参数，并在每层只生成 `{prefix}_{layer}_beta`；已定义线路顺序时拒绝额外
+  `mixer_strategy`。
 
 ## Deutsch-Jozsa 实现约定
 

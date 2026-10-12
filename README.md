@@ -63,6 +63,21 @@ src/cqlib_algorithms/
 │   │   ├── pauli_grouping_strategy.py
 │   │   ├── commuting_observable_grouping.py
 │   │   └── pauli_measurement_planner.py
+│   ├── mixer/
+│   │   ├── nearby_values_mixer.py
+│   │   ├── ring_mixer.py
+│   │   ├── fully_connected_mixer.py
+│   │   ├── null_swap_mixer.py
+│   │   ├── parity_ring_mixer.py
+│   │   ├── controlled_bit_flip_mixer.py
+│   │   ├── controlled_null_swap_mixer.py
+│   │   ├── controlled_swap_mixer.py
+│   │   ├── value_selective_permutation_swap_mixer.py
+│   │   ├── value_independent_permutation_swap_mixer.py
+│   │   ├── color_parity_permutation_swap_mixer.py
+│   │   ├── time_swap_mixer.py
+│   │   ├── time_color_mixer.py
+│   │   └── partitioned_mixer.py
 │   ├── oracle/
 │   │   ├── boolean_function.py
 │   │   ├── boolean_vector_function.py
@@ -207,6 +222,15 @@ UCCSD 与 k-UpCCGSD 因当前 Core 尚缺少必要的费米算子和映射能力
 [Ansatz 与 QAOA 演化层组件](docs/ansatz.md)及
 [UCC 类 Ansatz 的 Core 能力缺口](docs/ansatz-core-gap-report.md)。
 
+## Mixer 组件
+
+`operators.mixer` 提供 nearby-values、ring、fully-connected、null-swap、受控交换、
+排列交换与绝对时间调度 Mixer，以及通用有序 `PartitionedMixer`。所有组件都是共享
+单个 beta 的 `Ansatz`：simultaneous Hamiltonian 路径复用现有 Pauli 演化能力，
+partitioned 路径按论文定义保留局部块顺序。`QAOA` 同时支持原有 Hamiltonian mixer
+和新的线路 Mixer，二者互斥。数学定义、编码、精确性边界与示例见
+[Mixer 组件](docs/mixer.md)。
+
 ## Measurement 组件
 
 `PauliGroupingStrategy` 提供稳定的 none/QWC 分组，
@@ -342,7 +366,8 @@ Chernoff--Hoeffding 区间自适应选择普通 `Q^k A`；最大似然版本批�
 
 `QAOA` 在固定初态之后直接逐层组合现有的成本演化与混合演化组件，通过公共
 Estimator/Optimizer 契约最小化计算基对角成本；保留显式的最大化入口。默认使用均匀叠加初态和横场
-混合器，也支持同宽的固定初态、自定义有限 Hermitian 混合器与演化策略。参数按层采用
+混合器，也支持同宽的固定初态、自定义有限 Hermitian Hamiltonian mixer 与演化策略，
+或遵循单参数契约的线路 Mixer。参数按层采用
 `gamma, beta` 交错顺序。数学约定、结果符号、复用边界和示例见
 [QAOA](docs/qaoa.md)。两种算法共享 `VQAResult`，不嵌套另一种算法的结果；
 `VQEResult` 和 `QAOAResult` 仅为该类型的兼容导出名称。

@@ -106,6 +106,35 @@ def test_ansatz_operators_are_exported_from_functional_packages():
         assert issubclass(getattr(ansatz, name), ansatz.BaseAnsatz)
 
 
+def test_mixer_operators_are_exported_from_functional_packages():
+    operators = import_module("cqlib_algorithms.operators")
+    mixer = import_module("cqlib_algorithms.operators.mixer")
+    concrete = {
+        "ColorParityPermutationSwapMixer",
+        "ControlledBitFlipMixer",
+        "ControlledNullSwapMixer",
+        "ControlledSwapMixer",
+        "FullyConnectedMixer",
+        "NearbyValuesMixer",
+        "NullSwapMixer",
+        "ParityRingMixer",
+        "PartitionedMixer",
+        "RingMixer",
+        "TimeColorMixer",
+        "TimeSwapMixer",
+        "ValueIndependentPermutationSwapMixer",
+        "ValueSelectivePermutationSwapMixer",
+    }
+    expected = concrete | {"MixerApplication"}
+    assert expected <= set(operators.__all__)
+    assert set(mixer.__all__) == expected
+    for name in expected:
+        assert getattr(operators, name) is getattr(mixer, name)
+    for name in concrete:
+        assert issubclass(getattr(mixer, name), Ansatz)
+        assert issubclass(getattr(mixer, name), operators.BaseAnsatz)
+
+
 def test_measurement_operators_are_exported_from_functional_packages():
     operators = import_module("cqlib_algorithms.operators")
     measurement = import_module("cqlib_algorithms.operators.measurement")

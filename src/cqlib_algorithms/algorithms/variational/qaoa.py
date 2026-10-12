@@ -25,6 +25,7 @@ from cqlib.qis import Hamiltonian
 from ...operators.ansatz import QAOACostEvolution, QAOAMixerEvolution
 from ...operators.ansatz._validation import copy_hermitian_hamiltonian
 from ...operators.state_preparation import UniformSuperposition
+from ...protocols.ansatz import Ansatz
 from ...protocols.estimator import Estimator, EstimatorRequest
 from ...protocols.optimizer import Optimizer, OptimizerRequest, OptimizerResult
 from ...protocols.state_preparation import StatePreparation
@@ -55,11 +56,14 @@ def _copy_cost_operator(cost_operator: Hamiltonian) -> Hamiltonian:
 class QAOA:
     """Optimize a diagonal classical cost with alternating evolutions.
 
-    Each of ``reps`` layers applies ``exp(-i gamma H_C)`` followed by
-    ``exp(-i beta H_M)``. The default initial state is the uniform
-    superposition and the default mixer is the transverse field ``sum_i X_i``.
-    A custom initial state must be fixed and a custom Hermitian mixer must act
-    on the cost register.
+    Each of ``reps`` layers applies ``exp(-i gamma H_C)`` followed by a
+    one-parameter mixer unitary. Hamiltonian mixers use
+    ``exp(-i beta H_M)``; circuit mixers define their own ordered unitary.
+    The default initial state is the uniform superposition and the default
+    mixer is the transverse field ``sum_i X_i``. A custom initial state must
+    be fixed. A custom mixer may be supplied either as a Hermitian Hamiltonian
+    or as a one-parameter ``Ansatz`` following the layer's ``{prefix}_beta``
+    naming contract.
 
     The primary entry point minimizes H_C; compute_maximum explicitly
     minimizes -H_C while preserving the original cost evolution. The
@@ -71,6 +75,7 @@ class QAOA:
         "_cost_strategy",
         "_estimator",
         "_initial_state",
+        "_mixer",
         "_mixer_operator",
         "_mixer_strategy",
         "_optimizer",
@@ -84,6 +89,7 @@ class QAOA:
         optimizer: Optimizer,
         *,
         reps: int = 1,
+        mixer: Ansatz | None = None,
         mixer_operator: Hamiltonian | None = None,
         initial_state: StatePreparation | None = None,
         cost_strategy: EvolutionStrategy | None = None,
@@ -95,8 +101,12 @@ class QAOA:
         if not isinstance(optimizer, Optimizer):
             raise TypeError("optimizer must be an Optimizer")
         _validate_reps(reps)
+        if mixer is not None and not isinstance(mixer, Ansatz):
+            raise TypeError("mixer must be an Ansatz or None")
         if mixer_operator is not None and not isinstance(mixer_operator, Hamiltonian):
             raise TypeError("mixer_operator must be a Hamiltonian or None")
+        if mixer is not None and mixer_operator is not None:
+            raise ValueError("mixer and mixer_operator are mutually exclusive")
         if initial_state is not None and not isinstance(
             initial_state, StatePreparation
         ):
@@ -109,12 +119,19 @@ class QAOA:
             mixer_strategy, EvolutionStrategy
         ):
             raise TypeError("mixer_strategy must be an EvolutionStrategy or None")
+        if mixer is not None and mixer_strategy is not None:
+            raise ValueError("mixer_strategy cannot be used with a circuit mixer")
         if not isinstance(prefix, str):
             raise TypeError("prefix must be a str")
 
         self._estimator = estimator
         self._optimizer = optimizer
         self._reps = reps
+        self._mixer = mixer
+        if mixer is not None:
+            mixer.validate()
+            if mixer.num_parameters() != 1:
+                raise ValueError("mixer must declare exactly one parameter")
         self._mixer_operator = (
             None
             if mixer_operator is None
@@ -177,15 +194,38 @@ class QAOA:
             raise ValueError("initial_state must not contain active symbols")
         circuit = copy.copy(circuit)
         cost_layer = QAOACostEvolution(cost, strategy=self._cost_strategy)
-        mixer_layer = QAOAMixerEvolution(
-            width,
-            mixer_operator=self._mixer_operator,
-            strategy=self._mixer_strategy,
-        )
+        mixer_layer = None
+        if self._mixer is None:
+            mixer_layer = QAOAMixerEvolution(
+                width,
+                mixer_operator=self._mixer_operator,
+                strategy=self._mixer_strategy,
+            )
+        else:
+            self._mixer.validate()
+            if self._mixer.num_qubits() != width:
+                raise ValueError("mixer and cost_operator must have the same width")
+            if self._mixer.num_parameters() != 1:
+                raise ValueError("mixer must declare exactly one parameter")
         for layer in range(self._reps):
             layer_prefix = f"{self._prefix}_{layer}"
             circuit.compose(cost_layer.build_circuit(layer_prefix))
-            circuit.compose(mixer_layer.build_circuit(layer_prefix))
+            if self._mixer is None:
+                assert mixer_layer is not None
+                mixer_circuit = mixer_layer.build_circuit(layer_prefix)
+            else:
+                mixer_circuit = self._mixer.build_circuit(layer_prefix)
+                if not isinstance(mixer_circuit, Circuit):
+                    raise TypeError("mixer must build a cqlib.Circuit")
+                mixer_circuit.validate()
+                if mixer_circuit.num_qubits != width:
+                    raise ValueError("mixer circuit has an inconsistent width")
+                expected = {f"{layer_prefix}_beta"}
+                if set(mixer_circuit.used_symbols) != expected:
+                    raise ValueError(
+                        "mixer circuit must use exactly the layer beta parameter"
+                    )
+            circuit.compose(mixer_circuit)
         circuit.validate()
         return circuit
 

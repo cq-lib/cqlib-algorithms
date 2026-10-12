@@ -18,7 +18,7 @@ import copy
 from typing import cast, final
 
 from cqlib.circuit import Circuit
-from cqlib.circuit.ansatz import EvolutionStrategy, PauliEvolutionAnsatz
+from cqlib.circuit.ansatz import EvolutionInfo, EvolutionStrategy, PauliEvolutionAnsatz
 from cqlib.qis import Hamiltonian, Pauli, PauliString
 
 from ._validation import copy_hermitian_hamiltonian, validate_positive_qubit_count
@@ -81,3 +81,8 @@ class QAOAMixerEvolution(BaseAnsatz):
     def _parameter_count(self) -> int:
         """Return one mixer-evolution parameter slot."""
         return 1
+
+    def evolution_info(self) -> EvolutionInfo:
+        """Return Core metadata for the configured Hamiltonian evolution."""
+        inner = cast(PauliEvolutionAnsatz, self._inner)
+        return inner.evolution_info()
