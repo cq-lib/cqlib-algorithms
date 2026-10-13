@@ -20,12 +20,15 @@ from .ansatz import (
     ExcitationPreservingAnsatz,
     HamiltonianVariationalAnsatz,
     HardwareEfficientAnsatz,
+    MERAAnsatz,
+    MPSAnsatz,
     PauliTwoDesignAnsatz,
     QAOACostEvolution,
     QAOAMixerEvolution,
     RandomLayersAnsatz,
     RealAmplitudesAnsatz,
     SimplifiedTwoDesignAnsatz,
+    TTNAnsatz,
     TwoLocalAnsatz,
 )
 from .arithmetic import QuadraticForm
@@ -84,6 +87,7 @@ from .state_fidelity import (
     ComputeUncomputeFidelity,
 )
 from .state_preparation import (
+    BRQI,
     AmplitudeEncoding,
     AngleEncoding,
     ArbitraryStatePreparation,
@@ -91,6 +95,8 @@ from .state_preparation import (
     BasisStateInitialization,
     FeatureMapPreparation,
     GHZStatePreparation,
+    ImageAngleEncoding,
+    ImageBasisEncoding,
     ProductStatePreparation,
     SparseAmplitudeEncoding,
     UniformSuperposition,
@@ -98,6 +104,7 @@ from .state_preparation import (
 )
 
 __all__ = [
+    "BRQI",
     "Adam",
     "AmplitudeEncoding",
     "AngleEncoding",
@@ -132,7 +139,11 @@ __all__ = [
     "HadamardPhaseQuery",
     "HamiltonianVariationalAnsatz",
     "HardwareEfficientAnsatz",
+    "ImageAngleEncoding",
+    "ImageBasisEncoding",
     "LinCombEstimatorGradient",
+    "MERAAnsatz",
+    "MPSAnsatz",
     "MeasurementGroup",
     "MeasurementPlan",
     "MixerApplication",
@@ -164,6 +175,7 @@ __all__ = [
     "StatevectorQFI",
     "StatevectorQGT",
     "StatevectorSampler",
+    "TTNAnsatz",
     "TimeColorMixer",
     "TimeSwapMixer",
     "TwoLocalAnsatz",

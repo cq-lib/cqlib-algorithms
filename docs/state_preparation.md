@@ -20,6 +20,8 @@
 | `AmplitudeEncoding` | `(features)` | 0 | 复制并自动归一化非零稠密复数特征向量 |
 | `AngleEncoding` | `(num_qubits, rotation_gate)` | `num_qubits` | 仅接受未绑定的 Core `RX`、`RY`、`RZ` 或 `Phase` |
 | `BasisEncoding` | `(bits)` | 0 | 仅接受非空布尔序列，并委托 Core 的 Basis Encoding |
+| `ImageAngleEncoding` | `(image_shape, channels, *, value_range=(0.0, 255.0))` | 0 | 每个像素通道标量映射为一个 RY 角度；通道优先、行优先布局 |
+| `ImageBasisEncoding` / `BRQI` | `(image_shape, channels)` | 0 | 固定 8 位单通道灰度 BRQI；高、宽均须为 2 的非负整数次幂（含 1） |
 | `SparseAmplitudeEncoding` | `(num_qubits, entries)` | 0 | 输入为非空 `(index, amplitude)` 序列；拒绝重复索引和显式零幅度，自动归一化 |
 | `UserCircuitPreparation` | `(circuit)` | 活跃符号数 | 保存线路快照并要求 Core 能静态求逆 |
 | `FeatureMapPreparation` | `(feature_map)` | 由 Core 决定 | 接受 Core 的 `ZFeatureMap`、`IQPFeatureMap`、`ZZFeatureMap` 或 `PauliFeatureMap` |
@@ -84,6 +86,32 @@ Hoefler 的
 以上的矩阵型 `UnitaryGate` 求逆，即使矩阵本身是幺正的；该限制会在构造时明确暴露，
 不能用稠密酉门绕过。
 
+## 图像编码
+
+两个图像组件都接受 `(height, width)` 和通道优先的扁平行优先数据。若
+`N = height * width`，`ImageAngleEncoding` 将通道 `c` 的第 `p` 个标量放在
+量子比特 `q = c * N + p`，并按
+`theta = pi * (value - lower) / (upper - lower)` 施加 `RY(theta)`。输入值和范围
+必须有限，且不执行裁剪。每个标量使用一个量子比特，因此它不是幅度压缩编码。
+
+`ImageBasisEncoding`（精确别名 `BRQI`）实现固定 8 位单通道灰度 BRQI。对
+`H=2**h`、`W=2**w`，目标态为
+
+```text
+1/sqrt(8*H*W) * sum_(l,y,x) |g(y,x,l)> |x> |y> |l>
+```
+
+其中 `g(y,x,l)=(pixel[y,x] >> l) & 1`，`l=0` 为最低有效位平面。Cqlib 小端物理
+布局固定为：量子比特 0 是值位，其后依次为 `w` 个列位、`h` 个行位和 3 个平面位，
+各寄存器内部均最低有效位在前。对应基态索引为
+`g + 2*x + 2*W*y + 2*W*H*l`。
+
+线路先对全部地址与平面量子比特施加 H，再对每个值为 1 的 `(x,y,l)` 地址使用完整
+开放/闭合控制写入值位，不添加测量。只接受恰好一个通道，像素必须是真正的 Python
+整数且位于 `[0,255]`；高和宽必须分别为 2 的非负整数次幂（含 1）。逻辑量子比特数为
+`h+w+4`，但经典构造仍枚举 `8*H*W` 个像素位，不提供 QRAM 或加载加速保证，也不
+应称为 FRQI 或 NEQR。两个图像组件都在构造时复制输入，并忽略合法字符串 prefix。
+
 ## 使用示例
 
 ```python
@@ -96,6 +124,23 @@ circuit = preparation.build_circuit("data")
 assert preparation.num_qubits() == 2
 assert preparation.num_parameters() == 0
 assert circuit.num_qubits == 2
+```
+
+```python
+from cqlib_algorithms.operators.state_preparation import ImageAngleEncoding
+
+image = ImageAngleEncoding((1, 2), [[0.0, 255.0]])
+circuit = image.build_circuit("ignored")
+assert image.num_qubits() == 2
+```
+
+```python
+from cqlib_algorithms.operators.state_preparation import BRQI
+
+image = BRQI((2, 2), [[0, 64, 128, 255]])
+circuit = image.build_circuit("ignored")
+assert image.num_qubits() == 6
+assert image.num_parameters() == 0
 ```
 
 开发环境验证使用 `uv run --no-sync`，避免同步尚未发布的 Cqlib SDK。例如：

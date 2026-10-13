@@ -225,6 +225,42 @@ circuit = ansatz.build_circuit("random")
 抽样。参数数量固定为
 `reps * rotations_per_layer`，随机插入的纠缠门不增加参数。
 
+## 张量网络启发式线路
+
+`MPSAnsatz`、`TTNAnsatz` 与 `MERAAnsatz` 统一使用双参数局域块：先在边的左右量子
+比特分别施加独立 `RY`，再执行左控右靶的 CX。参数严格按门出现顺序命名为
+`{prefix}_0`、`{prefix}_1` 等。它们提供的是受张量网络连接结构启发的幺正变分线路，
+不导入任意经典张量、不管理键维数，也不声称实现张量收缩。
+
+### `MPSAnsatz`
+
+`MPSAnsatz(num_qubits)` 要求至少两个量子比特，并按
+`(0,1), (1,2), ..., (n-2,n-1)` 从左到右对每条链边应用一次局域块。参数数量为
+`2 * (n - 1)`。
+
+### `TTNAnsatz`
+
+`TTNAnsatz(num_qubits)` 在每层从左到右配对活跃量子比特，应用局域块后保留每对的
+右量子比特；奇数宽度时将最后一个未配对量子比特带入下一层。归约到根后增加一个
+可训练 RY。所有量子比特仍保留在线路中，“保留”只定义后续连接。共有 `n-1` 个
+双量子比特块，参数数量为 `2 * (n - 1) + 1`，最终根为量子比特 `n-1`。
+
+### `MERAAnsatz`
+
+`MERAAnsatz(num_qubits)` 要求宽度至少为 2 且为 2 的幂。每个尺度先在相邻配对边界
+应用解纠缠位置块，再在 `(a0,a1), (a2,a3), ...` 应用等距位置块，并保留每对右侧
+量子比特进入下一尺度；最后在根上增加一个可训练 RY。两类位置都使用相同的幺正
+局域块但参数互不共享，并不表示公开任意非幺正等距张量。对 `n=2**L`，块数为
+`2*n - 2 - L`，参数数量为 `4*n - 3 - 2*L`。
+
+```python
+from cqlib_algorithms.operators import MERAAnsatz, MPSAnsatz, TTNAnsatz
+
+mps = MPSAnsatz(4).build_circuit("mps")
+ttn = TTNAnsatz(5).build_circuit("ttn")
+mera = MERAAnsatz(8).build_circuit("mera")
+```
+
 ## QAOA 单层演化
 
 `QAOACostEvolution` 构造

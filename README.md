@@ -38,6 +38,9 @@ src/cqlib_algorithms/
 │   │   ├── excitation_preserving_ansatz.py
 │   │   ├── simplified_two_design_ansatz.py
 │   │   ├── random_layers_ansatz.py
+│   │   ├── mps_ansatz.py
+│   │   ├── ttn_ansatz.py
+│   │   ├── mera_ansatz.py
 │   │   ├── qaoa_cost_evolution.py
 │   │   └── qaoa_mixer_evolution.py
 │   ├── composite/
@@ -100,6 +103,8 @@ src/cqlib_algorithms/
 │       ├── amplitude_encoding.py
 │       ├── angle_encoding.py
 │       ├── basis_encoding.py
+│       ├── image_angle_encoding.py
+│       ├── image_basis_encoding.py
 │       ├── sparse_amplitude_encoding.py
 │       ├── user_circuit_preparation.py
 │       └── feature_map_preparation.py
@@ -182,7 +187,8 @@ from cqlib_algorithms import (
   `ArbitraryStatePreparation`、`ProductStatePreparation`、
   `GHZStatePreparation`。
 - 数据编码：`AmplitudeEncoding`、`AngleEncoding`、`BasisEncoding`、
-  `SparseAmplitudeEncoding`。
+  `SparseAmplitudeEncoding`、`ImageAngleEncoding`、`ImageBasisEncoding`（别名
+  `BRQI`）。
 - 适配器：`UserCircuitPreparation`、`FeatureMapPreparation`。
 
 所有基态索引采用 Cqlib 的小端约定，即第 0 个量子比特对应最低有效位。任意态和
@@ -190,6 +196,11 @@ from cqlib_algorithms import (
 `SparseAmplitudeEncoding` 仅保存显式支持集，并以 two-level Givens 线路进行精确
 综合，不分配长度为 `2**num_qubits` 的稠密向量；这不代表 QRAM 或对数复杂度
 数据加载。Angle、Basis 和 Feature Map 组件委托当前兼容基线内的 Cqlib Core 实现。
+图像角度编码按通道和行优先顺序为每个像素值分配一个量子比特，并将显式数值范围
+线性映射到 RY 角度。`ImageBasisEncoding` 实现固定 8 位单通道灰度 BRQI：以值、
+列、行和比特平面寄存器构造地址等幅叠加，并按完整地址受控写入像素位。BRQI 的逻辑
+量子比特数为 `log2(H)+log2(W)+4`，但线路仍需枚举像素和位平面，不表示 QRAM 或
+高效数据加载，也不应称为 FRQI 或 NEQR。
 
 完整接口、数值约定、综合方法和已知 Core 边界见
 [状态制备与数据编码组件](docs/state_preparation.md)。
@@ -205,7 +216,7 @@ from cqlib_algorithms import (
 - 算符演化：`EvolvedOperatorAnsatz`、`HamiltonianVariationalAnsatz`。
 - 守恒线路：`ExcitationPreservingAnsatz`。
 - 结构与随机基线：`PauliTwoDesignAnsatz`、`SimplifiedTwoDesignAnsatz`、
-  `RandomLayersAnsatz`。
+  `RandomLayersAnsatz`、`MPSAnsatz`、`TTNAnsatz`、`MERAAnsatz`。
 - QAOA 单层构件：`QAOACostEvolution`、`QAOAMixerEvolution`。
 
 `BaseAnsatz` 继承公共 `Ansatz` 抽象契约，集中执行 prefix、配置和 Core 线路校验，
@@ -216,6 +227,9 @@ TwoLocal 系列委托 Cqlib Core 的 `TwoLocal`，并统一采用“旋转层、
 演化；激发守恒线路使用共享参数的 XX/YY 交换块。两种随机线路均在构造时冻结架构，
 重复构建不会重新抽样。QAOA 组件分别表示
 单个成本哈密顿量演化层和混合哈密顿量演化层，并对传入 Hamiltonian 做防御性复制。
+MPS、TTN 与 MERA 组件使用统一的双参数 RY--RY--CX 局域块，分别冻结线性链、
+逐层二叉归约和“解纠缠块先于等距位置块”的完整二叉多尺度拓扑；它们表示受张量
+网络启发的变分线路架构，不负责导入任意经典张量或管理键维数。
 UCCSD 与 k-UpCCGSD 因当前 Core 尚缺少必要的费米算子和映射能力而暂不提供。
 
 完整接口、线路结构、参数约定、理论来源和 Core 能力边界见

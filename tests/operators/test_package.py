@@ -33,8 +33,11 @@ def test_state_preparation_operators_are_exported_from_functional_packages():
         "ArbitraryStatePreparation",
         "BasisEncoding",
         "BasisStateInitialization",
+        "BRQI",
         "FeatureMapPreparation",
         "GHZStatePreparation",
+        "ImageAngleEncoding",
+        "ImageBasisEncoding",
         "ProductStatePreparation",
         "SparseAmplitudeEncoding",
         "UniformSuperposition",
@@ -45,6 +48,8 @@ def test_state_preparation_operators_are_exported_from_functional_packages():
     for name in expected:
         assert getattr(operators, name) is getattr(state_preparation, name)
         assert issubclass(getattr(state_preparation, name), StatePreparation)
+    assert operators.BRQI is state_preparation.BRQI
+    assert operators.BRQI is state_preparation.ImageBasisEncoding
 
 
 def test_oracle_operators_are_exported_from_functional_packages():
@@ -88,6 +93,8 @@ def test_ansatz_operators_are_exported_from_functional_packages():
         "ExcitationPreservingAnsatz",
         "HamiltonianVariationalAnsatz",
         "HardwareEfficientAnsatz",
+        "MERAAnsatz",
+        "MPSAnsatz",
         "PauliTwoDesignAnsatz",
         "QAOACostEvolution",
         "QAOAMixerEvolution",
@@ -95,6 +102,7 @@ def test_ansatz_operators_are_exported_from_functional_packages():
         "RealAmplitudesAnsatz",
         "SimplifiedTwoDesignAnsatz",
         "TwoLocalAnsatz",
+        "TTNAnsatz",
     }
     expected = concrete | {"BaseAnsatz"}
     assert expected <= set(operators.__all__)

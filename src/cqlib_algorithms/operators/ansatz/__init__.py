@@ -18,12 +18,15 @@ from .evolved_operator_ansatz import EvolvedOperatorAnsatz
 from .excitation_preserving_ansatz import ExcitationPreservingAnsatz
 from .hamiltonian_variational_ansatz import HamiltonianVariationalAnsatz
 from .hardware_efficient_ansatz import HardwareEfficientAnsatz
+from .mera_ansatz import MERAAnsatz
+from .mps_ansatz import MPSAnsatz
 from .pauli_two_design_ansatz import PauliTwoDesignAnsatz
 from .qaoa_cost_evolution import QAOACostEvolution
 from .qaoa_mixer_evolution import QAOAMixerEvolution
 from .random_layers_ansatz import RandomLayersAnsatz
 from .real_amplitudes_ansatz import RealAmplitudesAnsatz
 from .simplified_two_design_ansatz import SimplifiedTwoDesignAnsatz
+from .ttn_ansatz import TTNAnsatz
 from .two_local_ansatz import TwoLocalAnsatz
 
 __all__ = [
@@ -33,11 +36,14 @@ __all__ = [
     "ExcitationPreservingAnsatz",
     "HamiltonianVariationalAnsatz",
     "HardwareEfficientAnsatz",
+    "MERAAnsatz",
+    "MPSAnsatz",
     "PauliTwoDesignAnsatz",
     "QAOACostEvolution",
     "QAOAMixerEvolution",
     "RandomLayersAnsatz",
     "RealAmplitudesAnsatz",
     "SimplifiedTwoDesignAnsatz",
+    "TTNAnsatz",
     "TwoLocalAnsatz",
 ]
