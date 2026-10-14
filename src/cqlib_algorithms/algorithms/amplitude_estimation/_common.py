@@ -15,16 +15,11 @@
 from __future__ import annotations
 
 import copy
-from collections.abc import Sequence
 
-import numpy as np
-from cqlib import Circuit, Qubit
-from cqlib.circuit.gates import UnitaryGate
+from cqlib import Circuit
 from cqlib.device import ExecutionResult
 
-from .problem import _UNITARY_ATOL, AmplitudeEstimationProblem, _validate_problem
-
-_MAX_DENSE_WORK_BYTES = 256 * 1024 * 1024
+from .problem import AmplitudeEstimationProblem, _validate_problem
 
 
 def _validate_positive_integer(value: object, name: str) -> int:
@@ -55,76 +50,6 @@ def _build_grover_power_circuit(
     for _ in range(power):
         circuit.compose(copy.deepcopy(problem.grover_operator), circuit.qubits)
     return circuit
-
-
-def _dense_grover_matrix(
-    problem: AmplitudeEstimationProblem,
-    num_controlled_powers: int = 1,
-) -> np.ndarray:
-    """Return the full Grover matrix after enforcing the allocation limit."""
-    _validate_problem(problem)
-    _validate_positive_integer(num_controlled_powers, "num_controlled_powers")
-    dimension = 1 << problem.num_qubits
-    # The source and matrix-power temporaries coexist with every controlled
-    # matrix already retained by the circuit. Reject before allocating U.
-    matrix_units = 8 + 4 * num_controlled_powers
-    estimated_bytes = (
-        matrix_units * dimension * dimension * np.dtype(np.complex128).itemsize
-    )
-    if estimated_bytes > _MAX_DENSE_WORK_BYTES:
-        raise ValueError("request exceeds the dense controlled-matrix limit")
-    matrix = np.asarray(
-        problem.grover_operator.to_matrix(list(range(problem.num_qubits))),
-        dtype=np.complex128,
-    )
-    if matrix.shape != (dimension, dimension) or not np.all(np.isfinite(matrix)):
-        raise ValueError("grover_operator must produce a finite square matrix")
-    identity = np.eye(dimension, dtype=np.complex128)
-    if not np.allclose(
-        matrix.conj().T @ matrix,
-        identity,
-        rtol=0.0,
-        atol=_UNITARY_ATOL,
-    ):
-        raise ValueError("grover_operator matrix must be unitary")
-    return matrix
-
-
-def _append_dense_controlled_power(
-    circuit: Circuit,
-    control: Qubit,
-    system_targets: Sequence[Qubit],
-    grover_matrix: np.ndarray,
-    power: int,
-) -> None:
-    """Append ``diag(I, Q**power)`` with Core's gate-target convention.
-
-    ``Circuit.to_matrix([0, ..., n-1])`` interprets that order from least to
-    most significant. ``append_unitary_gate`` interprets its first target as
-    the local matrix's most-significant tensor factor. Reversing the system
-    target sequence is therefore required after placing the control first.
-    """
-    _validate_positive_integer(power, "power")
-    dimension = grover_matrix.shape[0]
-    powered = np.linalg.matrix_power(grover_matrix, power)
-    if not np.all(np.isfinite(powered)):
-        raise ValueError("powered grover_operator matrix must be finite")
-    identity = np.eye(dimension, dtype=np.complex128)
-    if not np.allclose(
-        powered.conj().T @ powered,
-        identity,
-        rtol=0.0,
-        atol=_UNITARY_ATOL,
-    ):
-        raise ValueError("powered grover_operator matrix must be unitary")
-
-    controlled = np.zeros((2 * dimension, 2 * dimension), dtype=np.complex128)
-    controlled[:dimension, :dimension] = identity
-    controlled[dimension:, dimension:] = powered
-    gate = UnitaryGate(
-        f"controlled-grover-power-{power}", len(system_targets) + 1
-    ).with_matrix(controlled)
-    circuit.append_unitary_gate(gate, [control, *reversed(system_targets)])
 
 
 def _count_good_outcomes(

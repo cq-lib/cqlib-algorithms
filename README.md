@@ -7,7 +7,8 @@ Pauli 测量规划、同步采样器、期望值估计器、梯度、量子几�
 线路纯态保真度估计组件、Hadamard 相位查询、Grover 复合迭代单元，以及可复用的量子傅里叶变换
 线路构造器，以及完整的 VQE、QAOA、Deutsch-Jozsa、Bernstein-Vazirani、Simon、
 CHSH 不等式验证、BB84 协议实验、量子隐形传态与超密编码算法。
-现亦提供标准、迭代与最大似然三种振幅估计算法。
+现亦提供标准、迭代与最大似然三种振幅估计算法，以及标准 QPE、迭代 QPE 和
+Hamiltonian 相位估计算法。
 
 ## 目录
 
@@ -46,7 +47,8 @@ src/cqlib_algorithms/
 │   ├── composite/
 │   │   ├── __init__.py
 │   │   ├── grover_operator.py
-│   │   └── hadamard_phase_query.py
+│   │   ├── hadamard_phase_query.py
+│   │   └── phase_estimation_circuit.py
 │   ├── estimator/
 │   │   ├── statevector_estimator.py
 │   │   └── sampling_estimator.py
@@ -109,6 +111,12 @@ src/cqlib_algorithms/
 │       ├── user_circuit_preparation.py
 │       └── feature_map_preparation.py
 └── algorithms/
+    ├── phase_estimation/
+    │   ├── __init__.py
+    │   ├── problem.py
+    │   ├── standard.py
+    │   ├── iterative.py
+    │   └── hamiltonian.py
     ├── amplitude_estimation/
     │   ├── __init__.py
     │   ├── _common.py
@@ -367,8 +375,16 @@ Hadamard 制备；全量子比特反射时这是关于 `A|0...0>` 的单态反�
 
 ## 完整算法
 
+相位估计模块提供 `PhaseEstimationCircuit` 复合线路算子、标准 `PhaseEstimation`、
+单辅助比特 `IterativePhaseEstimation` 和 `HamiltonianPhaseEstimation`。标准 QPE
+支持本征态叠加的相位分布；IQPE 通过多次静态线路调用完成经典反馈并要求单一本征态；
+HPE 将 Hermitian Pauli Hamiltonian 缩放为 `exp(i*scale*H)`，再把有符号相位还原为
+本征值。接口、公式、端序、查询计数、Trotter 近似和稠密控制边界见
+[相位估计算子与算法](docs/phase_estimation.md)。
+
 三种振幅估计算法共享显式的状态制备线路、Grover 迭代线路、目标量子比特与好态
-谓词。标准版本用完整稠密矩阵构造受控 Grover 幂并复用逆 QFT；迭代版本通过
+谓词。标准版本复用 `PhaseEstimationCircuit`，以完整稠密矩阵构造受控 Grover 幂和
+逆 QFT；迭代版本通过
 Chernoff--Hoeffding 区间自适应选择普通 `Q^k A`；最大似然版本批量执行固定幂次，
 再对完整物理角度区间执行多峰似然搜索。接口、端序、查询计数、置信区间语义和
 指数规模限制见 [振幅估计](docs/amplitude_estimation.md)。

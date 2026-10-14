@@ -39,12 +39,23 @@ from cqlib_algorithms import (
     DeutschJozsa,
     DeutschJozsaRequest,
     DeutschJozsaResult,
+    HamiltonianPhaseEstimation,
+    HamiltonianPhaseEstimationRequest,
+    HamiltonianPhaseEstimationResult,
     IterativeAmplitudeEstimation,
     IterativeAmplitudeEstimationRequest,
     IterativeAmplitudeEstimationResult,
+    IterativePhaseEstimation,
+    IterativePhaseEstimationRequest,
+    IterativePhaseEstimationResult,
     MaximumLikelihoodAmplitudeEstimation,
     MaximumLikelihoodAmplitudeEstimationRequest,
     MaximumLikelihoodAmplitudeEstimationResult,
+    PhaseEstimation,
+    PhaseEstimationCircuit,
+    PhaseEstimationProblem,
+    PhaseEstimationRequest,
+    PhaseEstimationResult,
     QAOAResult,
     QuantumTeleportation,
     QuantumTeleportationRequest,
@@ -92,6 +103,15 @@ from cqlib_algorithms.algorithms import (
     DeutschJozsaResult as AlgorithmDeutschJozsaResult,
 )
 from cqlib_algorithms.algorithms import (
+    HamiltonianPhaseEstimation as AlgorithmHamiltonianPhaseEstimation,
+)
+from cqlib_algorithms.algorithms import (
+    HamiltonianPhaseEstimationRequest as AlgorithmHamiltonianPhaseEstimationRequest,
+)
+from cqlib_algorithms.algorithms import (
+    HamiltonianPhaseEstimationResult as AlgorithmHamiltonianPhaseEstimationResult,
+)
+from cqlib_algorithms.algorithms import (
     IterativeAmplitudeEstimation as AlgorithmIterativeAmplitudeEstimation,
 )
 from cqlib_algorithms.algorithms import (
@@ -101,6 +121,15 @@ from cqlib_algorithms.algorithms import (
     IterativeAmplitudeEstimationResult as AlgorithmIterativeAmplitudeEstimationResult,
 )
 from cqlib_algorithms.algorithms import (
+    IterativePhaseEstimation as AlgorithmIterativePhaseEstimation,
+)
+from cqlib_algorithms.algorithms import (
+    IterativePhaseEstimationRequest as AlgorithmIterativePhaseEstimationRequest,
+)
+from cqlib_algorithms.algorithms import (
+    IterativePhaseEstimationResult as AlgorithmIterativePhaseEstimationResult,
+)
+from cqlib_algorithms.algorithms import (
     MaximumLikelihoodAmplitudeEstimation as AlgorithmMaximumLikelihoodAmplitudeEstimation,
 )
 from cqlib_algorithms.algorithms import (
@@ -108,6 +137,16 @@ from cqlib_algorithms.algorithms import (
 )
 from cqlib_algorithms.algorithms import (
     MaximumLikelihoodAmplitudeEstimationResult as AlgorithmMaximumLikelihoodAmplitudeEstimationResult,
+)
+from cqlib_algorithms.algorithms import PhaseEstimation as AlgorithmPhaseEstimation
+from cqlib_algorithms.algorithms import (
+    PhaseEstimationProblem as AlgorithmPhaseEstimationProblem,
+)
+from cqlib_algorithms.algorithms import (
+    PhaseEstimationRequest as AlgorithmPhaseEstimationRequest,
+)
+from cqlib_algorithms.algorithms import (
+    PhaseEstimationResult as AlgorithmPhaseEstimationResult,
 )
 from cqlib_algorithms.algorithms import QAOAResult as AlgorithmQAOAResult
 from cqlib_algorithms.algorithms import (
@@ -153,6 +192,9 @@ from cqlib_algorithms.algorithms.variational import (
 from cqlib_algorithms.algorithms.variational import (
     VQEResult as VariationalVQEResult,
 )
+from cqlib_algorithms.operators import (
+    PhaseEstimationCircuit as OperatorPhaseEstimationCircuit,
+)
 from cqlib_algorithms.protocols import (
     Ansatz,
     Estimator,
@@ -187,9 +229,15 @@ PUBLIC_COMPONENTS = {
     "DeutschJozsa": DeutschJozsa,
     "DeutschJozsaRequest": DeutschJozsaRequest,
     "DeutschJozsaResult": DeutschJozsaResult,
+    "HamiltonianPhaseEstimation": HamiltonianPhaseEstimation,
+    "HamiltonianPhaseEstimationRequest": HamiltonianPhaseEstimationRequest,
+    "HamiltonianPhaseEstimationResult": HamiltonianPhaseEstimationResult,
     "IterativeAmplitudeEstimation": IterativeAmplitudeEstimation,
     "IterativeAmplitudeEstimationRequest": IterativeAmplitudeEstimationRequest,
     "IterativeAmplitudeEstimationResult": IterativeAmplitudeEstimationResult,
+    "IterativePhaseEstimation": IterativePhaseEstimation,
+    "IterativePhaseEstimationRequest": IterativePhaseEstimationRequest,
+    "IterativePhaseEstimationResult": IterativePhaseEstimationResult,
     "MaximumLikelihoodAmplitudeEstimation": MaximumLikelihoodAmplitudeEstimation,
     "MaximumLikelihoodAmplitudeEstimationRequest": MaximumLikelihoodAmplitudeEstimationRequest,
     "MaximumLikelihoodAmplitudeEstimationResult": MaximumLikelihoodAmplitudeEstimationResult,
@@ -205,6 +253,11 @@ PUBLIC_COMPONENTS = {
     "OptimizerStatus": OptimizerStatus,
     "QAOA": QAOA,
     "QAOAResult": QAOAResult,
+    "PhaseEstimation": PhaseEstimation,
+    "PhaseEstimationCircuit": PhaseEstimationCircuit,
+    "PhaseEstimationProblem": PhaseEstimationProblem,
+    "PhaseEstimationRequest": PhaseEstimationRequest,
+    "PhaseEstimationResult": PhaseEstimationResult,
     "QuantumTeleportation": QuantumTeleportation,
     "QuantumTeleportationRequest": QuantumTeleportationRequest,
     "QuantumTeleportationResult": QuantumTeleportationResult,
@@ -275,6 +328,22 @@ def test_component_contracts_are_abstract_base_classes():
 
 def test_qft_is_exported_from_public_namespaces():
     assert QFT is TransformQFT
+
+
+def test_phase_estimation_is_exported_from_public_namespaces():
+    assert PhaseEstimationCircuit is OperatorPhaseEstimationCircuit
+    assert PhaseEstimation is AlgorithmPhaseEstimation
+    assert PhaseEstimationProblem is AlgorithmPhaseEstimationProblem
+    assert PhaseEstimationRequest is AlgorithmPhaseEstimationRequest
+    assert PhaseEstimationResult is AlgorithmPhaseEstimationResult
+    assert IterativePhaseEstimation is AlgorithmIterativePhaseEstimation
+    assert IterativePhaseEstimationRequest is AlgorithmIterativePhaseEstimationRequest
+    assert IterativePhaseEstimationResult is AlgorithmIterativePhaseEstimationResult
+    assert HamiltonianPhaseEstimation is AlgorithmHamiltonianPhaseEstimation
+    assert (
+        HamiltonianPhaseEstimationRequest is AlgorithmHamiltonianPhaseEstimationRequest
+    )
+    assert HamiltonianPhaseEstimationResult is AlgorithmHamiltonianPhaseEstimationResult
 
 
 def test_vqe_is_exported_from_public_namespaces():

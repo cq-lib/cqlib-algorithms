@@ -28,9 +28,7 @@ from cqlib_algorithms import (
     StandardAmplitudeEstimationResult,
 )
 from cqlib_algorithms.algorithms.amplitude_estimation._common import (
-    _append_dense_controlled_power,
     _build_grover_power_circuit,
-    _dense_grover_matrix,
 )
 from cqlib_algorithms.operators import GroverOperator, StatevectorSampler
 from cqlib_algorithms.protocols import Sampler
@@ -153,84 +151,6 @@ def test_non_grid_distribution_matches_independent_phase_estimation_formula() ->
     )
 
 
-def _controlled_reference(
-    grover: np.ndarray,
-    power: int,
-    *,
-    control: int,
-    system_positions: tuple[int, ...],
-    width: int,
-) -> np.ndarray:
-    expected = np.zeros((1 << width, 1 << width), dtype=np.complex128)
-    powered = np.linalg.matrix_power(grover, power)
-    for column in range(1 << width):
-        if not (column >> control) & 1:
-            expected[column, column] = 1.0
-            continue
-        source = sum(
-            ((column >> position) & 1) << local
-            for local, position in enumerate(system_positions)
-        )
-        for target in range(1 << len(system_positions)):
-            row = column
-            for local, position in enumerate(system_positions):
-                row &= ~(1 << position)
-                row |= ((target >> local) & 1) << position
-            expected[row, column] = powered[target, source]
-    return expected
-
-
-@pytest.mark.reference
-@pytest.mark.parametrize(
-    ("control", "system_positions", "power"),
-    [
-        (0, (1, 3), 1),
-        (2, (1, 3), 2),
-        (3, (0, 2), 4),
-    ],
-)
-def test_dense_control_reverses_noncontiguous_system_targets_and_keeps_phase(
-    control: int,
-    system_positions: tuple[int, int],
-    power: int,
-) -> None:
-    source = Circuit([7, 12])
-    source.ry(Qubit(7), 0.317)
-    source.rx(Qubit(12), -0.481)
-    source.cx(Qubit(7), Qubit(12))
-    source.set_global_phase(0.229)
-    problem = AmplitudeEstimationProblem(
-        Circuit(2), source, (0,), lambda bitstring: bitstring == "1"
-    )
-    grover = _dense_grover_matrix(problem)
-    destination = Circuit(4)
-
-    _append_dense_controlled_power(
-        destination,
-        destination.qubits[control],
-        tuple(destination.qubits[position] for position in system_positions),
-        grover,
-        power,
-    )
-
-    assert [qubit.index for qubit in destination.operations[0].qubits] == [
-        control,
-        *reversed(system_positions),
-    ]
-    np.testing.assert_allclose(
-        destination.to_matrix([0, 1, 2, 3]),
-        _controlled_reference(
-            grover,
-            power,
-            control=control,
-            system_positions=system_positions,
-            width=4,
-        ),
-        rtol=0.0,
-        atol=1e-12,
-    )
-
-
 @pytest.mark.parametrize("power", [0, 1, 2, 5])
 def test_grover_power_circuit_is_exact_q_power_times_preparation(power: int) -> None:
     preparation = Circuit([8, 3])
@@ -277,7 +197,9 @@ def test_problem_snapshots_sources_and_rejects_dynamic_or_unbound_circuits() -> 
 
 
 def test_problem_rejects_width_and_objective_qubit_errors() -> None:
-    predicate = lambda bitstring: bitstring == "1"
+    def predicate(bitstring: str) -> bool:
+        return bitstring == "1"
+
     with pytest.raises(ValueError, match="same qubit count"):
         AmplitudeEstimationProblem(Circuit(1), Circuit(2), (0,), predicate)
     with pytest.raises(TypeError, match="must be a tuple"):

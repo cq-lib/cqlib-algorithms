@@ -24,9 +24,10 @@ a = sin²(theta),  theta in [0, pi/2],
 
 ## 标准振幅估计
 
-`StandardAmplitudeEstimation` 使用 `m` 个估计量子比特、完整逆 QFT，以及受控
-`Q^(2^j)`。当前 Core 没有将任意线路提升为量子受控线路的通用接口，因此这里使用
-完整稠密矩阵：
+`StandardAmplitudeEstimation` 复用通用 `PhaseEstimationCircuit`，使用 `m` 个估计
+量子比特、完整逆 QFT，以及受控 `Q^(2^j)`。因此标准振幅估计与 QPE 共享同一套
+全局相位、量子比特位序和内存限制处理。当前 Core 没有将任意线路提升为量子受控
+线路的通用接口，因此底层使用完整稠密矩阵：
 
 ```text
 U = Q.to_matrix([0, ..., n-1])

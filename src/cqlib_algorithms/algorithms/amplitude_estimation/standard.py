@@ -14,7 +14,6 @@
 
 from __future__ import annotations
 
-import copy
 import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
@@ -23,13 +22,9 @@ from typing import final
 
 from cqlib import Circuit
 
+from ...operators.composite import PhaseEstimationCircuit
 from ...protocols.sampler import Sampler, SamplerRequest, validate_sampler_results
-from ...transforms.qft import QFT
-from ._common import (
-    _append_dense_controlled_power,
-    _dense_grover_matrix,
-    _validate_positive_integer,
-)
+from ._common import _validate_positive_integer
 from .problem import AmplitudeEstimationProblem, _validate_problem
 
 
@@ -145,11 +140,11 @@ class StandardAmplitudeEstimationResult:
 class StandardAmplitudeEstimation:
     """Estimate amplitudes with dense controlled Grover powers and inverse QFT.
 
-    For ``M = 2**m``, evaluation qubit ``j`` controls ``Q**(2**j)``. The
-    Grover matrix is obtained from ``Q.to_matrix([0, ..., n-1])`` with its
-    global phase intact, exponentiated numerically, and embedded as
-    ``diag(I, Q**power)``. Core's local gate convention requires appending
-    that matrix to ``[control, *reversed(system_targets)]``.
+    The phase-estimation register and controlled ``Q**(2**j)`` powers are
+    delegated to :class:`PhaseEstimationCircuit`, so standard amplitude
+    estimation and QPE share one implementation of dense quantum control,
+    global-phase preservation, target ordering, inverse QFT, and allocation
+    limits.
 
     A measured integer ``y`` maps to ``sin(pi*y/M)**2``. The original
     single-run accuracy guarantee applies to ideal phase-estimation samples;
@@ -181,27 +176,15 @@ class StandardAmplitudeEstimation:
         """Build an unmeasured standard amplitude-estimation circuit."""
         _validate_problem(problem)
         _validate_positive_integer(num_evaluation_qubits, "num_evaluation_qubits")
-        grover_matrix = _dense_grover_matrix(problem, num_evaluation_qubits)
-        num_system = problem.num_qubits
-        circuit = Circuit(num_evaluation_qubits + num_system)
-        evaluation_targets = tuple(circuit.qubits[:num_evaluation_qubits])
+        component = PhaseEstimationCircuit(
+            problem.grover_operator,
+            num_evaluation_qubits,
+        )
+        circuit = Circuit(component.num_qubits)
         system_targets = tuple(circuit.qubits[num_evaluation_qubits:])
 
-        circuit.compose(copy.deepcopy(problem.state_preparation), list(system_targets))
-        for target in evaluation_targets:
-            circuit.h(target)
-        for index, control in enumerate(evaluation_targets):
-            _append_dense_controlled_power(
-                circuit,
-                control,
-                system_targets,
-                grover_matrix,
-                1 << index,
-            )
-        circuit.compose(
-            QFT(num_evaluation_qubits, inverse=True).build_circuit(),
-            list(evaluation_targets),
-        )
+        circuit.compose(problem.state_preparation, list(system_targets))
+        circuit.compose(component.build_circuit(), circuit.qubits)
         return circuit
 
     def run(

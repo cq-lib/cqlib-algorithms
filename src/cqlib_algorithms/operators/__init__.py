@@ -32,7 +32,7 @@ from .ansatz import (
     TwoLocalAnsatz,
 )
 from .arithmetic import QuadraticForm
-from .composite import GroverOperator, HadamardPhaseQuery
+from .composite import GroverOperator, HadamardPhaseQuery, PhaseEstimationCircuit
 from .estimator import SamplingEstimator, StatevectorEstimator
 from .gradient import (
     FiniteDifferenceGradient,
@@ -156,6 +156,7 @@ __all__ = [
     "PauliGroupingStrategy",
     "PauliMeasurementPlanner",
     "PauliTwoDesignAnsatz",
+    "PhaseEstimationCircuit",
     "PhaseOracle",
     "ProductStatePreparation",
     "QAOACostEvolution",

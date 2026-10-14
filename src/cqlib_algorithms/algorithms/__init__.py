@@ -32,6 +32,18 @@ from .bernstein_vazirani import (
 )
 from .chsh import CHSH, CHSHRequest, CHSHResult
 from .deutsch_jozsa import DeutschJozsa, DeutschJozsaRequest, DeutschJozsaResult
+from .phase_estimation import (
+    HamiltonianPhaseEstimation,
+    HamiltonianPhaseEstimationRequest,
+    HamiltonianPhaseEstimationResult,
+    IterativePhaseEstimation,
+    IterativePhaseEstimationRequest,
+    IterativePhaseEstimationResult,
+    PhaseEstimation,
+    PhaseEstimationProblem,
+    PhaseEstimationRequest,
+    PhaseEstimationResult,
+)
 from .quantum_teleportation import (
     QuantumTeleportation,
     QuantumTeleportationRequest,
@@ -62,12 +74,22 @@ __all__ = [
     "DeutschJozsa",
     "DeutschJozsaRequest",
     "DeutschJozsaResult",
+    "HamiltonianPhaseEstimation",
+    "HamiltonianPhaseEstimationRequest",
+    "HamiltonianPhaseEstimationResult",
     "IterativeAmplitudeEstimation",
     "IterativeAmplitudeEstimationRequest",
     "IterativeAmplitudeEstimationResult",
+    "IterativePhaseEstimation",
+    "IterativePhaseEstimationRequest",
+    "IterativePhaseEstimationResult",
     "MaximumLikelihoodAmplitudeEstimation",
     "MaximumLikelihoodAmplitudeEstimationRequest",
     "MaximumLikelihoodAmplitudeEstimationResult",
+    "PhaseEstimation",
+    "PhaseEstimationProblem",
+    "PhaseEstimationRequest",
+    "PhaseEstimationResult",
     "QAOAResult",
     "QuantumTeleportation",
     "QuantumTeleportationRequest",
