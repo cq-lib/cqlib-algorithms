@@ -10,13 +10,21 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Computational-state-controlled value exchange partial mixer."""
+"""Computational-state-controlled value exchange partial mixer.
+
+References
+----------
+[1] S. Hadfield, Z. Wang, B. O'Gorman, E. G. Rieffel, D. Venturelli, and
+    R. Biswas, "From the Quantum Approximate Optimization Algorithm to a
+    Quantum Alternating Operator Ansatz," Algorithms, 12(2), 34, 2019.
+    DOI: 10.3390/a12020034.
+"""
 
 from __future__ import annotations
 
 from typing import final
 
-from cqlib.circuit import Circuit, Parameter
+from cqlib.circuit import Circuit
 
 from ._base import _BaseMixer
 from ._exchange import append_controlled_exchange
@@ -45,8 +53,8 @@ class ControlledSwapMixer(_BaseMixer):
     def _validate_configuration(self) -> None:
         return None
 
-    def _build_mixer(self, prefix: str, beta: Parameter) -> Circuit:
-        del prefix
+    def _build_mixer(self, prefix: str) -> Circuit:
+        beta = self._beta_parameter(prefix)
         circuit = Circuit(self._num_controls + 2)
         append_controlled_exchange(
             circuit,

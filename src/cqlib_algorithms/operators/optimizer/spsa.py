@@ -10,7 +10,14 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Simultaneous-perturbation stochastic approximation optimizer."""
+"""Simultaneous-perturbation stochastic approximation optimizer.
+
+References
+----------
+[1] J. C. Spall, "Multivariate stochastic approximation using a simultaneous
+    perturbation gradient approximation," IEEE Transactions on Automatic
+    Control, 37(3), 332-341, 1992. DOI: 10.1109/9.119632.
+"""
 
 from __future__ import annotations
 

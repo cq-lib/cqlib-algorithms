@@ -10,14 +10,22 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Exact absolute-time job swap partial mixer."""
+"""Exact absolute-time job swap partial mixer.
+
+References
+----------
+[1] S. Hadfield, Z. Wang, B. O'Gorman, E. G. Rieffel, D. Venturelli, and
+    R. Biswas, "From the Quantum Approximate Optimization Algorithm to a
+    Quantum Alternating Operator Ansatz," Algorithms, 12(2), 34, 2019.
+    DOI: 10.3390/a12020034.
+"""
 
 from __future__ import annotations
 
 from collections.abc import Sequence
 from typing import final
 
-from cqlib.circuit import Circuit, Parameter
+from cqlib.circuit import Circuit
 
 from ._base import _BaseMixer
 from ._exchange import absolute_register_offsets, absolute_width, transition_circuit
@@ -77,8 +85,7 @@ class TimeSwapMixer(_BaseMixer):
     def _validate_configuration(self) -> None:
         return None
 
-    def _build_mixer(self, prefix: str, beta: Parameter) -> Circuit:
-        del beta
+    def _build_mixer(self, prefix: str) -> Circuit:
         first_duration = self._processing_times[self._first_job]
         second_duration = self._processing_times[self._second_job]
         first_offset = self._offsets[self._first_job]

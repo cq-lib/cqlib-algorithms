@@ -10,7 +10,14 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Maximum-likelihood amplitude estimation."""
+"""Maximum-likelihood amplitude estimation.
+
+References
+----------
+[1] Y. Suzuki et al., "Amplitude estimation without phase estimation,"
+    Quantum Information Processing, 19, 75, 2020.
+    DOI: 10.1007/s11128-019-2565-2.
+"""
 
 from __future__ import annotations
 

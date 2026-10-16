@@ -10,7 +10,14 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Deterministic simplified two-design-style variational ansatz."""
+"""Deterministic simplified two-design-style variational ansatz.
+
+References
+----------
+[1] M. Cerezo et al., "Cost function dependent barren plateaus in shallow
+    parametrized quantum circuits," Nature Communications, 12, 1791, 2021.
+    DOI: 10.1038/s41467-021-21728-w.
+"""
 
 from __future__ import annotations
 

@@ -10,13 +10,21 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Single-qudit ring mixer."""
+"""Single-qudit ring mixer.
+
+References
+----------
+[1] S. Hadfield, Z. Wang, B. O'Gorman, E. G. Rieffel, D. Venturelli, and
+    R. Biswas, "From the Quantum Approximate Optimization Algorithm to a
+    Quantum Alternating Operator Ansatz," Algorithms, 12(2), 34, 2019.
+    DOI: 10.3390/a12020034.
+"""
 
 from __future__ import annotations
 
 from typing import final
 
-from cqlib.circuit import Circuit, Parameter
+from cqlib.circuit import Circuit
 from cqlib.circuit.ansatz import EvolutionStrategy
 
 from ._base import _BaseMixer
@@ -41,6 +49,5 @@ class RingMixer(_BaseMixer):
     def _validate_configuration(self) -> None:
         self._inner.validate()
 
-    def _build_mixer(self, prefix: str, beta: Parameter) -> Circuit:
-        del beta
+    def _build_mixer(self, prefix: str) -> Circuit:
         return self._inner.build_circuit(prefix)

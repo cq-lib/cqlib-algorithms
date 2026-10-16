@@ -10,7 +10,14 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Chernoff--Hoeffding iterative amplitude estimation."""
+"""Chernoff--Hoeffding iterative amplitude estimation.
+
+References
+----------
+[1] D. Grinko, J. Gacon, C. Zoufal, and S. Woerner, "Iterative quantum
+    amplitude estimation," npj Quantum Information, 7, 52, 2021.
+    DOI: 10.1038/s41534-021-00379-1.
+"""
 
 from __future__ import annotations
 

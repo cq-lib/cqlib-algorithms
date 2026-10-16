@@ -38,8 +38,8 @@ class ImageAngleEncoding(StatePreparation):
     Channels are flattened in row-major order. For ``N = height * width``,
     channel ``c`` and pixel ``p`` are mapped to qubit ``c * N + p``. Values
     are linearly mapped from ``value_range`` to the inclusive angle range
-    ``[0, pi]``. This direct-product representation uses one qubit per scalar;
-    it is not amplitude-compressed image loading.
+    ``[0, pi]``. This direct-product representation uses one qubit and one
+    local rotation for each scalar.
     """
 
     __slots__ = ("_channels", "_image_shape", "_value_range")

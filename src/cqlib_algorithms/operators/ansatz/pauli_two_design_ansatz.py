@@ -10,7 +10,14 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Random-axis Pauli two-design ansatz."""
+"""Random-axis Pauli two-design ansatz.
+
+References
+----------
+[1] J. R. McClean et al., "Barren plateaus in quantum neural network
+    training landscapes," Nature Communications, 9, 4812, 2018.
+    DOI: 10.1038/s41467-018-07090-4.
+"""
 
 from __future__ import annotations
 

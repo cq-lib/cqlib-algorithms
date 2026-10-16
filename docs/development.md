@@ -61,8 +61,8 @@
 - `SparseAmplitudeEncoding` 对显式支持集自动归一化，拒绝重复索引和显式零幅度。
   其 exact support-set two-level 综合的经典存储为 `O(s+n)`，逻辑多控操作为
   `O(sn)`，open-control 周边单比特操作为最坏 `O(sn²)`。当前 Core 无辅助量子比特
-  的多控门分解使基础门上界为最坏 `O(sn³)`。该实现不作量子随机访问存储器
-  （QRAM）能力或多项式以下的数据加载复杂度声明。
+  的多控门分解使基础门上界为最坏 `O(sn³)`。数据加载通过显式支持集线路综合完成，
+  并按上述存储与门复杂度评估。
 - `AngleEncoding` 仅接受未绑定的 `RX`、`RY`、`RZ` 或 `Phase`；
   `FeatureMapPreparation` 仅接受 Cqlib 的 `ZFeatureMap`、`IQPFeatureMap`、
   `ZZFeatureMap` 或 `PauliFeatureMap`。两者保存 Core 组件快照并委托 Core 构建。

@@ -10,7 +10,15 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Private numerical validation and state-synthesis routines."""
+"""Private numerical validation and state-synthesis routines.
+
+References
+----------
+[1] M. Möttönen, J. J. Vartiainen, V. Bergholm, and M. M. Salomaa,
+    "Transformation of quantum states using uniformly controlled rotations,"
+    Quantum Information and Computation, 5(6), 467-473, 2005.
+    DOI: 10.26421/QIC5.6-5.
+"""
 
 from __future__ import annotations
 

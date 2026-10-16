@@ -10,7 +10,14 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Greenberger-Horne-Zeilinger state preparation."""
+"""Greenberger-Horne-Zeilinger state preparation.
+
+References
+----------
+[1] D. M. Greenberger, M. A. Horne, A. Shimony, and A. Zeilinger, "Bell's
+    theorem without inequalities," American Journal of Physics, 58,
+    1131-1143, 1990. DOI: 10.1119/1.16243.
+"""
 
 from __future__ import annotations
 

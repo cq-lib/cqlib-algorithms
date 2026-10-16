@@ -10,7 +10,13 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Single-layer QAOA mixer-Hamiltonian evolution."""
+"""Single-layer QAOA mixer-Hamiltonian evolution.
+
+References
+----------
+[1] E. Farhi, J. Goldstone, and S. Gutmann, "A quantum approximate
+    optimization algorithm," arXiv:1411.4028, 2014.
+"""
 
 from __future__ import annotations
 

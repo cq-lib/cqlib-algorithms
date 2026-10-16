@@ -10,7 +10,13 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Quantum approximate optimization composed from reusable components."""
+"""Quantum approximate optimization composed from reusable components.
+
+References
+----------
+[1] E. Farhi, J. Goldstone, and S. Gutmann, "A quantum approximate
+    optimization algorithm," arXiv:1411.4028, 2014.
+"""
 
 from __future__ import annotations
 

@@ -30,14 +30,18 @@ class _BaseMixer(BaseAnsatz):
     def __init__(self, num_qubits: int) -> None:
         self._num_qubits = num_qubits
 
+    @staticmethod
+    def _beta_parameter(prefix: str) -> Parameter:
+        """Return the standard mixer parameter named ``{prefix}_beta``."""
+        return Parameter(f"{prefix}_beta")
+
     @final
     def _build_circuit(self, prefix: str) -> Circuit:
         """Build and verify a fresh circuit with parameter ``{prefix}_beta``."""
         parameter_name = f"{prefix}_beta"
-        circuit = self._build_mixer(prefix, Parameter(parameter_name))
+        circuit = self._build_mixer(prefix)
         if not isinstance(circuit, Circuit):
             raise TypeError("mixer implementation must build a cqlib.Circuit")
-        circuit.validate()
         if circuit.num_qubits != self._num_qubits:
             raise ValueError("mixer circuit has an inconsistent width")
         if set(circuit.used_symbols) != {parameter_name}:
@@ -58,6 +62,6 @@ class _BaseMixer(BaseAnsatz):
         raise NotImplementedError
 
     @abstractmethod
-    def _build_mixer(self, prefix: str, beta: Parameter) -> Circuit:
+    def _build_mixer(self, prefix: str) -> Circuit:
         """Build the subclass-specific mixer circuit."""
         raise NotImplementedError

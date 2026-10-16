@@ -10,7 +10,16 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Binary MERA-inspired variational circuit."""
+"""Binary MERA-inspired variational circuit.
+
+References
+----------
+[1] G. Vidal, "Class of quantum many-body states that can be efficiently
+    simulated," Physical Review Letters, 101, 110501, 2008.
+    DOI: 10.1103/PhysRevLett.101.110501.
+[2] E. Grant et al., "Hierarchical quantum classifiers," npj Quantum
+    Information, 4, 65, 2018. DOI: 10.1038/s41534-018-0116-9.
+"""
 
 from __future__ import annotations
 

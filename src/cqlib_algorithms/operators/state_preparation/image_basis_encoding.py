@@ -10,7 +10,14 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Bit-plane representation of quantum images (BRQI)."""
+"""Bit-plane representation of quantum images (BRQI).
+
+References
+----------
+[1] H.-S. Li, X. Chen, H. Xia, Y. Liang, and Z. Zhou, "A quantum image
+    representation based on bitplanes," IEEE Access, 6, 62396-62404, 2018.
+    DOI: 10.1109/ACCESS.2018.2871691.
+"""
 
 from __future__ import annotations
 
@@ -39,8 +46,8 @@ class ImageBasisEncoding(StatePreparation):
     registers are placed in uniform superposition and the value qubit is
     flipped exactly at addresses whose selected grayscale bit is one.
 
-    This is BRQI, not FRQI or NEQR, and it does not provide QRAM or an image
-    loading speedup.
+    The implementation follows the published BRQI definition and synthesizes
+    the state by explicitly enumerating every pixel and bit-plane address.
     """
 
     __slots__ = ("_channels", "_image_shape")

@@ -58,12 +58,11 @@ Cqlib 使用小端基态索引：量子比特 0 对应索引最低有效位。�
 
 ## 稀疏态综合
 
-`SparseAmplitudeEncoding` v1 是本项目实现的、可逐步证明的 exact support-set
-two-level Givens 综合，不是 Gleinig–Hoefler 算法的实现。调研对照包括 Gleinig 与
-Hoefler 的
+`SparseAmplitudeEncoding` v1 采用本项目实现的、可逐步证明的 exact support-set
+two-level Givens 综合。调研阶段同时对照了 Gleinig 与 Hoefler 的
 [An Efficient Algorithm for Sparse Quantum State Preparation](https://spcl.inf.ethz.ch/Publications/.pdf/quantum_dac.pdf)
-（[DOI 10.1109/DAC18074.2021.9586240](https://doi.org/10.1109/DAC18074.2021.9586240)），
-但 v1 未采用该文的 merging-state 构造，也不沿用其线性门数结论。线路从支持集中
+（[DOI 10.1109/DAC18074.2021.9586240](https://doi.org/10.1109/DAC18074.2021.9586240)）。
+当前实现采用 two-level Givens 路径和下述独立复杂度界：线路从支持集中
 绝对值最大的参考基态开始，以 Gray 路径把参考态和目标态映射为相邻基态，再用满足
 `phi + lambda = 0 (mod 2*pi)` 的受控 SU(2) Givens 旋转分配一个目标幅度，最后逆向
 恢复 Gray 路径。已经分配的其他支持态不属于该二能级子空间，因此不会被后续步骤
@@ -71,9 +70,8 @@ Hoefler 的
 
 令量子比特数为 `n`、支持大小为 `s`：经典存储为 `O(s+n)`，线路包含 `O(sn)`
 个逻辑多控操作及最坏 `O(sn²)` 个 open-control 周边单比特操作。按当前 Core 的
-无辅助量子比特多控门分解规则，基础门上界为最坏 `O(sn³)`。这些界不代表 QRAM、
-对数复杂度或多项式以下的数据加载能力。即使 `n` 很大，本组件也不会创建长度为
-`2**n` 的稠密向量或矩阵。
+无辅助量子比特多控门分解规则，基础门上界为最坏 `O(sn³)`。数据加载采用显式支持集
+线路综合，并保持 `O(s+n)` 经典存储；该过程无需创建长度为 `2**n` 的稠密向量或矩阵。
 
 ## Core 适配边界
 
@@ -92,7 +90,8 @@ Hoefler 的
 `N = height * width`，`ImageAngleEncoding` 将通道 `c` 的第 `p` 个标量放在
 量子比特 `q = c * N + p`，并按
 `theta = pi * (value - lower) / (upper - lower)` 施加 `RY(theta)`。输入值和范围
-必须有限，且不执行裁剪。每个标量使用一个量子比特，因此它不是幅度压缩编码。
+必须有限，且由调用方在编码前完成所需的裁剪。每个标量使用一个量子比特和一个局部
+旋转，形成直积态编码。
 
 `ImageBasisEncoding`（精确别名 `BRQI`）实现固定 8 位单通道灰度 BRQI。对
 `H=2**h`、`W=2**w`，目标态为
@@ -107,10 +106,10 @@ Hoefler 的
 `g + 2*x + 2*W*y + 2*W*H*l`。
 
 线路先对全部地址与平面量子比特施加 H，再对每个值为 1 的 `(x,y,l)` 地址使用完整
-开放/闭合控制写入值位，不添加测量。只接受恰好一个通道，像素必须是真正的 Python
+开放/闭合控制写入值位，返回未测量的状态制备线路。只接受恰好一个通道，像素必须是真正的 Python
 整数且位于 `[0,255]`；高和宽必须分别为 2 的非负整数次幂（含 1）。逻辑量子比特数为
-`h+w+4`，但经典构造仍枚举 `8*H*W` 个像素位，不提供 QRAM 或加载加速保证，也不
-应称为 FRQI 或 NEQR。两个图像组件都在构造时复制输入，并忽略合法字符串 prefix。
+`h+w+4`；经典构造显式枚举 `8*H*W` 个像素位，线路规模和构造时间随输入图像的数据量
+增长。两个图像组件都在构造时复制输入，并忽略合法字符串 prefix。
 
 ## 使用示例
 

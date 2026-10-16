@@ -10,7 +10,14 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Exact parameter-shift gradients of estimator expectation values."""
+"""Exact parameter-shift gradients of estimator expectation values.
+
+References
+----------
+[1] M. Schuld, V. Bergholm, C. Gogolin, J. Izaac, and N. Killoran,
+    "Evaluating analytic gradients on quantum hardware," Physical Review A,
+    99, 032331, 2019. DOI: 10.1103/PhysRevA.99.032331.
+"""
 
 from __future__ import annotations
 

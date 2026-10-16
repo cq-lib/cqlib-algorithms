@@ -10,7 +10,14 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Standard multi-qubit quantum phase estimation."""
+"""Standard multi-qubit quantum phase estimation.
+
+References
+----------
+[1] R. Cleve, A. Ekert, C. Macchiavello, and M. Mosca, "Quantum algorithms
+    revisited," Proceedings of the Royal Society A, 454, 339-354, 1998.
+    DOI: 10.1098/rspa.1998.0164.
+"""
 
 from __future__ import annotations
 

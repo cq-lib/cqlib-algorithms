@@ -14,11 +14,12 @@
   Cqlib, Python's standard library, and the project's existing NumPy test
   dependency.
 
-This is a deliberately small first release. It provides deterministic circuit
-components with explicit data layout and parameter order. It does not provide
-image loading, resizing, colour-space conversion, train/test pipelines,
-arbitrary tensor contraction, bond-dimension management, qubit reuse, or a
-claim of quantum data-loading speedup.
+This deliberately small first release provides deterministic circuit
+components with explicit data layout and parameter order. Callers supply
+preprocessed numerical image data and manage loading, resizing, colour-space
+conversion, and train/test pipelines. The tensor-network components implement
+fixed circuit topologies with explicit parameter counts. Image data is loaded
+through explicit circuit synthesis with the resource bounds stated below.
 
 ## 2. Evidence and compatibility audit
 
@@ -57,7 +58,7 @@ The primary implementation reference is piQture 0.2.0, repository
   <https://github.com/SaashaJoshi/piQture/blob/f475f66a4cc3bbed61e1e0bfcd4d9608a484c6f8/piqture/embeddings/angle_encoding.py>;
 - image input abstraction:
   <https://github.com/SaashaJoshi/piQture/blob/f475f66a4cc3bbed61e1e0bfcd4d9608a484c6f8/piqture/embeddings/image_embedding.py>;
-- piQture BRQI implementation, used only as a negative compatibility audit:
+- piQture BRQI implementation, reviewed for compatibility comparison:
   <https://github.com/SaashaJoshi/piQture/blob/f475f66a4cc3bbed61e1e0bfcd4d9608a484c6f8/piqture/embeddings/image_embeddings/brqi.py>;
 - MPS, TTN, and MERA layouts:
   <https://github.com/SaashaJoshi/piQture/tree/f475f66a4cc3bbed61e1e0bfcd4d9608a484c6f8/piqture/tensor_networks>;
@@ -81,16 +82,11 @@ Scientific references used to fix the intended topology are:
   6, 62396--62404 (2018),
   <https://doi.org/10.1109/ACCESS.2018.2871691>.
 
-This design adopts the reference meanings, not the reference API verbatim.
-piQture's angle encoder mixes fixed values and symbolic parameters without a
-stable colour layout; its MERA parameter names contain a random UUID, and some
-depth/count behaviour is not a stable public contract. Its BRQI implementation
-creates position and eight colour qubits, does not condition each colour write
-on the current pixel address, and appends measurements. It therefore does not
-prepare the formal BRQI state and is not an implementation oracle for this
-work. Cqlib uses the published BRQI definition, copied numerical input,
-explicit register layout, deterministic names, and closed-form resource
-counts. No source implementation is copied.
+This design adopts the scientific definitions while defining an independent
+Cqlib API. The published BRQI state is the authoritative basis for the image
+bit-plane component. Cqlib uses copied numerical input, address-conditioned
+bit writes, an explicit register layout, deterministic names, and closed-form
+resource counts. The implementation is independently written for Cqlib.
 
 ## 3. Shared conventions
 
@@ -108,8 +104,8 @@ For height `H`, width `W`, and `C` channels, every channel contains exactly
 value at channel `c`, row `r`, column `x`. A grayscale image has one channel;
 RGB may be supplied to `ImageAngleEncoding` as three channels in
 caller-selected R/G/B order. `ImageBasisEncoding` is the standard grayscale
-BRQI and requires exactly one channel. Neither component performs colour-space
-conversion.
+BRQI and requires exactly one channel. Colour-space conversion is a caller-side
+preprocessing step.
 
 `image_shape` and all channel containers are copied to immutable tuples during
 construction. Strings and bytes are not accepted as sequences. Boolean values
@@ -169,8 +165,8 @@ prepares the product state
 \]
 
 where the displayed tensor order reflects Cqlib's little-endian matrix order.
-Each pixel-channel scalar uses one qubit; this is not amplitude-compressed
-image encoding and it has no position-address register.
+Each pixel-channel scalar uses one qubit and one local rotation, producing a
+direct-product image encoding without a position-address register.
 
 Contract:
 
@@ -204,8 +200,8 @@ BRQI = ImageBasisEncoding
 This component prepares the standard 8-bit grayscale bit-plane representation
 of quantum images (BRQI). The public name `ImageBasisEncoding` is retained to
 match the approved `image_basis` capability ID and the existing module path.
-`BRQI` is an exact alias of the same class, not a subclass or a second
-implementation.
+`BRQI` and `ImageBasisEncoding` reference the same class object and therefore
+share one implementation and one public contract.
 
 Let `H = 2**h` and `W = 2**w` be the image height and width. The single input
 channel contains integer intensities `v_(y,x)` in `[0, 255]`, where `y` is the
@@ -261,12 +257,11 @@ order alone.
   therefore always uses three plane-index qubits. `bit_depth` is removed from
   the constructor. Eight is itself a power of two, so every plane-register
   address is valid; configurable depths are deferred because they would be a
-  generalized, not standard, BRQI contract.
+  future generalized BRQI contract.
 - Exactly one channel is accepted. The channel container is retained only to
   stay consistent with the image operator input convention. Zero or multiple
   channels raise `ValueError`.
-- RGB BRQI is not emulated by concatenating three independent grayscale states.
-  A future colour version requires a separate two-qubit channel register,
+- A future colour BRQI version requires a separate two-qubit channel register,
   normalization and unused-channel-address policy, and must receive a distinct
   reviewed contract.
 
@@ -295,10 +290,9 @@ the implementation must therefore:
 
 The zero-pattern conjugations turn the selected `(x,y,l)` address into the
 all-one control state. They must surround each controlled write independently.
-The implementation must not leave controls inverted, omit either pixel
-coordinate, or apply one colour byte to all addresses. No measurement, reset,
-classical condition, or sampler call belongs in this `StatePreparation`
-component.
+Each addressed write restores all temporarily inverted controls and includes
+the complete pixel and bit-plane address. The returned `StatePreparation`
+circuit contains only the unitary preparation operations described above.
 
 Contract:
 
@@ -314,9 +308,8 @@ Contract:
   channel count/length, non-power-of-two height or width, or range raises
   `ValueError`.
 
-This is a basis-valued, address-superposition image state. It is BRQI, not
-NEQR or FRQI, and it does not imply QRAM access or efficient classical data
-loading.
+This basis-valued, address-superposition image state follows the published BRQI
+definition. Its construction explicitly enumerates the classical image bits.
 
 ### 4.3 `MPSAnsatz`
 
@@ -334,8 +327,7 @@ the exact time order
 ```
 
 This nearest-neighbour sweep is an MPS-inspired variational circuit with a
-two-qubit local block. It is not an API for importing arbitrary classical MPS
-tensors or selecting a general bond dimension.
+two-qubit local block and a fixed circuit-level connectivity pattern.
 
 Contract:
 
@@ -358,8 +350,8 @@ Start with active qubits `[0, ..., n - 1]`. At each level, pair active qubits
 from left to right, apply `B(left, right)`, and retain `right` for the next
 level. If the level has an odd final qubit, carry it forward unchanged. Repeat
 until one root remains, then append one trainable `RY` on the root. All qubits
-remain in the physical circuit; "retain" defines later connectivity and does
-not imply measurement, reset, or discard.
+remain in the physical circuit; "retain" only selects the qubits used by the
+next connectivity level.
 
 Examples:
 
@@ -401,9 +393,8 @@ so `num_qubits` must be a power of two and at least 2. For each active list
 
 When one root remains, append one trainable `RY` to it. Disentanglers always
 precede isometry-position blocks at the same scale. Both use the shared unitary
-block but have independent parameters. This is a circuit ansatz inspired by
-binary MERA causal connectivity; it does not claim to expose arbitrary MERA
-tensors or non-unitary isometries.
+block but have independent parameters. This is a unitary circuit ansatz with
+binary MERA-inspired causal connectivity and a fixed two-qubit block.
 
 For `n = 2**L`, scale width `m` contributes `m/2 - 1` disentanglers and `m/2`
 isometry-position blocks. Therefore
@@ -531,7 +522,7 @@ Implementation is complete only when all of the following hold:
   aggregate exports without introducing import cycles; `BRQI` is the sole
   permitted compatibility alias and points to `ImageBasisEncoding`;
 - English type hints, docstrings, error messages, README/API documentation,
-  and examples state the layout and non-compression limits;
+  and examples state the layout and explicit-synthesis resource bounds;
 - no new runtime dependency and no Qiskit/piQture import;
 - relevant tests, `uv run --no-sync pytest`, strict configured mypy/Ruff checks,
   and `uv run --no-sync python -m build` pass in an environment with the
@@ -542,13 +533,11 @@ Implementation is complete only when all of the following hold:
 ## 7. Known limitations and non-blocking decisions
 
 - The names "angle/color encoding" and "bit-plane encoding" are ambiguous in
-  the literature. `ImageAngleEncoding` remains a direct product encoding.
-  `ImageBasisEncoding` specifically means the published 8-bit grayscale BRQI
-  state with value, column, row, and plane registers; it must not be described
-  as direct storage, FRQI, or NEQR.
-- The tensor-network classes expose connectivity-based variational circuits,
-  not arbitrary MPS/TTN/MERA tensor importers. "MPS", "TTN", and "MERA" must be
-  documented as ansatz architecture names.
+  the literature. `ImageAngleEncoding` is a direct-product rotation encoding.
+  `ImageBasisEncoding` implements the published 8-bit grayscale BRQI state with
+  value, column, row, and plane registers.
+- The tensor-network classes expose connectivity-based variational circuits.
+  "MPS", "TTN", and "MERA" are documented as ansatz architecture names.
 - The simple real block is sufficient for the requested L1 scope. General
   complex SU(4) blocks, bond-dimension controls, auxiliary qubits, partial
   MERA depth, and qubit reuse are deliberately deferred.
@@ -570,15 +559,12 @@ high-level circuit has `h+w+3` Hadamards and `s` logical
 `2*s*(h+w+3)` ordinary `X` gates. Classical construction inspects `8HW` bits
 and materializes a circuit linear in `s` times the address width. Core
 decomposition of each multi-controlled gate may be much larger and depends on
-the approved Core version and available ancilla policy; no small basis-gate
-bound or hardware efficiency claim is made here.
+the approved Core version and available ancilla policy.
 
-The logarithmic logical-qubit count does not make classical image loading
-efficient: general image preparation still enumerates all pixels and bit
-planes, and can require `O(HW)` controlled writes. The component provides no
-QRAM, decoder, measurement routine, image arithmetic, noise handling, or
-loading-speedup guarantee. Dense state-matrix tests must remain small because
-their vector dimension is `2**(h+w+4)=16HW`.
+General image preparation enumerates all pixels and bit planes and can require
+`O(HW)` controlled writes. Decoding, measurement, image arithmetic, and noise
+handling are separate downstream operations. Dense state-matrix tests remain
+small because their vector dimension is `2**(h+w+4)=16HW`.
 
 The earlier uncommitted direct-storage draft was migrated as one coherent
 change:
@@ -593,8 +579,7 @@ change:
 4. `test_image_basis_encoding.py` uses independent
    complete-state BRQI tests and no-measurement assertions;
 5. `docs/state_preparation.md` and README component summaries/examples use the
-   BRQI contract rather than "direct storage", `C*d*H*W` qubits, or configurable
-   bit depth;
+   BRQI register contract with `h+w+4` qubits and fixed eight-bit depth;
 6. `ImageAngleEncoding` and all MPS/TTN/MERA code and tests remain unchanged;
 7. the image tests, full test suite, strict static checks, and build were rerun;
    the standard candidate-merge check against the current `dev_fang` baseline

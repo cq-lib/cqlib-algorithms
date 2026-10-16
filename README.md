@@ -202,13 +202,14 @@ from cqlib_algorithms import (
 所有基态索引采用 Cqlib 的小端约定，即第 0 个量子比特对应最低有效位。任意态和
 稠密幅度编码使用均匀受控旋转进行精确线路综合，不依赖稠密酉门。
 `SparseAmplitudeEncoding` 仅保存显式支持集，并以 two-level Givens 线路进行精确
-综合，不分配长度为 `2**num_qubits` 的稠密向量；这不代表 QRAM 或对数复杂度
-数据加载。Angle、Basis 和 Feature Map 组件委托当前兼容基线内的 Cqlib Core 实现。
+综合，无需分配长度为 `2**num_qubits` 的稠密向量；数据加载采用显式支持集综合，
+复杂度按支持大小和量子比特数增长。Angle、Basis 和 Feature Map 组件委托当前兼容
+基线内的 Cqlib Core 实现。
 图像角度编码按通道和行优先顺序为每个像素值分配一个量子比特，并将显式数值范围
 线性映射到 RY 角度。`ImageBasisEncoding` 实现固定 8 位单通道灰度 BRQI：以值、
 列、行和比特平面寄存器构造地址等幅叠加，并按完整地址受控写入像素位。BRQI 的逻辑
-量子比特数为 `log2(H)+log2(W)+4`，但线路仍需枚举像素和位平面，不表示 QRAM 或
-高效数据加载，也不应称为 FRQI 或 NEQR。
+量子比特数为 `log2(H)+log2(W)+4`；线路显式枚举 `8*H*W` 个像素位，构造成本随
+输入图像的数据规模增长。
 
 完整接口、数值约定、综合方法和已知 Core 边界见
 [状态制备与数据编码组件](docs/state_preparation.md)。

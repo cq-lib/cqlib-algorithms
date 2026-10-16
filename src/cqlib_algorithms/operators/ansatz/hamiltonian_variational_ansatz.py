@@ -10,7 +10,14 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Hamiltonian variational ansatz built from commuting operator blocks."""
+"""Hamiltonian variational ansatz built from commuting operator blocks.
+
+References
+----------
+[1] D. Wecker, M. B. Hastings, and M. Troyer, "Progress towards practical
+    quantum variational algorithms," Physical Review A, 92, 042303, 2015.
+    DOI: 10.1103/PhysRevA.92.042303.
+"""
 
 from __future__ import annotations
 

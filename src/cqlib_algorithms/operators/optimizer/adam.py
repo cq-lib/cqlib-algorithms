@@ -10,7 +10,14 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Adam optimization for estimator expectation objectives."""
+"""Adam optimization for estimator expectation objectives.
+
+References
+----------
+[1] D. P. Kingma and J. Ba, "Adam: A Method for Stochastic Optimization,"
+    International Conference on Learning Representations, 2015.
+    arXiv: 1412.6980.
+"""
 
 from __future__ import annotations
 

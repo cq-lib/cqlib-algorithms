@@ -10,7 +10,15 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Single-ancilla iterative quantum phase estimation."""
+"""Single-ancilla iterative quantum phase estimation.
+
+References
+----------
+[1] M. Dobšíček, G. Johansson, V. Shumeiko, and G. Wendin, "Arbitrary
+    accuracy iterative phase estimation algorithm as a two qubit benchmark,"
+    Physical Review A, 76, 030306(R), 2007.
+    DOI: 10.1103/PhysRevA.76.030306.
+"""
 
 from __future__ import annotations
 

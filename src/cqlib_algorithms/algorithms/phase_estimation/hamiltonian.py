@@ -10,7 +10,17 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Hamiltonian phase estimation through scaled real-time evolution."""
+"""Hamiltonian phase estimation through scaled real-time evolution.
+
+References
+----------
+[1] A. Aspuru-Guzik et al., "Simulated quantum computation of molecular
+    energies," Science, 309, 1704-1707, 2005.
+    DOI: 10.1126/science.1113479.
+[2] R. Cleve, A. Ekert, C. Macchiavello, and M. Mosca, "Quantum algorithms
+    revisited," Proceedings of the Royal Society A, 454, 339-354, 1998.
+    DOI: 10.1098/rspa.1998.0164.
+"""
 
 from __future__ import annotations
 

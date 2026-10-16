@@ -10,13 +10,21 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Simultaneous null-swap mixer for a one-hot qudit."""
+"""Simultaneous null-swap mixer for a one-hot qudit.
+
+References
+----------
+[1] S. Hadfield, Z. Wang, B. O'Gorman, E. G. Rieffel, D. Venturelli, and
+    R. Biswas, "From the Quantum Approximate Optimization Algorithm to a
+    Quantum Alternating Operator Ansatz," Algorithms, 12(2), 34, 2019.
+    DOI: 10.3390/a12020034.
+"""
 
 from __future__ import annotations
 
 from typing import final
 
-from cqlib.circuit import Circuit, Parameter
+from cqlib.circuit import Circuit
 from cqlib.circuit.ansatz import EvolutionStrategy
 from cqlib.qis import Hamiltonian
 
@@ -74,8 +82,8 @@ class NullSwapMixer(_BaseMixer):
     def _validate_configuration(self) -> None:
         validate_exchange_evolution(self._evolution)
 
-    def _build_mixer(self, prefix: str, beta: Parameter) -> Circuit:
-        del prefix
+    def _build_mixer(self, prefix: str) -> Circuit:
+        beta = self._beta_parameter(prefix)
         circuit = Circuit(self._num_qubits)
         append_exchange_product_formula(circuit, self._pairs, beta, self._evolution)
         return circuit

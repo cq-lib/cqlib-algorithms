@@ -10,7 +10,13 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Tree-tensor-network-inspired variational circuit."""
+"""Tree-tensor-network-inspired variational circuit.
+
+References
+----------
+[1] E. Grant et al., "Hierarchical quantum classifiers," npj Quantum
+    Information, 4, 65, 2018. DOI: 10.1038/s41534-018-0116-9.
+"""
 
 from __future__ import annotations
 
