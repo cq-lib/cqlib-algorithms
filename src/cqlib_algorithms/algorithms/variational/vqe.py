@@ -10,7 +10,14 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Variational quantum eigensolver composed from public Cqlib contracts."""
+"""Variational quantum eigensolver composed from public Cqlib contracts.
+
+References
+----------
+[1] A. Peruzzo et al., "A variational eigenvalue solver on a photonic quantum
+    processor," Nature Communications, 5, 4213, 2014.
+    DOI: 10.1038/ncomms5213.
+"""
 
 from __future__ import annotations
 
@@ -19,10 +26,10 @@ from typing import final
 
 from cqlib.qis import Hamiltonian, PauliString
 
-from ..protocols.ansatz import Ansatz
-from ..protocols.estimator import Estimator, EstimatorRequest
-from ..protocols.optimizer import Optimizer, OptimizerRequest, OptimizerResult
-from .vqa_result import VQAResult
+from ...protocols.ansatz import Ansatz
+from ...protocols.estimator import Estimator, EstimatorRequest
+from ...protocols.optimizer import Optimizer, OptimizerRequest, OptimizerResult
+from .result import VQAResult
 
 VQEResult = VQAResult
 

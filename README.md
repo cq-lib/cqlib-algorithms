@@ -7,6 +7,8 @@ Pauli 测量规划、同步采样器、期望值估计器、梯度、量子几�
 线路纯态保真度估计组件、Hadamard 相位查询、Grover 复合迭代单元，以及可复用的量子傅里叶变换
 线路构造器，以及完整的 VQE、QAOA、Deutsch-Jozsa、Bernstein-Vazirani、Simon、
 CHSH 不等式验证、BB84 协议实验、量子隐形传态与超密编码算法。
+现亦提供标准、迭代与最大似然三种振幅估计算法，以及标准 QPE、迭代 QPE 和
+Hamiltonian 相位估计算法。
 
 ## 目录
 
@@ -32,12 +34,21 @@ src/cqlib_algorithms/
 │   │   ├── efficient_su2_ansatz.py
 │   │   ├── hardware_efficient_ansatz.py
 │   │   ├── pauli_two_design_ansatz.py
+│   │   ├── evolved_operator_ansatz.py
+│   │   ├── hamiltonian_variational_ansatz.py
+│   │   ├── excitation_preserving_ansatz.py
+│   │   ├── simplified_two_design_ansatz.py
+│   │   ├── random_layers_ansatz.py
+│   │   ├── mps_ansatz.py
+│   │   ├── ttn_ansatz.py
+│   │   ├── mera_ansatz.py
 │   │   ├── qaoa_cost_evolution.py
 │   │   └── qaoa_mixer_evolution.py
 │   ├── composite/
 │   │   ├── __init__.py
 │   │   ├── grover_operator.py
-│   │   └── hadamard_phase_query.py
+│   │   ├── hadamard_phase_query.py
+│   │   └── phase_estimation_circuit.py
 │   ├── estimator/
 │   │   ├── statevector_estimator.py
 │   │   └── sampling_estimator.py
@@ -57,6 +68,21 @@ src/cqlib_algorithms/
 │   │   ├── pauli_grouping_strategy.py
 │   │   ├── commuting_observable_grouping.py
 │   │   └── pauli_measurement_planner.py
+│   ├── mixer/
+│   │   ├── nearby_values_mixer.py
+│   │   ├── ring_mixer.py
+│   │   ├── fully_connected_mixer.py
+│   │   ├── null_swap_mixer.py
+│   │   ├── parity_ring_mixer.py
+│   │   ├── controlled_bit_flip_mixer.py
+│   │   ├── controlled_null_swap_mixer.py
+│   │   ├── controlled_swap_mixer.py
+│   │   ├── value_selective_permutation_swap_mixer.py
+│   │   ├── value_independent_permutation_swap_mixer.py
+│   │   ├── color_parity_permutation_swap_mixer.py
+│   │   ├── time_swap_mixer.py
+│   │   ├── time_color_mixer.py
+│   │   └── partitioned_mixer.py
 │   ├── oracle/
 │   │   ├── boolean_function.py
 │   │   ├── boolean_vector_function.py
@@ -79,20 +105,37 @@ src/cqlib_algorithms/
 │       ├── amplitude_encoding.py
 │       ├── angle_encoding.py
 │       ├── basis_encoding.py
+│       ├── image_angle_encoding.py
+│       ├── image_basis_encoding.py
 │       ├── sparse_amplitude_encoding.py
 │       ├── user_circuit_preparation.py
 │       └── feature_map_preparation.py
 └── algorithms/
+    ├── phase_estimation/
+    │   ├── __init__.py
+    │   ├── problem.py
+    │   ├── standard.py
+    │   ├── iterative.py
+    │   └── hamiltonian.py
+    ├── amplitude_estimation/
+    │   ├── __init__.py
+    │   ├── _common.py
+    │   ├── iterative.py
+    │   ├── maximum_likelihood.py
+    │   ├── problem.py
+    │   └── standard.py
+    ├── variational/
+    │   ├── __init__.py
+    │   ├── qaoa.py
+    │   ├── result.py
+    │   └── vqe.py
     ├── bernstein_vazirani.py
     ├── bb84.py
     ├── chsh.py
     ├── deutsch_jozsa.py
-    ├── qaoa.py
     ├── quantum_teleportation.py
     ├── simon.py
-    ├── superdense_coding.py
-    ├── vqa_result.py
-    └── vqe.py
+    └── superdense_coding.py
 tests/protocols/
 tests/operators/state_preparation/
 tests/operators/ansatz/
@@ -152,14 +195,21 @@ from cqlib_algorithms import (
   `ArbitraryStatePreparation`、`ProductStatePreparation`、
   `GHZStatePreparation`。
 - 数据编码：`AmplitudeEncoding`、`AngleEncoding`、`BasisEncoding`、
-  `SparseAmplitudeEncoding`。
+  `SparseAmplitudeEncoding`、`ImageAngleEncoding`、`ImageBasisEncoding`（别名
+  `BRQI`）。
 - 适配器：`UserCircuitPreparation`、`FeatureMapPreparation`。
 
 所有基态索引采用 Cqlib 的小端约定，即第 0 个量子比特对应最低有效位。任意态和
 稠密幅度编码使用均匀受控旋转进行精确线路综合，不依赖稠密酉门。
 `SparseAmplitudeEncoding` 仅保存显式支持集，并以 two-level Givens 线路进行精确
-综合，不分配长度为 `2**num_qubits` 的稠密向量；这不代表 QRAM 或对数复杂度
-数据加载。Angle、Basis 和 Feature Map 组件委托当前兼容基线内的 Cqlib Core 实现。
+综合，无需分配长度为 `2**num_qubits` 的稠密向量；数据加载采用显式支持集综合，
+复杂度按支持大小和量子比特数增长。Angle、Basis 和 Feature Map 组件委托当前兼容
+基线内的 Cqlib Core 实现。
+图像角度编码按通道和行优先顺序为每个像素值分配一个量子比特，并将显式数值范围
+线性映射到 RY 角度。`ImageBasisEncoding` 实现固定 8 位单通道灰度 BRQI：以值、
+列、行和比特平面寄存器构造地址等幅叠加，并按完整地址受控写入像素位。BRQI 的逻辑
+量子比特数为 `log2(H)+log2(W)+4`；线路显式枚举 `8*H*W` 个像素位，构造成本随
+输入图像的数据规模增长。
 
 完整接口、数值约定、综合方法和已知 Core 边界见
 [状态制备与数据编码组件](docs/state_preparation.md)。
@@ -172,21 +222,37 @@ from cqlib_algorithms import (
 - 公共基础实现：`BaseAnsatz`。
 - TwoLocal 系列：`TwoLocalAnsatz`、`RealAmplitudesAnsatz`、
   `EfficientSU2Ansatz`、`HardwareEfficientAnsatz`。
-- 随机线路：`PauliTwoDesignAnsatz`。
+- 算符演化：`EvolvedOperatorAnsatz`、`HamiltonianVariationalAnsatz`。
+- 守恒线路：`ExcitationPreservingAnsatz`。
+- 结构与随机基线：`PauliTwoDesignAnsatz`、`SimplifiedTwoDesignAnsatz`、
+  `RandomLayersAnsatz`、`MPSAnsatz`、`TTNAnsatz`、`MERAAnsatz`。
 - QAOA 单层构件：`QAOACostEvolution`、`QAOAMixerEvolution`。
 
 `BaseAnsatz` 继承公共 `Ansatz` 抽象契约，集中执行 prefix、配置和 Core 线路校验，
 并直接提供线路构建及计数的公共代理实现；普通组件只保留构造配置，特殊组件只覆盖
 自身不同的行为。
-TwoLocal 系列委托 Cqlib Core 的 `TwoLocal`，
-并统一采用“旋转层、量子比特、旋转门位置”的参数顺序。Pauli two-design 在构造时
-冻结随机 Pauli 轴；QAOA 组件分别表示
+TwoLocal 系列委托 Cqlib Core 的 `TwoLocal`，并统一采用“旋转层、量子比特、旋转门
+位置”的参数顺序。算符演化系列复用 Hamiltonian 校验、全局对易分组和 Core Pauli
+演化；激发守恒线路使用共享参数的 XX/YY 交换块。两种随机线路均在构造时冻结架构，
+重复构建不会重新抽样。QAOA 组件分别表示
 单个成本哈密顿量演化层和混合哈密顿量演化层，并对传入 Hamiltonian 做防御性复制。
+MPS、TTN 与 MERA 组件使用统一的双参数 RY--RY--CX 局域块，分别冻结线性链、
+逐层二叉归约和“解纠缠块先于等距位置块”的完整二叉多尺度拓扑；它们表示受张量
+网络启发的变分线路架构，不负责导入任意经典张量或管理键维数。
 UCCSD 与 k-UpCCGSD 因当前 Core 尚缺少必要的费米算子和映射能力而暂不提供。
 
 完整接口、线路结构、参数约定、理论来源和 Core 能力边界见
 [Ansatz 与 QAOA 演化层组件](docs/ansatz.md)及
 [UCC 类 Ansatz 的 Core 能力缺口](docs/ansatz-core-gap-report.md)。
+
+## Mixer 组件
+
+`operators.mixer` 提供 nearby-values、ring、fully-connected、null-swap、受控交换、
+排列交换与绝对时间调度 Mixer，以及通用有序 `PartitionedMixer`。所有组件都是共享
+单个 beta 的 `Ansatz`：simultaneous Hamiltonian 路径复用现有 Pauli 演化能力，
+partitioned 路径按论文定义保留局部块顺序。`QAOA` 同时支持原有 Hamiltonian mixer
+和新的线路 Mixer，二者互斥。数学定义、编码、精确性边界与示例见
+[Mixer 组件](docs/mixer.md)。
 
 ## Measurement 组件
 
@@ -310,6 +376,20 @@ Hadamard 制备；全量子比特反射时这是关于 `A|0...0>` 的单态反�
 
 ## 完整算法
 
+相位估计模块提供 `PhaseEstimationCircuit` 复合线路算子、标准 `PhaseEstimation`、
+单辅助比特 `IterativePhaseEstimation` 和 `HamiltonianPhaseEstimation`。标准 QPE
+支持本征态叠加的相位分布；IQPE 通过多次静态线路调用完成经典反馈并要求单一本征态；
+HPE 将 Hermitian Pauli Hamiltonian 缩放为 `exp(i*scale*H)`，再把有符号相位还原为
+本征值。接口、公式、端序、查询计数、Trotter 近似和稠密控制边界见
+[相位估计算子与算法](docs/phase_estimation.md)。
+
+三种振幅估计算法共享显式的状态制备线路、Grover 迭代线路、目标量子比特与好态
+谓词。标准版本复用 `PhaseEstimationCircuit`，以完整稠密矩阵构造受控 Grover 幂和
+逆 QFT；迭代版本通过
+Chernoff--Hoeffding 区间自适应选择普通 `Q^k A`；最大似然版本批量执行固定幂次，
+再对完整物理角度区间执行多峰似然搜索。接口、端序、查询计数、置信区间语义和
+指数规模限制见 [振幅估计](docs/amplitude_estimation.md)。
+
 `VQE` 将现有 `Ansatz`、`Estimator` 与 `Optimizer` 公共组件组合为变分量子
 本征求解器。初值显式对应实际线路的活跃符号，算法不重复实现态矢量、期望值、
 梯度或优化逻辑，也不绑定具体后端。数学定义、组件组合、结果语义、示例与首版边界
@@ -317,7 +397,8 @@ Hadamard 制备；全量子比特反射时这是关于 `A|0...0>` 的单态反�
 
 `QAOA` 在固定初态之后直接逐层组合现有的成本演化与混合演化组件，通过公共
 Estimator/Optimizer 契约最小化计算基对角成本；保留显式的最大化入口。默认使用均匀叠加初态和横场
-混合器，也支持同宽的固定初态、自定义有限 Hermitian 混合器与演化策略。参数按层采用
+混合器，也支持同宽的固定初态、自定义有限 Hermitian Hamiltonian mixer 与演化策略，
+或遵循单参数契约的线路 Mixer。参数按层采用
 `gamma, beta` 交错顺序。数学约定、结果符号、复用边界和示例见
 [QAOA](docs/qaoa.md)。两种算法共享 `VQAResult`，不嵌套另一种算法的结果；
 `VQEResult` 和 `QAOAResult` 仅为该类型的兼容导出名称。

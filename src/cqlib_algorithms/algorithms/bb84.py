@@ -10,7 +10,15 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Prepare-and-measure BB84 protocol experiments."""
+"""Prepare-and-measure BB84 protocol experiments.
+
+References
+----------
+[1] C. H. Bennett and G. Brassard, "Quantum cryptography: Public key
+    distribution and coin tossing," Theoretical Computer Science, 560,
+    7-11, 2014.
+    DOI: 10.1016/j.tcs.2014.05.025.
+"""
 
 from __future__ import annotations
 

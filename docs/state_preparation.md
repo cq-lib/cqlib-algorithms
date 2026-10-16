@@ -20,6 +20,8 @@
 | `AmplitudeEncoding` | `(features)` | 0 | 复制并自动归一化非零稠密复数特征向量 |
 | `AngleEncoding` | `(num_qubits, rotation_gate)` | `num_qubits` | 仅接受未绑定的 Core `RX`、`RY`、`RZ` 或 `Phase` |
 | `BasisEncoding` | `(bits)` | 0 | 仅接受非空布尔序列，并委托 Core 的 Basis Encoding |
+| `ImageAngleEncoding` | `(image_shape, channels, *, value_range=(0.0, 255.0))` | 0 | 每个像素通道标量映射为一个 RY 角度；通道优先、行优先布局 |
+| `ImageBasisEncoding` / `BRQI` | `(image_shape, channels)` | 0 | 固定 8 位单通道灰度 BRQI；高、宽均须为 2 的非负整数次幂（含 1） |
 | `SparseAmplitudeEncoding` | `(num_qubits, entries)` | 0 | 输入为非空 `(index, amplitude)` 序列；拒绝重复索引和显式零幅度，自动归一化 |
 | `UserCircuitPreparation` | `(circuit)` | 活跃符号数 | 保存线路快照并要求 Core 能静态求逆 |
 | `FeatureMapPreparation` | `(feature_map)` | 由 Core 决定 | 接受 Core 的 `ZFeatureMap`、`IQPFeatureMap`、`ZZFeatureMap` 或 `PauliFeatureMap` |
@@ -56,12 +58,11 @@ Cqlib 使用小端基态索引：量子比特 0 对应索引最低有效位。�
 
 ## 稀疏态综合
 
-`SparseAmplitudeEncoding` v1 是本项目实现的、可逐步证明的 exact support-set
-two-level Givens 综合，不是 Gleinig–Hoefler 算法的实现。调研对照包括 Gleinig 与
-Hoefler 的
+`SparseAmplitudeEncoding` v1 采用本项目实现的、可逐步证明的 exact support-set
+two-level Givens 综合。调研阶段同时对照了 Gleinig 与 Hoefler 的
 [An Efficient Algorithm for Sparse Quantum State Preparation](https://spcl.inf.ethz.ch/Publications/.pdf/quantum_dac.pdf)
-（[DOI 10.1109/DAC18074.2021.9586240](https://doi.org/10.1109/DAC18074.2021.9586240)），
-但 v1 未采用该文的 merging-state 构造，也不沿用其线性门数结论。线路从支持集中
+（[DOI 10.1109/DAC18074.2021.9586240](https://doi.org/10.1109/DAC18074.2021.9586240)）。
+当前实现采用 two-level Givens 路径和下述独立复杂度界：线路从支持集中
 绝对值最大的参考基态开始，以 Gray 路径把参考态和目标态映射为相邻基态，再用满足
 `phi + lambda = 0 (mod 2*pi)` 的受控 SU(2) Givens 旋转分配一个目标幅度，最后逆向
 恢复 Gray 路径。已经分配的其他支持态不属于该二能级子空间，因此不会被后续步骤
@@ -69,9 +70,8 @@ Hoefler 的
 
 令量子比特数为 `n`、支持大小为 `s`：经典存储为 `O(s+n)`，线路包含 `O(sn)`
 个逻辑多控操作及最坏 `O(sn²)` 个 open-control 周边单比特操作。按当前 Core 的
-无辅助量子比特多控门分解规则，基础门上界为最坏 `O(sn³)`。这些界不代表 QRAM、
-对数复杂度或多项式以下的数据加载能力。即使 `n` 很大，本组件也不会创建长度为
-`2**n` 的稠密向量或矩阵。
+无辅助量子比特多控门分解规则，基础门上界为最坏 `O(sn³)`。数据加载采用显式支持集
+线路综合，并保持 `O(s+n)` 经典存储；该过程无需创建长度为 `2**n` 的稠密向量或矩阵。
 
 ## Core 适配边界
 
@@ -83,6 +83,33 @@ Hoefler 的
 求逆，因此拒绝测量、重置、动态控制等非幺正操作。当前 Core 也不能对三量子比特及
 以上的矩阵型 `UnitaryGate` 求逆，即使矩阵本身是幺正的；该限制会在构造时明确暴露，
 不能用稠密酉门绕过。
+
+## 图像编码
+
+两个图像组件都接受 `(height, width)` 和通道优先的扁平行优先数据。若
+`N = height * width`，`ImageAngleEncoding` 将通道 `c` 的第 `p` 个标量放在
+量子比特 `q = c * N + p`，并按
+`theta = pi * (value - lower) / (upper - lower)` 施加 `RY(theta)`。输入值和范围
+必须有限，且由调用方在编码前完成所需的裁剪。每个标量使用一个量子比特和一个局部
+旋转，形成直积态编码。
+
+`ImageBasisEncoding`（精确别名 `BRQI`）实现固定 8 位单通道灰度 BRQI。对
+`H=2**h`、`W=2**w`，目标态为
+
+```text
+1/sqrt(8*H*W) * sum_(l,y,x) |g(y,x,l)> |x> |y> |l>
+```
+
+其中 `g(y,x,l)=(pixel[y,x] >> l) & 1`，`l=0` 为最低有效位平面。Cqlib 小端物理
+布局固定为：量子比特 0 是值位，其后依次为 `w` 个列位、`h` 个行位和 3 个平面位，
+各寄存器内部均最低有效位在前。对应基态索引为
+`g + 2*x + 2*W*y + 2*W*H*l`。
+
+线路先对全部地址与平面量子比特施加 H，再对每个值为 1 的 `(x,y,l)` 地址使用完整
+开放/闭合控制写入值位，返回未测量的状态制备线路。只接受恰好一个通道，像素必须是真正的 Python
+整数且位于 `[0,255]`；高和宽必须分别为 2 的非负整数次幂（含 1）。逻辑量子比特数为
+`h+w+4`；经典构造显式枚举 `8*H*W` 个像素位，线路规模和构造时间随输入图像的数据量
+增长。两个图像组件都在构造时复制输入，并忽略合法字符串 prefix。
 
 ## 使用示例
 
@@ -96,6 +123,23 @@ circuit = preparation.build_circuit("data")
 assert preparation.num_qubits() == 2
 assert preparation.num_parameters() == 0
 assert circuit.num_qubits == 2
+```
+
+```python
+from cqlib_algorithms.operators.state_preparation import ImageAngleEncoding
+
+image = ImageAngleEncoding((1, 2), [[0.0, 255.0]])
+circuit = image.build_circuit("ignored")
+assert image.num_qubits() == 2
+```
+
+```python
+from cqlib_algorithms.operators.state_preparation import BRQI
+
+image = BRQI((2, 2), [[0, 64, 128, 255]])
+circuit = image.build_circuit("ignored")
+assert image.num_qubits() == 6
+assert image.num_parameters() == 0
 ```
 
 开发环境验证使用 `uv run --no-sync`，避免同步尚未发布的 Cqlib SDK。例如：

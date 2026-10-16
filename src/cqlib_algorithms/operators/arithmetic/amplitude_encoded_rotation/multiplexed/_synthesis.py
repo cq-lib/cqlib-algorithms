@@ -17,21 +17,25 @@ three uniformly controlled rotation gates (X/Y/Z) and the four function-table
 rotations built on top of them.  Alpha-table look-ups for the functional
 families live inside their respective public modules.
 
-Academic references
--------------------
-1. Möttönen, Vartiainen, Bergholm, Salomaa (2005).  Transformation of
-   quantum states using uniformly controlled rotations.  *Quantum
-   Information & Computation*, 5(6), 467–473.  arXiv:quant-ph/0407010.
-   — Original Gray-code / CX decomposition and M^k angle inversion.
-2. Vartiainen, Möttönen, Salomaa (2004).  Efficient decomposition of
-   quantum gates.  *Phys. Rev. Lett.* 92, 177902.  — Precursor to the
-   uniformly controlled rotation framework.
-3. Bergholm, Vartiainen, Möttönen, Salomaa (2005).  Quantum circuits
-   with uniformly controlled one-qubit gates.  *Phys. Rev. A* 71, 052330.
-   — Generalisation to arbitrary U(2) quantum multiplexors.
-4. Harrow, Hassidim, Lloyd (2009).  Quantum algorithm for solving linear
-   systems of equations.  *Phys. Rev. Lett.* 103, 150502.  — Origin of
-   the amplitude-encoded reciprocal used in HHL eigenvalue inversion.
+References
+----------
+[1] M. Möttönen, J. J. Vartiainen, V. Bergholm, and M. M. Salomaa,
+    "Transformation of quantum states using uniformly controlled rotations,"
+    Quantum Information and Computation, 5(6), 467–473, 2005.
+    arXiv:quant-ph/0407010.
+    Relevance: Original Gray-code / CX decomposition and M^k angle inversion.
+[2] J. J. Vartiainen, M. Möttönen, and M. M. Salomaa, "Efficient
+    decomposition of quantum gates," Physical Review Letters, 92, 177902,
+    2004.
+    Relevance: Precursor to the uniformly controlled rotation framework.
+[3] V. Bergholm, J. J. Vartiainen, M. Möttönen, and M. M. Salomaa,
+    "Quantum circuits with uniformly controlled one-qubit gates," Physical
+    Review A, 71, 052330, 2005.
+    Relevance: Generalisation to arbitrary U(2) quantum multiplexors.
+[4] A. W. Harrow, A. Hassidim, and S. Lloyd, "Quantum algorithm for solving
+    linear systems of equations," Physical Review Letters, 103, 150502, 2009.
+    Relevance: Origin of the amplitude-encoded reciprocal used in HHL
+    eigenvalue inversion.
 """
 
 from __future__ import annotations

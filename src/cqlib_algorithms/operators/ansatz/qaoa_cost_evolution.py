@@ -10,7 +10,14 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Single-layer QAOA cost-Hamiltonian evolution."""
+"""Single-layer QAOA cost-Hamiltonian evolution.
+
+References
+----------
+[1] E. Farhi, J. Goldstone, and S. Gutmann, "A quantum approximate
+    optimization algorithm," 2014.
+    arXiv:1411.4028.
+"""
 
 from __future__ import annotations
 

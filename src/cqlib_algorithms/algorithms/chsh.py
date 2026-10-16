@@ -10,7 +10,15 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""CHSH inequality evaluation through the public Estimator contract."""
+"""CHSH inequality evaluation through the public Estimator contract.
+
+References
+----------
+[1] J. F. Clauser, M. A. Horne, A. Shimony, and R. A. Holt, "Proposed
+    experiment to test local hidden-variable theories," Physical Review
+    Letters, 23, 880-884, 1969.
+    DOI: 10.1103/PhysRevLett.23.880.
+"""
 
 from __future__ import annotations
 

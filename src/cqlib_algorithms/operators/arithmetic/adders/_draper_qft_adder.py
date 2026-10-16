@@ -18,11 +18,12 @@ rotations, and an inverse QFT. Register a remains unchanged and all local
 registers follow the shared LSB first convention.
 
 References
-Thomas G Draper, Addition on a Quantum Computer, 2000,
-arXiv quant ph 0008033.
-
-Don Coppersmith, An Approximate Fourier Transform Useful in Quantum
-Factoring, 2002, arXiv quant ph 0201067.
+----------
+[1] T. G. Draper, "Addition on a Quantum Computer," 2000.
+    arXiv:quant-ph/0008033.
+[2] D. Coppersmith, "An Approximate Fourier Transform Useful in Quantum
+    Factoring," 2002.
+    arXiv:quant-ph/0201067.
 """
 
 from __future__ import annotations

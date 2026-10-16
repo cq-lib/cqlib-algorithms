@@ -36,12 +36,25 @@ def copy_hermitian_hamiltonian(
     name: str,
 ) -> Hamiltonian:
     """Return a simplified snapshot of a finite, non-empty Hamiltonian."""
+    validate_hermitian_hamiltonian(hamiltonian, name=name)
+    snapshot = hamiltonian.copy()
+    snapshot.simplify()
+    if snapshot.num_terms == 0:
+        raise ValueError(f"{name} must not be empty after simplification")
+    return snapshot
+
+
+def validate_hermitian_hamiltonian(
+    hamiltonian: Hamiltonian,
+    *,
+    name: str,
+) -> None:
+    """Validate a finite, non-empty Hermitian Hamiltonian without mutation."""
     if not isinstance(hamiltonian, Hamiltonian):
         raise TypeError(f"{name} must be a Hamiltonian")
 
-    snapshot = hamiltonian.copy()
     aggregated: dict[tuple[int, int, int], complex] = {}
-    for pauli, coefficient in snapshot.terms:
+    for pauli, coefficient in hamiltonian.terms:
         effective = complex(coefficient) * pauli.phase.to_complex()
         if not _is_finite_complex(effective):
             raise ValueError(f"{name} coefficients must be finite")
@@ -56,10 +69,8 @@ def copy_hermitian_hamiltonian(
         if coefficient != 0.0j and coefficient.imag != 0.0:
             raise ValueError(f"{name} is not Hermitian")
 
-    snapshot.simplify()
-    if snapshot.num_terms == 0:
+    if not any(coefficient != 0.0j for coefficient in aggregated.values()):
         raise ValueError(f"{name} must not be empty after simplification")
-    return snapshot
 
 
 def validate_positive_qubit_count(num_qubits: int) -> None:

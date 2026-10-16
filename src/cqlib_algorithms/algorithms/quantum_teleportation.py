@@ -10,7 +10,15 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Ideal local simulation of the standard quantum teleportation protocol."""
+"""Ideal local simulation of the standard quantum teleportation protocol.
+
+References
+----------
+[1] C. H. Bennett et al., "Teleporting an unknown quantum state via dual
+    classical and Einstein-Podolsky-Rosen channels," Physical Review
+    Letters, 70, 1895-1899, 1993.
+    DOI: 10.1103/PhysRevLett.70.1895.
+"""
 
 from __future__ import annotations
 

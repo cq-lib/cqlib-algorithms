@@ -32,14 +32,15 @@ from ._state_synthesis import (
 class SparseAmplitudeEncoding(StatePreparation):
     """Prepare normalized amplitudes supplied only on an explicit support.
 
-    The implementation uses exact support-set two-level synthesis rather than
-    allocating a dense length-``2**num_qubits`` vector. For support size ``s``
-    and width ``n``, its classical working storage is ``O(s + n)``. It emits
+    The implementation uses exact support-set two-level synthesis and stores
+    only the explicit support entries. For support size ``s`` and width ``n``,
+    its classical working storage is ``O(s + n)``. It emits
     ``O(s n)`` multi-controlled operations and ``O(s n**2)`` surrounding
     one-qubit operations in the worst case. Cqlib's current exact ancilla-free
     lowering expands each such multi-controlled gate to ``O(n**2)`` elementary
     operations, giving an ``O(s n**3)`` worst-case elementary-gate upper bound.
-    This is not a QRAM or polylogarithmic data-loading claim.
+    Data loading uses explicit support-set circuit synthesis with these stated
+    storage and gate-complexity bounds.
 
     Indices use Cqlib little-endian basis numbering. Entries may be unordered;
     they are copied, normalized, and stored in ascending-index order. Duplicate

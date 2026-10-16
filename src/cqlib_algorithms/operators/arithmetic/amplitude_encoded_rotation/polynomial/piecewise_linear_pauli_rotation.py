@@ -49,17 +49,21 @@ Local wire layout (total ``n + (J-1) + 1 = n + J`` qubits, no helper)::
 
     [x_0, ..., x_{n-1}, geq_1, ..., geq_{J-1}, result]
 
-Academic references
--------------------
-1. Stamatopoulos, Egger, Sun, Zoufal, Iten, Shen, Woerner (2020).
-   Option Pricing using Quantum Computers.  *Quantum* 4, 291.
-   arXiv:1905.02666.  — Origin of the bit-wise payoff encoding; §3
-   describes how piecewise linear payoffs can be implemented by
-   combining comparators with linear controlled rotations.
-2. Kazlacheuski, Azfar, Malinowski, Rawski (2024).  Efficient explicit
-   circuit for quantum state preparation of piece-wise continuous
-   functions.  arXiv:2411.01131.  — Systematisation of the
-   comparator + oracle superposition pattern.
+References
+----------
+[1] N. Stamatopoulos, D. J. Egger, Y. Sun, C. Zoufal, R. Iten, N. Shen,
+    and S. Woerner, "Option Pricing using Quantum Computers," Quantum, 4,
+    291, 2020.
+    arXiv:1905.02666.
+    Relevance: Origin of the bit-wise payoff encoding; §3 describes how
+    piecewise linear payoffs can be implemented by combining comparators with
+    linear controlled rotations.
+[2] U. Kazlacheuski, A. Azfar, M. Malinowski, and M. Rawski, "Efficient
+    explicit circuit for quantum state preparation of piece-wise continuous
+    functions," 2024.
+    arXiv:2411.01131.
+    Relevance: Systematisation of the comparator + oracle superposition
+    pattern.
 """
 
 from __future__ import annotations

@@ -23,7 +23,7 @@ from typing import Literal
 
 from cqlib import Circuit
 
-from ..protocols.optimizer import OptimizerResult
+from ...protocols.optimizer import OptimizerResult
 
 
 def _immutable_parameters(parameters: Mapping[str, float]) -> Mapping[str, float]:

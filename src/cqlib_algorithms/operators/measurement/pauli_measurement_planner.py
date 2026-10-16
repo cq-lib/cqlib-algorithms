@@ -10,7 +10,14 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Qubit-wise Pauli measurement plans and sampler-ready basis circuits."""
+"""Qubit-wise Pauli measurement plans and sampler-ready basis circuits.
+
+References
+----------
+[1] O. Crawford et al., "Efficient quantum measurement of Pauli operators in
+    the presence of finite sampling error," Quantum, 5, 385, 2021.
+    DOI: 10.22331/q-2021-01-20-385.
+"""
 
 from __future__ import annotations
 

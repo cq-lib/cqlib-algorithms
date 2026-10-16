@@ -49,10 +49,11 @@ comprises three stages:
 
 References
 ----------
-.. [1] Gilliam, A., et al. (2019). Optimizing Quantum Arithmetic for
-       Shor's Algorithm on a Quantum Computer.  arXiv:1912.04088.
-.. [2] Draper, T. G. (2000). Addition on a quantum computer.
-       arXiv:quant-ph/0008033.
+[1] A. Gilliam et al., "Optimizing Quantum Arithmetic for Shor's Algorithm
+    on a Quantum Computer," 2019.
+    arXiv:1912.04088.
+[2] T. G. Draper, "Addition on a quantum computer," 2000.
+    arXiv:quant-ph/0008033.
 """
 
 from __future__ import annotations

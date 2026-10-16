@@ -14,8 +14,10 @@
 
 from .grover_operator import GroverOperator
 from .hadamard_phase_query import HadamardPhaseQuery
+from .phase_estimation_circuit import PhaseEstimationCircuit
 
 __all__ = [
     "GroverOperator",
     "HadamardPhaseQuery",
+    "PhaseEstimationCircuit",
 ]

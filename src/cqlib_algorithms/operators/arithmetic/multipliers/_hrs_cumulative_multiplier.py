@@ -16,11 +16,13 @@ Cuccaro ripple-carry stages. The local circuit layout follows the arithmetic
 package convention with LSB-first register indexing.
 
 References
-Martin Haener, Martin Roetteler, Krysta M Svore,
-Optimizing Quantum Circuits for Arithmetic, 2018, arXiv:1805.12445.
-
-Steven A Cuccaro, Thomas G Draper, Samuel A Kutin, David Petrie Moulton,
-A New Quantum Ripple Carry Addition Circuit, 2004, arXiv:quant-ph/0410184.
+----------
+[1] M. Haener, M. Roetteler, and K. M. Svore, "Optimizing Quantum Circuits
+    for Arithmetic," 2018.
+    arXiv:1805.12445.
+[2] S. A. Cuccaro, T. G. Draper, S. A. Kutin, and D. P. Moulton,
+    "A New Quantum Ripple Carry Addition Circuit," 2004.
+    arXiv:quant-ph/0410184.
 """
 
 from __future__ import annotations

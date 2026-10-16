@@ -10,7 +10,14 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Hardware-efficient variational ansatz."""
+"""Hardware-efficient variational ansatz.
+
+References
+----------
+[1] A. Kandala et al., "Hardware-efficient variational quantum eigensolver
+    for small molecules and quantum magnets," Nature, 549, 242-246, 2017.
+    DOI: 10.1038/nature23879.
+"""
 
 from __future__ import annotations
 

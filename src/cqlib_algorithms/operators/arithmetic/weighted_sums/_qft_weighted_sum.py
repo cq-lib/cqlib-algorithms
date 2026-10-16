@@ -48,13 +48,12 @@ determined by :math:`1 + \\lfloor \\log_2(\\sum w_i) \\rfloor`.
 
 References
 ----------
-.. [1] Ruiz-Perez, L. and Garcia-Escartin, J. C. (2017).
-       Quantum arithmetic with the quantum Fourier transform.
-       *Quantum Information Processing*, 16(6), 153.
-       arXiv:1411.5949.
-.. [2] Draper, T. G. (2000).
-       Addition on a quantum computer.
-       arXiv:quant-ph/0008033.
+[1] L. Ruiz-Perez and J. C. Garcia-Escartin, "Quantum arithmetic with the
+    quantum Fourier transform," Quantum Information Processing, 16(6), 153,
+    2017.
+    arXiv:1411.5949.
+[2] T. G. Draper, "Addition on a quantum computer," 2000.
+    arXiv:quant-ph/0008033.
 """
 
 from __future__ import annotations

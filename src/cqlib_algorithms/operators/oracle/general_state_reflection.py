@@ -10,7 +10,15 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Reflection about a state prepared by an invertible circuit."""
+"""Reflection about a state prepared by an invertible circuit.
+
+References
+----------
+[1] G. Brassard, P. Hoyer, M. Mosca, and A. Tapp, "Quantum amplitude
+    amplification and estimation," Contemporary Mathematics, 305, 53-74,
+    2002.
+    arXiv:quant-ph/0005055.
+"""
 
 from __future__ import annotations
 

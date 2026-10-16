@@ -10,7 +10,17 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Hadamard phase-query circuit construction."""
+"""Hadamard phase-query circuit construction.
+
+References
+----------
+[1] D. Deutsch and R. Jozsa, "Rapid solution of problems by quantum
+    computation," Proceedings of the Royal Society A, 439, 553-558, 1992.
+    DOI: 10.1098/rspa.1992.0167.
+[2] E. Bernstein and U. Vazirani, "Quantum complexity theory," SIAM Journal
+    on Computing, 26(5), 1411-1473, 1997.
+    DOI: 10.1137/S0097539796300921.
+"""
 
 from __future__ import annotations
 

@@ -10,7 +10,14 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Quantum Fourier transform circuit construction."""
+"""Quantum Fourier transform circuit construction.
+
+References
+----------
+[1] D. Coppersmith, "An approximate Fourier transform useful in quantum
+    factoring," 2002.
+    arXiv:quant-ph/0201067.
+"""
 
 from __future__ import annotations
 
