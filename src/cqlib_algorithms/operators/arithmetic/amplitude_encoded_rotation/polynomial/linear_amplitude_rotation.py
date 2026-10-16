@@ -56,19 +56,23 @@ exposed via :attr:`amplitude_error_bound` and triggers a second
 UCR-based ``ArbitraryFunction(mode='amplitude')`` if higher fidelity is
 needed.
 
-Academic references
--------------------
-1. Abramowitz & Stegun, *Handbook of Mathematical Functions* (1964),
-   §4.4.35. — Standard Maclaurin series for ``arcsin`` used for the
-   coefficients ``1/6`` and ``3/40`` of the odd-order terms.
-2. Stamatopoulos et al. (2020).  Option Pricing using Quantum
-   Computers.  *Quantum* 4, 291.  arXiv:1905.02666. — Broader context
-   of using polynomial-controlled rotations to encode payoff
-   amplitudes for Monte Carlo style pricing.
-3. Gilliam, Woerner, Gonciulea (2019).  Quantum computing enhanced
-   optimization.  arXiv:1912.04088. — Foundation of the multi-subset
-   controlled-rotation synthesis performed internally by the
-   underlying :class:`PolynomialPauliRotation` instance.
+References
+----------
+[1] M. Abramowitz and I. A. Stegun, Handbook of Mathematical Functions,
+    §4.4.35, 1964.
+    Relevance: Standard Maclaurin series for ``arcsin`` used for the
+    coefficients ``1/6`` and ``3/40`` of the odd-order terms.
+[2] N. Stamatopoulos et al., "Option Pricing using Quantum Computers,"
+    Quantum, 4, 291, 2020.
+    arXiv:1905.02666.
+    Relevance: Broader context of using polynomial-controlled rotations to
+    encode payoff amplitudes for Monte Carlo style pricing.
+[3] A. Gilliam, S. Woerner, and C. Gonciulea, "Quantum computing enhanced
+    optimization," 2019.
+    arXiv:1912.04088.
+    Relevance: Foundation of the multi-subset controlled-rotation synthesis
+    performed internally by the underlying
+    :class:`PolynomialPauliRotation` instance.
 """
 
 from __future__ import annotations

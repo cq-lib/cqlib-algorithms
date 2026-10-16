@@ -16,7 +16,8 @@ References
 ----------
 [1] J. F. Clauser, M. A. Horne, A. Shimony, and R. A. Holt, "Proposed
     experiment to test local hidden-variable theories," Physical Review
-    Letters, 23, 880-884, 1969. DOI: 10.1103/PhysRevLett.23.880.
+    Letters, 23, 880-884, 1969.
+    DOI: 10.1103/PhysRevLett.23.880.
 """
 
 from __future__ import annotations

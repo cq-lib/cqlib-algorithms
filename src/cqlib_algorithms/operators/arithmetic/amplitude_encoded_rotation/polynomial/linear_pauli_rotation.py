@@ -33,17 +33,19 @@ is taken from the bit-wise linear payoff encoding of Stamatopoulos et al.
 contrast with the ``O(2**n)`` Gray-code table method of the uniformly
 controlled rotations of Möttönen et al. (2005).
 
-Academic references
--------------------
-1. Stamatopoulos et al. (2020).  Option Pricing using Quantum
-   Computers.  *Quantum* 4, 291.  arXiv:1905.02666.  — Origin of the
-   bit-wise decomposition used here for linear and piecewise-linear
-   payoff functions.
-2. Möttönen, Vartiainen, Bergholm, Salomaa (2005).  Transformation of
-   quantum states using uniformly controlled rotations.  *Quantum
-   Information & Computation* 5(6), 467–473.  arXiv:quant-ph/0407010.
-   — Appendix B of the project design document contrasts the bit-wise
-   construction of this module with the UCR table method.
+References
+----------
+[1] N. Stamatopoulos et al., "Option Pricing using Quantum Computers,"
+    Quantum, 4, 291, 2020.
+    arXiv:1905.02666.
+    Relevance: Origin of the bit-wise decomposition used here for linear and
+    piecewise-linear payoff functions.
+[2] M. Möttönen, J. J. Vartiainen, V. Bergholm, and M. M. Salomaa,
+    "Transformation of quantum states using uniformly controlled rotations,"
+    Quantum Information and Computation, 5(6), 467–473, 2005.
+    arXiv:quant-ph/0407010.
+    Relevance: Appendix B of the project design document contrasts the
+    bit-wise construction of this module with the UCR table method.
 """
 
 from __future__ import annotations

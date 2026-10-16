@@ -16,7 +16,7 @@ References
 ----------
 [1] D. P. Kingma and J. Ba, "Adam: A Method for Stochastic Optimization,"
     International Conference on Learning Representations, 2015.
-    arXiv: 1412.6980.
+    arXiv:1412.6980.
 """
 
 from __future__ import annotations

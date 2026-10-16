@@ -54,10 +54,9 @@ its original computational basis state.
 
 References
 ----------
-.. [1] Barenco, A., Bennett, C. H., Cleve, R., DiVincenzo, D. P.,
-       Margolus, N., Shor, P., Sleator, T., Smolin, J. A., and
-       Weinfurter, H. (1995).  Elementary gates for quantum computation.
-       *Physical Review A*, 52(5), 3457.
+[1] A. Barenco, C. H. Bennett, R. Cleve, D. P. DiVincenzo, N. Margolus,
+    P. Shor, T. Sleator, J. A. Smolin, and H. Weinfurter, "Elementary gates
+    for quantum computation," Physical Review A, 52(5), 3457, 1995.
 """
 
 from __future__ import annotations

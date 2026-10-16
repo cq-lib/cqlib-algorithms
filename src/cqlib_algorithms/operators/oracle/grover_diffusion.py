@@ -16,7 +16,8 @@ References
 ----------
 [1] L. K. Grover, "A fast quantum mechanical algorithm for database search,"
     Proceedings of the 28th Annual ACM Symposium on Theory of Computing,
-    212-219, 1996. DOI: 10.1145/237814.237866.
+    212-219, 1996.
+    DOI: 10.1145/237814.237866.
 """
 
 from __future__ import annotations

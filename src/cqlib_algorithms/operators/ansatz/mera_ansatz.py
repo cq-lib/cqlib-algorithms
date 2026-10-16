@@ -18,7 +18,8 @@ References
     simulated," Physical Review Letters, 101, 110501, 2008.
     DOI: 10.1103/PhysRevLett.101.110501.
 [2] E. Grant et al., "Hierarchical quantum classifiers," npj Quantum
-    Information, 4, 65, 2018. DOI: 10.1038/s41534-018-0116-9.
+    Information, 4, 65, 2018.
+    DOI: 10.1038/s41534-018-0116-9.
 """
 
 from __future__ import annotations

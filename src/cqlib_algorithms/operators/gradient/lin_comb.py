@@ -17,7 +17,8 @@ References
 ----------
 [1] M. Schuld, V. Bergholm, C. Gogolin, J. Izaac, and N. Killoran,
     "Evaluating analytic gradients on quantum hardware," Physical Review A,
-    99, 032331, 2019. DOI: 10.1103/PhysRevA.99.032331.
+    99, 032331, 2019.
+    DOI: 10.1103/PhysRevA.99.032331.
 """
 
 from __future__ import annotations

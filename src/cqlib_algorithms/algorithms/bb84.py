@@ -16,7 +16,8 @@ References
 ----------
 [1] C. H. Bennett and G. Brassard, "Quantum cryptography: Public key
     distribution and coin tossing," Theoretical Computer Science, 560,
-    7-11, 2014. DOI: 10.1016/j.tcs.2014.05.025.
+    7-11, 2014.
+    DOI: 10.1016/j.tcs.2014.05.025.
 """
 
 from __future__ import annotations

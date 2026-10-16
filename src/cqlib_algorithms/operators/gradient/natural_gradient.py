@@ -15,7 +15,8 @@
 References
 ----------
 [1] J. Stokes, J. Izaac, N. Killoran, and G. Carleo, "Quantum natural
-    gradient," Quantum, 4, 269, 2020. DOI: 10.22331/q-2020-05-25-269.
+    gradient," Quantum, 4, 269, 2020.
+    DOI: 10.22331/q-2020-05-25-269.
 """
 
 from __future__ import annotations

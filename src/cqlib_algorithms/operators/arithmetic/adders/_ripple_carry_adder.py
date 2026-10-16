@@ -17,12 +17,13 @@ half, full, and modular schedules used by the public wrapper classes. The
 circuits follow the shared LSB first register convention of this package.
 
 References
-Steven A Cuccaro, Thomas G Draper, Samuel A Kutin, David Petrie Moulton,
-A New Quantum Ripple Carry Addition Circuit, 2004, arXiv quant ph 0410184.
-
-Vlatko Vedral, Adriano Barenco, Artur Ekert,
-Quantum Networks for Elementary Arithmetic Operations, 1996,
-arXiv quant ph 9511018.
+----------
+[1] S. A. Cuccaro, T. G. Draper, S. A. Kutin, and D. P. Moulton,
+    "A New Quantum Ripple Carry Addition Circuit," 2004.
+    arXiv:quant-ph/0410184.
+[2] V. Vedral, A. Barenco, and A. Ekert, "Quantum Networks for Elementary
+    Arithmetic Operations," 1996.
+    arXiv:quant-ph/9511018.
 """
 
 from __future__ import annotations

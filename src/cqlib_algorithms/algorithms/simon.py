@@ -15,7 +15,8 @@
 References
 ----------
 [1] D. R. Simon, "On the power of quantum computation," SIAM Journal on
-    Computing, 26(5), 1474-1483, 1997. DOI: 10.1137/S0097539796298637.
+    Computing, 26(5), 1474-1483, 1997.
+    DOI: 10.1137/S0097539796298637.
 """
 
 from __future__ import annotations

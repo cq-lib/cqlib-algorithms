@@ -17,8 +17,9 @@ Fourier basis register and the result is written back in place under the LSB
 first convention used by this package.
 
 References
-Thomas G Draper, Addition on a Quantum Computer, 2000,
-arXiv quant ph 0008033.
+----------
+[1] T. G. Draper, "Addition on a Quantum Computer," 2000.
+    arXiv:quant-ph/0008033.
 """
 
 from __future__ import annotations

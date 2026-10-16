@@ -16,7 +16,8 @@ References
 ----------
 [1] C. H. Bennett et al., "Teleporting an unknown quantum state via dual
     classical and Einstein-Podolsky-Rosen channels," Physical Review
-    Letters, 70, 1895-1899, 1993. DOI: 10.1103/PhysRevLett.70.1895.
+    Letters, 70, 1895-1899, 1993.
+    DOI: 10.1103/PhysRevLett.70.1895.
 """
 
 from __future__ import annotations

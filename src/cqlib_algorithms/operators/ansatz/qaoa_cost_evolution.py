@@ -15,7 +15,8 @@
 References
 ----------
 [1] E. Farhi, J. Goldstone, and S. Gutmann, "A quantum approximate
-    optimization algorithm," arXiv:1411.4028, 2014.
+    optimization algorithm," 2014.
+    arXiv:1411.4028.
 """
 
 from __future__ import annotations

@@ -15,7 +15,8 @@
 References
 ----------
 [1] D. Coppersmith, "An approximate Fourier transform useful in quantum
-    factoring," arXiv:quant-ph/0201067, 2002.
+    factoring," 2002.
+    arXiv:quant-ph/0201067.
 """
 
 from __future__ import annotations

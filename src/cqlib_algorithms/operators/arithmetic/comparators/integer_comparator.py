@@ -31,9 +31,12 @@ and the action is
     |x>|flag> -> |x>|flag XOR predicate(x, value)>
 
 References
-    1 Steven A Cuccaro Thomas G Draper Samuel A Kutin David Petrie Moulton
-      A New Quantum Ripple Carry Addition Circuit 2004 quant ph 0410184
-    2 Thomas G Draper Addition on a Quantum Computer 2000 quant ph 0008033
+----------
+[1] S. A. Cuccaro, T. G. Draper, S. A. Kutin, and D. P. Moulton,
+    "A New Quantum Ripple Carry Addition Circuit," 2004.
+    arXiv:quant-ph/0410184.
+[2] T. G. Draper, "Addition on a Quantum Computer," 2000.
+    arXiv:quant-ph/0008033.
 """
 
 from __future__ import annotations
