@@ -62,9 +62,6 @@ def test_oracle_operators_are_exported_from_functional_packages():
         "GroverDiffusion",
         "GroverLong",
         "PhaseOracle",
-        "ProjectorControlledPhase",
-        "QuantumSignalProcessing",
-        "QuantumSingularValueTransformation",
         "SplitCycleShift",
         "UnitaryDilation",
         "UnitaryMatrixOracle",
@@ -81,7 +78,14 @@ def test_oracle_operators_are_exported_from_functional_packages():
 def test_composite_operators_are_exported_from_functional_packages():
     operators = import_module("cqlib_algorithms.operators")
     composite = import_module("cqlib_algorithms.operators.composite")
-    expected = {"GroverOperator", "HadamardPhaseQuery"}
+    expected = {
+        "GroverOperator",
+        "HadamardPhaseQuery",
+        "ProjectorControlledPhase",
+        "QuantumSignalProcessing",
+        "QuantumSingularValueTransformation",
+        "RealValuedQSVT",
+    }
 
     assert expected <= set(operators.__all__)
     assert set(composite.__all__) == expected

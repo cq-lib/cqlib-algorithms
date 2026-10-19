@@ -40,16 +40,16 @@ For the first implementation slice:
 
 Confirmed file placement under the current project structure:
 
-- `src/cqlib_algorithms/operators/oracle/quantum_singular_value_transformation/__init__.py`
-- `src/cqlib_algorithms/operators/oracle/quantum_singular_value_transformation/qsp.py`
-- `src/cqlib_algorithms/operators/oracle/quantum_singular_value_transformation/_phase_solver.py`
-- `src/cqlib_algorithms/operators/oracle/quantum_singular_value_transformation/projector_controlled_phase.py`
-- `src/cqlib_algorithms/operators/oracle/quantum_singular_value_transformation/qsvt.py`
+- `src/cqlib_algorithms/operators/composite/quantum_singular_value_transformation/__init__.py`
+- `src/cqlib_algorithms/operators/composite/quantum_singular_value_transformation/qsp.py`
+- `src/cqlib_algorithms/operators/composite/quantum_singular_value_transformation/_phase_solver/`
+- `src/cqlib_algorithms/operators/composite/quantum_singular_value_transformation/projector_controlled_phase.py`
+- `src/cqlib_algorithms/operators/composite/quantum_singular_value_transformation/qsvt.py`
 
 Test placement:
 
-- `tests/operators/oracle/test_projector_controlled_phase.py`
-- `tests/operators/oracle/test_quantum_singular_value_transformation.py`
+- `tests/operators/composite/test_qsvt.py`
+- `tests/operators/composite/test_quantum_signal_processing.py`
 - `tests/operators/test_package.py`
 
 ### Layering
@@ -73,7 +73,7 @@ not introduce a second independent phase-solver stack.
 #### 1. `ProjectorControlledPhase`
 
 File:
-`src/cqlib_algorithms/operators/oracle/quantum_singular_value_transformation/projector_controlled_phase.py`
+`src/cqlib_algorithms/operators/composite/quantum_singular_value_transformation/projector_controlled_phase.py`
 
 Purpose:
 Build the standard projector phase rotation
@@ -132,7 +132,7 @@ Exceptions:
 #### 2. `QuantumSingularValueTransformation`
 
 File:
-`src/cqlib_algorithms/operators/oracle/quantum_singular_value_transformation/qsvt.py`
+`src/cqlib_algorithms/operators/composite/quantum_singular_value_transformation/qsvt.py`
 
 Purpose:
 Build the standard QSVT alternating sequence from a standard block encoding and

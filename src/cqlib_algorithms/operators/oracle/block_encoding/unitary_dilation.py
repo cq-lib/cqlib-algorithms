@@ -1,4 +1,4 @@
-"""Exact one-ancilla block encoding through unitary dilation.
+r"""Exact one-ancilla block encoding through unitary dilation.
 
 References
 ----------
@@ -24,17 +24,17 @@ from .block_encoding import BlockEncoding
 
 @final
 class UnitaryDilation(BlockEncoding):
-    """Build a basic exact block encoding from an explicit square matrix.
+    r"""Build a basic exact block encoding from an explicit square matrix.
 
     This implementation realizes the standard one-ancilla unitary dilation of
     a contraction ``M = A / alpha``:
 
     .. math::
 
-        U = \\begin{bmatrix}
-            M & \\sqrt{I - MM^\\dagger} \\\\
-            \\sqrt{I - M^\\dagger M} & -M^\\dagger
-        \\end{bmatrix}.
+        U = \begin{bmatrix}
+            M & \sqrt{I - MM^\dagger} \\
+            \sqrt{I - M^\dagger M} & -M^\dagger
+        \end{bmatrix}.
 
     Under the local qubit layout ``[system..., ancilla]`` the most-significant
     qubit is the ancilla, so the top-left block of ``U`` equals ``A / alpha``.
@@ -124,48 +124,48 @@ class UnitaryDilation(BlockEncoding):
 
     @property
     def matrix(self) -> npt.NDArray[np.complex128]:
-        """Return a defensive copy of the encoded matrix."""
+        r"""Return a defensive copy of the encoded matrix."""
 
         return np.asarray(self._matrix.copy(), dtype=np.complex128)
 
     @property
     def normalized_matrix(self) -> npt.NDArray[np.complex128]:
-        """Return a defensive copy of the contraction ``A / alpha``."""
+        r"""Return a defensive copy of the contraction ``A / alpha``."""
 
         return np.asarray(self._normalized_matrix.copy(), dtype=np.complex128)
 
     @property
     def dilation_unitary(self) -> npt.NDArray[np.complex128]:
-        """Return a defensive copy of the exact dilation unitary."""
+        r"""Return a defensive copy of the exact dilation unitary."""
 
         return np.asarray(self._dilation_unitary.copy(), dtype=np.complex128)
 
     @property
     def atol(self) -> float:
-        """Return the numerical validation tolerance."""
+        r"""Return the numerical validation tolerance."""
 
         return self._atol
 
     @property
     def validates_reconstruction(self) -> bool:
-        """Return whether the internal unitary oracle validated reconstruction."""
+        r"""Return whether the internal unitary oracle validated reconstruction."""
 
         return self._validate
 
     @property
     def system_register_indices(self) -> list[int]:
-        """Return the local system-register qubit indices."""
+        r"""Return the local system-register qubit indices."""
 
         return list(range(self.system_qubits))
 
     @property
     def ancilla_register_indices(self) -> list[int]:
-        """Return the local ancilla-register qubit indices."""
+        r"""Return the local ancilla-register qubit indices."""
 
         return list(range(self.system_qubits, self.total_qubits))
 
     def build_circuit(self) -> Circuit:
-        """Build and return a fresh unitary-dilation circuit."""
+        r"""Build and return a fresh unitary-dilation circuit."""
 
         return copy.copy(self._circuit)
 
@@ -207,6 +207,7 @@ def _validate_tolerance(value: float) -> float:
 
 
 def _spectral_norm(matrix: npt.NDArray[np.complex128]) -> float:
+    r"""Return the largest singular value (spectral norm) of ``matrix``."""
     singular_values = np.linalg.svd(matrix, compute_uv=False)
     return float(singular_values[0]) if singular_values.size else 0.0
 
@@ -217,6 +218,7 @@ def _resolve_alpha(
     spectral_norm: float,
     atol: float,
 ) -> float:
+    r"""Resolve the subnormalization factor, defaulting to the spectral norm."""
     if alpha is None:
         if spectral_norm == 0.0:
             return 1.0
@@ -239,6 +241,7 @@ def _matrix_square_root_psd(
     *,
     atol: float,
 ) -> npt.NDArray[np.complex128]:
+    r"""Return the Hermitian positive-semidefinite square root of ``matrix``."""
     hermitian = np.asarray((matrix + matrix.conj().T) / 2.0, dtype=np.complex128)
     eigenvalues, eigenvectors = np.linalg.eigh(hermitian)
     if float(np.min(eigenvalues)) < -10.0 * max(atol, 1e-12):
@@ -253,7 +256,7 @@ def _build_unitary_dilation(
     *,
     atol: float,
 ) -> npt.NDArray[np.complex128]:
-    """Construct the exact one-ancilla Halmos dilation of a contraction.
+    r"""Construct the exact one-ancilla Halmos dilation of a contraction.
 
     The returned unitary has the block form
 
@@ -298,7 +301,7 @@ def _align_circuit_global_phase(
     target_unitary: npt.NDArray[np.complex128],
     atol: float,
 ) -> Circuit:
-    """Shift circuit global phase so the synthesized matrix matches ``target_unitary``.
+    r"""Shift circuit global phase so the synthesized matrix matches ``target_unitary``.
 
     ``UnitaryMatrixOracle`` only guarantees equality up to global phase, while
     block encodings care about the literal top-left block. This helper absorbs
@@ -327,4 +330,5 @@ def _align_circuit_global_phase(
 
 
 def _num_qubits_from_dimension(dimension: int) -> int:
+    r"""Return the qubit count for ``dimension`` basis states."""
     return int(math.log2(dimension))

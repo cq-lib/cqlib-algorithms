@@ -1,4 +1,4 @@
-"""Abstract base class for standard block-encoding operators."""
+r"""Abstract base class for standard block-encoding operators."""
 
 from __future__ import annotations
 
@@ -10,14 +10,14 @@ from cqlib import Circuit
 
 
 class BlockEncoding(ABC):
-    """Represent a standard ``(alpha, a, epsilon)`` block-encoding.
+    r"""Represent a standard ``(alpha, a, epsilon)`` block-encoding.
 
     A standard block-encoding uses a unitary ``U`` such that
 
     .. math::
 
-        \\left\\|A - \\alpha (\\langle 0^a | \\otimes I) U (|0^a\\rangle \\otimes I)
-        \\right\\| \\le \\epsilon.
+        \left\|A - \alpha (\langle 0^a | \otimes I) U (|0^a\rangle \otimes I)
+        \right\| \le \epsilon.
 
     This abstract base class stores the public specification shared by concrete
     block-encoding operators while leaving the actual circuit synthesis to
@@ -94,60 +94,60 @@ class BlockEncoding(ABC):
 
     @property
     def alpha(self) -> float:
-        """Return the subnormalization factor ``alpha``."""
+        r"""Return the subnormalization factor ``alpha``."""
         return self._alpha
 
     @property
     def ancilla_qubits(self) -> int:
-        """Return the ancilla width ``a``."""
+        r"""Return the ancilla width ``a``."""
         return self._ancilla_qubits
 
     @property
     def epsilon(self) -> float:
-        """Return the block-encoding error bound ``epsilon``."""
+        r"""Return the block-encoding error bound ``epsilon``."""
         return self._epsilon
 
     @property
     def matrix_shape(self) -> tuple[int, int]:
-        """Return the encoded matrix shape ``(rows, columns)``."""
+        r"""Return the encoded matrix shape ``(rows, columns)``."""
         return self._matrix_shape
 
     @property
     def system_qubits(self) -> int:
-        """Return the width of the system register."""
+        r"""Return the width of the system register."""
         return self._system_qubits
 
     @property
     def total_qubits(self) -> int:
-        """Return the total circuit width."""
+        r"""Return the total circuit width."""
         return self.ancilla_qubits + self.system_qubits
 
     @property
     def spec(self) -> tuple[float, int, float]:
-        """Return the standard ``(alpha, a, epsilon)`` specification tuple."""
+        r"""Return the standard ``(alpha, a, epsilon)`` specification tuple."""
         return (self.alpha, self.ancilla_qubits, self.epsilon)
 
     @property
     def is_standard(self) -> bool:
-        """Return whether the block-encoding uses the standard zero projector."""
+        r"""Return whether the block-encoding uses the standard zero projector."""
         return True
 
     @property
     def left_projector_dimension(self) -> int:
-        """Return the left projected matrix dimension."""
+        r"""Return the left projected matrix dimension."""
         return self.matrix_shape[0]
 
     @property
     def right_projector_dimension(self) -> int:
-        """Return the right projected matrix dimension."""
+        r"""Return the right projected matrix dimension."""
         return self.matrix_shape[1]
 
     @abstractmethod
     def build_circuit(self) -> Circuit:
-        """Build and return a fresh block-encoding circuit."""
+        r"""Build and return a fresh block-encoding circuit."""
 
     def build_adjoint_circuit(self) -> Circuit:
-        """Build and return a fresh adjoint circuit."""
+        r"""Build and return a fresh adjoint circuit."""
         return self.build_circuit().inverse()
 
 
@@ -202,4 +202,5 @@ def _validate_positive_shape_entry(value: int, *, name: str) -> int:
 
 
 def _minimum_system_qubits(max_dimension: int) -> int:
+    r"""Return the minimum qubit count able to index ``max_dimension`` rows/columns."""
     return (max_dimension - 1).bit_length()

@@ -21,11 +21,6 @@ from .general_state_reflection import GeneralStateReflection
 from .grover_diffusion import GroverDiffusion
 from .grover_long import GroverLong
 from .phase_oracle import PhaseOracle
-from .quantum_singular_value_transformation import (
-    ProjectorControlledPhase,
-    QuantumSignalProcessing,
-    QuantumSingularValueTransformation,
-)
 from .split_cycle_shift import SplitCycleShift
 from .unitary_matrix_oracle import UnitaryMatrixOracle
 from .weight_distribution_block import WeightDistributionBlock
@@ -41,9 +36,6 @@ __all__ = [
     "GroverDiffusion",
     "GroverLong",
     "PhaseOracle",
-    "ProjectorControlledPhase",
-    "QuantumSignalProcessing",
-    "QuantumSingularValueTransformation",
     "SplitCycleShift",
     "UnitaryDilation",
     "UnitaryMatrixOracle",

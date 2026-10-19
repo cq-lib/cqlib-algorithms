@@ -24,7 +24,14 @@ from .ansatz import (
     TwoLocalAnsatz,
 )
 from .arithmetic import QuadraticForm
-from .composite import GroverOperator, HadamardPhaseQuery
+from .composite import (
+    GroverOperator,
+    HadamardPhaseQuery,
+    ProjectorControlledPhase,
+    QuantumSignalProcessing,
+    QuantumSingularValueTransformation,
+    RealValuedQSVT,
+)
 from .estimator import SamplingEstimator, StatevectorEstimator
 from .gradient import (
     FiniteDifferenceGradient,
@@ -55,9 +62,6 @@ from .oracle import (
     GroverDiffusion,
     GroverLong,
     PhaseOracle,
-    ProjectorControlledPhase,
-    QuantumSignalProcessing,
-    QuantumSingularValueTransformation,
     SplitCycleShift,
     UnitaryDilation,
     UnitaryMatrixOracle,
@@ -134,6 +138,7 @@ __all__ = [
     "QuantumSignalProcessing",
     "QuantumSingularValueTransformation",
     "RealAmplitudesAnsatz",
+    "RealValuedQSVT",
     "SPSAGradient",
     "SPSAOptimizer",
     "SamplingEstimator",

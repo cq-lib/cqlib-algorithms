@@ -10,7 +10,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Bartschi-Eidenbenz unary-to-Dicke unitary construction.
+r"""Bartschi-Eidenbenz unary-to-Dicke unitary construction.
 
 This module implements the family of unitaries ``U_{n,k}`` from the
 deterministic Dicke-state construction of Bärtschi and Eidenbenz. For every
@@ -18,7 +18,7 @@ deterministic Dicke-state construction of Bärtschi and Eidenbenz. For every
 
 .. math::
 
-    U_{n,k} |0\\rangle^{n - l} |1\\rangle^l = |D_l^n\\rangle,
+    U_{n,k} |0\rangle^{n - l} |1\rangle^l = |D_l^n\rangle,
 
 where ``|D_l^n>`` is the ``n``-qubit Dicke state of Hamming weight ``l``.
 
@@ -27,8 +27,8 @@ paper:
 
 .. math::
 
-    U_{n,k} = (U_{n - 1, \\min(k, n - 1)} \\otimes I)
-        (I^{\\otimes n - \\min(k + 1, n)} \\otimes SCS_{n, \\min(k, n - 1)}).
+    U_{n,k} = (U_{n - 1, \min(k, n - 1)} \otimes I)
+        (I^{\otimes n - \min(k + 1, n)} \otimes SCS_{n, \min(k, n - 1)}).
 
 This formulation is equivalent to the product expression in the paper and is
 implemented by composing :class:`SplitCycleShift` blocks on the right-aligned
@@ -51,7 +51,7 @@ from .split_cycle_shift import SplitCycleShift
 
 
 class DickeUnitary:
-    """Construct the unary-to-Dicke unitary ``U_{n,k}``.
+    r"""Construct the unary-to-Dicke unitary ``U_{n,k}``.
 
     The operator acts on ``n`` qubits. For each right-aligned unary input
     ``|0>^(n - l) |1>^l`` with ``0 <= l <= k``, the output is the exact Dicke
@@ -74,7 +74,7 @@ class DickeUnitary:
 
     @staticmethod
     def validate(n: int, k: int) -> None:
-        """Validate the unary-to-Dicke unitary parameters."""
+        r"""Validate the unary-to-Dicke unitary parameters."""
         if isinstance(n, bool) or not isinstance(n, int):
             raise TypeError("n must be an integer")
         if isinstance(k, bool) or not isinstance(k, int):
@@ -86,26 +86,26 @@ class DickeUnitary:
 
     @property
     def n(self) -> int:
-        """Return the total circuit width."""
+        r"""Return the total circuit width."""
         return self._n
 
     @property
     def k(self) -> int:
-        """Return the maximum Dicke weight covered by the unitary."""
+        r"""Return the maximum Dicke weight covered by the unitary."""
         return self._k
 
     @property
     def num_qubits(self) -> int:
-        """Return the number of qubits acted on by the unitary."""
+        r"""Return the number of qubits acted on by the unitary."""
         return self.n
 
     def build_circuit(self) -> Circuit:
-        """Build and return a fresh circuit for ``U_{n,k}``."""
+        r"""Build and return a fresh circuit for ``U_{n,k}``."""
         return self._build_recursive_circuit(self.n, self.k)
 
     @classmethod
     def _build_recursive_circuit(cls, num_qubits: int, max_weight: int) -> Circuit:
-        """Recursively construct ``U_{n,k}`` from the paper recurrence."""
+        r"""Recursively construct ``U_{n,k}`` from the paper recurrence."""
         circuit = Circuit(num_qubits)
         if max_weight == 0 or num_qubits == 1:
             return circuit

@@ -1,4 +1,4 @@
-"""Projector-controlled phase rotations for standard QSVT."""
+r"""Projector-controlled phase rotations for standard QSVT."""
 
 from __future__ import annotations
 
@@ -13,14 +13,14 @@ from cqlib import Circuit
 
 @final
 class ProjectorControlledPhase:
-    """Build ``exp(i phase (2 \\Pi - I))`` for a standard zero-projector ``\\Pi``.
+    r"""Build ``exp(i phase (2 \Pi - I))`` for a standard zero-projector ``\Pi``.
 
     The local qubit layout is always ``[system..., ancilla...]``. For a
     standard block encoding, the projector is
 
     .. math::
 
-        \\Pi = |0\\rangle\\langle 0|^{\\otimes a} \\otimes I,
+        \Pi = |0\rangle\langle 0|^{\otimes a} \otimes I,
 
     so the phase rotation multiplies the all-zero ancilla subspace by
     ``exp(i phase)`` and the orthogonal complement by ``exp(-i phase)``.
@@ -69,42 +69,42 @@ class ProjectorControlledPhase:
 
     @property
     def phase(self) -> float:
-        """Return the configured phase angle."""
+        r"""Return the configured phase angle."""
 
         return self._phase
 
     @property
     def num_system_qubits(self) -> int:
-        """Return the system-register width."""
+        r"""Return the system-register width."""
 
         return self._num_system_qubits
 
     @property
     def num_ancilla_qubits(self) -> int:
-        """Return the ancilla-register width."""
+        r"""Return the ancilla-register width."""
 
         return self._num_ancilla_qubits
 
     @property
     def num_qubits(self) -> int:
-        """Return the total local circuit width."""
+        r"""Return the total local circuit width."""
 
         return self.num_system_qubits + self.num_ancilla_qubits
 
     @property
     def system_register_indices(self) -> list[int]:
-        """Return the local system-register indices."""
+        r"""Return the local system-register indices."""
 
         return list(range(self.num_system_qubits))
 
     @property
     def ancilla_register_indices(self) -> list[int]:
-        """Return the local ancilla-register indices."""
+        r"""Return the local ancilla-register indices."""
 
         return list(range(self.num_system_qubits, self.num_qubits))
 
     def with_phase(self, phase: float) -> ProjectorControlledPhase:
-        """Return a new projector-phase operator with the same registers."""
+        r"""Return a new projector-phase operator with the same registers."""
 
         return ProjectorControlledPhase(
             self.num_system_qubits,
@@ -113,7 +113,7 @@ class ProjectorControlledPhase:
         )
 
     def build_circuit(self) -> Circuit:
-        """Build and return a fresh local-numbering projector-phase circuit."""
+        r"""Build and return a fresh local-numbering projector-phase circuit."""
 
         circuit = Circuit(self.num_qubits)
         circuit.set_global_phase(-self.phase)

@@ -10,7 +10,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Split-and-cyclic-shift circuit construction.
+r"""Split-and-cyclic-shift circuit construction.
 
 This module implements the ``SCS_{n,k}`` building block introduced in the
 deterministic Dicke-state construction of Bärtschi and Eidenbenz. The operator
@@ -19,9 +19,9 @@ acts on ``k + 1`` local qubits and, for each unary state
 
 .. math::
 
-    |0\\rangle^{k + 1 - l}|1\\rangle^l \\mapsto
-    \\sqrt{l / n} |0\\rangle^{k + 1 - l}|1\\rangle^l
-    + \\sqrt{(n - l) / n} |0\\rangle^{k - l}|1\\rangle^l|0\\rangle,
+    |0\rangle^{k + 1 - l}|1\rangle^l \mapsto
+    \sqrt{l / n} |0\rangle^{k + 1 - l}|1\rangle^l
+    + \sqrt{(n - l) / n} |0\rangle^{k - l}|1\rangle^l|0\rangle,
 
 while leaving ``|0...0>`` and ``|1...1>`` unchanged.
 
@@ -48,7 +48,7 @@ from cqlib import Circuit
 
 
 class SplitCycleShift:
-    """Construct the exact local ``SCS_{n,k}`` operator.
+    r"""Construct the exact local ``SCS_{n,k}`` operator.
 
     The returned circuit acts on the local qubit set ``0..k``. Local qubit
     ``k`` is the rightmost site in the unary basis used by the SCS definition.
@@ -83,21 +83,21 @@ class SplitCycleShift:
 
     @property
     def n(self) -> int:
-        """Return the global SCS amplitude parameter."""
+        r"""Return the global SCS amplitude parameter."""
         return self._n
 
     @property
     def k(self) -> int:
-        """Return the local unary-weight bound."""
+        r"""Return the local unary-weight bound."""
         return self._k
 
     @property
     def num_qubits(self) -> int:
-        """Return the local circuit width ``k + 1``."""
+        r"""Return the local circuit width ``k + 1``."""
         return self.k + 1
 
     def build_circuit(self) -> Circuit:
-        """Build and return a fresh ``SCS_{n,k}`` circuit."""
+        r"""Build and return a fresh ``SCS_{n,k}`` circuit."""
         circuit = Circuit(self.num_qubits)
         right = self.k
 
@@ -122,5 +122,5 @@ class SplitCycleShift:
         return circuit
 
     def _rotation_angle(self, ell: int) -> float:
-        """Return ``2 arccos(sqrt(ell / n))`` for one SCS block."""
+        r"""Return ``2 arccos(sqrt(ell / n))`` for one SCS block."""
         return float(2.0 * math.acos(math.sqrt(ell / self.n)))

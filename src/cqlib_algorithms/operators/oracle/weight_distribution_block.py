@@ -10,7 +10,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Gate-level implementation of the Weight Distribution Block.
+r"""Gate-level implementation of the Weight Distribution Block.
 
 This module provides the documented Step 2 and Step 4 subcircuits together
 with the full Weight Distribution Block (WDB) operator. The active subcircuits
@@ -38,7 +38,7 @@ from cqlib import Circuit
 
 
 def _validate_positive_int(value: int, *, name: str) -> None:
-    """Validate one positive integer parameter."""
+    r"""Validate one positive integer parameter."""
     if isinstance(value, bool) or not isinstance(value, int):
         raise TypeError(f"{name} must be an integer")
     if value <= 0:
@@ -46,28 +46,28 @@ def _validate_positive_int(value: int, *, name: str) -> None:
 
 
 def _binomial(n: int, k: int) -> int:
-    """Return the binomial coefficient with out-of-range protection."""
+    r"""Return the binomial coefficient with out-of-range protection."""
     if k < 0 or k > n:
         return 0
     return math.comb(n, k)
 
 
 def _unary_index(num_qubits: int, ones: int) -> int:
-    """Return the basis index of ``|0^(n-ones) 1^ones>`` in paper order."""
+    r"""Return the basis index of ``|0^(n-ones) 1^ones>`` in paper order."""
     if ones == 0:
         return 0
     return ((1 << ones) - 1) << (num_qubits - ones)
 
 
 def _one_hot_index(num_qubits: int, location: int) -> int:
-    """Return the basis index of ``|0^(k-l) 1 0^(l-1)>`` in paper order."""
+    r"""Return the basis index of ``|0^(k-l) 1 0^(l-1)>`` in paper order."""
     if location < 1 or location > num_qubits:
         raise ValueError("location must satisfy 1 <= location <= num_qubits")
     return 1 << (num_qubits - location)
 
 
 class WeightDistributionBlockControlledAddition:
-    """Construct Step 2 of the Weight Distribution Block.
+    r"""Construct Step 2 of the Weight Distribution Block.
 
     The circuit acts on two ``k``-qubit registers:
 
@@ -80,10 +80,10 @@ class WeightDistributionBlockControlledAddition:
 
     .. math::
 
-        \\frac{1}{\\sqrt{\\binom{n}{\\ell}}}
-        \\sum_{i=0}^{\\ell}
-        \\sqrt{\\binom{m}{i}\\binom{n-m}{\\ell-i}}
-        |0^{k-i}1^i\\rangle_A.
+        \frac{1}{\sqrt{\binom{n}{\ell}}}
+        \sum_{i=0}^{\ell}
+        \sqrt{\binom{m}{i}\binom{n-m}{\ell-i}}
+        |0^{k-i}1^i\rangle_A.
 
     The implementation follows the documented staircase of one-hot-controlled
     ``RY`` rotations. At level ``j``, the target is the ``j``-th unary bit of
@@ -108,7 +108,7 @@ class WeightDistributionBlockControlledAddition:
 
     @staticmethod
     def validate(n: int, m: int, k: int) -> None:
-        """Validate the controlled-addition parameters."""
+        r"""Validate the controlled-addition parameters."""
         _validate_positive_int(n, name="n")
         _validate_positive_int(m, name="m")
         _validate_positive_int(k, name="k")
@@ -119,33 +119,33 @@ class WeightDistributionBlockControlledAddition:
 
     @property
     def n(self) -> int:
-        """Return the total Dicke-state width."""
+        r"""Return the total Dicke-state width."""
         return self._n
 
     @property
     def m(self) -> int:
-        """Return the width of the left split."""
+        r"""Return the width of the left split."""
         return self._m
 
     @property
     def k(self) -> int:
-        """Return the supported Hamming-weight bound."""
+        r"""Return the supported Hamming-weight bound."""
         return self._k
 
     @property
     def num_qubits(self) -> int:
-        """Return the active circuit width ``2 * k``."""
+        r"""Return the active circuit width ``2 * k``."""
         return 2 * self.k
 
     def build_circuit(self) -> Circuit:
-        """Build and return a fresh controlled-addition circuit."""
+        r"""Build and return a fresh controlled-addition circuit."""
         circuit = Circuit(self.num_qubits)
         for ell in range(1, self.k + 1):
             self._append_ell_staircase(circuit, ell)
         return circuit
 
     def _append_ell_staircase(self, circuit: Circuit, ell: int) -> None:
-        """Append the rotation staircase selected by one-hot value ``ell``."""
+        r"""Append the rotation staircase selected by one-hot value ``ell``."""
         one_hot_control = self.k + (self.k - ell)
 
         for level in range(1, ell + 1):
@@ -172,14 +172,14 @@ class WeightDistributionBlockControlledAddition:
             )
 
     def _weight_term(self, ell: int, left_weight: int) -> int:
-        """Return the unnormalized hypergeometric term."""
+        r"""Return the unnormalized hypergeometric term."""
         return _binomial(self.m, left_weight) * _binomial(
             self.n - self.m,
             ell - left_weight,
         )
 
     def _suffix_sum(self, ell: int, start_weight: int) -> int:
-        """Return the suffix sum used by the rotation-angle formula."""
+        r"""Return the suffix sum used by the rotation-angle formula."""
         return sum(
             self._weight_term(ell, left_weight)
             for left_weight in range(start_weight, ell + 1)
@@ -187,7 +187,7 @@ class WeightDistributionBlockControlledAddition:
 
 
 class WeightDistributionBlockUnarySubtraction:
-    """Construct Step 4 of the Weight Distribution Block.
+    r"""Construct Step 4 of the Weight Distribution Block.
 
     The circuit acts on two ``k``-qubit unary registers:
 
@@ -198,9 +198,9 @@ class WeightDistributionBlockUnarySubtraction:
 
     .. math::
 
-        |0^{k-l}1^l\\rangle_A |0^{k-i}1^i\\rangle_B
-        \\mapsto
-        |0^{k+i-l}1^{l-i}\\rangle_A |0^{k-i}1^i\\rangle_B.
+        |0^{k-l}1^l\rangle_A |0^{k-i}1^i\rangle_B
+        \mapsto
+        |0^{k+i-l}1^{l-i}\rangle_A |0^{k-i}1^i\rangle_B.
 
     Each active bit of ``B`` controls one prefix block on ``A`` consisting of
     a controlled staircase of adjacent SWAPs followed by a CNOT erasure.
@@ -219,21 +219,21 @@ class WeightDistributionBlockUnarySubtraction:
 
     @staticmethod
     def validate(k: int) -> None:
-        """Validate the unary register width."""
+        r"""Validate the unary register width."""
         _validate_positive_int(k, name="k")
 
     @property
     def k(self) -> int:
-        """Return the unary register width."""
+        r"""Return the unary register width."""
         return self._k
 
     @property
     def num_qubits(self) -> int:
-        """Return the active circuit width ``2 * k``."""
+        r"""Return the active circuit width ``2 * k``."""
         return 2 * self.k
 
     def build_circuit(self) -> Circuit:
-        """Build and return a fresh unary-subtraction circuit."""
+        r"""Build and return a fresh unary-subtraction circuit."""
         circuit = Circuit(self.num_qubits)
         for prefix_length in range(1, self.k + 1):
             self._append_controlled_prefix_block(circuit, prefix_length)
@@ -242,7 +242,7 @@ class WeightDistributionBlockUnarySubtraction:
     def _append_controlled_prefix_block(
         self, circuit: Circuit, prefix_length: int
     ) -> None:
-        """Append one controlled ``R`` + ``E`` prefix block."""
+        r"""Append one controlled ``R`` + ``E`` prefix block."""
         control = self.k + prefix_length - 1
         prefix_start = 0
         prefix_head = prefix_length - 1
@@ -259,7 +259,7 @@ class WeightDistributionBlockUnarySubtraction:
 
 
 class WeightDistributionBlock:
-    """Construct the full Weight Distribution Block ``WDB_k^{n,m}``.
+    r"""Construct the full Weight Distribution Block ``WDB_k^{n,m}``.
 
     The operator acts on ``n`` qubits split into a left register of width
     ``m`` and a right register of width ``n - m``. For every ``0 <= ell <= k``,
@@ -267,14 +267,14 @@ class WeightDistributionBlock:
 
     .. math::
 
-        WDB_k^{n,m} |0^{n-ell}1^ell\\rangle
+        WDB_k^{n,m} |0^{n-ell}1^ell\rangle
         =
-        \\frac{1}{\\sqrt{\\binom{n}{\\ell}}}
-        \\sum_{i=0}^{\\ell}
-        \\sqrt{\\binom{m}{i}\\binom{n-m}{\\ell-i}}
-        |0^{m-i}1^i\\rangle
-        \\otimes
-        |0^{(n-m)-(\\ell-i)}1^{\\ell-i}\\rangle.
+        \frac{1}{\sqrt{\binom{n}{\ell}}}
+        \sum_{i=0}^{\ell}
+        \sqrt{\binom{m}{i}\binom{n-m}{\ell-i}}
+        |0^{m-i}1^i\rangle
+        \otimes
+        |0^{(n-m)-(\ell-i)}1^{\ell-i}\rangle.
 
     The implementation follows the four-step construction described by
     Bärtschi and Eidenbenz [1]_ [2]_:
@@ -313,7 +313,7 @@ class WeightDistributionBlock:
 
     @staticmethod
     def validate(n: int, m: int, k: int) -> None:
-        """Validate the Weight Distribution Block parameters."""
+        r"""Validate the Weight Distribution Block parameters."""
         _validate_positive_int(n, name="n")
         _validate_positive_int(m, name="m")
         _validate_positive_int(k, name="k")
@@ -326,26 +326,26 @@ class WeightDistributionBlock:
 
     @property
     def n(self) -> int:
-        """Return the total circuit width."""
+        r"""Return the total circuit width."""
         return self._n
 
     @property
     def m(self) -> int:
-        """Return the width of the left register."""
+        r"""Return the width of the left register."""
         return self._m
 
     @property
     def k(self) -> int:
-        """Return the supported Hamming-weight bound."""
+        r"""Return the supported Hamming-weight bound."""
         return self._k
 
     @property
     def num_qubits(self) -> int:
-        """Return the total circuit width."""
+        r"""Return the total circuit width."""
         return self.n
 
     def build_circuit(self) -> Circuit:
-        """Build and return a fresh circuit for ``WDB_k^{n,m}``."""
+        r"""Build and return a fresh circuit for ``WDB_k^{n,m}``."""
         circuit = Circuit(self.num_qubits)
         if self.k == 0:
             return circuit
@@ -370,30 +370,30 @@ class WeightDistributionBlock:
         return circuit
 
     def _left_active_positions(self) -> list[int]:
-        """Return the active ``k``-qubit window inside the left register."""
+        r"""Return the active ``k``-qubit window inside the left register."""
         return list(range(self.m - self.k, self.m))
 
     def _right_active_positions(self) -> list[int]:
-        """Return the active ``k``-qubit window inside the right register."""
+        r"""Return the active ``k``-qubit window inside the right register."""
         return list(range(self.n - self.k, self.n))
 
     def _active_positions(self) -> list[int]:
-        """Return the active WDB window in ``A``-then-``B`` order."""
+        r"""Return the active WDB window in ``A``-then-``B`` order."""
         return self._left_active_positions() + self._right_active_positions()
 
     def _subtraction_positions(self) -> list[int]:
-        """Return the active Step 4 window in ``right``-then-``left`` order."""
+        r"""Return the active Step 4 window in ``right``-then-``left`` order."""
         return self._right_active_positions() + self._left_active_positions()
 
     def _build_unary_to_one_hot_circuit(self) -> Circuit:
-        """Build the Step 1 unary-to-one-hot CNOT chain."""
+        r"""Build the Step 1 unary-to-one-hot CNOT chain."""
         circuit = Circuit(self.k)
         for qubit in range(self.k - 2, -1, -1):
             circuit.cx(qubit, qubit + 1)
         return circuit
 
     def _build_one_hot_to_unary_circuit(self) -> Circuit:
-        """Build the Step 3 one-hot-to-unary inverse CNOT chain."""
+        r"""Build the Step 3 one-hot-to-unary inverse CNOT chain."""
         circuit = Circuit(self.k)
         for qubit in range(self.k - 1):
             circuit.cx(qubit, qubit + 1)

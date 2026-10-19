@@ -9,7 +9,13 @@ import numpy as np
 import pytest
 
 from cqlib import Circuit, Qubit
+from cqlib.compile.transform.decompose.unitary import (
+    synthesize_numeric_2q_unitary,
+)
 from cqlib_algorithms.operators.oracle import UnitaryDilation, UnitaryMatrixOracle
+from cqlib_algorithms.operators.composite.quantum_singular_value_transformation.real_qsvt import (
+    RealValuedQSVT,
+)
 from cqlib_algorithms.operators.oracle.unitary_matrix_oracle._synthesis import (
     _demultiplex as demultiplex_module,
 )
@@ -354,6 +360,146 @@ def test_diagonal_unitary_reconstructs_up_to_global_phase(num_qubits: int):
     matrix = _diagonal_phase_unitary(num_qubits)
 
     circuit = UnitaryMatrixOracle(matrix, atol=1e-8).build_circuit()
+
+    _assert_allclose_up_to_global_phase(matrix, circuit.to_matrix(), atol=1e-8)
+
+
+def test_block_diagonal_identity_controlled_unitary_reconstructs_up_to_global_phase():
+    """``diag(I, U)`` arises when building a control-on-|1> gate from an
+    arbitrary core unitary ``U``.  The Block-ZXZ recursion must remain
+    numerically stable on this exactly block-diagonal manifold."""
+
+    core = _haar_random_unitary(2, seed=3)
+    dimension = core.shape[0]
+    matrix = np.block(
+        [
+            [np.eye(dimension, dtype=np.complex128), np.zeros((dimension, dimension), dtype=np.complex128)],
+            [np.zeros((dimension, dimension), dtype=np.complex128), core],
+        ]
+    )
+
+    circuit = UnitaryMatrixOracle(matrix, atol=1e-8).build_circuit()
+
+    _assert_allclose_up_to_global_phase(matrix, circuit.to_matrix(), atol=1e-8)
+
+
+@pytest.mark.parametrize(
+    "matrix",
+    [
+        #np.array([[0.3, 0.2j], [0.0, 0.7]], dtype=np.complex128),
+        np.array([[0.3, 0.1j], [0.2j, 0.7]], dtype=np.complex128),
+        np.array([[0.2, 0.3], [0.0, 0.5]], dtype=np.complex128),
+        np.array([[0.1, 0.4j], [0.0, 0.9]], dtype=np.complex128),
+        np.array([[0.6, 0.1 + 0.1j], [0.0, 0.4]], dtype=np.complex128),
+        np.array([[0.4, 0.2 - 0.3j], [0.0, 0.6]], dtype=np.complex128),
+        np.array([[0.15, 0.5j], [0.0, 0.8]], dtype=np.complex128),
+        np.array([[0.7, 0.05 + 0.05j], [0.0, 0.3]], dtype=np.complex128),
+        np.array(
+            [
+                [0.3, 0.1 + 0.2j, 0.05, 0.0],
+                [0.0, 0.6, 0.1j, -0.1],
+                [0.0, 0.0, 0.5, 0.3],
+                [0.0, 0.0, 0.0, 0.4],
+            ],
+            dtype=np.complex128,
+        ),
+        np.array(
+            [
+                [0.25, 0.1 + 0.1j, 0.0, 0.05j],
+                [0.0, 0.55, 0.05 - 0.1j, 0.1],
+                [0.0, 0.0, 0.45, 0.2],
+                [0.0, 0.0, 0.0, 0.35],
+            ],
+            dtype=np.complex128,
+        ),
+    ],
+    ids=[
+        "2x2_strict_upper_complex_offdiag",
+        "2x2_lower_nonzero",
+        "2x2_real_offdiag",
+        "2x2_imag_offdiag_high_spectrum",
+        "2x2_complex_offdiag_small",
+        "2x2_complex_offdiag_mid",
+        "2x2_imag_offdiag",
+        "2x2_complex_offdiag_tiny",
+        "4x4_upper_triangular_1",
+        "4x4_upper_triangular_2",
+    ],
+)
+def test_block_diagonal_qsvt_core_unitary_reconstructs_up_to_global_phase(matrix):
+    """``diag(I, U_Phi)`` where ``U_Phi`` is the QSVT core circuit for a
+    non-diagonal matrix.  This specific structure triggered a KAK Weyl
+    chamber violation in the 2-qubit base case of the Block-ZXZ recursion."""
+
+    encoding = UnitaryDilation(matrix, alpha=1.0, validate=False)
+    operator = RealValuedQSVT.from_polynomial_coefficients(
+        encoding,
+        (0.5, 0.0, 0.5),
+    )
+
+    core = np.asarray(
+        operator._positive_core.build_circuit().to_matrix(),
+        dtype=np.complex128,
+    )
+    dimension = core.shape[0]
+    controlled = np.block(
+        [
+            [np.eye(dimension, dtype=np.complex128), np.zeros((dimension, dimension), dtype=np.complex128)],
+            [np.zeros((dimension, dimension), dtype=np.complex128), core],
+        ]
+    )
+
+    circuit = UnitaryMatrixOracle(controlled, atol=1e-7).build_circuit()
+
+    _assert_allclose_up_to_global_phase(controlled, circuit.to_matrix(), atol=1e-7)
+
+
+def test_two_qubit_kak_weyl_boundary_a_pi_4_c_negative():
+    """A 4x4 unitary whose canonical KAK coordinates land on the Weyl
+    chamber boundary ``a = pi/4`` with a negative ``c``.  cqlib's KAK
+    implementation requires ``c >= 0`` when ``a = pi/4``; this matrix
+    reproduces the failure reported by the QSVT ``diag(I, U_Phi)`` case."""
+
+    matrix = np.array(
+        [
+            [
+                -1.4755155196621783e-01 + 8.5353452270019212e-02j,
+                -1.5112015359785388e-02 - 2.6124324914469213e-02j,
+                -4.3021142204224816e-16 + 6.6019804395935772e-02j,
+                -9.8268706095328273e-01 + 2.7755575615628914e-16j,
+            ],
+            [
+                -6.2122904195909606e-03 - 1.0739262071974568e-02j,
+                -3.5893385033025271e-01 + 2.0763077618642661e-01j,
+                9.0707578731568661e-01 - 5.4123372450476381e-16j,
+                -6.2450045135165055e-16 - 7.1523028674972039e-02j,
+            ],
+            [
+                -9.7069336463786215e-01 + 2.7755575615628914e-17j,
+                2.6020852139652106e-18 - 1.5594957493615416e-01j,
+                3.5697051715777181e-02 - 6.1709927849413246e-02j,
+                1.4575068516388590e-01 + 8.4311713321094467e-02j,
+            ],
+            [
+                7.1123662515049091e-17 - 1.6894909068671718e-01j,
+                -8.9600492665168041e-01 - 3.6082248300317588e-16j,
+                -3.5455306241796475e-01 - 2.0509664240745978e-01j,
+                -1.4674445936026376e-02 + 2.5367893324985950e-02j,
+            ],
+        ],
+        dtype=np.complex128,
+    )
+
+    np.testing.assert_allclose(
+        matrix.conj().T @ matrix,
+        np.eye(matrix.shape[0], dtype=np.complex128),
+        rtol=0.0,
+        atol=1e-12,
+    )
+
+    synthesis = synthesize_numeric_2q_unitary(matrix, Qubit(0), Qubit(1))
+    circuit = Circuit.from_operations([Qubit(0), Qubit(1)], synthesis.operations)
+    circuit.set_global_phase(synthesis.global_phase)
 
     _assert_allclose_up_to_global_phase(matrix, circuit.to_matrix(), atol=1e-8)
 
