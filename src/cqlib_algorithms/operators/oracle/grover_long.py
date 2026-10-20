@@ -47,11 +47,10 @@ phase-matching convention used by the legacy prototype:
 
 References
 ----------
-.. [1] Long, G. L. (2001). Grover algorithm with zero theoretical failure
-       rate. *Physical Review A*, 64(2), 022307.
-.. [2] Long, G. L., Li, Y. S., Zhang, W. L., and Niu, L. (1999).
-       Phase matching in quantum searching. *Physics Letters A*,
-       262(1), 27-34.
+[1] G. L. Long, "Grover algorithm with zero theoretical failure rate,"
+    Physical Review A, 64(2), 022307, 2001.
+[2] G. L. Long, Y. S. Li, W. L. Zhang, and L. Niu, "Phase matching in
+    quantum searching," Physics Letters A, 262(1), 27-34, 1999.
 """
 
 from __future__ import annotations

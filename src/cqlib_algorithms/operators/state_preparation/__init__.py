@@ -20,12 +20,15 @@ from .basis_state_initialization import BasisStateInitialization
 from .dicke_state_preparation import DickeStatePreparation
 from .feature_map_preparation import FeatureMapPreparation
 from .ghz_state_preparation import GHZStatePreparation
+from .image_angle_encoding import ImageAngleEncoding
+from .image_basis_encoding import BRQI, ImageBasisEncoding
 from .product_state_preparation import ProductStatePreparation
 from .sparse_amplitude_encoding import SparseAmplitudeEncoding
 from .uniform_superposition import UniformSuperposition
 from .user_circuit_preparation import UserCircuitPreparation
 
 __all__ = [
+    "BRQI",
     "AmplitudeEncoding",
     "AngleEncoding",
     "ArbitraryStatePreparation",
@@ -34,6 +37,8 @@ __all__ = [
     "DickeStatePreparation",
     "FeatureMapPreparation",
     "GHZStatePreparation",
+    "ImageAngleEncoding",
+    "ImageBasisEncoding",
     "ProductStatePreparation",
     "SparseAmplitudeEncoding",
     "UniformSuperposition",

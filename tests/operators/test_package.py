@@ -33,9 +33,11 @@ def test_state_preparation_operators_are_exported_from_functional_packages():
         "ArbitraryStatePreparation",
         "BasisEncoding",
         "BasisStateInitialization",
-        "DickeStatePreparation",
+        "BRQI",
         "FeatureMapPreparation",
         "GHZStatePreparation",
+        "ImageAngleEncoding",
+        "ImageBasisEncoding",
         "ProductStatePreparation",
         "SparseAmplitudeEncoding",
         "UniformSuperposition",
@@ -46,6 +48,8 @@ def test_state_preparation_operators_are_exported_from_functional_packages():
     for name in expected:
         assert getattr(operators, name) is getattr(state_preparation, name)
         assert issubclass(getattr(state_preparation, name), StatePreparation)
+    assert operators.BRQI is state_preparation.BRQI
+    assert operators.BRQI is state_preparation.ImageBasisEncoding
 
 
 def test_oracle_operators_are_exported_from_functional_packages():
@@ -81,10 +85,7 @@ def test_composite_operators_are_exported_from_functional_packages():
     expected = {
         "GroverOperator",
         "HadamardPhaseQuery",
-        "ProjectorControlledPhase",
-        "QuantumSignalProcessing",
-        "QuantumSingularValueTransformation",
-        "RealValuedQSVT",
+        "PhaseEstimationCircuit",
     }
 
     assert expected <= set(operators.__all__)
@@ -98,12 +99,20 @@ def test_ansatz_operators_are_exported_from_functional_packages():
     ansatz = import_module("cqlib_algorithms.operators.ansatz")
     concrete = {
         "EfficientSU2Ansatz",
+        "EvolvedOperatorAnsatz",
+        "ExcitationPreservingAnsatz",
+        "HamiltonianVariationalAnsatz",
         "HardwareEfficientAnsatz",
+        "MERAAnsatz",
+        "MPSAnsatz",
         "PauliTwoDesignAnsatz",
         "QAOACostEvolution",
         "QAOAMixerEvolution",
+        "RandomLayersAnsatz",
         "RealAmplitudesAnsatz",
+        "SimplifiedTwoDesignAnsatz",
         "TwoLocalAnsatz",
+        "TTNAnsatz",
     }
     expected = concrete | {"BaseAnsatz"}
     assert expected <= set(operators.__all__)
@@ -113,6 +122,35 @@ def test_ansatz_operators_are_exported_from_functional_packages():
         assert getattr(operators, name) is getattr(ansatz, name)
         assert issubclass(getattr(ansatz, name), Ansatz)
         assert issubclass(getattr(ansatz, name), ansatz.BaseAnsatz)
+
+
+def test_mixer_operators_are_exported_from_functional_packages():
+    operators = import_module("cqlib_algorithms.operators")
+    mixer = import_module("cqlib_algorithms.operators.mixer")
+    concrete = {
+        "ColorParityPermutationSwapMixer",
+        "ControlledBitFlipMixer",
+        "ControlledNullSwapMixer",
+        "ControlledSwapMixer",
+        "FullyConnectedMixer",
+        "NearbyValuesMixer",
+        "NullSwapMixer",
+        "ParityRingMixer",
+        "PartitionedMixer",
+        "RingMixer",
+        "TimeColorMixer",
+        "TimeSwapMixer",
+        "ValueIndependentPermutationSwapMixer",
+        "ValueSelectivePermutationSwapMixer",
+    }
+    expected = concrete | {"MixerApplication"}
+    assert expected <= set(operators.__all__)
+    assert set(mixer.__all__) == expected
+    for name in expected:
+        assert getattr(operators, name) is getattr(mixer, name)
+    for name in concrete:
+        assert issubclass(getattr(mixer, name), Ansatz)
+        assert issubclass(getattr(mixer, name), operators.BaseAnsatz)
 
 
 def test_measurement_operators_are_exported_from_functional_packages():

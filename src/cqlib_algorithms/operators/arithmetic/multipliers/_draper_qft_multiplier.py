@@ -17,12 +17,12 @@ and a final inverse QFT. The local circuit layout follows the arithmetic
 package convention with LSB-first register indexing.
 
 References
-Ruiz-Perez, Luis, and Juan Carlos Garcia-Escartin,
-Quantum arithmetic with the Quantum Fourier Transform, 2017,
-arXiv:1411.5949.
-
-Thomas G Draper, Addition on a Quantum Computer, 2000,
-arXiv:quant-ph/0008033.
+----------
+[1] L. Ruiz-Perez and J. C. Garcia-Escartin, "Quantum arithmetic with the
+    Quantum Fourier Transform," 2017.
+    arXiv:1411.5949.
+[2] T. G. Draper, "Addition on a Quantum Computer," 2000.
+    arXiv:quant-ph/0008033.
 """
 
 from __future__ import annotations

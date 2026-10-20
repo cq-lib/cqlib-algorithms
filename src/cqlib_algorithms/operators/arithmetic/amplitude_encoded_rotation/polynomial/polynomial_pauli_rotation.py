@@ -35,23 +35,28 @@ positions.  Every such multi-subset contributes a single
 every other operator in the project.  See
 ``polynomial._mc_rotation._build_mc_pauli_rotation`` for details.
 
-Academic references
--------------------
-1. Stamatopoulos, Egger, Sun, Zoufal, Iten, Shen, Woerner (2020).
-   Option Pricing using Quantum Computers.  *Quantum* 4, 291.
-   arXiv:1905.02666.  — Origin of the bit-wise payoff decomposition for
-   linear and piecewise-linear rotation functions.
-2. Gilliam, Woerner, Gonciulea (2019).  Quantum computing enhanced
-   optimization.  arXiv:1912.04088.  Published version: *Quantum* 5,
-   428 (2021).  — General bit-wise decomposition of quadratic forms and
-   higher-degree polynomials using multiple-controlled rotation gates.
-3. Möttönen, Vartiainen, Bergholm, Salomaa (2005).  Transformation of
-   quantum states using uniformly controlled rotations.  *Quantum
-   Information & Computation* 5(6), 467–473.  arXiv:quant-ph/0407010.
-   — Appendix B of the project design document contrasts the method of
-   this module with the uniformly controlled rotation table look-up
-   strategy; :class:`PolynomialPauliRotation` is the canonical example
-   demonstrating that ``O(n**d)`` gates suffice for polynomials.
+References
+----------
+[1] N. Stamatopoulos, D. J. Egger, Y. Sun, C. Zoufal, R. Iten, N. Shen,
+    and S. Woerner, "Option Pricing using Quantum Computers," Quantum, 4,
+    291, 2020.
+    arXiv:1905.02666.
+    Relevance: Origin of the bit-wise payoff decomposition for linear and
+    piecewise-linear rotation functions.
+[2] A. Gilliam, S. Woerner, and C. Gonciulea, "Quantum computing enhanced
+    optimization," 2019.
+    arXiv:1912.04088.
+    Published version: Quantum, 5, 428, 2021.
+    Relevance: General bit-wise decomposition of quadratic forms and
+    higher-degree polynomials using multiple-controlled rotation gates.
+[3] M. Möttönen, J. J. Vartiainen, V. Bergholm, and M. M. Salomaa,
+    "Transformation of quantum states using uniformly controlled rotations,"
+    Quantum Information and Computation, 5(6), 467–473, 2005.
+    arXiv:quant-ph/0407010.
+    Relevance: Appendix B of the project design document contrasts the method
+    of this module with the uniformly controlled rotation table look-up
+    strategy; :class:`PolynomialPauliRotation` is the canonical example
+    demonstrating that ``O(n**d)`` gates suffice for polynomials.
 """
 
 from __future__ import annotations

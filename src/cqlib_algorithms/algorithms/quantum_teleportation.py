@@ -10,7 +10,15 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Ideal local simulation of the standard quantum teleportation protocol."""
+"""Ideal local simulation of the standard quantum teleportation protocol.
+
+References
+----------
+[1] C. H. Bennett et al., "Teleporting an unknown quantum state via dual
+    classical and Einstein-Podolsky-Rosen channels," Physical Review
+    Letters, 70, 1895-1899, 1993.
+    DOI: 10.1103/PhysRevLett.70.1895.
+"""
 
 from __future__ import annotations
 
@@ -19,10 +27,9 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from numbers import Real
 
+from cqlib import Circuit
 from cqlib.qis import metrics
 from cqlib.qis.state import DensityMatrix, Statevector
-
-from cqlib import Circuit
 
 from ..operators.estimator._circuit_validation import (
     validate_unitary_state_preparation,

@@ -17,8 +17,9 @@ register layout while delegating the concrete Fourier-basis construction to the
 internal implementation module.
 
 References
-Thomas G Draper, Addition on a Quantum Computer, 2000,
-arXiv quant ph 0008033.
+----------
+[1] T. G. Draper, "Addition on a Quantum Computer," 2000.
+    arXiv:quant-ph/0008033.
 """
 
 from __future__ import annotations

@@ -10,7 +10,14 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Bernstein-Vazirani hidden-string recovery."""
+"""Bernstein-Vazirani hidden-string recovery.
+
+References
+----------
+[1] E. Bernstein and U. Vazirani, "Quantum complexity theory," SIAM
+    Journal on Computing, 26(5), 1411-1473, 1997.
+    DOI: 10.1137/S0097539796300921.
+"""
 
 from __future__ import annotations
 

@@ -6,13 +6,14 @@
 
 ## 数学约定
 
-对成本 Hamiltonian `H_C`、混合 Hamiltonian `H_M` 和层数 `p`，算法构造
+对成本 Hamiltonian `H_C`、一参数混合族 `U_M(beta)` 和层数 `p`，算法构造
 
 ```text
 |gamma, beta> = U_M(beta[p-1]) U_C(gamma[p-1]) ...
                 U_M(beta[0]) U_C(gamma[0]) |s>
 U_C(gamma) = exp(-i gamma H_C)
-U_M(beta)  = exp(-i beta H_M)
+U_M(beta)  = exp(-i beta H_M)       # Hamiltonian mixer
+           或一参数 Mixer 线路       # partitioned/controlled mixer
 ```
 
 线路时间顺序是初态、第 0 层成本演化、第 0 层混合演化，依次直到第 `p-1` 层。
@@ -70,7 +71,9 @@ prefix_{p-1}_beta`。初值必须精确覆盖线路中的活跃参数。
 - 每个有效 Pauli 项只含 `I` 和 `Z`，因此计算基对角元素可解释为经典目标值。
 
 自定义 `mixer_operator` 必须非空、系数有限、整体 Hermitian 且与成本同宽；它不要求
-计算基对角。自定义 `initial_state`
+计算基对角。也可通过 `mixer=Ansatz` 传入已经定义综合顺序的一参数 Mixer。线路 Mixer
+必须与成本同宽、声明一个参数，并为第 `k` 层恰好生成 `prefix_k_beta`；它与
+`mixer_operator` 互斥，且不能再指定 `mixer_strategy`。自定义 `initial_state`
 必须实现 `StatePreparation`、与成本同宽，并生成没有活跃符号的固定线路。成本、
 混合 Hamiltonian 和演化策略在进入底层组件时均采用独立快照；状态制备组件遵循
 自身的确定性和独立线路契约。
@@ -126,10 +129,12 @@ gamma/beta 两个符号，但退化演化可能不包含某些逻辑参数槽，
 
 - `UniformSuperposition` 负责默认初态；
 - `QAOACostEvolution` 负责每层 `exp(-i gamma H_C)`；
-- `QAOAMixerEvolution` 负责每层 `exp(-i beta H_M)`；
+- `QAOAMixerEvolution` 负责 Hamiltonian Mixer 的每层 `exp(-i beta H_M)`；
+- `operators.mixer` 的一参数组件负责受控与 partitioned Mixer 线路；
 - `QAOA` 直接创建 Estimator/Optimizer 请求，校验返回结果并完成参数绑定；
 - 注入的 Optimizer 继续拥有梯度组件及其更新规则。
 
-当前接口面向由对角 Pauli Hamiltonian 表达的无约束经典成本。约束保持型混合器可
-作为自定义 `mixer_operator` 提供，但可行初态、约束闭包和问题编码正确性由调用方
-负责。算法不自动从图或布尔表达式生成成本 Hamiltonian，也不执行最终采样或解码。
+当前接口面向由对角 Pauli Hamiltonian 表达的经典成本。约束保持型混合器可作为
+自定义 `mixer_operator` 或线路 `mixer` 提供，但可行初态、约束闭包和问题编码正确性
+由调用方负责。算法不自动从图或布尔表达式生成成本 Hamiltonian，也不执行最终采样
+或解码。

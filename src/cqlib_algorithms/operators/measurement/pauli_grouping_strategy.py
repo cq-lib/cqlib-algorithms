@@ -10,7 +10,15 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Stable first-fit grouping of Pauli terms by local measurement basis."""
+"""Stable first-fit grouping of Pauli terms by local measurement basis.
+
+References
+----------
+[1] V. Verteletskyi, T.-C. Yen, and A. F. Izmaylov, "Measurement optimization
+    in the variational quantum eigensolver using a minimum clique cover,"
+    Journal of Chemical Physics, 152, 124114, 2020.
+    DOI: 10.1063/1.5141458.
+"""
 
 from __future__ import annotations
 

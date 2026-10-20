@@ -14,18 +14,10 @@
 
 from .grover_operator import GroverOperator
 from .hadamard_phase_query import HadamardPhaseQuery
-from .quantum_singular_value_transformation import (
-    ProjectorControlledPhase,
-    QuantumSignalProcessing,
-    QuantumSingularValueTransformation,
-    RealValuedQSVT,
-)
+from .phase_estimation_circuit import PhaseEstimationCircuit
 
 __all__ = [
     "GroverOperator",
     "HadamardPhaseQuery",
-    "ProjectorControlledPhase",
-    "QuantumSignalProcessing",
-    "QuantumSingularValueTransformation",
-    "RealValuedQSVT",
+    "PhaseEstimationCircuit",
 ]

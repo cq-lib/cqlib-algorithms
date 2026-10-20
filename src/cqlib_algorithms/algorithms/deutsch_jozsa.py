@@ -10,7 +10,14 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Deutsch-Jozsa constant-vs-balanced discrimination."""
+"""Deutsch-Jozsa constant-vs-balanced discrimination.
+
+References
+----------
+[1] D. Deutsch and R. Jozsa, "Rapid solution of problems by quantum
+    computation," Proceedings of the Royal Society A, 439, 553-558, 1992.
+    DOI: 10.1098/rspa.1992.0167.
+"""
 
 from __future__ import annotations
 

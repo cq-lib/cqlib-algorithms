@@ -12,6 +12,18 @@
 
 """Complete quantum algorithms composed from reusable components."""
 
+from .amplitude_estimation import (
+    AmplitudeEstimationProblem,
+    IterativeAmplitudeEstimation,
+    IterativeAmplitudeEstimationRequest,
+    IterativeAmplitudeEstimationResult,
+    MaximumLikelihoodAmplitudeEstimation,
+    MaximumLikelihoodAmplitudeEstimationRequest,
+    MaximumLikelihoodAmplitudeEstimationResult,
+    StandardAmplitudeEstimation,
+    StandardAmplitudeEstimationRequest,
+    StandardAmplitudeEstimationResult,
+)
 from .bb84 import BB84, BB84Basis, BB84Request, BB84Result
 from .bernstein_vazirani import (
     BernsteinVazirani,
@@ -20,7 +32,18 @@ from .bernstein_vazirani import (
 )
 from .chsh import CHSH, CHSHRequest, CHSHResult
 from .deutsch_jozsa import DeutschJozsa, DeutschJozsaRequest, DeutschJozsaResult
-from .qaoa import QAOA, QAOAResult
+from .phase_estimation import (
+    HamiltonianPhaseEstimation,
+    HamiltonianPhaseEstimationRequest,
+    HamiltonianPhaseEstimationResult,
+    IterativePhaseEstimation,
+    IterativePhaseEstimationRequest,
+    IterativePhaseEstimationResult,
+    PhaseEstimation,
+    PhaseEstimationProblem,
+    PhaseEstimationRequest,
+    PhaseEstimationResult,
+)
 from .quantum_teleportation import (
     QuantumTeleportation,
     QuantumTeleportationRequest,
@@ -32,14 +55,14 @@ from .superdense_coding import (
     SuperdenseCodingRequest,
     SuperdenseCodingResult,
 )
-from .vqa_result import VQAResult
-from .vqe import VQE, VQEResult
+from .variational import QAOA, VQE, QAOAResult, VQAResult, VQEResult
 
 __all__ = [
     "BB84",
     "CHSH",
     "QAOA",
     "VQE",
+    "AmplitudeEstimationProblem",
     "BB84Basis",
     "BB84Request",
     "BB84Result",
@@ -51,6 +74,22 @@ __all__ = [
     "DeutschJozsa",
     "DeutschJozsaRequest",
     "DeutschJozsaResult",
+    "HamiltonianPhaseEstimation",
+    "HamiltonianPhaseEstimationRequest",
+    "HamiltonianPhaseEstimationResult",
+    "IterativeAmplitudeEstimation",
+    "IterativeAmplitudeEstimationRequest",
+    "IterativeAmplitudeEstimationResult",
+    "IterativePhaseEstimation",
+    "IterativePhaseEstimationRequest",
+    "IterativePhaseEstimationResult",
+    "MaximumLikelihoodAmplitudeEstimation",
+    "MaximumLikelihoodAmplitudeEstimationRequest",
+    "MaximumLikelihoodAmplitudeEstimationResult",
+    "PhaseEstimation",
+    "PhaseEstimationProblem",
+    "PhaseEstimationRequest",
+    "PhaseEstimationResult",
     "QAOAResult",
     "QuantumTeleportation",
     "QuantumTeleportationRequest",
@@ -58,6 +97,9 @@ __all__ = [
     "Simon",
     "SimonRequest",
     "SimonResult",
+    "StandardAmplitudeEstimation",
+    "StandardAmplitudeEstimationRequest",
+    "StandardAmplitudeEstimationResult",
     "SuperdenseCoding",
     "SuperdenseCodingRequest",
     "SuperdenseCodingResult",

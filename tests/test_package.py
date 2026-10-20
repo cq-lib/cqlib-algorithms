@@ -27,6 +27,7 @@ from cqlib_algorithms import (
     QAOA,
     QFT,
     VQE,
+    AmplitudeEstimationProblem,
     BB84Basis,
     BB84Request,
     BB84Result,
@@ -38,6 +39,23 @@ from cqlib_algorithms import (
     DeutschJozsa,
     DeutschJozsaRequest,
     DeutschJozsaResult,
+    HamiltonianPhaseEstimation,
+    HamiltonianPhaseEstimationRequest,
+    HamiltonianPhaseEstimationResult,
+    IterativeAmplitudeEstimation,
+    IterativeAmplitudeEstimationRequest,
+    IterativeAmplitudeEstimationResult,
+    IterativePhaseEstimation,
+    IterativePhaseEstimationRequest,
+    IterativePhaseEstimationResult,
+    MaximumLikelihoodAmplitudeEstimation,
+    MaximumLikelihoodAmplitudeEstimationRequest,
+    MaximumLikelihoodAmplitudeEstimationResult,
+    PhaseEstimation,
+    PhaseEstimationCircuit,
+    PhaseEstimationProblem,
+    PhaseEstimationRequest,
+    PhaseEstimationResult,
     QAOAResult,
     QuantumTeleportation,
     QuantumTeleportationRequest,
@@ -45,6 +63,9 @@ from cqlib_algorithms import (
     Simon,
     SimonRequest,
     SimonResult,
+    StandardAmplitudeEstimation,
+    StandardAmplitudeEstimationRequest,
+    StandardAmplitudeEstimationResult,
     SuperdenseCoding,
     SuperdenseCodingRequest,
     SuperdenseCodingResult,
@@ -55,6 +76,9 @@ from cqlib_algorithms.algorithms import BB84 as AlgorithmBB84
 from cqlib_algorithms.algorithms import CHSH as AlgorithmCHSH
 from cqlib_algorithms.algorithms import QAOA as AlgorithmQAOA
 from cqlib_algorithms.algorithms import VQE as AlgorithmVQE
+from cqlib_algorithms.algorithms import (
+    AmplitudeEstimationProblem as AlgorithmAmplitudeEstimationProblem,
+)
 from cqlib_algorithms.algorithms import BB84Basis as AlgorithmBB84Basis
 from cqlib_algorithms.algorithms import BB84Request as AlgorithmBB84Request
 from cqlib_algorithms.algorithms import BB84Result as AlgorithmBB84Result
@@ -78,6 +102,52 @@ from cqlib_algorithms.algorithms import (
 from cqlib_algorithms.algorithms import (
     DeutschJozsaResult as AlgorithmDeutschJozsaResult,
 )
+from cqlib_algorithms.algorithms import (
+    HamiltonianPhaseEstimation as AlgorithmHamiltonianPhaseEstimation,
+)
+from cqlib_algorithms.algorithms import (
+    HamiltonianPhaseEstimationRequest as AlgorithmHamiltonianPhaseEstimationRequest,
+)
+from cqlib_algorithms.algorithms import (
+    HamiltonianPhaseEstimationResult as AlgorithmHamiltonianPhaseEstimationResult,
+)
+from cqlib_algorithms.algorithms import (
+    IterativeAmplitudeEstimation as AlgorithmIterativeAmplitudeEstimation,
+)
+from cqlib_algorithms.algorithms import (
+    IterativeAmplitudeEstimationRequest as AlgorithmIterativeAmplitudeEstimationRequest,
+)
+from cqlib_algorithms.algorithms import (
+    IterativeAmplitudeEstimationResult as AlgorithmIterativeAmplitudeEstimationResult,
+)
+from cqlib_algorithms.algorithms import (
+    IterativePhaseEstimation as AlgorithmIterativePhaseEstimation,
+)
+from cqlib_algorithms.algorithms import (
+    IterativePhaseEstimationRequest as AlgorithmIterativePhaseEstimationRequest,
+)
+from cqlib_algorithms.algorithms import (
+    IterativePhaseEstimationResult as AlgorithmIterativePhaseEstimationResult,
+)
+from cqlib_algorithms.algorithms import (
+    MaximumLikelihoodAmplitudeEstimation as AlgorithmMaximumLikelihoodAmplitudeEstimation,
+)
+from cqlib_algorithms.algorithms import (
+    MaximumLikelihoodAmplitudeEstimationRequest as AlgorithmMaximumLikelihoodAmplitudeEstimationRequest,
+)
+from cqlib_algorithms.algorithms import (
+    MaximumLikelihoodAmplitudeEstimationResult as AlgorithmMaximumLikelihoodAmplitudeEstimationResult,
+)
+from cqlib_algorithms.algorithms import PhaseEstimation as AlgorithmPhaseEstimation
+from cqlib_algorithms.algorithms import (
+    PhaseEstimationProblem as AlgorithmPhaseEstimationProblem,
+)
+from cqlib_algorithms.algorithms import (
+    PhaseEstimationRequest as AlgorithmPhaseEstimationRequest,
+)
+from cqlib_algorithms.algorithms import (
+    PhaseEstimationResult as AlgorithmPhaseEstimationResult,
+)
 from cqlib_algorithms.algorithms import QAOAResult as AlgorithmQAOAResult
 from cqlib_algorithms.algorithms import (
     QuantumTeleportation as AlgorithmQuantumTeleportation,
@@ -92,6 +162,15 @@ from cqlib_algorithms.algorithms import Simon as AlgorithmSimon
 from cqlib_algorithms.algorithms import SimonRequest as AlgorithmSimonRequest
 from cqlib_algorithms.algorithms import SimonResult as AlgorithmSimonResult
 from cqlib_algorithms.algorithms import (
+    StandardAmplitudeEstimation as AlgorithmStandardAmplitudeEstimation,
+)
+from cqlib_algorithms.algorithms import (
+    StandardAmplitudeEstimationRequest as AlgorithmStandardAmplitudeEstimationRequest,
+)
+from cqlib_algorithms.algorithms import (
+    StandardAmplitudeEstimationResult as AlgorithmStandardAmplitudeEstimationResult,
+)
+from cqlib_algorithms.algorithms import (
     SuperdenseCoding as AlgorithmSuperdenseCoding,
 )
 from cqlib_algorithms.algorithms import (
@@ -100,7 +179,22 @@ from cqlib_algorithms.algorithms import (
 from cqlib_algorithms.algorithms import (
     SuperdenseCodingResult as AlgorithmSuperdenseCodingResult,
 )
+from cqlib_algorithms.algorithms import VQAResult as AlgorithmVQAResult
 from cqlib_algorithms.algorithms import VQEResult as AlgorithmVQEResult
+from cqlib_algorithms.algorithms.variational import QAOA as VariationalQAOA
+from cqlib_algorithms.algorithms.variational import VQE as VariationalVQE
+from cqlib_algorithms.algorithms.variational import (
+    QAOAResult as VariationalQAOAResult,
+)
+from cqlib_algorithms.algorithms.variational import (
+    VQAResult as VariationalVQAResult,
+)
+from cqlib_algorithms.algorithms.variational import (
+    VQEResult as VariationalVQEResult,
+)
+from cqlib_algorithms.operators import (
+    PhaseEstimationCircuit as OperatorPhaseEstimationCircuit,
+)
 from cqlib_algorithms.protocols import (
     Ansatz,
     Estimator,
@@ -120,6 +214,7 @@ from cqlib_algorithms.protocols import (
 from cqlib_algorithms.transforms import QFT as TransformQFT
 
 PUBLIC_COMPONENTS = {
+    "AmplitudeEstimationProblem": AmplitudeEstimationProblem,
     "Ansatz": Ansatz,
     "BB84": BB84,
     "BB84Basis": BB84Basis,
@@ -134,6 +229,18 @@ PUBLIC_COMPONENTS = {
     "DeutschJozsa": DeutschJozsa,
     "DeutschJozsaRequest": DeutschJozsaRequest,
     "DeutschJozsaResult": DeutschJozsaResult,
+    "HamiltonianPhaseEstimation": HamiltonianPhaseEstimation,
+    "HamiltonianPhaseEstimationRequest": HamiltonianPhaseEstimationRequest,
+    "HamiltonianPhaseEstimationResult": HamiltonianPhaseEstimationResult,
+    "IterativeAmplitudeEstimation": IterativeAmplitudeEstimation,
+    "IterativeAmplitudeEstimationRequest": IterativeAmplitudeEstimationRequest,
+    "IterativeAmplitudeEstimationResult": IterativeAmplitudeEstimationResult,
+    "IterativePhaseEstimation": IterativePhaseEstimation,
+    "IterativePhaseEstimationRequest": IterativePhaseEstimationRequest,
+    "IterativePhaseEstimationResult": IterativePhaseEstimationResult,
+    "MaximumLikelihoodAmplitudeEstimation": MaximumLikelihoodAmplitudeEstimation,
+    "MaximumLikelihoodAmplitudeEstimationRequest": MaximumLikelihoodAmplitudeEstimationRequest,
+    "MaximumLikelihoodAmplitudeEstimationResult": MaximumLikelihoodAmplitudeEstimationResult,
     "Estimator": Estimator,
     "EstimatorRequest": EstimatorRequest,
     "EstimatorResult": EstimatorResult,
@@ -146,6 +253,11 @@ PUBLIC_COMPONENTS = {
     "OptimizerStatus": OptimizerStatus,
     "QAOA": QAOA,
     "QAOAResult": QAOAResult,
+    "PhaseEstimation": PhaseEstimation,
+    "PhaseEstimationCircuit": PhaseEstimationCircuit,
+    "PhaseEstimationProblem": PhaseEstimationProblem,
+    "PhaseEstimationRequest": PhaseEstimationRequest,
+    "PhaseEstimationResult": PhaseEstimationResult,
     "QuantumTeleportation": QuantumTeleportation,
     "QuantumTeleportationRequest": QuantumTeleportationRequest,
     "QuantumTeleportationResult": QuantumTeleportationResult,
@@ -158,6 +270,9 @@ PUBLIC_COMPONENTS = {
     "SuperdenseCoding": SuperdenseCoding,
     "SuperdenseCodingRequest": SuperdenseCodingRequest,
     "SuperdenseCodingResult": SuperdenseCodingResult,
+    "StandardAmplitudeEstimation": StandardAmplitudeEstimation,
+    "StandardAmplitudeEstimationRequest": StandardAmplitudeEstimationRequest,
+    "StandardAmplitudeEstimationResult": StandardAmplitudeEstimationResult,
     "VQE": VQE,
     "VQEResult": VQEResult,
     "VQAResult": VQAResult,
@@ -215,14 +330,70 @@ def test_qft_is_exported_from_public_namespaces():
     assert QFT is TransformQFT
 
 
+def test_phase_estimation_is_exported_from_public_namespaces():
+    assert PhaseEstimationCircuit is OperatorPhaseEstimationCircuit
+    assert PhaseEstimation is AlgorithmPhaseEstimation
+    assert PhaseEstimationProblem is AlgorithmPhaseEstimationProblem
+    assert PhaseEstimationRequest is AlgorithmPhaseEstimationRequest
+    assert PhaseEstimationResult is AlgorithmPhaseEstimationResult
+    assert IterativePhaseEstimation is AlgorithmIterativePhaseEstimation
+    assert IterativePhaseEstimationRequest is AlgorithmIterativePhaseEstimationRequest
+    assert IterativePhaseEstimationResult is AlgorithmIterativePhaseEstimationResult
+    assert HamiltonianPhaseEstimation is AlgorithmHamiltonianPhaseEstimation
+    assert (
+        HamiltonianPhaseEstimationRequest is AlgorithmHamiltonianPhaseEstimationRequest
+    )
+    assert HamiltonianPhaseEstimationResult is AlgorithmHamiltonianPhaseEstimationResult
+
+
 def test_vqe_is_exported_from_public_namespaces():
-    assert VQE is AlgorithmVQE
-    assert VQEResult is AlgorithmVQEResult
+    assert VQE is AlgorithmVQE is VariationalVQE
+    assert VQEResult is AlgorithmVQEResult is VariationalVQEResult
+    assert VQAResult is AlgorithmVQAResult is VariationalVQAResult
+
+
+def test_amplitude_estimation_is_exported_from_public_namespaces():
+    assert AmplitudeEstimationProblem is AlgorithmAmplitudeEstimationProblem
+    assert StandardAmplitudeEstimation is AlgorithmStandardAmplitudeEstimation
+    assert (
+        StandardAmplitudeEstimationRequest
+        is AlgorithmStandardAmplitudeEstimationRequest
+    )
+    assert (
+        StandardAmplitudeEstimationResult is AlgorithmStandardAmplitudeEstimationResult
+    )
+    assert IterativeAmplitudeEstimation is AlgorithmIterativeAmplitudeEstimation
+    assert (
+        IterativeAmplitudeEstimationRequest
+        is AlgorithmIterativeAmplitudeEstimationRequest
+    )
+    assert (
+        IterativeAmplitudeEstimationResult
+        is AlgorithmIterativeAmplitudeEstimationResult
+    )
+    assert (
+        MaximumLikelihoodAmplitudeEstimation
+        is AlgorithmMaximumLikelihoodAmplitudeEstimation
+    )
+    assert (
+        MaximumLikelihoodAmplitudeEstimationRequest
+        is AlgorithmMaximumLikelihoodAmplitudeEstimationRequest
+    )
+    assert (
+        MaximumLikelihoodAmplitudeEstimationResult
+        is AlgorithmMaximumLikelihoodAmplitudeEstimationResult
+    )
 
 
 def test_qaoa_is_exported_from_public_namespaces():
-    assert QAOA is AlgorithmQAOA
-    assert QAOAResult is AlgorithmQAOAResult
+    assert QAOA is AlgorithmQAOA is VariationalQAOA
+    assert QAOAResult is AlgorithmQAOAResult is VariationalQAOAResult
+
+
+def test_quantum_teleportation_is_exported_from_public_namespaces():
+    assert QuantumTeleportation is AlgorithmQuantumTeleportation
+    assert QuantumTeleportationRequest is AlgorithmQuantumTeleportationRequest
+    assert QuantumTeleportationResult is AlgorithmQuantumTeleportationResult
 
 
 def test_quantum_teleportation_is_exported_from_public_namespaces():

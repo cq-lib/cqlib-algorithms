@@ -11,7 +11,7 @@ license = "Apache-2.0"
 license-files = ["LICENSE.txt"]
 requires-python = ">=3.10"
 dependencies = [
-    "cqlib>=1.4.0b1,<1.5",
+    "cqlib>=2.0.0b5,<2.1",
     "numpy>=2.1.0",
 ]
 

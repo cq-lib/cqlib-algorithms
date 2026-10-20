@@ -10,7 +10,14 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Pure-state circuit fidelity through the compute-uncompute construction."""
+"""Pure-state circuit fidelity through the compute-uncompute construction.
+
+References
+----------
+[1] V. Havlíček et al., "Supervised learning with quantum-enhanced feature
+    spaces," Nature, 567, 209-212, 2019.
+    DOI: 10.1038/s41586-019-0980-2.
+"""
 
 from __future__ import annotations
 

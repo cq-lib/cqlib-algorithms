@@ -10,7 +10,15 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Superdense coding of two classical bits with one transmitted qubit."""
+"""Superdense coding of two classical bits with one transmitted qubit.
+
+References
+----------
+[1] C. H. Bennett and S. J. Wiesner, "Communication via one- and
+    two-particle operators on Einstein-Podolsky-Rosen states," Physical
+    Review Letters, 69, 2881-2884, 1992.
+    DOI: 10.1103/PhysRevLett.69.2881.
+"""
 
 from __future__ import annotations
 

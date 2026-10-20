@@ -61,8 +61,8 @@
 - `SparseAmplitudeEncoding` 对显式支持集自动归一化，拒绝重复索引和显式零幅度。
   其 exact support-set two-level 综合的经典存储为 `O(s+n)`，逻辑多控操作为
   `O(sn)`，open-control 周边单比特操作为最坏 `O(sn²)`。当前 Core 无辅助量子比特
-  的多控门分解使基础门上界为最坏 `O(sn³)`。该实现不作量子随机访问存储器
-  （QRAM）能力或多项式以下的数据加载复杂度声明。
+  的多控门分解使基础门上界为最坏 `O(sn³)`。数据加载通过显式支持集线路综合完成，
+  并按上述存储与门复杂度评估。
 - `AngleEncoding` 仅接受未绑定的 `RX`、`RY`、`RZ` 或 `Phase`；
   `FeatureMapPreparation` 仅接受 Cqlib 的 `ZFeatureMap`、`IQPFeatureMap`、
   `ZZFeatureMap` 或 `PauliFeatureMap`。两者保存 Core 组件快照并委托 Core 构建。
@@ -87,6 +87,21 @@
 - `PauliTwoDesignAnsatz` 在构造时抽样并冻结随机轴，使用 `RY(pi/4)` 初始层、
   `RX`/`RY`/`RZ` 参数层和 even/odd 最近邻 `CZ` brickwork。测试固定 seed 的
   操作快照，同时用独立矩阵验证，而不要求与其他框架共享随机数序列。
+- `EvolvedOperatorAnsatz` 对有限、非空、Hermitian、同宽 Hamiltonian 序列按输入
+  顺序逐一委托 `PauliEvolutionAnsatz`；参数按 repetition、operator 排列。默认移除
+  纯 identity Hamiltonian，显式保留时必须保留其参数化全局相位。
+- `HamiltonianVariationalAnsatz` 对单一 Hamiltonian 使用
+  `CommutingObservableGrouping` 形成稳定全局对易块；显式块必须各自内部对易。线路
+  与参数管理委托 `EvolvedOperatorAnsatz`，不得重写演化综合。
+- `ExcitationPreservingAnsatz` 每条边共享一个参数于 `RXX(theta/2)` 与
+  `RYY(theta/2)`；fsim 模式再追加受控 `Phase(-phi)`。拓扑边在构造时校验并冻结，
+  测试必须验证线路与总激发数算符对易以及固定 Hamming-weight 子空间不泄漏。
+- `SimplifiedTwoDesignAnsatz` 使用全局初始 RY 层，并在每个 even/odd 最近邻 CZ 后
+  对两个端点分别施加新 RY 参数；不得将其表述为严格 unitary two-design。
+- `RandomLayersAnsatz` 在构造时用私有随机数生成器一次性冻结门、目标和顺序；同一
+  实例重复构建或参数绑定不得重新抽样。每个旋转槽前最多插入一个纠缠门，因此每层
+  门数不超过旋转槽数的两倍；`entanglement_ratio=1` 仍必须有界终止。单量子比特
+  配置不生成双比特门。
 - QAOA 成本层和混合层分别使用 `{prefix}_gamma` 与 `{prefix}_beta`，防御性复制
   Hamiltonian，并委托 Core `PauliEvolutionAnsatz`。单层组件不隐式添加初态或组合
   为完整 QAOA。
@@ -112,6 +127,41 @@
 - `HadamardPhaseQuery` 只组合 `H**n -> S_f -> H**n` 的未测量线路，函数与
   `output_mask` 语义完全委托 `PhaseOracle`；承诺判定、采样和经典后处理属于算法层。
 
+## 振幅估计实现约定
+
+- 三种振幅估计算法共享 `AmplitudeEstimationProblem`，由调用方提供完全绑定、
+  静态酉且同宽的 `A`、`Q`、目标量子比特位置和显式好态谓词；构造时按量子比特
+  插入位置防御性复制到连续位置，执行前重新验证浅冻结对象。
+- 标准版本复用通用 `PhaseEstimationCircuit`，固定使用完整稠密受控矩阵。先取
+  `U=Q.to_matrix([0,...,n-1])`，保留线路全局相位，再构造
+  `diag(I,U^p)` 并追加到 `[control,*reversed(system_targets)]`；不得省略系统目标
+  反转或单独消除全局相位。分配前必须执行稠密内存上限检查。
+- 标准版本复用现有逆 QFT；完整相位分布原样保留，但选择估计值前按
+  `min(y,2^m-y)` 聚合同振幅的两个相位代表，规范网格并列时选择最小值。迭代与
+  最大似然版本只构造普通 `Q^k A`，前者按轮自适应批量执行，后者把全部固定幂次
+  压平为一次 Sampler 调用。
+- 迭代版本的置信预算必须使用 Grinko Algorithm 1 的
+  `T=ceil(log2(pi/(8*epsilon)))`，按论文 `Lmax` 规则动态降低过冲轮次的 shots，并
+  合并相同 `k` 的累计数据；调度半圆判断与圈编号必须按 binary64 端点的精确有理值
+  计算。`T` 是置信预算中的同幂次组数界；`max_rounds` 只作实际迭代硬上限，取值不小于
+  `T` 也不代表必然足够。成功结果必须再次核验振幅区间宽度不超过 `2*epsilon`。
+  IAE 的基准 shots 上限为 `2^53-1`，超限请求必须在 Sampler 调用前稳定拒绝。
+  最大似然版本必须遍历所有奇点分区，以有理边界识别概率 0/1，有限精度搜索必须有
+  停滞保护；不得用随对数似然绝对值或 shots 放大的相对容差合并不同全局峰。数值
+  似然平台不得触发统一的边界优先；每个严格凹区间必须通过单调一阶导数二分定位
+  内部根，只有根的包围区间证明其距精确边界不超过请求精度时才允许吸附边界。跨
+  区间候选必须从 theta 本身以标准库 Decimal 高精度重算三角函数与对数，不能把
+  binary64 三角结果转换为 Decimal；内部候选还必须在原 Fraction 奇点区间用 Decimal
+  score 重新细化根，不能直接评分用户容差内的 float 中点。至少用两档精度验证全局
+  排序稳定，否则提高精度或显式失败。公共 MLAE 请求的 shots 上限为 `2^53-1`：Core
+  结果以平台 `usize` 承载更大值，但 binary64 候选几何不能精确表示更大的整数频数，
+  因而必须在 Sampler 调用前拒绝。
+- 线路级 `num_grover_queries` 记录各幂次之和，`num_oracle_queries` 记录按 shots
+  加权后的查询数。迭代版本返回 Chernoff--Hoeffding 区间；最大似然版本只返回明确
+  标注的渐近区间；标准有限-shot 结果不虚构置信区间。
+- 理论版本分别源自 Brassard 等 arXiv:quant-ph/0005055、Grinko 等
+  arXiv:1912.05559v3 和 Suzuki 等 arXiv:1904.10246v2。
+
 ## VQE 实现约定
 
 - `VQE` 只组合公共 `Ansatz`、`Estimator` 和 `Optimizer` 契约；线路构建、期望值、
@@ -129,11 +179,13 @@
 - `QAOA` 只接受非空、有限、Hermitian 且计算基对角的成本 Hamiltonian。主入口
   `compute_minimum_eigenvalue` 最小化原始期望值；`compute_maximum` 显式最小化
   负成本，但演化线路仍使用原始成本。结果用 `objective_sense` 区分这两种语义。
-- 默认初态复用 `UniformSuperposition`，每层依次复用 `QAOACostEvolution` 与
-  `QAOAMixerEvolution`；算法层不重新实现演化、期望值、梯度、优化或参数绑定。
+- 默认初态复用 `UniformSuperposition`，成本层复用 `QAOACostEvolution`；
+  Hamiltonian mixer 路径复用 `QAOAMixerEvolution`，线路 mixer 路径直接组合其
+  `Ansatz` 线路。算法层不重新实现演化、期望值、梯度、优化或参数绑定。
 - 层参数顺序固定为 `{prefix}_{k}_gamma, {prefix}_{k}_beta`。自定义初态必须固定、
-  无活跃符号且同宽；自定义 mixer 必须非空、有限、Hermitian 且同宽，再由底层
-  演化组件验证线路语义。
+  无活跃符号且同宽；自定义 `mixer_operator` 必须非空、有限、Hermitian 且同宽，
+  再由底层演化组件验证线路语义。线路 `mixer` 必须同宽、恰有一个逻辑参数，并遵守
+  每层 beta 命名契约；其酉结构与综合顺序由 Mixer 组件自身负责。
 - `QAOA.build_circuit` 直接拼装初态与演化层，不新建内部 Ansatz 包装；优化入口
   调用该可覆盖方法，并直接使用 Estimator/Optimizer 契约，不委托另一算法。
 - VQE 与 QAOA 共享 `VQAResult`。`optimal_value` 表示原目标在最终迭代点的期望值，
@@ -141,6 +193,29 @@
   校验该关系。不得虚构优化器未提供的 checkpoint、方差或收敛保证。
 - 公共结果 dataclass 保持标准构造与 `dataclasses.replace`，简短 repr 只显示
   目标值、参数数量、方向、迭代次数与状态，不打印完整线路。
+
+## Mixer 实现约定
+
+- 公共 Mixer 位于 `operators/mixer/`，实现 `Ansatz` 的单参数契约；线路唯一活跃符号
+  固定为 `{prefix}_beta`。局部交换生成元统一为 `(XX+YY)/2`，精确块使用共享 beta
+  的 `RXX(beta)` 与 `RYY(beta)`，不得混用不同的角度缩放。
+- simultaneous Hamiltonian 演化必须复用 `QAOAMixerEvolution` 和 Core
+  `PauliEvolutionAnsatz` 的 Hamiltonian 校验与策略元数据，并显式接受
+  `EvolutionStrategy`；实际乘积公式以完整 XY exchange 为原子项，不能将 XX/YY
+  Pauli 子项打散后破坏 one-hot 子空间。非对易默认路径只能声明为乘积公式近似，
+  randomized Pauli 子项策略必须拒绝。partitioned Mixer 是共享 beta 的有序精确
+  局部块乘积，两者不得混称。
+- `NullSwapMixer` 表示所有 null/value 交换之和，不得偷换成单个 partial mixer。
+  受控 null/value 和 value/value 组件是计算基谓词控制的局部构件。
+- 四体排列或时间交换使用系数 `+/-1/8` 的八项 commuting Pauli 展开，并复用
+  `QAOAMixerEvolution` 的 exact 策略。direct one-hot 的 value-independent 组合只在
+  合法编码子空间声明与 simultaneous 生成元等价。
+- parity、color-parity、time-color 和通用 `PartitionedMixer` 的应用顺序属于公共
+  语义；输入容器在构造时冻结，重复构建返回独立线路。测试必须独立验证矩阵、全局
+  相位、可行子空间不泄漏和顺序，不得用实现自身作参考。
+- `QAOA` 的 Hamiltonian mixer 与线路 Mixer 接口互斥。线路 Mixer 必须同宽、恰有
+  一个参数，并在每层只生成 `{prefix}_{layer}_beta`；已定义线路顺序时拒绝额外
+  `mixer_strategy`。
 
 ## Deutsch-Jozsa 实现约定
 
