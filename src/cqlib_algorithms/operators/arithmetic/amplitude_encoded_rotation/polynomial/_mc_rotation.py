@@ -11,7 +11,7 @@ oracles, …) so the SDK-level path for controlled standard gates is uniform.
 Every helper in this module is deliberately left module-private.  The three
 public classes in neighbouring modules import exactly the helpers they need
 via ``from ._mc_rotation import <name>``, which allows a thin but
-consistent code style across the subpackage.
+consistent implementation conventions across the subpackage.
 """
 
 from __future__ import annotations

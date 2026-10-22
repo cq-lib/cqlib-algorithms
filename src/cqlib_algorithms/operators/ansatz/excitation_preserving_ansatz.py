@@ -68,6 +68,18 @@ class ExcitationPreservingAnsatz(BaseAnsatz):
     The resulting circuit commutes with total computational-basis excitation
     number. A useful variational state therefore normally starts from a
     separately prepared state in the desired nonzero excitation sector.
+
+    Args:
+        num_qubits: Positive circuit width.
+        reps: Nonnegative number of exchange repetitions.
+        mode: ``"iswap"`` or ``"fsim"`` exchange parameterization.
+        entanglement: Core topology, or ``None`` for the default.
+        skip_unentangled_qubits: Whether to omit local rotations on idle qubits.
+        skip_final_rotation_layer: Whether to omit the final local layer.
+
+    Raises:
+        TypeError: If an option has the wrong type.
+        ValueError: If width, repetitions, mode, or topology are invalid.
     """
 
     __slots__ = (

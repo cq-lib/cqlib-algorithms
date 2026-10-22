@@ -162,6 +162,15 @@ class PhaseEstimationCircuit:
     controlled matrices, preserving the unitary's global phase. The path has
     exponential memory cost in the system width and enforces a pre-allocation
     memory limit.
+
+    Args:
+        unitary: Positive-width, fully bound static unitary circuit.
+        num_evaluation_qubits: Positive phase-register width.
+        approximation_degree: Small-angle inverse-QFT layers to omit.
+
+    Raises:
+        TypeError: If an argument has the wrong type.
+        ValueError: If the circuit, width, approximation, or memory bound is invalid.
     """
 
     __slots__ = (

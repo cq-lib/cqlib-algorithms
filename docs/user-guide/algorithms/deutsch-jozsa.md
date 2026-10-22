@@ -45,12 +45,11 @@ Proc. R. Soc. Lond. A 454, 339 (1998)。
   \(g(x)=\bigoplus_{j:\,m_j=1} f_j(x)\)，其中 \(m\) 是 `output_mask`，
   常/平衡承诺作用于 \(g\)，而不是分别作用于每个输出位；
 - `DeutschJozsa.build_circuit(function, output_mask=None)` 构建未测量的
-  `H**n -> S_f -> H**n` 查询线路，末端测量由 Sampler 在私有执行线路上追加；
-- `run(requests)` 先把整批请求全部校验和变换，再用一次压平的 Sampler 调用
-  执行，并用 `protocols.sampler` 的公共结果校验函数核验，结果按请求顺序返回。
+  `H**n -> S_f -> H**n` 查询线路，末端测量由 Sampler 追加；
+- `run(requests)` 批量执行请求，结果按请求顺序返回。
 
-`DeutschJozsaRequest(function, shots, output_mask=None)` 是浅冻结的查询值对象，
-`shots` 必须为正整数。`DeutschJozsaResult(is_constant, zero_count, shots)`
+`DeutschJozsaRequest(function, shots, output_mask=None)` 中 `shots` 必须为正整数。
+`DeutschJozsaResult(is_constant, zero_count, shots)`
 记录判别与全零统计，`is_balanced` 为互补判定。
 
 ## 判别语义与边界

@@ -39,6 +39,18 @@ class TwoLocalAnsatz(BaseAnsatz):
     ``rotation_gates``. Each of the first ``reps`` rotation layers is followed
     by an entanglement layer. A final rotation layer is included unless
     ``skip_final_rotation_layer`` is true.
+
+    Args:
+        num_qubits: Positive circuit width.
+        reps: Nonnegative number of entangling repetitions.
+        rotation_gates: Nonempty supported single-qubit rotation sequence.
+        entanglement_gate: Supported two-qubit entangling gate.
+        entanglement: Core topology, or ``None`` for the default.
+        skip_final_rotation_layer: Whether to omit the final rotation layer.
+
+    Raises:
+        TypeError: If an option has the wrong type.
+        ValueError: If width, repetitions, gates, or topology are invalid.
     """
 
     __slots__ = ()

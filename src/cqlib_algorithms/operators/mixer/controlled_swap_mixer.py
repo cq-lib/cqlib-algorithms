@@ -40,6 +40,14 @@ class ControlledSwapMixer(_BaseMixer):
     null exchange even though both compile to the same controlled XY block.
     ``None`` selects the all-zero state used by the NONE predicate; an explicit
     integer selects an extension to any computational control state.
+
+    Args:
+        num_controls: Positive number of control qubits.
+        control_state: Selected little-endian control value, or all-zero by default.
+
+    Raises:
+        TypeError: If an argument has the wrong type.
+        ValueError: If the width or control state is invalid.
     """
 
     __slots__ = ("_control_state", "_num_controls")

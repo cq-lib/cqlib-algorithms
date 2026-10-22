@@ -45,6 +45,14 @@ class SparseAmplitudeEncoding(StatePreparation):
     Indices use Cqlib little-endian basis numbering. Entries may be unordered;
     they are copied, normalized, and stored in ascending-index order. Duplicate
     indices and explicit zero amplitudes are rejected.
+
+    Args:
+        num_qubits: Positive target-register width.
+        entries: Nonempty ``(basis_index, amplitude)`` support entries.
+
+    Raises:
+        TypeError: If the width, indices, or amplitudes have invalid types.
+        ValueError: If support, bounds, amplitudes, or normalization are invalid.
     """
 
     __slots__ = ("_entries", "_num_qubits")

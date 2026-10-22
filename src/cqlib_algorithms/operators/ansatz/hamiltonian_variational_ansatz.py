@@ -89,6 +89,14 @@ class HamiltonianVariationalAnsatz(BaseAnsatz):
     decomposition; every block must be internally commuting, while distinct
     blocks need not commute. Evolution and parameter ordering are delegated
     to :class:`EvolvedOperatorAnsatz`.
+
+    Args:
+        hamiltonian: Hermitian Hamiltonian or ordered commuting blocks.
+        reps: Positive number of block-sequence repetitions.
+
+    Raises:
+        TypeError: If an input has the wrong type.
+        ValueError: If widths, Hermiticity, commutation, or repetitions are invalid.
     """
 
     __slots__ = ()

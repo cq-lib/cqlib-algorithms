@@ -1,8 +1,8 @@
-# 相位估计算子与算法
+# 相位估计
 
 本模块提供可复用相位估计电路、标准量子相位估计（QPE）、迭代量子相位估计
-（IQPE）和 Hamiltonian 相位估计（HPE）。公共输入均使用 Cqlib `Circuit`、
-`Hamiltonian` 和本库 `Sampler`，不依赖 Qiskit 运行时。
+（IQPE）和 Hamiltonian 相位估计（HPE）。公共输入使用 Cqlib `Circuit`、
+`Hamiltonian` 和本库 `Sampler`。
 
 ## 数学约定
 
@@ -13,8 +13,8 @@ U|psi> = exp(2*pi*i*phi)|psi>,  phi in [0, 1).
 ```
 
 系统量子比特采用 Cqlib 小端序。`m` 个估计量子比特的整数结果 `y` 表示
-`phi=y/2**m`。所有状态制备和酉线路必须固定、完全绑定、静态且同宽；构造时会按
-量子比特插入位置防御性复制到连续位置。
+`phi=y/2**m`。所有状态制备和酉线路必须固定、完全绑定、静态且同宽；量子比特按
+插入位置映射到连续位置。
 
 ## PhaseEstimationCircuit
 
@@ -127,5 +127,3 @@ result = algorithm.run([
   Information*，相位估计章节。
 - A. Y. Kitaev，*Quantum measurements and the Abelian Stabilizer Problem*，
   arXiv:quant-ph/9511026。
-- Qiskit `PhaseEstimation`、`IterativePhaseEstimation` 与
-  `HamiltonianPhaseEstimation` 的公开接口和缩放约定。

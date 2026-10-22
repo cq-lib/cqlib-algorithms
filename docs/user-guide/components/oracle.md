@@ -63,17 +63,9 @@ XOR 的相位回踢与选择 `k = 2**i` 的 Phase Oracle 一致；多个被选�
 
 `GeneralStateReflection(A)` 要求非空、Core 可静态求逆的 Cqlib 线路
 `A`，并返回 `A R0 A† = 2|ψ><ψ| - I`，`|ψ> = A|0>`。实际线路
-时间顺序为 `A† → R0 → A`。传入线路在构造时复制，返回的制备线路视图和每次
-构造结果也各自独立；非连续源量子比特 ID 按 `Circuit.qubits` 的位置映射到
+时间顺序为 `A† → R0 → A`。非连续源量子比特 ID 按 `Circuit.qubits` 的位置映射到
 `0..n-1`。测量、重置、延时、动态控制等不能静态求逆的操作被拒绝。
 参数化线路可先构建反射，再通过 Core 的 `assign_parameters` 绑定。
-
-`BooleanFunction` 和 `BooleanVectorFunction` 是冻结的 dataclass 值对象。
-`BitFlipOracle`、`PhaseOracle`、`ZeroStateReflection`、`GroverDiffusion` 和
-`GeneralStateReflection` 则是带 slots、公开配置只读的普通行为组件，不提供
-dataclass 的值比较或 `replace()` 语义。`GeneralStateReflection` 的内部线路不直接
-暴露；需要派生配置时，取得 `state_preparation` 的独立副本，修改后传入新的
-`GeneralStateReflection`，已有对象及其线路快照不受影响。
 
 `GeneralStateReflection.from_state_preparation(component, prefix=...)` 也接受
 显式继承本库 `StatePreparation` 抽象基类的组件：先调用 `validate()`，再核验
@@ -126,14 +118,3 @@ assert reflection.num_qubits == diffusion.num_qubits == 2
 翻转，最坏仍随 `2**n` 增长。它适合小规模精确构造，**不是**黑盒查询复杂度
 优化、QRAM 数据加载或一般布尔函数的高效编译承诺。反射只使用已有 Cqlib
 线路、标准门、组合和求逆能力；不复制平台后端接口。
-
-测试使用独立构造的 Phase 对角矩阵、BitFlip 置换矩阵，以及
-`2|ψ><ψ|-I` 的解析参考矩阵，覆盖标量/向量函数、端序、全局相位、
-参数化反射、非连续量子比特映射和错误输入。核心参考与当前开发基线
-`cqlib develop` 提交 `c3abe91a4adf804b6fb3304fab6ec3dc24a4ad85` 的
-Python 绑定接口一致；其他 Core 提交或合入目标主分支后的可用性需重新验证。
-
-```powershell
-uv run --no-sync pytest tests/operators/oracle -q
-uv run --no-sync pytest -q
-```

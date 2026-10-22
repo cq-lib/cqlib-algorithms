@@ -1,23 +1,17 @@
-# Ansatz 与 QAOA 演化层组件
+# Ansatz 与 QAOA 演化层
 
-本文档描述 `cqlib_algorithms.operators.ansatz` 中已经实现的公共组件。实现及测试基于
-Cqlib Core `develop` 提交 `c3abe91a4adf804b6fb3304fab6ec3dc24a4ad85` 的
-Python 接口。所有具体组件均显式继承公共实现类 `BaseAnsatz`，后者继承
-`cqlib_algorithms.protocols.Ansatz`；每次构建均返回独立的 `Circuit`。
+本页用于选择和组合已实现的变分线路。所有具体组件实现公共 `Ansatz` 协议，每次
+构建返回独立 `Circuit`；构造参数和异常以源码 docstring 为准。
 
 ## 公共约定
 
-- `BaseAnsatz` 统一实现 `validate()`、`build_circuit()`、`num_parameters()` 与
-  `num_qubits()`，并直接提供内部构建器的默认代理钩子。普通组件只保留构造配置，
-  只有行为不同或自行构建线路的组件才覆盖相应钩子。
-- 公共构建流程统一校验 prefix、重新校验组件配置和 Core 线路。
+- 公共构建流程统一校验 prefix、组件配置和生成的 Core 线路。
 - `num_qubits` 必须是大于零的 Python `int`，`bool` 不作为整数接受。
 - `reps` 必须是非负 Python `int`。`reps=0` 是合法退化配置。
 - `prefix` 必须是字符串，用于为新建的符号参数命名。
 - TwoLocal 系列默认纠缠拓扑为 `EntanglementTopology.linear()`；其他组件的默认值
   在各自章节说明。
 - TwoLocal 系列的参数顺序为“旋转层、量子比特、该量子比特上的旋转门位置”。
-- 组件构造时复制或冻结输入配置，调用方后续修改原对象不会改变已经构造的组件。
 
 ## TwoLocal 系列
 
@@ -102,9 +96,9 @@ seed，也不保证产生相同的随机轴序列。
 exp(-i * theta_0 * O_0), ..., exp(-i * theta_(m-1) * O_(m-1))
 ```
 
-每次演化都委托 Core `PauliEvolutionAnsatz`。参数按 repetition、operator 排列并
+参数按 repetition、operator 排列并
 命名为 `{prefix}_0, {prefix}_1, ...`，总数为 `reps * m`。所有 Hamiltonian 在
-构造时完成有限性、Hermitian、非空和同宽校验并保存快照。
+构造时必须满足有限、Hermitian、非空和同宽约束。
 
 ```python
 from cqlib.circuit.ansatz import EvolutionStrategy
@@ -196,7 +190,7 @@ weight；若从全零态直接开始，它不会自行产生非零激发，因�
 num_qubits + 2 * reps * (num_qubits - 1)
 ```
 
-该结构用于可训练性和变分线路基准，是确定性的 two-design-style 结构，不表示任意
+该结构用于可训练性和变分线路基准，是确定性的简化 two-design 结构，不表示任意
 有限宽度和深度都形成严格 unitary two-design。
 
 ### `RandomLayersAnsatz`
@@ -289,7 +283,6 @@ cost_layer = QAOACostEvolution(cost).build_circuit("qaoa")
 mixer_layer = QAOAMixerEvolution(2).build_circuit("qaoa")
 ```
 
-两个组件都委托 Core `PauliEvolutionAnsatz`，并对传入 Hamiltonian 做防御性复制。
 默认 `EvolutionStrategy.auto(steps=1)`：对相互对易项使用精确乘积，对不对易项使用
 一阶 Lie–Trotter。也可以显式传入 Core `EvolutionStrategy`。组件仅表示单个成本层
 或混合层，不包含初态、层间参数管理和完整 QAOA 线路。
@@ -315,7 +308,7 @@ mixer_layer = QAOAMixerEvolution(2).build_circuit("qaoa")
   说明固定粒子数子空间中变分线路的价值及守恒结构。
 - Cerezo 等，
   [Cost function dependent barren plateaus in shallow parametrized quantum circuits](https://arxiv.org/abs/2001.00550)，
-  给出本文采用的简化 two-design-style 线路结构和可训练性分析。
+  给出本文采用的简化 two-design 线路结构和可训练性分析。
 
 这些论文用于核对数学结构和接口组织。本项目的默认值、随机序列和门顺序以本文档
 及 Cqlib 公共协议为准。

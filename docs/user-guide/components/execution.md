@@ -1,4 +1,36 @@
-# 期望值估计器实现
+# 执行组件：Sampler 与 Estimator
+
+本页说明如何在采样、精确期望值和有限-shot 期望值之间选择。公共构造参数、请求字段
+和异常以源码 docstring 为准。
+
+## Sampler
+
+- `StatevectorSampler` 在本地态矢量上按 shots 抽样，适合测试和教学。
+- `BackendSampler` 接收同步执行回调，用于接入外部后端；认证、排队和异步任务管理
+  由适配层负责。
+
+Sampler 在线路副本上补充终端测量，保持请求指定的量子比特顺序。返回频数是原始
+测量统计，不自动进行读出校正或误差缓解。
+
+## Estimator
+
+- `StatevectorEstimator` 精确计算 Hermitian PauliString 或 Hamiltonian 的期望值，
+  结果方差为零表示“精确计算路径”，不是物理态没有涨落。
+- `SamplingEstimator` 将每个 Pauli 项转换到局域测量基，通过注入的 Sampler 估计
+  期望值和估计量方差。
+
+有限 shots 下，非对易项必须通过兼容的测量组分别采样。增加 shots 通常降低统计
+不确定度，但不能消除设备噪声或模型误差。
+
+## 选择建议
+
+| 目标 | 推荐组件 |
+| --- | --- |
+| 验证解析结果 | `StatevectorEstimator` |
+| 验证测量与 shots 语义 | `SamplingEstimator(StatevectorSampler())` |
+| 连接外部执行器 | `BackendSampler`，必要时再包装为 `SamplingEstimator` |
+
+算法只依赖公共协议，因此替换执行组件不应要求修改算法实现。
 
 ## StatevectorEstimator
 
@@ -47,12 +79,10 @@ result = StatevectorEstimator().run([request])[0]
 # result.expectation == cos(0.5), result.variance == 0.0
 ```
 
-## Core 兼容性与复杂度
+## 复杂度与数值边界
 
-当前固定的 Cqlib Core `develop` 提交
-`c3abe91a4adf804b6fb3304fab6ec3dc24a4ad85` 的 `Statevector.expectation`
-对含奇数个 Y 的 Pauli 返回错误符号。组件仍使用 Core
-`Statevector.from_circuit` 制备精确态，但采用 Core 暴露的 Pauli 位掩码和相位，
+`StatevectorEstimator` 使用 Core `Statevector.from_circuit` 制备精确态，并采用
+Core 暴露的 Pauli 位掩码和相位，
 按 `P|j> = phase × y_phase × (-1)^popcount(j & z_mask) |j xor x_mask>`
 计算期望值。该兼容路径对每个 Pauli 项扫描 `2**n` 个幅度，不构造 `2**n × 2**n`
 稠密算子。当前 Core Python binding 的 `Statevector.data` 返回一次幅度拷贝，
@@ -62,15 +92,6 @@ result = StatevectorEstimator().run([request])[0]
 请求契约先对 Hamiltonian 做严格的代数 Hermitian 核验。有限精度求和可能留下
 微小虚部；仅当其绝对值不超过 `1e-12 × (1 + Σ|coefficient|)` 时才取实部，
 否则抛出 `ValueError`，不会把显著复数结果伪装成实期望。
-
-## 范围对应
-
-- 56 态矢量估计器：本组件实现。
-- 57 Pauli 期望值估计：精确路径和有限-shot 路径均接受 Pauli 与 Hamiltonian，
-  不拆出重复的公共类。
-- 58 批量估计：直接使用已冻结的 `Estimator.run(requests)`，不重复定义 PUB。
-- 59 估计结果误差分析：本精确组件仅提供估计值方差 0；shot 标准误差和误差棒
-  不属于精确估计器。
 
 ## SamplingEstimator
 

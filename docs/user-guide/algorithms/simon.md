@@ -68,9 +68,8 @@ if result.is_complete:
     assert result.period_integer == period
 ```
 
-`SimonRequest(function, shots)` 是浅冻结请求。`shots` 必须为正整数；请求在执行前
-再次校验，以发现可检测的非法修改。算法先验证并构建完整批次，再进行一次扁平的
-Sampler 调用；空批次直接返回空列表。
+`SimonRequest(function, shots)` 中 `shots` 必须为正整数。`run(requests)` 支持批量
+执行，空批次返回空列表。
 
 `SimonResult` 保留：
 

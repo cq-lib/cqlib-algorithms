@@ -91,27 +91,21 @@ prefix_{p-1}_beta`。初值必须精确覆盖线路中的活跃参数。
 不能仅改方法名称而保持隐藏负号。上方 MaxCut 示例显式编码负收益；原有调用
 `compute_maximum(positive_cut_cost, ...)` 则不需要自行取负。
 
-两种算法直接返回同一个 `VQAResult` dataclass：
+两种算法都返回 `VQAResult`：
 
 - `optimal_value`：原始目标在最终优化迭代点的期望值，而非历史最佳值；
 - `objective_sense`：`"minimize"` 或 `"maximize"`，仅关键字参数；
 - `optimizer_result`：原始优化器元数据；最小化时其目标值等于结果值，
   最大化时为结果值的相反数，构造时检查这一关系；
-- `optimal_parameters`：按实际活跃符号顺序复制的不可变参数映射；
-- `optimal_circuit`：算法生成的独立、完全绑定线路。结果 dataclass 仅浅冻结，
-  不复制手动传入的 Core 线路，线路本身仍可变；
+- `optimal_parameters`：按实际活跃符号顺序排列的参数映射；
+- `optimal_circuit`：算法生成的完全绑定线路；
 - `eigenvalue`：`optimal_value` 的兼容只读别名，不表示保证得到精确本征值。
 
-`QAOAResult` 与 `VQEResult` 仅为 `VQAResult` 的导出别名，不是包装类或不同
-运行时类型。原 `QAOAResult(vqe_result)` 构造和 `.vqe_result` 属性已移除；
-手动构造时直接传入值、参数映射、绑定线路、优化器结果，并指定方向。
-原 `VQEResult(eigenvalue=...)` 改用 `optimal_value=...`。
-`dataclasses.replace` 保持标准行为并重新执行一致性检查。
+`QAOAResult` 与 `VQEResult` 是 `VQAResult` 的导出别名，不是不同运行时类型。
 
-`print(result)` 简要显示目标值、参数数量、优化方向、迭代次数和状态，不打印完整
-线路或参数数组。当前优化器没有完整 checkpoint 状态，也没有终态方差接口，因此
-结果不加入虚构字段、不重复调用 Estimator 获取额外测量。优化器的最终迭代点
-不承诺全局经典最优解。`shots=None` 申请精确期望值；正整数 shots 原样传给
+`print(result)` 简要显示目标值、参数数量、优化方向、迭代次数和状态。结果不包含
+checkpoint 或终态方差，优化器的最终迭代点也不承诺全局经典最优解。
+`shots=None` 申请精确期望值；正整数 shots 原样传给
 Estimator，实际支持范围由注入的 Estimator 决定。
 
 ## 构建线路与变体
@@ -121,9 +115,8 @@ Estimator，实际支持范围由注入的 Estimator 决定。
 gamma/beta 两个符号，但退化演化可能不包含某些逻辑参数槽，不应额外补造参数。
 
 `QAOA` 不标记为 final；变体可覆盖该方法，优化入口会调用覆盖后的方法，再通过
-公共请求契约检查线路宽度、可观测量和精确参数绑定。没有内部 `_QAOAAnsatz`、
-单独的 VQA 参数封装或 VQE 结果嵌套。变体负责自身线路的算法语义，不会因此自动
-解除本版本计算基对角成本的限制。
+公共请求契约仍会检查线路宽度、可观测量和精确参数绑定。变体负责自身线路的算法
+语义，不会因此自动解除本版本计算基对角成本的限制。
 
 ## 组件复用边界
 

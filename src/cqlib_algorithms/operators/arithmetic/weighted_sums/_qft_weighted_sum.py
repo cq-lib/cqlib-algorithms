@@ -72,7 +72,7 @@ def _append_controlled_phase(
     target: int,
     lam: float,
 ) -> None:
-    """Append a single-controlled phase rotation matching the Draper style."""
+    """Append a controlled phase rotation used by the Draper adder."""
 
     gate = StandardGate.Phase(lam).control(1)
     circuit.append_mc_gate(gate, [control, target])

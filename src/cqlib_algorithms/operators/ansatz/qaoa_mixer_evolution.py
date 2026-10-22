@@ -48,6 +48,15 @@ class QAOAMixerEvolution(BaseAnsatz):
     By default, ``H_M`` is the transverse-field mixer ``sum_i X_i``. A custom
     Hermitian Pauli Hamiltonian may be supplied, provided its width matches
     ``num_qubits``. Caller-owned Hamiltonians and strategies are copied.
+
+    Args:
+        num_qubits: Positive mixer width.
+        mixer_operator: Custom Hermitian Hamiltonian, or ``None`` for transverse X.
+        strategy: Optional Cqlib evolution strategy for noncommuting terms.
+
+    Raises:
+        TypeError: If an argument has the wrong type.
+        ValueError: If width, Hamiltonian, or strategy is invalid.
     """
 
     __slots__ = ()

@@ -10,7 +10,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Long-style phase-matched diffusion operator construction.
+"""Long phase-matched diffusion operator construction.
 
 This module implements the phase-matched diffusion operator used in the
 Long variant of Grover search.  For a real phase ``phi`` and the uniform

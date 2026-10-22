@@ -43,7 +43,17 @@ from ._validation import (
 
 @final
 class TimeColorMixer(_BaseMixer):
-    """Compose time-swap partial mixers in time then edge-color order."""
+    """Compose time-swap partial mixers in time then edge-color order.
+
+    Args:
+        processing_times: Positive processing duration for each job.
+        horizon: Optional positive schedule horizon.
+        repetitions: Positive schedule repetition count.
+
+    Raises:
+        TypeError: If an option has the wrong type.
+        ValueError: If durations, horizon, or repetitions are invalid.
+    """
 
     __slots__ = ("_horizon", "_offsets", "_processing_times", "_repetitions")
 

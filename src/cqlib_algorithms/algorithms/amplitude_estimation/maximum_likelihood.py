@@ -47,7 +47,18 @@ _MAX_BINARY64_LIKELIHOOD_SHOTS = (1 << 53) - 1
 
 @dataclass(frozen=True, slots=True)
 class MaximumLikelihoodAmplitudeEstimationRequest:
-    """One fixed-schedule maximum-likelihood estimation request."""
+    """Configure one maximum-likelihood amplitude-estimation run.
+
+    Args:
+        problem: State preparation, Grover iterate, and good-state predicate.
+        powers: Nonnegative Grover exponents in the experiment schedule.
+        shots: Samples used for each scheduled power.
+        search_precision: Absolute tolerance for the likelihood search.
+
+    Raises:
+        TypeError: If a field has the wrong type.
+        ValueError: If the schedule or numeric settings are invalid.
+    """
 
     problem: AmplitudeEstimationProblem
     powers: tuple[int, ...]
@@ -100,7 +111,19 @@ class MaximumLikelihoodAmplitudeEstimationRequest:
 
 @dataclass(frozen=True, slots=True)
 class MaximumLikelihoodAmplitudeEstimationResult:
-    """Global likelihood optimum and its mapped asymptotic interval."""
+    """Store the maximum-likelihood estimate and experiment statistics.
+
+    Attributes:
+        estimation: Maximum-likelihood amplitude estimate.
+        confidence_interval: Reported amplitude interval.
+        shots: Total samples across scheduled circuits.
+        num_grover_queries: Grover powers summed across circuit instances.
+        num_oracle_queries: Shot-weighted Grover-query count.
+        powers: Executed Grover exponents.
+        good_counts: Observed good outcomes for each exponent.
+        log_likelihood: Log likelihood at the optimum.
+        asymptotic_interval: Fisher-information normal interval.
+    """
 
     estimation: float
     confidence_interval: tuple[float, float]
@@ -677,6 +700,13 @@ class MaximumLikelihoodAmplitudeEstimation:
 
     Reference: Y. Suzuki et al., *Amplitude Estimation without Phase
     Estimation*, arXiv:1904.10246v2.
+
+    Args:
+        sampler: Sampling implementation used for scheduled experiments.
+
+    Raises:
+        TypeError: If the sampler or a request has the wrong type.
+        ValueError: If validation or likelihood optimization fails.
     """
 
     __slots__ = ("_sampler",)

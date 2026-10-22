@@ -225,6 +225,10 @@ class CircuitFidelityResult:
     ``fidelity`` is the estimated all-zero probability and lies in ``[0, 1]``.
     ``variance`` is the statistical variance of that probability estimator,
     not a quantum-state variance. It is ``None`` for a one-shot estimate.
+
+    Attributes:
+        fidelity: Estimated squared state overlap in ``[0, 1]``.
+        variance: Statistical variance of the estimator, when available.
     """
 
     fidelity: float

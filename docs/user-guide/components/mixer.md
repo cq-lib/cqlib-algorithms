@@ -81,8 +81,8 @@ parity、color-parity 和 time-color 构造。
 
 ## 通用组合与 QAOA
 
-`MixerApplication(mixer, qubits)` 冻结一个局部 Mixer 及其位置映射。
-`PartitionedMixer` 防御性冻结应用序列，允许相邻应用重叠，并严格按输入顺序组合；每个
+`MixerApplication(mixer, qubits)` 描述一个局部 Mixer 及其位置映射。
+`PartitionedMixer` 允许相邻应用重叠，并严格按输入顺序组合；每个
 局部 Mixer 必须恰有一个参数并遵守共享 beta 命名契约。
 
 `QAOA` 保留原有 `mixer_operator=Hamiltonian` 接口，同时新增 `mixer=Ansatz`。两者互斥：

@@ -43,6 +43,17 @@ class TimeSwapMixer(_BaseMixer):
 
     Job ``i`` owns one-hot qubits for starts ``0..horizon-p_i``. The four-body
     transition maps starts ``(t, t+p_i)`` to ``(t+p_j, t)`` and back.
+
+    Args:
+        processing_times: Positive processing duration for each job.
+        first_job: First job index in the adjacent transition.
+        second_job: Second job index in the adjacent transition.
+        start_time: Nonnegative absolute start of the first ordering.
+        horizon: Optional positive schedule horizon.
+
+    Raises:
+        TypeError: If an option has the wrong type.
+        ValueError: If durations, indices, time, or horizon are invalid.
     """
 
     __slots__ = (

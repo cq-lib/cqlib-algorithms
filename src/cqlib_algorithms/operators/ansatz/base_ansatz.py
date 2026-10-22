@@ -26,7 +26,15 @@ _InnerAnsatz = Ansatz | TwoLocal | PauliEvolutionAnsatz
 
 
 class BaseAnsatz(Ansatz):
-    """Provide shared validation and delegation for ansatz components."""
+    """Validate and expose a supported Cqlib ansatz through the public protocol.
+
+    Args:
+        inner: Supported Cqlib ansatz instance to snapshot and delegate.
+
+    Raises:
+        TypeError: If ``inner`` is not a supported ansatz.
+        ValueError: If the delegated component is invalid.
+    """
 
     __slots__ = ("_inner",)
 

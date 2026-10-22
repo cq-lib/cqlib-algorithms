@@ -78,6 +78,16 @@ class EvolvedOperatorAnsatz(BaseAnsatz):
     ``remove_identity_operators=False`` when that exact phase is relevant.
     Removing every supplied operator produces an identity circuit with the
     original register width and no parameters.
+
+    Args:
+        operators: One Hamiltonian or an ordered nonempty Hamiltonian sequence.
+        reps: Positive number of ordered evolution repetitions.
+        strategy: Optional Cqlib evolution strategy for noncommuting terms.
+        remove_identity_operators: Whether to drop pure identity blocks.
+
+    Raises:
+        TypeError: If operators or options have invalid types.
+        ValueError: If widths, Hermiticity, repetitions, or blocks are invalid.
     """
 
     __slots__ = (

@@ -1,4 +1,4 @@
-# 复合算子组件
+# 线路组合组件
 
 本文档说明 `cqlib_algorithms.operators.composite` 中由基础算子组合而成的复合
 算子。它们也可从 `cqlib_algorithms.operators` 导入；具体算子不从包顶层导出。
@@ -29,8 +29,6 @@ query = HadamardPhaseQuery(function).build_circuit()
 
 ## Grover 迭代单元
 
-## Grover 迭代单元
-
 `GroverOperator(oracle, state_preparation=None, reflection_qubits=None)` 构建一次
 完整的 Grover 迭代
 
@@ -43,8 +41,7 @@ query = HadamardPhaseQuery(function).build_circuit()
 `oracle` 必须是作用在搜索寄存器上的合法、可静态求逆的 Cqlib `Circuit`，量子比特
 `q0` 为最低有效位。典型输入是 `PhaseOracle(function).build_circuit()`。振幅放大
 假设酉 Oracle，因此包含测量、重置、动态控制等不可静态求逆操作的线路在构造时被
-拒绝。线路在构造时复制，非连续源量子比特 ID 按 `Circuit.qubits` 的位置映射到
-`0..n-1`。
+拒绝。非连续源量子比特 ID 按 `Circuit.qubits` 的位置映射到 `0..n-1`。
 
 构造器仅验证输入是合法且可静态求逆的线路。它不会通过指数规模的矩阵
 分析证明线路必然是对角相位 Oracle；输入是否满足相位 Oracle 语义由调用方负责。
@@ -65,9 +62,8 @@ query = HadamardPhaseQuery(function).build_circuit()
 布尔值不作为整数接受；构造时排序并冻结为只读元组，重复值直接拒绝而不是
 静默去重。省略时选择全部搜索量子比特。
 
-`GroverOperator` 是带 slots、公开配置只读的普通行为组件：`oracle` 和
-`state_preparation` 访问器返回独立副本，`reflection_qubits` 返回冻结元组。
-它不执行迭代次数选择、测量统计或完整搜索算法，也不承诺查询复杂度。
+组件不执行迭代次数选择、测量统计或完整搜索算法；这些工作由上层 Grover
+算法根据问题规模、解的数量和执行后端完成。
 
 ## 可运行示例
 

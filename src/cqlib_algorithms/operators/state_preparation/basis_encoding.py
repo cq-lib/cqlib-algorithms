@@ -31,6 +31,13 @@ class BasisEncoding(StatePreparation):
     ``bits[q]`` is assigned to qubit ``q``; consequently ``bits[0]`` is the
     least-significant basis-index bit. Circuit construction is delegated to
     :class:`cqlib.circuit.ansatz.BasisEncoding`.
+
+    Args:
+        bits: Nonempty Boolean sequence in qubit order.
+
+    Raises:
+        TypeError: If ``bits`` is not a Boolean sequence.
+        ValueError: If ``bits`` is empty.
     """
 
     __slots__ = ("_bits", "_inner")

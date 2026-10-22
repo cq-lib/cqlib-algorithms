@@ -23,8 +23,8 @@ operates on the following convention:
   into the control register.
 * For every non-zero ``k`` the target qubit's ``|1>`` amplitude after
   application equals ``scaling / lambda = scaling * 2**n / k``, where
-  ``n == num_state_qubits``.  This matches Qiskit's ``ExactReciprocalGate``
-  and PennyLane's HHL reciprocal step exactly.
+  ``n == num_state_qubits``. This is the reciprocal-eigenvalue rotation used
+  by the HHL construction.
 * ``k == 0`` (zero eigenvalue) is treated as identity (zero rotation,
   ``alpha_0 = 0``).
 

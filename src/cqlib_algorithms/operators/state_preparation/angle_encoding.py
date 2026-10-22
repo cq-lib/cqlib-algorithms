@@ -39,6 +39,14 @@ class AngleEncoding(StatePreparation):
     ``rotation_gate`` must be the unbound ``RX``, ``RY``, ``RZ``, or
     ``Phase`` gate definition. Circuit construction and symbol naming are
     delegated to :class:`cqlib.circuit.ansatz.AngleEncoding`.
+
+    Args:
+        num_qubits: Positive number of encoded features and qubits.
+        rotation_gate: Unbound Core RX, RY, RZ, or Phase gate definition.
+
+    Raises:
+        TypeError: If an argument has the wrong type.
+        ValueError: If the width or gate choice is invalid.
     """
 
     __slots__ = ("_inner", "_num_qubits", "_rotation_gate")

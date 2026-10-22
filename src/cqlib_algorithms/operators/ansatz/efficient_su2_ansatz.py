@@ -28,6 +28,16 @@ class EfficientSU2Ansatz(BaseAnsatz):
     """Two-local ansatz specialized to RY/RZ rotations and CX entanglers.
 
     Parameters are ordered by rotation layer, qubit, then RY followed by RZ.
+
+    Args:
+        num_qubits: Positive circuit width.
+        reps: Nonnegative number of entangling repetitions.
+        entanglement: Core topology, or ``None`` for the default.
+        skip_final_rotation_layer: Whether to omit the final SU(2) layer.
+
+    Raises:
+        TypeError: If an option has the wrong type.
+        ValueError: If width, repetitions, or topology are invalid.
     """
 
     __slots__ = ()

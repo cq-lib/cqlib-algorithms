@@ -29,6 +29,16 @@ class RealAmplitudesAnsatz(BaseAnsatz):
 
     All generated gate matrices are real. Parameters are ordered by rotation
     layer and qubit.
+
+    Args:
+        num_qubits: Positive circuit width.
+        reps: Nonnegative number of entangling repetitions.
+        entanglement: Core topology, or ``None`` for the default.
+        skip_final_rotation_layer: Whether to omit the final RY layer.
+
+    Raises:
+        TypeError: If an option has the wrong type.
+        ValueError: If width, repetitions, or topology are invalid.
     """
 
     __slots__ = ()

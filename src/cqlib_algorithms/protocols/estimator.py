@@ -216,5 +216,12 @@ class Estimator(ABC):
         requests: Sequence[EstimatorRequest],
         /,
     ) -> list[EstimatorResult]:
-        """Estimate a batch and return results in input order."""
+        """Estimate a batch and return results in input order.
+
+        Args:
+            requests: Valid expectation requests in output order.
+
+        Returns:
+            One estimate per request.
+        """
         raise NotImplementedError

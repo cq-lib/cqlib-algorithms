@@ -40,7 +40,7 @@ Estimator 决定是否支持精确或有限-shot 模式。
 不会被虚构为训练参数。无活跃符号时传入空映射，现有优化器会走
 `OptimizerStatus.NO_PARAMETERS` 路径并完成一次目标评估。
 
-`VQAResult` 是 VQE 与 QAOA 共用的结果 dataclass，`VQEResult` 为同一类型的别名。
+`VQAResult` 是 VQE 与 QAOA 共用的结果类型，`VQEResult` 为同一类型的别名。
 包含：
 
 - `optimal_value`：优化器在最终迭代点独立计算的目标值；`eigenvalue` 保留为只读别名；
@@ -50,14 +50,8 @@ Estimator 决定是否支持精确或有限-shot 模式。
 
 - `objective_sense`：VQE 固定为 `"minimize"`，结果值必须与优化器值一致。
 
-VQE 不为获取方差而重复执行终态能量估计，因此返回值不包含终态估计方差。
-当前优化器未提供完整恢复状态，结果也不宣称提供 checkpoint。参数映射防御性复制并
-冻结，Core 线路仍可变；算法返回的是独立绑定线路，直接手工构造结果则保留传入线路。
-`repr(result)` 简要展示值、参数数量、方向、迭代次数与状态，不展开线路。
-
-迁移：原 `VQEResult(eigenvalue=...)` 构造改为 `VQAResult(optimal_value=...)`，
-原四个位置参数仍可使用；读取 `result.eigenvalue` 不变。`dataclasses.replace`
-使用真实字段 `optimal_value`，并重新验证数值与优化器元数据的一致性。
+返回值不包含终态估计方差或 checkpoint。`repr(result)` 简要展示值、参数数量、
+方向、迭代次数与状态。
 
 ## 示例
 
@@ -93,11 +87,3 @@ result = algorithm.compute_minimum_eigenvalue(
 assert abs(result.eigenvalue + 1.0) < 1e-9
 assert result.optimal_circuit.used_symbols == []
 ```
-
-## 验证边界
-
-测试同时覆盖组件桥接、活跃参数顺序、无参数路径、输入类型、有限数值、量子比特
-宽度、Hermitian 条件、shots 约束和异常优化器返回。端到端测试使用已有
-`RealAmplitudesAnsatz`、`StatevectorEstimator`、`ParameterShiftGradient` 与
-`GradientDescent`，分别验证单量子比特解析基态，以及双量子比特 Hamiltonian 与
-NumPy 稠密本征值参考的一致性。参考值不由 VQE 生产逻辑生成。

@@ -110,7 +110,14 @@ class Sampler(ABC):
         requests: Sequence[SamplerRequest],
         /,
     ) -> list[ExecutionResult]:
-        """Execute a batch and return terminal results in input order."""
+        """Execute a batch and return terminal results in input order.
+
+        Args:
+            requests: Valid sampling requests in output order.
+
+        Returns:
+            One successful terminal result per request.
+        """
         raise NotImplementedError
 
 

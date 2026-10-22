@@ -45,6 +45,13 @@ class ArbitraryStatePreparation(StatePreparation):
     zero as the least-significant bit. The copied input must have unit norm
     within relative and absolute tolerance 1e-12. Accepted roundoff is
     corrected before synthesis.
+
+    Args:
+        amplitudes: Finite, normalized complex vector of power-of-two length.
+
+    Raises:
+        TypeError: If ``amplitudes`` is not a numeric sequence.
+        ValueError: If its length, entries, or norm are invalid.
     """
 
     __slots__ = ("_amplitudes",)

@@ -1,4 +1,31 @@
-# 梯度、量子几何张量与自然梯度组件
+# 微分、量子几何与优化
+
+本页说明变分工作流中梯度、量子几何和经典优化组件的选择。精确接口以源码 docstring
+为准。
+
+## 梯度
+
+- `ParameterShiftGradient`：适用于实现支持的参数化旋转门，使用解析参数移位规则。
+- `LinCombEstimatorGradient`：使用线性组合电路估计导数。
+- `FiniteDifferenceGradient`：通用数值基线，受步长与舍入误差共同影响。
+- `SPSAGradient`：每个方向仅需两次目标评估，适合高维含噪问题，但结果有随机波动。
+
+梯度只对请求中列出的活跃参数求导，参数绑定和结果顺序与请求保持一致。
+
+## 量子几何
+
+`StatevectorQGT` 计算纯态的量子几何张量，`StatevectorQFI` 取其实部并按约定缩放为
+量子 Fisher 信息，`NaturalGradient` 求解正则化线性系统获得自然梯度方向。矩阵病态
+时应使用显式正则化并检查结果稳定性。
+
+## 优化器
+
+- `GradientDescent`：固定学习率的一阶更新，适合作为透明基线。
+- `Adam`：使用一阶、二阶矩估计调整步长。
+- `SPSAOptimizer`：用随机同时扰动直接估计目标变化，不依赖 `Gradient` 组件。
+
+停止状态只描述本实现的终止条件，不证明已经达到全局最优解。随机组件应固定 seed
+以复现实验；比较不同优化器时应使用相同初值、预算和执行模型。
 
 `cqlib_algorithms.operators.gradient` 提供变分算法所需的最小梯度组件集，
 对应组件清单"自然梯度优化（QGT + 梯度）"：
@@ -16,8 +43,6 @@
 数学定义采用 Stokes et al.（arXiv:1909.02108）的对称化约定：
 `F_ij = ⟨∂iψ|(1−|ψ⟩⟨ψ|)|∂jψ⟩`，`g_ij = Re F_ij`。端序遵循 Cqlib
 小端约定，量子比特位置按线路插入顺序解释，支持非连续量子比特 ID。
-算法内部的频率和虚部检查使用各自记录的数值容差；`QGTResult` 的结构校验
-使用纯绝对容差 `1e-9`。不通过放宽容差掩盖错误。
 
 ## 参数移位规则
 
@@ -46,11 +71,8 @@ UnitaryGate）时以 `ValueError` 拒绝，且在任何 estimator 调用之前�
 保留。CircuitGate 属于当前组件的线路级范围限制，无论是否含待求导符号
 都被拒绝。
 
-所有请求的全部局部门槽移位线路压平为一次 `estimator.run` 批处理。
-每条评估线路先绑定原请求参数，再只替换目标门槽；原线路保持不变，
-量子比特插入顺序、barrier、全局相位和门标签保留。shots 模式的请求原样
-传递，梯度统计质量取决于底层估计器。仅出现在
-`set_global_phase` 或 `GPhase` 中的符号梯度恒为零，不产生任何评估。
+shots 模式的统计质量取决于底层 Estimator。仅出现在 `set_global_phase` 或
+`GPhase` 中的符号梯度恒为零。
 
 ## 线性组合梯度（LinCombEstimatorGradient）
 
@@ -68,11 +90,9 @@ UnitaryGate）时以 `ValueError` 拒绝，且在任何 estimator 调用之前�
 `RZ(λ) → RY(θ) → RZ(φ)`，再分别插入对应生成元。PauliString 的 `±1`
 相位和 Hamiltonian 每个项的相位、系数均会原样扩展到辅助位。
 
-所有请求、出现点和生成元项压平为一次 Estimator 批处理。一次普通旋转需要
-1 个辅助线路；`k` 控旋转需要 `2^k` 个；具有 `k` 个控制位的受控 Phase
-需要 `2^(k+1)-1` 个。辅助量子比特使用未被原线路占用的 Core `Qubit` 标识，
-可处理非连续或重排的量子比特 ID。`GPhase` 和线路全局相位的导数恒为零，
-不调用 Estimator。shots 原样透传，统计误差由底层 Estimator 决定。
+一次普通旋转需要 1 个辅助线路；`k` 控旋转需要 `2^k` 个；具有 `k` 个控制位的
+受控 Phase 需要 `2^(k+1)-1` 个。该组件支持非连续或重排的量子比特 ID；shots
+统计误差由底层 Estimator 决定。
 
 ## 数值梯度
 
@@ -91,23 +111,10 @@ UnitaryGate）时以 `ValueError` 拒绝，且在任何 estimator 调用之前�
 
 ## QGT（StatevectorQGT）
 
-`compute(request: GradientRequest) -> QGTResult` 复用冻结请求类型的
-全部校验，走 Core `Statevector` 态矢量路径：对每个参数，把其每个
-出现点的（缩放后）生成元直接插入绑定线路的指令流，精确组装导数态
-`|∂jψ⟩`，再计算 `F_ij`。不使用有限差分，也不构造稠密酉矩阵。
-
-U 门在插入前展开为 `[RZ(λ), RY(θ), RZ(φ)]`：φ/λ 槽的生成元与整个
-U 门不对易，只有针对展开后的单参数因子，生成元插入位置才是精确的；
-全局相位因子 `e^{i(φ+λ)/2}` 对投影内积无影响，安全丢弃。
-
-全局相位不能影响 `F`：其导数贡献与 `|ψ⟩` 平行，被投影算子消除。
-这同时中和了当前兼容基线中 `Statevector.from_circuit` 忽略线路全局相位的
-已知问题。全路径不调用 `Statevector.expectation`，规避同一基线中奇数 Y
-符号反转的已知问题。
-
-`QGTResult(parameter_names, tensor, metric)` 浅冻结并防御性拷贝数组：
-`tensor` 为复 Hermitian `F`，`metric` 为实对称 `g = Re F`，形状与
-名称一一对应，构造时校验。
+`StatevectorQGT.compute(request)` 精确计算导数态并返回 `QGTResult`。
+`tensor` 为复 Hermitian 张量 `F`，`metric` 为实对称度规 `g = Re F`，两者顺序
+均与 `parameter_names` 一致。全局相位的导数与 `|ψ⟩` 平行，经投影后不影响结果。
+支持的参数化门和线路限制见源码 docstring。
 
 ## 自然梯度（NaturalGradient）
 
@@ -122,11 +129,9 @@ U 门不对易，只有针对展开后的单参数因子，生成元插入位置
 
 ## 量子 Fisher 信息（StatevectorQFI）
 
-纯态约定下 `QFI = 4·Re(F) = 4g`。`StatevectorQFI.compute(request)` 复用
-`StatevectorQGT` 的精确导数态路径并返回浅冻结的 `QFIResult`；矩阵按
-`parameter_names` 排列，要求有限、实对称，输入数组会被防御性复制。空参数请求
-返回 `0×0` 矩阵。自然梯度仍使用 `g`，改用 QFI 只会把相同步长下的方向缩放
-为四分之一。
+纯态约定下 `QFI = 4·Re(F) = 4g`。`StatevectorQFI.compute(request)` 返回
+`QFIResult`；矩阵按 `parameter_names` 排列且为有限实对称矩阵。空参数请求返回
+`0×0` 矩阵。自然梯度仍使用 `g`，改用 QFI 会把相同步长下的方向缩放为四分之一。
 
 ## 使用示例
 
@@ -182,13 +187,6 @@ def evaluate(estimator: Estimator):
 - 测量、重置、延时与经典控制指令被拒绝（静态酉线路要求）；
 - 数值边界（非线性表达式、非有限值）显式抛 `ValueError`，不做静默
   降级。
-
-Core 接口基线：`cqlib 1.4.0b1`（develop 提交
-`c3abe91a4adf804b6fb3304fab6ec3dc24a4ad85`）。本组件使用
-`Circuit.operations`、`Circuit.assign_parameters`、
-`Statevector.from_circuit/from_state/apply_circuit/data`、
-`Parameter.derivative/symbols/is_constant/evaluate` 与
-`StandardGate` 门枚举。
 
 ## 理论依据
 

@@ -24,7 +24,15 @@ from ._state_synthesis import validate_positive_qubit_count, validate_prefix
 
 @final
 class UniformSuperposition(StatePreparation):
-    r"""Prepare the uniform state :math:`2^{-n/2}\sum_x |x\rangle`."""
+    r"""Prepare the uniform state :math:`2^{-n/2}\sum_x |x\rangle`.
+
+    Args:
+        num_qubits: Positive register width.
+
+    Raises:
+        TypeError: If ``num_qubits`` is not an integer.
+        ValueError: If ``num_qubits`` is not positive.
+    """
 
     __slots__ = ("_num_qubits",)
 

@@ -31,12 +31,11 @@ SIAM J. Comput. 26(5), 1411 (1997)；相位 Oracle 形式的推导参见 Cleve �
   `output_mask` 奇偶归约为标量谓词，线性承诺作用于该奇偶函数；
 - `BernsteinVazirani.build_circuit(function, output_mask=None)` 构建未测量的
   `H**n -> S_f -> H**n` 查询线路（与 `DeutschJozsa` 共享同一查询线路构造），
-  末端测量由 Sampler 在私有执行线路上追加；
-- `run(requests)` 先把整批请求全部校验和变换，再用一次压平的 Sampler 调用
-  执行，并用 `protocols.sampler` 的公共结果校验函数核验，结果按请求顺序返回。
+  末端测量由 Sampler 追加；
+- `run(requests)` 批量执行请求，结果按请求顺序返回。
 
-`BernsteinVaziraniRequest(function, shots, output_mask=None)` 是浅冻结的查询值
-对象，`shots` 必须为正整数。`BernsteinVaziraniResult(modal_strings, support,
+`BernsteinVaziraniRequest(function, shots, output_mask=None)` 中 `shots` 必须为正整数。
+`BernsteinVaziraniResult(modal_strings, support,
 shots)` 保留所有并列的经验众数候选；每个候选的第 `q` 位对应量子比特 `q`
 （小端，采样位串最右字符是 `q0`）。唯一众数时 `hidden_string` 返回该候选，
 `hidden_integer` 返回等价整数（第 `q` 位权重 \(2^q\)）；发生平局时两者均为

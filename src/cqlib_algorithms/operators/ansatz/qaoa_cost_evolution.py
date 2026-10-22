@@ -40,6 +40,14 @@ class QAOACostEvolution(BaseAnsatz):
     construction, so later changes to caller-owned inputs do not affect this
     component. Core selects exact evolution for commuting terms and otherwise
     uses the configured product-formula strategy.
+
+    Args:
+        cost_operator: Finite Hermitian cost Hamiltonian to snapshot.
+        strategy: Optional Cqlib evolution strategy for noncommuting terms.
+
+    Raises:
+        TypeError: If an argument has the wrong type.
+        ValueError: If the Hamiltonian or strategy is invalid.
     """
 
     __slots__ = ()

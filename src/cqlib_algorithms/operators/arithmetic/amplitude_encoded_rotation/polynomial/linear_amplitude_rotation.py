@@ -66,7 +66,7 @@ References
     Quantum, 4, 291, 2020.
     arXiv:1905.02666.
     Relevance: Broader context of using polynomial-controlled rotations to
-    encode payoff amplitudes for Monte Carlo style pricing.
+    encode payoff amplitudes for Monte Carlo pricing.
 [3] A. Gilliam, S. Woerner, and C. Gonciulea, "Quantum computing enhanced
     optimization," 2019.
     arXiv:1912.04088.
