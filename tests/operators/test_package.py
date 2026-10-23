@@ -79,6 +79,7 @@ def test_composite_operators_are_exported_from_functional_packages():
     expected = {
         "GroverOperator",
         "HadamardPhaseQuery",
+        "HiddenLinearFunctionCircuit",
         "PhaseEstimationCircuit",
     }
 
@@ -106,6 +107,7 @@ def test_ansatz_operators_are_exported_from_functional_packages():
         "RealAmplitudesAnsatz",
         "SimplifiedTwoDesignAnsatz",
         "TwoLocalAnsatz",
+        "TwoQubitUnitaryAnsatz",
         "TTNAnsatz",
     }
     expected = concrete | {"BaseAnsatz"}
@@ -164,6 +166,16 @@ def test_measurement_operators_are_exported_from_functional_packages():
         assert getattr(operators, name) is getattr(measurement, name)
 
 
+def test_information_operators_are_exported_from_functional_packages():
+    operators = import_module("cqlib_algorithms.operators")
+    information = import_module("cqlib_algorithms.operators.information")
+    expected = {"mutual_information"}
+
+    assert expected <= set(operators.__all__)
+    assert set(information.__all__) == expected
+    assert operators.mutual_information is information.mutual_information
+
+
 def test_sampler_operators_are_exported_from_functional_packages():
     operators = import_module("cqlib_algorithms.operators")
     sampler = import_module("cqlib_algorithms.operators.sampler")
@@ -195,6 +207,7 @@ def test_state_fidelity_operators_are_exported_from_functional_packages():
         "CircuitFidelityRequest",
         "CircuitFidelityResult",
         "ComputeUncomputeFidelity",
+        "UnitaryOverlap",
     }
 
     assert expected <= set(operators.__all__)
@@ -231,10 +244,17 @@ def test_gradient_operators_are_exported_from_functional_packages():
 def test_optimizer_operators_are_exported_from_functional_packages():
     operators = import_module("cqlib_algorithms.operators")
     optimizer = import_module("cqlib_algorithms.operators.optimizer")
-    expected = {"Adam", "GradientDescent", "SPSAOptimizer"}
+    expected = {
+        "Adam",
+        "COBYLAOptimizer",
+        "GradientDescent",
+        "LBFGSBOptimizer",
+        "SPSAOptimizer",
+    }
 
     assert expected <= set(operators.__all__)
     assert set(optimizer.__all__) == expected
     for name in expected:
         assert getattr(operators, name) is getattr(optimizer, name)
         assert issubclass(getattr(optimizer, name), Optimizer)
+        assert Optimizer in getattr(optimizer, name).__bases__

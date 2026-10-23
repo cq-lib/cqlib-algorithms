@@ -27,6 +27,44 @@ function = BooleanFunction.from_truth_table([False, True, True, False])
 query = HadamardPhaseQuery(function).build_circuit()
 ```
 
+## 隐藏线性函数电路
+
+`HiddenLinearFunctionCircuit(adjacency_matrix)` 根据非空、方形、对称的二进制矩阵
+`A` 构建未测量线路 `H**n -> D_A -> H**n`。矩阵的第 `i` 行和第 `i` 列对应
+量子比特 `i`；量子比特 `0` 是 Cqlib 计算基索引的最低有效位。对二进制向量
+`x`，二次型定义为
+
+```text
+q_A(x) = sum_i A[i,i] x_i
+       + 2 sum_(i<j) A[i,j] x_i x_j  (mod 4)
+```
+
+中间对角线路满足 `D_A|x> = i**q_A(x)|x>`：对角元素 `A[i,i]=1` 对应量子
+比特 `i` 上的 `S` 门，非对角元素 `A[i,j]=1` 对应 `CZ(i,j)`。输入矩阵在构造
+时复制为只读快照，后续修改调用方矩阵不会改变组件；每次 `build_circuit()` 都返回
+新的线路。
+
+从全零态运行并测量时，所有可能输出 `z` 都满足：对二进制零空间
+`Ker(A)` 中的任意 `x`，有 `q_A(x) = 2 z·x (mod 4)`。本组件只构建查询
+线路，不追加测量、Sampler 或经典解验证。
+
+```python
+from cqlib_algorithms.operators import HiddenLinearFunctionCircuit
+
+adjacency_matrix = [
+    [1, 1, 0],
+    [1, 0, 1],
+    [0, 1, 1],
+]
+query = HiddenLinearFunctionCircuit(adjacency_matrix)
+circuit = query.build_circuit()
+```
+
+构造器接受任意对称二进制矩阵。Bravyi、Gosset 与 Koenig 的浅线路量子优势结论
+还要求问题图具有规定的二维局域结构，并依赖可并行的门调度；仅构造本组件不能据此
+声称任意矩阵都具有常深度优势。理论背景见
+[Quantum advantage with shallow circuits](https://arxiv.org/abs/1704.00690)。
+
 ## Grover 迭代单元
 
 `GroverOperator(oracle, state_preparation=None, reflection_qubits=None)` 构建一次

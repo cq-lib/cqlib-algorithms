@@ -14,10 +14,12 @@
 
 from .grover_operator import GroverOperator
 from .hadamard_phase_query import HadamardPhaseQuery
+from .hidden_linear_circuit import HiddenLinearFunctionCircuit
 from .phase_estimation_circuit import PhaseEstimationCircuit
 
 __all__ = [
     "GroverOperator",
     "HadamardPhaseQuery",
+    "HiddenLinearFunctionCircuit",
     "PhaseEstimationCircuit",
 ]

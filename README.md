@@ -12,7 +12,7 @@ docstring 为准。
 ## 安装
 
 环境要求以 `pyproject.toml` 为准：Python 3.10 及以上，
-`cqlib>=2.0.0b5,<2.1`，`numpy>=2.1.0`。
+`cqlib>=2.0.0b5,<2.1`，`numpy>=2.1.0`，`scipy>=1.14,<2`。
 
 ```bash
 uv venv --python 3.10

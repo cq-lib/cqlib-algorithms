@@ -27,7 +27,9 @@ from .estimator import Estimator, EstimatorRequest
 class OptimizerStatus(Enum):
     """Termination reason for one optimizer request."""
 
+    CONVERGED = "converged"
     STEP_TOLERANCE = "step_tolerance"
+    MAX_EVALUATIONS = "max_evaluations"
     MAX_ITERATIONS = "max_iterations"
     NO_PARAMETERS = "no_parameters"
 
@@ -150,6 +152,7 @@ class OptimizerResult:
     def converged(self) -> bool:
         """Whether termination represents convergence rather than exhaustion."""
         return self.status in (
+            OptimizerStatus.CONVERGED,
             OptimizerStatus.STEP_TOLERANCE,
             OptimizerStatus.NO_PARAMETERS,
         )

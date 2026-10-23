@@ -23,9 +23,44 @@
 - `GradientDescent`：固定学习率的一阶更新，适合作为透明基线。
 - `Adam`：使用一阶、二阶矩估计调整步长。
 - `SPSAOptimizer`：用随机同时扰动直接估计目标变化，不依赖 `Gradient` 组件。
+- `COBYLAOptimizer`：基于局部线性模型与信赖域的无导数优化，适合导数不可用或
+  目标带有限-shot 波动的低至中等维问题。当前 `OptimizerRequest` 不表达通用约束，
+  因此该组件只提供无显式约束的参数优化。非零 `maxiter` 至少应为活跃参数数目加二，
+  以满足底层 COBYLA 求解器建立初始线性模型所需的最小评估数。
+- `LBFGSBOptimizer`：带参数盒约束的有限内存拟牛顿法；可以注入任意 `Gradient`
+  实现，也可以由 SciPy 使用前向有限差分估计导数。
 
 停止状态只描述本实现的终止条件，不证明已经达到全局最优解。随机组件应固定 seed
-以复现实验；比较不同优化器时应使用相同初值、预算和执行模型。
+以复现实验；比较不同优化器时应使用相同初值、预算和执行模型。SciPy 求解器正常
+终止时返回 `OptimizerStatus.CONVERGED`；迭代或目标评估预算耗尽分别返回
+`MAX_ITERATIONS` 或 `MAX_EVALUATIONS`，空参数请求返回 `NO_PARAMETERS`。每个非空
+请求的迭代轨迹具有数据依赖，因此同一批请求按输入顺序分别求解，最终点则合并为
+一次 Estimator 批量调用重新计算目标值。
+
+L-BFGS-B 的边界按参数名配置，例如 `bounds={"theta": (0.0, 2 * math.pi)}`；未列出的
+活跃参数不设界，非活跃参数仍保持请求中的固定绑定。数值差分模式下，SciPy 可能为
+一轮梯度计算执行多次目标调用，因此 `maxfun` 只是近似评估预算；需要严格量子调用
+预算或解析参数移位时，应显式注入 `ParameterShiftGradient` 等梯度组件。
+
+```python
+import math
+
+from cqlib_algorithms.operators.gradient import ParameterShiftGradient
+from cqlib_algorithms.operators.optimizer import COBYLAOptimizer, LBFGSBOptimizer
+
+cobyla = COBYLAOptimizer(maxiter=500, tolerance=1e-6)
+lbfgsb = LBFGSBOptimizer(
+    ParameterShiftGradient(),
+    bounds={"theta": (0.0, 2.0 * math.pi)},
+    maxiter=200,
+)
+
+cobyla_results = cobyla.run(estimator, optimizer_requests)
+lbfgsb_results = lbfgsb.run(estimator, optimizer_requests)
+```
+
+这里的 `estimator` 实现 `Estimator`，`optimizer_requests` 是按输出顺序排列的
+`OptimizerRequest` 序列。
 
 `cqlib_algorithms.operators.gradient` 提供变分算法所需的最小梯度组件集，
 对应组件清单"自然梯度优化（QGT + 梯度）"：
@@ -203,3 +238,9 @@ def evaluate(estimator: Estimator):
 - Stokes et al., *Quantum Natural Gradient*,
   [arXiv:1909.02108](https://arxiv.org/abs/1909.02108)：投影 QGT、实部度规
   与自然梯度线性系统。
+- Powell, *A direct search optimization method that models the objective and
+  constraint functions by linear interpolation*, 1994：COBYLA 的局部线性模型
+  与信赖域框架。
+- Byrd et al., *A Limited Memory Algorithm for Bound Constrained
+  Optimization*, SIAM Journal on Scientific Computing 16(5), 1995：L-BFGS-B
+  的有限内存拟牛顿更新与盒约束处理。

@@ -10,10 +10,18 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Gradient-based optimizers for estimator expectation objectives."""
+"""Local optimizers for estimator expectation objectives."""
 
 from .adam import Adam
+from .cobyla_optimizer import COBYLAOptimizer
 from .gradient_descent import GradientDescent
+from .lbfgsb_optimizer import LBFGSBOptimizer
 from .spsa import SPSAOptimizer
 
-__all__ = ["Adam", "GradientDescent", "SPSAOptimizer"]
+__all__ = [
+    "Adam",
+    "COBYLAOptimizer",
+    "GradientDescent",
+    "LBFGSBOptimizer",
+    "SPSAOptimizer",
+]

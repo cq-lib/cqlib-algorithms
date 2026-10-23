@@ -28,6 +28,7 @@ from .real_amplitudes_ansatz import RealAmplitudesAnsatz
 from .simplified_two_design_ansatz import SimplifiedTwoDesignAnsatz
 from .ttn_ansatz import TTNAnsatz
 from .two_local_ansatz import TwoLocalAnsatz
+from .two_qubit_unitary_ansatz import TwoQubitUnitaryAnsatz
 
 __all__ = [
     "BaseAnsatz",
@@ -46,4 +47,5 @@ __all__ = [
     "SimplifiedTwoDesignAnsatz",
     "TTNAnsatz",
     "TwoLocalAnsatz",
+    "TwoQubitUnitaryAnsatz",
 ]

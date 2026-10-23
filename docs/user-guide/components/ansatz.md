@@ -66,6 +66,36 @@ num_qubits * len(rotation_gates) *
 拓扑映射。调用方应传入与目标设备相符的 `EntanglementTopology` 和纠缠门，后续仍需
 经过编译和映射流程。
 
+## `TwoQubitUnitaryAnsatz`
+
+该组件提供固定宽度为 2 的局域变分块，适合用作更大线路中的可训练双量子比特层。
+它有两个相互独立的选项：`parameterization` 选择低深度 `simple` 或表达能力更强的
+`general`，`structure` 选择矩阵为实数的 `real` 或允许复数振幅的 `complex`。
+
+| 模式 | 参数数 | 固定纠缠结构 | 表达边界 |
+| --- | ---: | --- | --- |
+| simple + real | 2 | `CX(0 -> 1)` | 两个 RY 与一个 CX 组成的低深度实矩阵子族 |
+| simple + complex | 2 | `CX(0 -> 1)` | RX、RY 与一个 CX 组成的低深度复矩阵子族 |
+| general + real | 6 | 两个 `CX(1 -> 0)` | 覆盖连通的 `SO(4)` 实正交矩阵族 |
+| general + complex | 15 | `CX(1 -> 0)`、`CX(0 -> 1)`、`CX(1 -> 0)` | 在忽略全局相位时覆盖一般双量子比特酉变换 |
+
+```python
+from cqlib_algorithms.operators import TwoQubitUnitaryAnsatz
+
+block = TwoQubitUnitaryAnsatz(
+    parameterization="general",
+    structure="complex",
+)
+circuit = block.build_circuit("unitary")
+```
+
+参数按门在线路中出现的顺序命名为 `unitary_0`、`unitary_1` 等。量子比特 0 遵循
+Cqlib 的小端约定，是计算基 `|q1 q0>` 的最低有效位；上表箭头左侧为 CX 控制位，
+右侧为目标位。`simple` 只是一种两参数启发式结构，不能表示任意实或复的双量子比特
+酉矩阵；`general + real` 只覆盖行列式为 `+1` 的连通实正交分支；
+`general + complex` 的 15 个参数描述忽略全局相位后的自由度。本组件不接受目标矩阵，
+也不负责矩阵综合、辅助量子比特、重复层或把局域块铺设到多量子比特拓扑。
+
 ## `PauliTwoDesignAnsatz`
 
 该组件先在每个量子比特上执行 `RY(pi/4)`，然后执行 `reps + 1` 个参数化旋转层。
@@ -295,6 +325,12 @@ mixer_layer = QAOAMixerEvolution(2).build_circuit("qaoa")
 - Kandala 等，
   [Hardware-efficient Variational Quantum Eigensolver for Small Molecules and Quantum Magnets](https://arxiv.org/abs/1704.05018)，
   说明按设备可用相互作用设计浅层变分线路的思想。
+- Grant 等，
+  [Hierarchical quantum classifiers](https://doi.org/10.1038/s41534-018-0116-9)，
+  给出层次量子分类器中的低深度双量子比特参数块。
+- Vatan 与 Williams，
+  [Optimal quantum circuits for general two-qubit gates](https://doi.org/10.1103/PhysRevA.69.032315)，
+  给出一般复双量子比特酉与实正交双量子比特变换的最优 CNOT 分解框架。
 - Nakata 等，
   [Unitary 2-designs from random X- and Z-diagonal unitaries](https://arxiv.org/abs/1502.07514)，
   以及 McClean 等，

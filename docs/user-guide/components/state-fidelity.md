@@ -1,7 +1,49 @@
-# 线路态保真度
+# 线路重叠与态保真度
+
+`UnitaryOverlap` 构建两条静态酉线路的未测量重叠线路；
+`ComputeUncomputeFidelity` 在此类 compute–uncompute 结构上注入公共 `Sampler`
+协议，估计两条线路所制备纯态之间的保真度。构造参数、返回类型与异常以
+源码 docstring 为准。
+
+## 酉算子重叠线路
+
+对相同正宽度的线路 `U1` 和 `U2`，`UnitaryOverlap(U1, U2)` 构建
+
+```text
+U_overlap = U2† U1。
+```
+
+该结果是可继续组合、参数绑定或求逆的 Cqlib 线路，不自动测量，也不直接
+返回一个重叠度标量。两个输入的量子比特按各自的插入位置对应，输出紧凑映射到
+`0..n-1`，因此源量子比特标识无需相同。构造时保存两条输入的独立快照；后续
+修改源线路不会改变组件，每次 `build_circuit()` 都返回新线路。
+
+参数化输入的活动参数名会原样保留。两条线路中不得出现相同的活动参数名，
+避免在组合时隐式共享训练参数。`insert_barrier=True` 只在 `U1` 与 `U2†`
+之间加入非语义 barrier，不改变线路矩阵。
+
+```python
+from cqlib import Circuit
+from cqlib_algorithms.operators import UnitaryOverlap
+
+first = Circuit(1)
+first.h(0)
+
+second = Circuit(1)
+second.ry(0, 0.3)
+
+overlap = UnitaryOverlap(first, second, insert_barrier=True).build_circuit()
+inverse_overlap = overlap.inverse()
+```
+
+输入必须为等宽、可分解且可静态求逆的酉线路；允许 barrier，但拒绝测量、
+重置、delay、经典数据和经典控制，包括嵌套线路中隐藏的这些操作。该组件实现
+的是线路乘积 `U2† U1`，不是 Hilbert–Schmidt trace overlap。
+
+## 采样态保真度
 
 `ComputeUncomputeFidelity` 使用公共 `Sampler` 协议，估计两条 Cqlib 线路所制备
-纯态之间的保真度。构造参数、返回类型与异常以源码 docstring 为准。
+纯态之间的保真度。
 
 ## 数学定义
 
@@ -71,6 +113,10 @@ assert result.variance == 0.0
 SWAP 测试，也不执行测量误差缓解。数值态矢量与密度矩阵的直接保真度计算属于
 Cqlib Core 的能力范围。
 
-compute-uncompute 构造可用于量子特征映射核。理论参考：Havlíček et al.,
-*Supervised learning with quantum-enhanced feature spaces*, Nature 567,
-209–212 (2019), [arXiv:1804.11326](https://arxiv.org/abs/1804.11326)。
+compute-uncompute 构造可用于量子特征映射核。
+
+## 理论参考
+
+[1] V. Havlíček et al., "Supervised learning with quantum-enhanced feature
+spaces," Nature, 567, 209–212, 2019.
+[DOI: 10.1038/s41586-019-0980-2](https://doi.org/10.1038/s41586-019-0980-2)。

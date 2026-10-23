@@ -30,9 +30,15 @@ from .ansatz import (
     SimplifiedTwoDesignAnsatz,
     TTNAnsatz,
     TwoLocalAnsatz,
+    TwoQubitUnitaryAnsatz,
 )
 from .arithmetic import QuadraticForm
-from .composite import GroverOperator, HadamardPhaseQuery, PhaseEstimationCircuit
+from .composite import (
+    GroverOperator,
+    HadamardPhaseQuery,
+    HiddenLinearFunctionCircuit,
+    PhaseEstimationCircuit,
+)
 from .estimator import SamplingEstimator, StatevectorEstimator
 from .gradient import (
     FiniteDifferenceGradient,
@@ -45,6 +51,7 @@ from .gradient import (
     StatevectorQFI,
     StatevectorQGT,
 )
+from .information import mutual_information
 from .measurement import (
     CommutingObservableGrouping,
     MeasurementGroup,
@@ -69,7 +76,13 @@ from .mixer import (
     ValueIndependentPermutationSwapMixer,
     ValueSelectivePermutationSwapMixer,
 )
-from .optimizer import Adam, GradientDescent, SPSAOptimizer
+from .optimizer import (
+    Adam,
+    COBYLAOptimizer,
+    GradientDescent,
+    LBFGSBOptimizer,
+    SPSAOptimizer,
+)
 from .oracle import (
     BitFlipOracle,
     BooleanFunction,
@@ -85,6 +98,7 @@ from .state_fidelity import (
     CircuitFidelityRequest,
     CircuitFidelityResult,
     ComputeUncomputeFidelity,
+    UnitaryOverlap,
 )
 from .state_preparation import (
     BRQI,
@@ -116,6 +130,7 @@ __all__ = [
     "BitFlipOracle",
     "BooleanFunction",
     "BooleanVectorFunction",
+    "COBYLAOptimizer",
     "CircuitFidelityRequest",
     "CircuitFidelityResult",
     "ColorParityPermutationSwapMixer",
@@ -139,8 +154,10 @@ __all__ = [
     "HadamardPhaseQuery",
     "HamiltonianVariationalAnsatz",
     "HardwareEfficientAnsatz",
+    "HiddenLinearFunctionCircuit",
     "ImageAngleEncoding",
     "ImageBasisEncoding",
+    "LBFGSBOptimizer",
     "LinCombEstimatorGradient",
     "MERAAnsatz",
     "MPSAnsatz",
@@ -180,10 +197,13 @@ __all__ = [
     "TimeColorMixer",
     "TimeSwapMixer",
     "TwoLocalAnsatz",
+    "TwoQubitUnitaryAnsatz",
     "UniformSuperposition",
+    "UnitaryOverlap",
     "UserCircuitPreparation",
     "ValueIndependentPermutationSwapMixer",
     "ValueSelectivePermutationSwapMixer",
     "ZeroStateReflection",
     "arithmetic",
+    "mutual_information",
 ]
