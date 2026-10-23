@@ -14,6 +14,9 @@
 
 from .amplitude_estimation import (
     AmplitudeEstimationProblem,
+    FasterAmplitudeEstimation,
+    FasterAmplitudeEstimationRequest,
+    FasterAmplitudeEstimationResult,
     IterativeAmplitudeEstimation,
     IterativeAmplitudeEstimationRequest,
     IterativeAmplitudeEstimationResult,
@@ -74,6 +77,9 @@ __all__ = [
     "DeutschJozsa",
     "DeutschJozsaRequest",
     "DeutschJozsaResult",
+    "FasterAmplitudeEstimation",
+    "FasterAmplitudeEstimationRequest",
+    "FasterAmplitudeEstimationResult",
     "HamiltonianPhaseEstimation",
     "HamiltonianPhaseEstimationRequest",
     "HamiltonianPhaseEstimationResult",

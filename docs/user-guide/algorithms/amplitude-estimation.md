@@ -1,6 +1,6 @@
 # 振幅估计
 
-本库提供标准振幅估计、迭代振幅估计和最大似然振幅估计。三者共享
+本库提供标准振幅估计、迭代振幅估计、最大似然振幅估计和快速振幅估计。四者共享
 `AmplitudeEstimationProblem`，由调用方显式提供：
 
 - 固定、完全绑定且静态酉的状态制备线路 `A`；
@@ -137,6 +137,38 @@ guard digits，而且用两档精度复算候选排序；若排序改变，再�
 根据 Fisher 信息构造并映射回振幅的 95% 渐近区间，同时作为共享
 `confidence_interval` 字段返回；它不是有限样本覆盖保证。
 
+## 快速振幅估计
+
+`FasterAmplitudeEstimation` 实现 Nakaji 的两阶段快速振幅估计，不使用相位寄存器、
+受控 Grover 幂或逆 QFT。每轮执行普通线路 `Q^k A`；第一阶段用一个余弦估计逐轮
+缩小 `theta` 区间，达到相位消歧条件后，第二阶段用两个不同 Grover 幂的余弦估计
+恢复正弦和余弦，从而继续倍增查询深度。同一轮所有请求合并为一次 Sampler 批调用，
+后续轮次仍依赖当前观测。
+
+算法要求实际送入的估计问题已经满足 `sqrt(a_problem) <= 0.25`。请求中的
+`amplitude_rescaling_factor` 只声明调用方已经施加的幅度缩放，不会改写线路：
+
+- `1.0` 表示直接估计这个小振幅问题；
+- `0.25` 表示调用方已经构造了配套的缩放后 `A`、`Q` 和好态谓词，返回值再除以
+  `0.25**2` 恢复原目标。
+
+经典 `is_good_state` 谓词不足以自动生成量子 Oracle，复用未缩放问题的旧 Grover
+迭代线路也不能代表缩放后的问题。因此实现不会在内部静默执行自动缩放。
+
+总失败概率预算 `alpha` 在至多 `2*max_iterations` 次余弦估计之间均分。单次预算为
+`delta_c=alpha/(2*max_iterations)`，第一、第二阶段每条线路的 shots 分别为
+
+```text
+ceil(1944*log(2/delta_c)),  ceil(972*log(2/delta_c)).
+```
+
+结果中的 `success_probability_lower_bound=1-alpha` 是联合界给出的理论下界，不是从
+本次样本估计出的经验成功概率。`powers`、`circuit_shots`、`good_counts` 和逐轮
+`theta_intervals` 记录完整执行轨迹。查询统计沿用本库口径：
+`num_grover_queries` 是所有线路中 Grover 指数之和，`num_oracle_queries` 是按每条
+线路 shots 加权后的指数之和。因为当前线路构造显式重复 `Q`，请求会在构造前拒绝
+单条线路超过一百万次 Grover 重复的规模。
+
 ## 示例
 
 ```python
@@ -169,6 +201,36 @@ result = algorithm.run(
 print(result.estimation, result.asymptotic_interval)
 ```
 
+快速振幅估计必须使用满足小振幅承诺的问题。例如：
+
+```python
+from cqlib_algorithms import (
+    FasterAmplitudeEstimation,
+    FasterAmplitudeEstimationRequest,
+)
+
+theta = 0.1
+preparation = Circuit(1)
+preparation.ry(0, 2 * theta)
+grover = Circuit(1)
+grover.ry(0, 4 * theta)
+problem = AmplitudeEstimationProblem(
+    preparation,
+    grover,
+    (0,),
+    lambda bits: bits == "1",
+)
+
+algorithm = FasterAmplitudeEstimation(StatevectorSampler())
+result = algorithm.run(
+    [FasterAmplitudeEstimationRequest(problem, alpha=0.05, max_iterations=5)]
+)[0]
+print(result.estimation, result.confidence_interval)
+```
+
+若目标振幅大于 `0.25`，调用方应先构造数学上一致的缩放后问题，并在请求中设置
+`amplitude_rescaling_factor=0.25`；不能只修改该参数而继续传入原来的 `A` 和 `Q`。
+
 ## 理论来源
 
 - G. Brassard, P. Høyer, M. Mosca, A. Tapp，*Quantum Amplitude
@@ -178,4 +240,6 @@ print(result.estimation, result.asymptotic_interval)
   Estimation*，arXiv:1912.05559v3，Algorithms 1–2 与 Theorem 1。
 - Y. Suzuki 等，*Amplitude Estimation without Phase Estimation*，
   arXiv:1904.10246v2，Eqs. (4)–(13)。
+- K. Nakaji，*Faster Amplitude Estimation*，Quantum Information &
+  Computation 20(13&14), 1109–1123, 2020，arXiv:2003.02417，Algorithm 1。
 

@@ -39,6 +39,9 @@ from cqlib_algorithms import (
     DeutschJozsa,
     DeutschJozsaRequest,
     DeutschJozsaResult,
+    FasterAmplitudeEstimation,
+    FasterAmplitudeEstimationRequest,
+    FasterAmplitudeEstimationResult,
     HamiltonianPhaseEstimation,
     HamiltonianPhaseEstimationRequest,
     HamiltonianPhaseEstimationResult,
@@ -101,6 +104,15 @@ from cqlib_algorithms.algorithms import (
 )
 from cqlib_algorithms.algorithms import (
     DeutschJozsaResult as AlgorithmDeutschJozsaResult,
+)
+from cqlib_algorithms.algorithms import (
+    FasterAmplitudeEstimation as AlgorithmFasterAmplitudeEstimation,
+)
+from cqlib_algorithms.algorithms import (
+    FasterAmplitudeEstimationRequest as AlgorithmFasterAmplitudeEstimationRequest,
+)
+from cqlib_algorithms.algorithms import (
+    FasterAmplitudeEstimationResult as AlgorithmFasterAmplitudeEstimationResult,
 )
 from cqlib_algorithms.algorithms import (
     HamiltonianPhaseEstimation as AlgorithmHamiltonianPhaseEstimation,
@@ -229,6 +241,9 @@ PUBLIC_COMPONENTS = {
     "DeutschJozsa": DeutschJozsa,
     "DeutschJozsaRequest": DeutschJozsaRequest,
     "DeutschJozsaResult": DeutschJozsaResult,
+    "FasterAmplitudeEstimation": FasterAmplitudeEstimation,
+    "FasterAmplitudeEstimationRequest": FasterAmplitudeEstimationRequest,
+    "FasterAmplitudeEstimationResult": FasterAmplitudeEstimationResult,
     "HamiltonianPhaseEstimation": HamiltonianPhaseEstimation,
     "HamiltonianPhaseEstimationRequest": HamiltonianPhaseEstimationRequest,
     "HamiltonianPhaseEstimationResult": HamiltonianPhaseEstimationResult,
@@ -354,6 +369,9 @@ def test_vqe_is_exported_from_public_namespaces():
 
 def test_amplitude_estimation_is_exported_from_public_namespaces():
     assert AmplitudeEstimationProblem is AlgorithmAmplitudeEstimationProblem
+    assert FasterAmplitudeEstimation is AlgorithmFasterAmplitudeEstimation
+    assert FasterAmplitudeEstimationRequest is AlgorithmFasterAmplitudeEstimationRequest
+    assert FasterAmplitudeEstimationResult is AlgorithmFasterAmplitudeEstimationResult
     assert StandardAmplitudeEstimation is AlgorithmStandardAmplitudeEstimation
     assert (
         StandardAmplitudeEstimationRequest
