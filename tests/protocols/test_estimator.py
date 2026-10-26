@@ -170,6 +170,31 @@ def test_estimator_request_rejects_invalid_shot_types(shots):
         )
 
 
+@pytest.mark.parametrize("seed", [True, 1.5, "1"])
+def test_estimator_request_rejects_invalid_seed_types(seed):
+    request = _symbolic_request()
+
+    with pytest.raises(TypeError, match="seed must be an integer or None"):
+        EstimatorRequest(
+            request.circuit,
+            request.observable,
+            request.parameter_bindings,
+            seed=seed,
+        )
+
+
+def test_estimator_request_rejects_negative_seed():
+    request = _symbolic_request()
+
+    with pytest.raises(ValueError, match="seed must be non-negative"):
+        EstimatorRequest(
+            request.circuit,
+            request.observable,
+            request.parameter_bindings,
+            seed=-1,
+        )
+
+
 def test_estimator_request_requires_matching_qubit_counts():
     circuit = Circuit(1)
 

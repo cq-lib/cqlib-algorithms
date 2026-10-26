@@ -87,8 +87,16 @@ def _draw_counts(
         Counts keyed by little-endian bitstring, omitting outcomes that were
         never drawn.
     """
-    outcomes = list(probabilities)
-    weights = np.array([probabilities[outcome] for outcome in outcomes], dtype=float)
+    # Core exposes the marginal distribution as a hash-backed mapping whose
+    # iteration order is not stable across calls.  Canonicalize it before
+    # assigning random draw indices; otherwise an identical seed can map the
+    # same indices to different bitstrings.
+    entries = sorted(
+        probabilities.items(),
+        key=lambda item: item[0].to_bitstring(width),
+    )
+    outcomes = [outcome for outcome, _ in entries]
+    weights = np.array([probability for _, probability in entries], dtype=float)
     weights /= weights.sum()
     draws = np.random.default_rng(seed).choice(len(outcomes), size=shots, p=weights)
     tallies = np.bincount(draws, minlength=len(outcomes))

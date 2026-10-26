@@ -30,7 +30,7 @@ from cqlib_algorithms.operators.estimator.sampling_estimator import (
 )
 from cqlib_algorithms.operators.sampler import StatevectorSampler
 from cqlib_algorithms.protocols.estimator import Estimator, EstimatorRequest
-from cqlib_algorithms.protocols.sampler import Sampler, SamplerRequest
+from cqlib_algorithms.protocols.sampler import Sampler, SamplerRequest, spawn_seeds
 
 
 class ScriptedSampler(Sampler):
@@ -136,6 +136,22 @@ def test_x_y_z_basis_rotations_and_total_shot_distribution() -> None:
         [],
     ]
     assert all(not request.circuit.classical_values for request in batch)
+
+
+def test_estimator_assigns_reproducible_independent_term_seeds() -> None:
+    observable = Hamiltonian(1)
+    observable.add_term(PauliString.from_str("X"), 1.0)
+    observable.add_term(PauliString.from_str("Z"), 1.0)
+    sampler = ScriptedSampler([{"0": 2}, {"0": 2}])
+
+    SamplingEstimator(sampler).run(
+        [EstimatorRequest(Circuit(1), observable, shots=4, seed=2026)]
+    )
+
+    actual = [request.seed for request in sampler.calls[0]]
+    expected = spawn_seeds(2026, 2)
+    assert actual == expected
+    assert len(set(actual)) == 2
 
 
 def test_deterministic_pauli_eigenstates_match_quantum_reference() -> None:

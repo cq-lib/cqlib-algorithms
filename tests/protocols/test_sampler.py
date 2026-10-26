@@ -26,6 +26,7 @@ from cqlib_algorithms import protocols
 from cqlib_algorithms.protocols.sampler import (
     Sampler,
     SamplerRequest,
+    spawn_seeds,
     validate_sampler_result,
     validate_sampler_results,
 )
@@ -100,6 +101,43 @@ def test_sampler_request_rejects_non_integer_shots(shots):
 
     with pytest.raises(TypeError, match="shots must be an integer"):
         SamplerRequest(circuit, tuple(circuit.qubits), shots)
+
+
+@pytest.mark.parametrize("seed", [True, 1.5, "1"])
+def test_sampler_request_rejects_invalid_seed_types(seed):
+    circuit = Circuit(1)
+
+    with pytest.raises(TypeError, match="seed must be an integer or None"):
+        SamplerRequest(circuit, tuple(circuit.qubits), 10, seed)
+
+
+def test_sampler_request_rejects_negative_seed():
+    circuit = Circuit(1)
+
+    with pytest.raises(ValueError, match="seed must be non-negative"):
+        SamplerRequest(circuit, tuple(circuit.qubits), 10, -1)
+
+
+def test_spawn_seeds_is_reproducible_and_uses_distinct_children():
+    first = spawn_seeds(11, 3)
+
+    assert first == spawn_seeds(11, 3)
+    assert first != spawn_seeds(12, 3)
+    assert len(set(first)) == 3
+    assert spawn_seeds(11, 0) == []
+
+
+@pytest.mark.parametrize("count", [True, 1.5, "1"])
+def test_spawn_seeds_rejects_invalid_count_types(count):
+    with pytest.raises(TypeError, match="count must be an integer"):
+        spawn_seeds(11, count)  # type: ignore[arg-type]
+
+
+def test_spawn_seeds_rejects_negative_count_and_seed():
+    with pytest.raises(ValueError, match="count must be non-negative"):
+        spawn_seeds(11, -1)
+    with pytest.raises(ValueError, match="seed must be non-negative"):
+        spawn_seeds(-1, 1)
 
 
 def test_sampler_request_rejects_unbound_circuit():

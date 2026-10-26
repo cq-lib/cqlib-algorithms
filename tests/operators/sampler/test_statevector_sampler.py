@@ -71,6 +71,19 @@ def test_partial_measurement_projects_bell_state() -> None:
     assert len(circuit.operations) == 3
 
 
+def test_explicit_seed_reproduces_statevector_counts() -> None:
+    circuit = Circuit(1)
+    circuit.h(0)
+    request = SamplerRequest(circuit, (Qubit(0),), 128, seed=2026)
+    sampler = StatevectorSampler()
+
+    first = sampler.run([request])[0]
+    repeat = sampler.run([request])[0]
+
+    assert first.counts == repeat.counts
+    assert sum(first.counts.values()) == request.shots
+
+
 def test_single_qubit_marginal_ignores_unmeasured_register() -> None:
     circuit = Circuit(2)
     circuit.x(1)

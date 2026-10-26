@@ -655,6 +655,8 @@ def _validate_seed(seed: int | None, /) -> None:
         return
     if isinstance(seed, bool) or not isinstance(seed, int):
         raise TypeError("seed must be an integer or None")
+    if seed < 0:
+        raise ValueError("seed must be non-negative")
 
 
 def _warn_if_ill_conditioned(scale_factors: Sequence[float], /) -> None:

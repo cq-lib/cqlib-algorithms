@@ -14,13 +14,15 @@
 
 from __future__ import annotations
 
+import math
 from collections.abc import Sequence
 
 import pytest
 from cqlib import Circuit
-from cqlib.qis import PauliString
+from cqlib.qis import Hamiltonian, PauliString
 
 from cqlib_algorithms.error_mitigation.core import QemExecutor
+from cqlib_algorithms.operators.estimator import StatevectorEstimator
 from cqlib_algorithms.error_mitigation.techniques.vd import (
     combine_results,
     construct_circuits,
@@ -53,6 +55,32 @@ class _RecordingEstimator(Estimator):
             self.seeds.append(request.seed)
             results.append(EstimatorResult(expectation=0.5, variance=0.0))
         return results
+
+
+class _ExactRecordingEstimator(Estimator):
+    """Evaluate callback observables exactly while retaining each request."""
+
+    __slots__ = ("requests",)
+
+    def __init__(self) -> None:
+        self.requests: list[EstimatorRequest] = []
+
+    def run(
+        self,
+        requests: Sequence[EstimatorRequest],
+        /,
+    ) -> list[EstimatorResult]:
+        """Drop finite-shot metadata and delegate the same observables exactly."""
+        self.requests.extend(requests)
+        exact = [
+            EstimatorRequest(
+                circuit=request.circuit,
+                observable=request.observable,
+                parameter_bindings=request.parameter_bindings,
+            )
+            for request in requests
+        ]
+        return StatevectorEstimator().run(exact)
 
 
 def test_combine_results_is_the_ratio_of_the_moments() -> None:
@@ -104,3 +132,67 @@ def test_copy_swap_circuit_is_built_by_cqlib(rotation_circuit) -> None:
 
     assert len(circuits) == 1
     assert circuits[0].width == 2 * circuit.num_qubits + 1
+
+
+def test_virtual_distillation_preserves_exact_pure_state_expectation() -> None:
+    circuit = Circuit(1)
+    circuit.ry(0, 0.7)
+    observable = PauliString.from_str("Z")
+    expected = math.cos(0.7)
+
+    for copies in (2, 3):
+        estimator = _ExactRecordingEstimator()
+        executor = vd_executor(
+            QemExecutor(estimator=estimator),
+            copies=copies,
+            shots_numerator=101,
+            shots_denominator=103,
+            seed=17,
+        )
+        result = executor.estimate([EstimatorRequest(circuit, observable)])[0]
+
+        assert result.expectation == pytest.approx(expected, abs=1e-12)
+
+
+def test_virtual_distillation_forwards_cqlib_moment_observables() -> None:
+    circuit = Circuit(1)
+    circuit.x(0)
+    estimator = _ExactRecordingEstimator()
+    executor = vd_executor(
+        QemExecutor(estimator=estimator),
+        copies=2,
+        shots_numerator=101,
+        shots_denominator=103,
+        seed=23,
+    )
+
+    result = executor.estimate(
+        [EstimatorRequest(circuit, PauliString.from_str("Z"))]
+    )[0]
+
+    assert result.expectation == pytest.approx(-1.0, abs=1e-12)
+    assert len(estimator.requests) == 2
+    assert [request.observable.num_qubits for request in estimator.requests] == [3, 3]
+    assert all(
+        isinstance(request.observable, Hamiltonian) for request in estimator.requests
+    )
+    masks = []
+    for request in estimator.requests:
+        assert isinstance(request.observable, Hamiltonian)
+        masks.append(
+            {(pauli.x_mask, pauli.z_mask) for pauli, _ in request.observable.terms}
+        )
+    ancilla_x = 1 << 2
+    assert (ancilla_x, 1) in masks[0]
+    assert (ancilla_x, 0) in masks[1]
+
+
+def test_vd_executor_rejects_negative_seed() -> None:
+    with pytest.raises(ValueError, match="seed must be non-negative"):
+        vd_executor(
+            QemExecutor(estimator=_RecordingEstimator()),
+            copies=2,
+            shots_numerator=101,
+            shots_denominator=103,
+            seed=-1,
+        )

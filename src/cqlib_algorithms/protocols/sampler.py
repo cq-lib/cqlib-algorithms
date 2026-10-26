@@ -29,6 +29,8 @@ def _validate_seed(seed: int | None) -> None:
         return
     if isinstance(seed, bool) or not isinstance(seed, int):
         raise TypeError("seed must be an integer or None")
+    if seed < 0:
+        raise ValueError("seed must be non-negative")
 
 
 def spawn_seeds(seed: int | None, count: int, /) -> list[int]:
@@ -46,7 +48,16 @@ def spawn_seeds(seed: int | None, count: int, /) -> list[int]:
 
     Returns:
         ``count`` non-negative integer seeds.
+
+    Raises:
+        TypeError: If ``seed`` or ``count`` has the wrong type.
+        ValueError: If ``seed`` or ``count`` is negative.
     """
+    _validate_seed(seed)
+    if isinstance(count, bool) or not isinstance(count, int):
+        raise TypeError("count must be an integer")
+    if count < 0:
+        raise ValueError("count must be non-negative")
     return [int(value) for value in np.random.SeedSequence(seed).generate_state(count)]
 
 
