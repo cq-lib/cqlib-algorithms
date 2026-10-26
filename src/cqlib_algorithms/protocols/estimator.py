@@ -113,10 +113,10 @@ class EstimatorRequest:
         parameter_bindings: Exact finite bindings for all used symbols. Values
             are defensively copied into an immutable mapping.
         shots: ``None`` for exact evaluation or a positive shot count.
-        seed: Seed of the estimation, or ``None`` to draw fresh randomness. An
-            estimator that draws shot-based results from a random source must
-            derive that source from this value, so that one request is
-            reproducible.
+        seed: Non-negative seed of the estimation, or ``None`` to draw fresh
+            randomness. An estimator that draws shot-based results from a
+            random source must derive that source from this value, so that one
+            request is reproducible.
 
     Raises:
         TypeError: If an argument has the wrong type.

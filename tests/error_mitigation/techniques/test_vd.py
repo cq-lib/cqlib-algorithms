@@ -17,17 +17,18 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 
+import numpy as np
 import pytest
 from cqlib import Circuit
 from cqlib.qis import Hamiltonian, PauliString
 
 from cqlib_algorithms.error_mitigation.core import QemExecutor
-from cqlib_algorithms.operators.estimator import StatevectorEstimator
 from cqlib_algorithms.error_mitigation.techniques.vd import (
     combine_results,
     construct_circuits,
     vd_executor,
 )
+from cqlib_algorithms.operators.estimator import StatevectorEstimator
 from cqlib_algorithms.protocols import (
     Estimator,
     EstimatorRequest,
@@ -81,6 +82,35 @@ class _ExactRecordingEstimator(Estimator):
             for request in requests
         ]
         return StatevectorEstimator().run(exact)
+
+
+class _BitFlipDensityEstimator(Estimator):
+    """Evaluate two-copy callback observables on a known mixed state."""
+
+    __slots__ = ("_density",)
+
+    def __init__(self, marginal: float) -> None:
+        single = np.diag([1.0 - marginal, marginal]).astype(complex)
+        ancilla_zero = np.diag([1.0, 0.0]).astype(complex)
+        # Core qubit zero is least significant, so the ancilla is the leading
+        # Kronecker factor for the three-qubit copy-swap circuit.
+        self._density = np.kron(ancilla_zero, np.kron(single, single))
+
+    def run(
+        self,
+        requests: Sequence[EstimatorRequest],
+        /,
+    ) -> list[EstimatorResult]:
+        """Return exact dense-matrix expectations for callback observables."""
+        results: list[EstimatorResult] = []
+        for request in requests:
+            qubits = list(range(request.circuit.num_qubits))
+            unitary = request.circuit.to_matrix(qubits)
+            final_density = unitary @ self._density @ unitary.conj().T
+            value = np.trace(request.observable.to_matrix() @ final_density)
+            assert abs(value.imag) < 1e-12
+            results.append(EstimatorResult(float(value.real)))
+        return results
 
 
 def test_combine_results_is_the_ratio_of_the_moments() -> None:
@@ -152,6 +182,29 @@ def test_virtual_distillation_preserves_exact_pure_state_expectation() -> None:
         result = executor.estimate([EstimatorRequest(circuit, observable)])[0]
 
         assert result.expectation == pytest.approx(expected, abs=1e-12)
+
+
+def test_virtual_distillation_matches_analytic_mixed_bit_flip_state() -> None:
+    marginal = 0.1
+    circuit = Circuit(1)
+    raw_expectation = 1.0 - 2.0 * marginal
+    expected = raw_expectation / (
+        (1.0 - marginal) ** 2 + marginal**2
+    )
+    executor = vd_executor(
+        QemExecutor(estimator=_BitFlipDensityEstimator(marginal)),
+        copies=2,
+        shots_numerator=101,
+        shots_denominator=103,
+        seed=19,
+    )
+
+    result = executor.estimate(
+        [EstimatorRequest(circuit, PauliString.from_str("Z"))]
+    )[0]
+
+    assert result.expectation == pytest.approx(expected, abs=1e-12)
+    assert abs(result.expectation - 1.0) < abs(raw_expectation - 1.0)
 
 
 def test_virtual_distillation_forwards_cqlib_moment_observables() -> None:

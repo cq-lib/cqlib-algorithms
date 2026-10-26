@@ -82,9 +82,10 @@ class SamplerRequest:
         circuit: A valid circuit with no used symbolic parameters.
         qubits: A non-empty, ordered tuple of distinct circuit qubits.
         shots: A positive number of samples. Boolean values are not accepted.
-        seed: Seed of the count draw, or ``None`` to draw fresh randomness. A
-            sampler that draws counts from a random source must derive that
-            source from this value, so that one request is reproducible.
+        seed: Non-negative seed of the count draw, or ``None`` to draw fresh
+            randomness. A sampler that draws counts from a random source must
+            derive that source from this value, so that one request is
+            reproducible.
 
     Raises:
         TypeError: If an argument has the wrong type.

@@ -198,9 +198,9 @@ def execute_with_vd(
         Shot count for the denominator observable, at least one. An odd count
         keeps the estimated moment from vanishing identically.
     seed
-        Seed of the sampled numerator and denominator, or ``None`` for fresh
-        randomness. The two measurements draw from separate child seeds, so one
-        value reproduces the whole estimate.
+        Non-negative seed of the sampled numerator and denominator, or
+        ``None`` for fresh randomness. The two measurements draw from separate
+        child seeds, so one value reproduces the whole estimate.
 
     Returns
     -------
@@ -213,7 +213,8 @@ def execute_with_vd(
         If ``copies``, ``shots_numerator``, or ``shots_denominator`` is not an
         integer, or if ``seed`` is neither an integer nor ``None``.
     ValueError
-        If ``copies`` is below two, or if either shot count is below one.
+        If ``copies`` is below two, either shot count is below one, or ``seed``
+        is negative.
     Warning
         The method assumes the two copies are subject to independent noise; a
         correlated noise channel shared by both copies voids the correction.
@@ -257,8 +258,8 @@ def vd_executor(
     shots_denominator
         Shot count bound to the denominator observable, at least one.
     seed
-        Seed of the sampled numerator and denominator, or ``None`` to defer to
-        the request's own seed.
+        Non-negative seed of the sampled numerator and denominator, or
+        ``None`` to defer to the request's own seed.
 
     Returns
     -------
@@ -271,7 +272,8 @@ def vd_executor(
         If ``copies``, ``shots_numerator``, or ``shots_denominator`` is not an
         integer, or if ``seed`` is neither an integer nor ``None``.
     ValueError
-        If ``copies`` is below two, or if either shot count is below one.
+        If ``copies`` is below two, either shot count is below one, or ``seed``
+        is negative.
     """
     _validate_copies(copies)
     _validate_shots(shots_numerator, "shots_numerator")
@@ -307,8 +309,8 @@ class _VdEstimator(Estimator):
     shots_denominator
         Shot count bound to the denominator observable, at least one.
     seed
-        Seed of the sampled numerator and denominator, or ``None`` to defer to
-        the request's own seed.
+        Non-negative seed of the sampled numerator and denominator, or
+        ``None`` to defer to the request's own seed.
     """
 
     __slots__ = ("_copies", "_executor", "_seed", "_shots_denominator", "_shots_numerator")
