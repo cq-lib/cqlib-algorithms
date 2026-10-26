@@ -100,17 +100,14 @@ class QemExecutor:
     results are :class:`~cqlib_algorithms.protocols.SamplerRequest` and
     :class:`cqlib.device.ExecutionResult`.
 
-    Parameters
-    ----------
-    estimator
-        Expectation-value backend, or ``None`` when only sampling is used.
-    sampler
-        Count-based backend, or ``None`` when only expectation values are used.
-    use_cache
-        When ``True``, repeated requests are served from a per-instance cache
-        keyed on circuit structure, observable, shots, seed, and parameter
-        bindings. Disabled by default so execution stays explicit; caching is
-        the prerequisite for chaining one technique on top of another.
+    Args:
+        estimator: Expectation-value backend, or ``None`` when only sampling is used.
+        sampler: Count-based backend, or ``None`` when only expectation values are used.
+        use_cache: When ``True``, repeated requests are served from a per-instance cache
+            keyed on circuit structure, observable, shots, seed, and parameter
+            bindings. Disabled by default so execution stays explicit; caching is
+            the prerequisite for chaining one technique on top of another.
+
     """
 
     __slots__ = (
@@ -174,20 +171,15 @@ class QemExecutor:
     ) -> list[EstimatorResult]:
         r"""Estimate a batch of observable expectations in input order.
 
-        Parameters
-        ----------
-        requests
-            Expectation requests, delegated unchanged to the estimator.
+        Args:
+            requests: Expectation requests, delegated unchanged to the estimator.
 
-        Returns
-        -------
-        list[EstimatorResult]
+        Returns:
             One result per request, in input order.
 
-        Raises
-        ------
-        ValueError
-            If this executor holds no estimator backend.
+        Raises:
+            ValueError: If this executor holds no estimator backend.
+
         """
         if self._estimator is None:
             raise ValueError("QemExecutor has no estimator backend")
@@ -219,20 +211,15 @@ class QemExecutor:
     ) -> list[ExecutionResult]:
         r"""Sample a batch of ``counts`` distributions in input order.
 
-        Parameters
-        ----------
-        requests
-            Sampling requests, delegated unchanged to the sampler.
+        Args:
+            requests: Sampling requests, delegated unchanged to the sampler.
 
-        Returns
-        -------
-        list[ExecutionResult]
+        Returns:
             One terminal result per request, in input order.
 
-        Raises
-        ------
-        ValueError
-            If this executor holds no sampler backend.
+        Raises:
+            ValueError: If this executor holds no sampler backend.
+
         """
         if self._sampler is None:
             raise ValueError("QemExecutor has no sampler backend")

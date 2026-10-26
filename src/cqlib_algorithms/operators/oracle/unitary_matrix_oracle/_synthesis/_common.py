@@ -131,29 +131,22 @@ def safe_project_subunitary(
     original ``assert_square_unitary`` entry validation is intentionally left
     strict so that malformed *user-provided* matrices are always rejected.
 
-    Parameters
-    ----------
-    matrix:
-        The intermediate subunitary produced by the recursion.
-    atol:
-        The per-call absolute tolerance propagated from the synthesis call.
-        This value is used for the final post-projection unitary check while
-        the structural drift check uses the module-level threshold.
-    label:
-        Human-readable name used in error messages.
+    Args:
+        matrix:: The intermediate subunitary produced by the recursion.
+        atol:: The per-call absolute tolerance propagated from the synthesis call.
+            This value is used for the final post-projection unitary check while
+            the structural drift check uses the module-level threshold.
+        label:: Human-readable name used in error messages.
 
-    Returns
-    -------
-    npt.NDArray[np.complex128]
+    Returns:
         ``matrix`` if it is already unitary within ``atol``, otherwise the
-        nearest unitary matrix (polar factor) when the drift is acceptable.
+            nearest unitary matrix (polar factor) when the drift is acceptable.
 
-    Raises
-    ------
-    ValueError
-        If ``matrix`` deviates from ``U(n)`` by more than
-        ``_SUBUNITARY_PROJECTION_THRESHOLD`` which rules out mere numerical
-        round-off.
+    Raises:
+        ValueError: If ``matrix`` deviates from ``U(n)`` by more than
+            ``_SUBUNITARY_PROJECTION_THRESHOLD`` which rules out mere numerical
+            round-off.
+
     """
 
     if is_unitary(matrix, atol=atol):

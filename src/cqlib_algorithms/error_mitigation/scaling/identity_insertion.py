@@ -35,6 +35,12 @@ inflation up to one layer per operation.
 A layer here is one index into ``Circuit.operations``: each inserted layer
 applies :math:`\mathrm{id}` to every qubit, and a partial layer is placed
 after a randomly chosen subset of the operations.
+
+References
+----------
+[1] A. He, B. Nachman, W. A. de Jong, and C. W. Bauer, "Zero-noise extrapolation for
+    quantum-gate error mitigation with identity insertions," Physical Review A 102,
+    012426, 2020. arXiv:2003.04941.
 """
 
 from __future__ import annotations
@@ -62,37 +68,21 @@ def insert_id_layers(
     layer after each of :math:`\lfloor D (\lambda - 1 - n) \rfloor` randomly
     chosen operations.
 
-    Parameters
-    ----------
-    circuit
-        Circuit to scale. Measurements are stripped and re-appended.
-    scale_factor
-        Noise scale factor :math:`\lambda \ge 1`. ``1`` inserts nothing.
-    seed
-        Seed for the random selection of partially scaled positions.
+    Args:
+        circuit: Circuit to scale. Measurements are stripped and re-appended.
+        scale_factor: Noise scale factor :math:`\lambda \ge 1`. ``1`` inserts nothing.
+        seed: Seed for the random selection of partially scaled positions.
 
-    Returns
-    -------
-    Circuit
+    Returns:
         Circuit with identity layers inserted, carrying the source global
-        phase and its measurements restored at the tail.
+            phase and its measurements restored at the tail.
 
-    Raises
-    ------
-    ValueError
-        If ``scale_factor < 1``.
+    Raises:
+        ValueError: If ``scale_factor < 1``.
 
-    Notes
-    -----
-    ``seed`` is a required keyword-only argument so the partially scaled
-    positions are reproducible instead of reading the global random stream.
-
-    References
-    ----------
-    .. [1] A. He, B. Nachman, W. A. de Jong, and C. W. Bauer,
-       "Zero-noise extrapolation for quantum-gate error mitigation with
-       identity insertions," Physical Review A 102, 012426, 2020.
-       arXiv:2003.04941.
+    Note:
+        ``seed`` is a required keyword-only argument so the partially scaled
+        positions are reproducible instead of reading the global random stream.
     """
     scale = _normalize_scale_factor(scale_factor)
     body, measured = strip_measurements(circuit)

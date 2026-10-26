@@ -52,8 +52,12 @@ rather than a quasi-Newton search.
 
 References
 ----------
-.. [1] J. Haah, "Product Decomposition of Periodic Functions in Quantum
-   Signal Processing," Quantum 3, 190, 2019. arXiv:1806.10236.
+[1] J. Haah, "Product Decomposition of Periodic Functions in Quantum Signal Processing,"
+    Quantum 3, 190, 2019. arXiv:1806.10236.
+[2] A. Gilyen, Y. Su, G. H. Low, and N. Wiebe, "Quantum singular value transformation
+    and beyond: exponential improvements for quantum matrix arithmetics," Proceedings of
+    the 51st Annual ACM SIGACT Symposium on Theory of Computing, pp. 193-204, 2019.
+    arXiv:1806.01838.
 """
 
 from __future__ import annotations
@@ -71,7 +75,7 @@ from ._complex_solver import (
     _normalize_complex_coefficients,
     _validate_complex_qsp_constraints,
 )
-from ._numerics import _validate_positive_scalar
+from ._numerics import _normalize_positive_scalar
 
 _ZERO_TOLERANCE = 1e-12
 _SERIES_TRIM_TOLERANCE = 1e-14
@@ -114,12 +118,10 @@ def _primitive_matrix(
 
     where the inverse identity follows directly from ``P Q = 0``.
 
-    Parameters
-    ----------
-    projector
-        Rank-one projector ``P``.
-    inverse
-        When ``True`` return ``E_P(t)^{-1}`` instead of ``E_P(t)``.
+    Args:
+        projector: Rank-one projector ``P``.
+        inverse: When ``True`` return ``E_P(t)^{-1}`` instead of ``E_P(t)``.
+
     """
     complement = np.eye(2, dtype=np.complex128) - projector
     if inverse:
@@ -200,23 +202,18 @@ def _decompose_product(
     degree ``n - 1``.  Repeating the step ``n`` times leaves the constant
     factor ``E_0``.
 
-    Parameters
-    ----------
-    series
-        Laurent coefficients of ``F`` as a mapping from exponent to a 2x2
-        matrix.  The exponents are expected to share the parity of
-        ``degree``.
-    degree
-        Degree ``n`` of the product, i.e. the highest exponent of ``F``.
-    tolerance
-        Magnitude below which a coefficient counts as numerically zero.
+    Args:
+        series: Laurent coefficients of ``F`` as a mapping from exponent to a 2x2
+            matrix.  The exponents are expected to share the parity of
+            ``degree``.
+        degree: Degree ``n`` of the product, i.e. the highest exponent of ``F``.
+        tolerance: Magnitude below which a coefficient counts as numerically zero.
 
-    Returns
-    -------
-    tuple
+    Returns:
         ``(E_0, projectors)`` where ``E_0`` is the constant SU(2) factor and
-        ``projectors`` lists ``(P_1, ..., P_n)`` in the order of appearance
-        in ``F = E_0 E_{P_1}(t) \cdots E_{P_n}(t)``.
+            ``projectors`` lists ``(P_1, ..., P_n)`` in the order of appearance
+            in ``F = E_0 E_{P_1}(t) \cdots E_{P_n}(t)``.
+
     """
     residual = dict(series)
     peeled: list[npt.NDArray[np.complex128]] = []
@@ -366,15 +363,13 @@ def _complement_candidates(coefficients: np.ndarray) -> list[np.ndarray]:
     by a fixed real-axis tolerance, so the pair count returned by ``chebroots``
     degrades as the roots cluster -- which is the RuntimeError below.
 
-    Raises
-    ------
-    ValueError
-        If an even-degree ``P`` has a complement that cannot be odd.
-    RuntimeError
-        If the spectral factorisation of ``h`` breaks down numerically, i.e.
-        if the root at ``u = 0`` is missing, if the root multiset does not
-        split into the expected number of conjugate pairs, or if the leading
-        coefficient of ``h`` is numerically non-positive.
+    Raises:
+        ValueError: If an even-degree ``P`` has a complement that cannot be odd.
+        RuntimeError: If the spectral factorisation of ``h`` breaks down numerically, i.e.
+            if the root at ``u = 0`` is missing, if the root multiset does not
+            split into the expected number of conjugate pairs, or if the leading
+            coefficient of ``h`` is numerically non-positive.
+
     """
     coefficients = np.asarray(coefficients, dtype=np.complex128)
     degree = coefficients.size - 1
@@ -589,13 +584,12 @@ def _select_complement(
     into rank-one primitives.  The candidates are tried in the order given,
     the default representative first.
 
-    Raises
-    ------
-    RuntimeError
-        If no spectral factor of ``1 - |P|^2`` decomposes.  This is the
-        deterministic analogue of the non-convergence failure of the
-        iterative solvers, signalling an ill-conditioned spectral
-        factorisation rather than an invalid argument.
+    Raises:
+        RuntimeError: If no spectral factor of ``1 - |P|^2`` decomposes.  This is the
+            deterministic analogue of the non-convergence failure of the
+            iterative solvers, signalling an ill-conditioned spectral
+            factorisation rather than an invalid argument.
+
     """
     for q_power in candidates:
         try:
@@ -622,62 +616,42 @@ def solve_haah_phases(
     come from the product decomposition of Ref. [1] instead of a quasi-Newton
     search, so no initial guess, iteration or training grid is involved.
 
-    Parameters
-    ----------
-    coefficients
-        Chebyshev-basis coefficients ``(c_0, c_1, ..., c_d)`` in ascending
-        order.  Coefficients may be complex.  The implied degree is the
-        highest non-zero coefficient index after trimming trailing entries
-        smaller than ``1e-14`` in magnitude.
-    tolerance
-        Magnitude below which a coefficient of the assembled response counts
-        as zero during the peel.  The default ``1e-10`` sits above the
-        rounding floor of the assembly (``~eps * 2**d``) and keeps the peel
-        from accepting a wrong spectral factor.
+    Args:
+        coefficients: Chebyshev-basis coefficients ``(c_0, c_1, ..., c_d)`` in ascending
+            order.  Coefficients may be complex.  The implied degree is the
+            highest non-zero coefficient index after trimming trailing entries
+            smaller than ``1e-14`` in magnitude.
+        tolerance: Magnitude below which a coefficient of the assembled response counts
+            as zero during the peel.  The default ``1e-10`` sits above the
+            rounding floor of the assembly (``~eps * 2**d``) and keeps the peel
+            from accepting a wrong spectral factor.
 
-    Returns
-    -------
-    numpy.ndarray
+    Returns:
         R-form phase sequence of length ``degree + 1`` (real-valued).  It can
-        be passed to :func:`._converters.convert_qsp_phases` to obtain QSVT
-        ``W``-form phases.
+            be passed to :func:`._converters.convert_qsp_phases` to obtain QSVT
+            ``W``-form phases.
 
-    Raises
-    ------
-    TypeError
-        If coefficients or solver controls have invalid types.
-    ValueError
-        If the target is infeasible, i.e. it violates one of the four
-        conditions of Corollary 8; also if the degree is below one or if
-        ``tolerance`` is not a positive scalar.
-    RuntimeError
-        If the spectral factorisation of ``1 - |P|^2`` or the subsequent
-        decomposition into rank-one primitives fails, e.g. because no
-        spectral factor is QSP decomposable.  This is the deterministic
-        analogue of the non-convergence failure of the iterative solvers and
-        signals an ill-conditioned factorisation rather than a bad argument.
+    Raises:
+        TypeError: If coefficients or solver controls have invalid types.
+        ValueError: If the target is infeasible, i.e. it violates one of the four
+            conditions of Corollary 8; also if the degree is below one or if
+            ``tolerance`` is not a positive scalar.
+        RuntimeError: If the spectral factorisation of ``1 - |P|^2`` or the subsequent
+            decomposition into rank-one primitives fails, e.g. because no
+            spectral factor is QSP decomposable.  This is the deterministic
+            analogue of the non-convergence failure of the iterative solvers and
+            signals an ill-conditioned factorisation rather than a bad argument.
 
-    Notes
-    -----
-    The target must follow Corollary 8 of Ref. [2].  The four conditions are
-    checked up front by
-    :func:`._complex_solver._validate_complex_qsp_constraints`, the same
-    numerical test used by :func:`._complex_solver.solve_complex_qsp_phases`;
-    the constructive sufficiency is then established when
-    :func:`_complement_candidates` actually finds a spectral factor.
-
-    References
-    ----------
-    .. [1] J. Haah, "Product Decomposition of Periodic Functions in Quantum
-       Signal Processing," Quantum 3, 190, 2019. arXiv:1806.10236.
-    .. [2] A. Gilyen, Y. Su, G. H. Low, and N. Wiebe,
-       "Quantum singular value transformation and beyond: exponential
-       improvements for quantum matrix arithmetics,"
-       Proceedings of the 51st Annual ACM SIGACT Symposium on Theory of
-       Computing, pp. 193-204, 2019. arXiv:1806.01838.
+    Note:
+        The target must follow Corollary 8 of Ref. [2].  The four conditions are
+        checked up front by
+        :func:`._complex_solver._validate_complex_qsp_constraints`, the same
+        numerical test used by :func:`._complex_solver.solve_complex_qsp_phases`;
+        the constructive sufficiency is then established when
+        :func:`_complement_candidates` actually finds a spectral factor.
     """
     trimmed = _normalize_complex_coefficients(coefficients)
-    peel_tolerance = _validate_positive_scalar(tolerance, name="tolerance")
+    peel_tolerance = _normalize_positive_scalar(tolerance, name="tolerance")
     degree = len(trimmed) - 1
     if degree < 1:
         raise ValueError("degree must be at least one")

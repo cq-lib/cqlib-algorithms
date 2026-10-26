@@ -33,15 +33,12 @@ _MEASUREMENT_NAMES = frozenset({"measure_bit", "measure_bits"})
 def is_measurement(operation: ValueOperation, /) -> bool:
     r"""Return whether ``operation`` measures a qubit.
 
-    Parameters
-    ----------
-    operation
-        Top-level operation to classify.
+    Args:
+        operation: Top-level operation to classify.
 
-    Returns
-    -------
-    bool
+    Returns:
         ``True`` for either measurement shape, ``False`` otherwise.
+
     """
     # A measurement reaches the operation list in two shapes: the
     # ``Directive::Measure`` directive, and the ``MeasureBit`` / ``MeasureBits``
@@ -58,19 +55,16 @@ def is_measurement(operation: ValueOperation, /) -> bool:
 def strip_measurements(circuit: Circuit, /) -> tuple[Circuit, list[Qubit]]:
     r"""Remove every measurement, returning the gate body and measured qubits.
 
-    Parameters
-    ----------
-    circuit
-        Circuit to strip.
+    Args:
+        circuit: Circuit to strip.
 
-    Returns
-    -------
-    tuple[Circuit, list[Qubit]]
+    Returns:
         The measurement-free body (sharing the source global phase) and the
-        measured qubits in measurement order, ready to be re-measured at the
-        tail of the folded circuit via :meth:`Circuit.measure`. The source
-        circuit is returned unchanged, with an empty qubit list, when it
-        carries no measurement.
+            measured qubits in measurement order, ready to be re-measured at the
+            tail of the folded circuit via :meth:`Circuit.measure`. The source
+            circuit is returned unchanged, with an empty qubit list, when it
+            carries no measurement.
+
     """
     operations = list(circuit.operations)
     measured: list[Qubit] = []
@@ -104,18 +98,14 @@ def rebuild(circuit: Circuit, operations: Sequence[ValueOperation], /) -> Circui
     classical variables, classical values, the global phase, and the qubit
     identifiers referenced by operations.
 
-    Parameters
-    ----------
-    circuit
-        Circuit supplying qubits, classical state, and global phase.
-    operations
-        Replacement top-level operation list, in execution order.
+    Args:
+        circuit: Circuit supplying qubits, classical state, and global phase.
+        operations: Replacement top-level operation list, in execution order.
 
-    Returns
-    -------
-    Circuit
+    Returns:
         A new circuit carrying ``operations`` plus the full state of
-        ``circuit``, including ``global_phase``.
+            ``circuit``, including ``global_phase``.
+
     """
     rebuilt = Circuit.from_operations(
         list(circuit.qubits),
@@ -139,17 +129,13 @@ def expand(
     the natural shape for "append a correction immediately after each gate"
     rewrites, where the position of the rewritten gate need not be known.
 
-    Parameters
-    ----------
-    circuit
-        Circuit whose operations are expanded.
-    expander
-        Pure callable mapping one operation to its replacement sequence.
+    Args:
+        circuit: Circuit whose operations are expanded.
+        expander: Pure callable mapping one operation to its replacement sequence.
 
-    Returns
-    -------
-    Circuit
+    Returns:
         A new circuit with the expanded operation list.
+
     """
     operations: list[ValueOperation] = []
     for operation in circuit.operations:
@@ -169,17 +155,13 @@ def splice(
     operation at that index. This is the shape used by position-addressed
     rewrites such as idle-window insertions and measurement-basis rotations.
 
-    Parameters
-    ----------
-    circuit
-        Circuit receiving the insertions.
-    insertions
-        Map from original operation index to the operations inserted after it.
+    Args:
+        circuit: Circuit receiving the insertions.
+        insertions: Map from original operation index to the operations inserted after it.
 
-    Returns
-    -------
-    Circuit
+    Returns:
         A new circuit with the inserted operations in place.
+
     """
     operations: list[ValueOperation] = []
     for index, operation in enumerate(circuit.operations):

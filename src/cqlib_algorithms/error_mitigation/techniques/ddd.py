@@ -30,12 +30,13 @@ computation as a reusable executor for chaining.
 
 References
 ----------
-.. [1] L. Viola and S. Lloyd, "Dynamical suppression of decoherence in
-   two-state quantum systems," Physical Review A 58, 2733, 1998.
-   arXiv:quant-ph/9803057.
-.. [2] L. Viola, E. Knill, and S. Lloyd, "Dynamical decoupling of open quantum
-   systems," Physical Review Letters 82, 2417, 1999.
-   doi:10.1103/PhysRevLett.82.2417.
+[1] L. Viola and S. Lloyd, "Dynamical suppression of decoherence in two-state quantum
+    systems," Physical Review A 58, 2733, 1998. arXiv:quant-ph/9803057.
+[2] L. Viola, E. Knill, and S. Lloyd, "Dynamical decoupling of open quantum systems,"
+    Physical Review Letters 82, 2417, 1999. doi:10.1103/PhysRevLett.82.2417.
+[3] B. Pokharel, N. Anand, B. Fortman, and D. A. Lidar, "Demonstration of fidelity
+    improvement using dynamical decoupling with superconducting qubits," Physical Review
+    Letters 121, 220502, 2018. arXiv:1807.08768.
 """
 
 from __future__ import annotations
@@ -61,15 +62,12 @@ class DynamicalDecoupling:
     ``rule`` produces for a window of that many layers. A window too short for
     the rule, or one that the rule's spacing cannot fill, is left untouched.
 
-    Parameters
-    ----------
-    rule
-        Pulse sequence laid into every idle window.
+    Args:
+        rule: Pulse sequence laid into every idle window.
 
-    Raises
-    ------
-    TypeError
-        If ``rule`` is not a :class:`DDDRule`.
+    Raises:
+        TypeError: If ``rule`` is not a :class:`DDDRule`.
+
     """
 
     rule: DDDRule
@@ -85,29 +83,16 @@ class DynamicalDecoupling:
         pulses of the rule multiply to the identity, so the transformed
         circuit realises the same unitary as the input.
 
-        Parameters
-        ----------
-        circuit
-            Circuit whose idle windows receive the pulses.
+        Args:
+            circuit: Circuit whose idle windows receive the pulses.
 
-        Returns
-        -------
-        Circuit
+        Returns:
             The decoupled circuit, or ``circuit`` itself when no window can
-            hold the rule.
+                hold the rule.
 
-        Raises
-        ------
-        ValueError
-            If the rule's pulses do not multiply to the identity up to a
-            global phase.
-
-        References
-        ----------
-        .. [1] B. Pokharel, N. Anand, B. Fortman, and D. A. Lidar,
-           "Demonstration of fidelity improvement using dynamical decoupling
-           with superconducting qubits," Physical Review Letters 121, 220502,
-           2018. arXiv:1807.08768.
+        Raises:
+            ValueError: If the rule's pulses do not multiply to the identity up to a
+                global phase.
         """
         layers = _operation_layers(circuit)
         insertions = _idle_window_insertions(circuit, layers, self.rule)
@@ -131,23 +116,17 @@ def construct_circuits(
 ) -> list[Circuit]:
     r"""Decouple ``circuit`` with ``rule``.
 
-    Parameters
-    ----------
-    circuit
-        Circuit whose idle windows receive the pulses.
-    rule
-        Pulse sequence laid into every idle window.
+    Args:
+        circuit: Circuit whose idle windows receive the pulses.
+        rule: Pulse sequence laid into every idle window.
 
-    Returns
-    -------
-    list[Circuit]
+    Returns:
         The single decoupled circuit, in the one-element family that
-        :func:`combine_results` reduces.
+            :func:`combine_results` reduces.
 
-    Raises
-    ------
-    TypeError
-        If ``rule`` is not a :class:`DDDRule`.
+    Raises:
+        TypeError: If ``rule`` is not a :class:`DDDRule`.
+
     """
     return [DynamicalDecoupling(rule=rule).apply(circuit)]
 
@@ -159,21 +138,16 @@ def combine_results(results: Sequence[EstimatorResult], /) -> float:
     :func:`construct_circuits` holds one circuit and the reduction is the
     identity.
 
-    Parameters
-    ----------
-    results
-        Expectation values measured on the circuits returned by
-        :func:`construct_circuits`.
+    Args:
+        results: Expectation values measured on the circuits returned by
+            :func:`construct_circuits`.
 
-    Returns
-    -------
-    float
+    Returns:
         The mitigated expectation value.
 
-    Raises
-    ------
-    ValueError
-        If ``results`` does not hold exactly one result.
+    Raises:
+        ValueError: If ``results`` does not hold exactly one result.
+
     """
     if len(results) != 1:
         raise ValueError(
@@ -202,43 +176,25 @@ def execute_with_ddd(
                [EstimatorRequest(c, obs)]
            )[0].expectation
 
-    Parameters
-    ----------
-    circuit
-        Circuit whose expectation value is to be mitigated.
-    executor
-        Execution backend supplying the expectation surface.
-    observable
-        Observable to estimate. A bare Pauli string is interpreted as a
-        Hamiltonian with unit coefficient.
-    rule
-        Pulse sequence laid into every idle window.
-    shots
-        Shot count for the decoupled circuit, or ``None`` for exact
-        evaluation.
-    seed
-        Seed of the shot-based estimation, or ``None`` for fresh randomness.
-        The pulse layout is deterministic, so the seed only reaches the
-        estimator backend.
+    Args:
+        circuit: Circuit whose expectation value is to be mitigated.
+        executor: Execution backend supplying the expectation surface.
+        observable: Observable to estimate. A bare Pauli string is interpreted as a
+            Hamiltonian with unit coefficient.
+        rule: Pulse sequence laid into every idle window.
+        shots: Shot count for the decoupled circuit, or ``None`` for exact
+            evaluation.
+        seed: Seed of the shot-based estimation, or ``None`` for fresh randomness.
+            The pulse layout is deterministic, so the seed only reaches the
+            estimator backend.
 
-    Returns
-    -------
-    float
+    Returns:
         Mitigated expectation value.
 
-    Raises
-    ------
-    TypeError
-        If ``rule`` is not a :class:`DDDRule`.
-    ValueError
-        If the rule's pulses do not multiply to the identity up to a global
-        phase.
-
-    References
-    ----------
-    .. [1] B. Pokharel, N. Anand, B. Fortman, and D. A. Lidar, "Demonstration
-       of fidelity improvement using dynamical decoupling with superconducting
-       qubits," Physical Review Letters 121, 220502, 2018. arXiv:1807.08768.
+    Raises:
+        TypeError: If ``rule`` is not a :class:`DDDRule`.
+        ValueError: If the rule's pulses do not multiply to the identity up to a global
+            phase.
     """
     wrapped = ddd_executor(executor, rule=rule, shots=shots, seed=seed)
     request = EstimatorRequest(circuit=circuit, observable=observable, shots=shots)
@@ -259,29 +215,21 @@ def ddd_executor(
     caching flag, so dynamical decoupling can be chained on top of another
     technique without changing either semantics.
 
-    Parameters
-    ----------
-    executor
-        Execution backend to wrap.
-    rule
-        Pulse sequence laid into every idle window.
-    shots
-        Shot count bound to every request, or ``None`` to defer to the
-        request's own shot count.
-    seed
-        Seed of the shot-based estimation, or ``None`` to defer to the
-        request's own seed.
+    Args:
+        executor: Execution backend to wrap.
+        rule: Pulse sequence laid into every idle window.
+        shots: Shot count bound to every request, or ``None`` to defer to the
+            request's own shot count.
+        seed: Seed of the shot-based estimation, or ``None`` to defer to the
+            request's own seed.
 
-    Returns
-    -------
-    QemExecutor
+    Returns:
         Executor whose expectation surface applies dynamical decoupling.
 
-    Raises
-    ------
-    TypeError
-        If ``rule`` is not a :class:`DDDRule`, or if ``seed`` is neither an
-        integer nor ``None``.
+    Raises:
+        TypeError: If ``rule`` is not a :class:`DDDRule`, or if ``seed`` is neither an
+            integer nor ``None``.
+
     """
     estimator = _DddEstimator(executor, rule=rule, shots=shots, seed=seed)
     return QemExecutor(
@@ -294,19 +242,15 @@ def ddd_executor(
 class _DddEstimator(Estimator):
     r"""Expectation surface that decouples each circuit before measuring it.
 
-    Parameters
-    ----------
-    executor
-        Execution backend supplying the expectation surface for the decoupled
-        circuit.
-    rule
-        Pulse sequence laid into every idle window.
-    shots
-        Shot count bound to every request, or ``None`` to defer to the
-        request.
-    seed
-        Seed of the shot-based estimation, or ``None`` to defer to the
-        request.
+    Args:
+        executor: Execution backend supplying the expectation surface for the decoupled
+            circuit.
+        rule: Pulse sequence laid into every idle window.
+        shots: Shot count bound to every request, or ``None`` to defer to the
+            request.
+        seed: Seed of the shot-based estimation, or ``None`` to defer to the
+            request.
+
     """
 
     __slots__ = ("_executor", "_rule", "_seed", "_shots")
@@ -363,17 +307,14 @@ class _DddEstimator(Estimator):
 def _operation_layers(circuit: Circuit, /) -> list[list[ValueOperation]]:
     r"""Group the operations of ``circuit`` into earliest-possible layers.
 
-    Parameters
-    ----------
-    circuit
-        Circuit to layer.
+    Args:
+        circuit: Circuit to layer.
 
-    Returns
-    -------
-    list[list[ValueOperation]]
+    Returns:
         One entry per layer, each holding the operations that can start as
-        early as that layer. Empty layers are dropped, so the returned list
-        indexes the time slots a decoupling rule is laid into.
+            early as that layer. Empty layers are dropped, so the returned list
+            indexes the time slots a decoupling rule is laid into.
+
     """
     dag = circuit.dag()
     layers: list[list[ValueOperation]] = []
@@ -396,20 +337,15 @@ def _idle_window_insertions(
 ) -> dict[int, list[ValueOperation]]:
     r"""Map operation indices to the pulses a rule places after them.
 
-    Parameters
-    ----------
-    circuit
-        Circuit whose wires are scanned for idle windows.
-    layers
-        Layered operations of ``circuit``, in execution order.
-    rule
-        Pulse sequence laid into every idle window.
+    Args:
+        circuit: Circuit whose wires are scanned for idle windows.
+        layers: Layered operations of ``circuit``, in execution order.
+        rule: Pulse sequence laid into every idle window.
 
-    Returns
-    -------
-    dict[int, list[ValueOperation]]
+    Returns:
         Insertions keyed by the index, in the relayered circuit, of the last
-        operation of the layer that a pulse follows.
+            operation of the layer that a pulse follows.
+
     """
     qubits = list(circuit.qubits)
     occupied = {qubit: [False] * len(layers) for qubit in qubits}
@@ -442,16 +378,13 @@ def _idle_window_insertions(
 def _idle_windows(occupied: Sequence[bool], /) -> Iterator[tuple[int, int]]:
     r"""Yield the start and length of every maximal idle stretch.
 
-    Parameters
-    ----------
-    occupied
-        One flag per layer, ``True`` where the wire carries an operation.
+    Args:
+        occupied: One flag per layer, ``True`` where the wire carries an operation.
 
-    Yields
-    ------
-    tuple[int, int]
+    Yields:
         Start layer and length, in layers, of one maximal stretch of idle
-        layers.
+            layers.
+
     """
     start: int | None = None
     for index, is_occupied in enumerate(occupied):
@@ -466,7 +399,7 @@ def _idle_windows(occupied: Sequence[bool], /) -> Iterator[tuple[int, int]]:
 
 
 def _validate_rule(rule: DDDRule, /) -> None:
-    r"""Reject a rule that is not a decoupling rule."""
+    r"""Validate a dynamical-decoupling rule."""
     if not isinstance(rule, DDDRule):
         raise TypeError(
             f"rule must be a DDDRule instance, but received {type(rule).__name__}"
@@ -474,7 +407,7 @@ def _validate_rule(rule: DDDRule, /) -> None:
 
 
 def _validate_seed(seed: int | None, /) -> None:
-    r"""Reject a seed that is neither an integer nor ``None``."""
+    r"""Validate an optional random seed."""
     if seed is None:
         return
     if isinstance(seed, bool) or not isinstance(seed, int):

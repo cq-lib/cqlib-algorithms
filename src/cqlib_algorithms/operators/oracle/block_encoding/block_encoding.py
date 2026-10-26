@@ -35,26 +35,18 @@ class BlockEncoding(ABC):
     block-encoding operators while leaving the actual circuit synthesis to
     subclasses.
 
-    Parameters
-    ----------
-    alpha
-        Positive subnormalization factor.
-    ancilla_qubits
-        Number of ancilla qubits ``a`` used by the block-encoding.
-    epsilon
-        Non-negative approximation error bound.
-    matrix_shape
-        Shape ``(rows, columns)`` of the encoded matrix ``A``.
-    system_qubits
-        Width of the system register. When omitted, the minimal width able to
-        contain both matrix dimensions is inferred.
+    Args:
+        alpha: Positive subnormalization factor.
+        ancilla_qubits: Number of ancilla qubits ``a`` used by the block-encoding.
+        epsilon: Non-negative approximation error bound.
+        matrix_shape: Shape ``(rows, columns)`` of the encoded matrix ``A``.
+        system_qubits: Width of the system register. When omitted, the minimal width able to
+            contain both matrix dimensions is inferred.
 
-    Raises
-    ------
-    TypeError
-        If any argument has an invalid type.
-    ValueError
-        If any argument is outside its valid range.
+    Raises:
+        TypeError: If any argument has an invalid type.
+        ValueError: If any argument is outside its valid range.
+
     """
 
     __slots__ = (
@@ -80,13 +72,14 @@ class BlockEncoding(ABC):
         matrix_shape: tuple[int, int],
         system_qubits: int | None = None,
     ) -> None:
-        self._alpha = _validate_positive_real(alpha, name="alpha")
-        self._ancilla_qubits = _validate_non_negative_integer(
+        self._alpha = _normalize_positive_real(alpha, name="alpha")
+        _validate_non_negative_integer(
             ancilla_qubits,
             name="ancilla_qubits",
         )
-        self._epsilon = _validate_non_negative_real(epsilon, name="epsilon")
-        self._matrix_shape = _validate_matrix_shape(matrix_shape)
+        self._ancilla_qubits = ancilla_qubits
+        self._epsilon = _normalize_non_negative_real(epsilon, name="epsilon")
+        self._matrix_shape = _canonicalize_matrix_shape(matrix_shape)
 
         minimum_system_qubits = _minimum_system_qubits(
             max(self._matrix_shape[0], self._matrix_shape[1])
@@ -94,15 +87,15 @@ class BlockEncoding(ABC):
         if system_qubits is None:
             self._system_qubits = minimum_system_qubits
         else:
-            system_qubits_int = _validate_non_negative_integer(
+            _validate_non_negative_integer(
                 system_qubits,
                 name="system_qubits",
             )
-            if system_qubits_int < minimum_system_qubits:
+            if system_qubits < minimum_system_qubits:
                 raise ValueError(
                     "system_qubits must be large enough to contain matrix_shape"
                 )
-            self._system_qubits = system_qubits_int
+            self._system_qubits = system_qubits
 
     @property
     def alpha(self) -> float:
@@ -163,7 +156,8 @@ class BlockEncoding(ABC):
         return self.build_circuit().inverse()
 
 
-def _validate_positive_real(value: float, *, name: str) -> float:
+def _normalize_positive_real(value: float, *, name: str) -> float:
+    r"""Validate and return a positive finite real value in normalized form."""
     if isinstance(value, bool) or not isinstance(value, Real):
         raise TypeError(f"{name} must be a real finite scalar")
     scalar = float(value)
@@ -174,7 +168,8 @@ def _validate_positive_real(value: float, *, name: str) -> float:
     return scalar
 
 
-def _validate_non_negative_real(value: float, *, name: str) -> float:
+def _normalize_non_negative_real(value: float, *, name: str) -> float:
+    r"""Validate and return a non-negative real value in normalized form."""
     if isinstance(value, bool) or not isinstance(value, Real):
         raise TypeError(f"{name} must be a real finite scalar")
     scalar = float(value)
@@ -185,32 +180,34 @@ def _validate_non_negative_real(value: float, *, name: str) -> float:
     return scalar
 
 
-def _validate_non_negative_integer(value: int, *, name: str) -> int:
+def _validate_non_negative_integer(value: int, *, name: str) -> None:
+    r"""Validate a non-negative integer."""
     if isinstance(value, bool) or not isinstance(value, int):
         raise TypeError(f"{name} must be an integer")
     if value < 0:
         raise ValueError(f"{name} must be greater than or equal to zero")
-    return value
 
 
-def _validate_matrix_shape(matrix_shape: tuple[int, int]) -> tuple[int, int]:
+def _canonicalize_matrix_shape(matrix_shape: tuple[int, int]) -> tuple[int, int]:
+    r"""Validate and return the canonical two-dimensional matrix shape."""
     if not isinstance(matrix_shape, tuple) or len(matrix_shape) != 2:
         raise TypeError("matrix_shape must be a tuple of two integers")
 
-    rows = _validate_positive_shape_entry(matrix_shape[0], name="matrix_shape[0]")
-    columns = _validate_positive_shape_entry(
+    rows, columns = matrix_shape
+    _validate_positive_shape_entry(rows, name="matrix_shape[0]")
+    _validate_positive_shape_entry(
         matrix_shape[1],
         name="matrix_shape[1]",
     )
     return (rows, columns)
 
 
-def _validate_positive_shape_entry(value: int, *, name: str) -> int:
+def _validate_positive_shape_entry(value: int, *, name: str) -> None:
+    r"""Validate a positive matrix-shape entry."""
     if isinstance(value, bool) or not isinstance(value, int):
         raise TypeError(f"{name} must be an integer")
     if value <= 0:
         raise ValueError(f"{name} must be greater than zero")
-    return value
 
 
 def _minimum_system_qubits(max_dimension: int) -> int:

@@ -31,6 +31,16 @@ costs no variance amplification, it merely injects extra noise of strength
 weights form a genuine probability distribution;
 :mod:`cqlib_algorithms.error_mitigation.techniques.pea` then extrapolates the
 expectation values back to :math:`s = 0`.
+
+References
+----------
+[1] Y. Kim, A. Eddins, S. Anand, K. X. Wei, E. van den Berg, S. Rosenblatt, H. Nayfeh,
+    Y. Wu, M. Zaletel, K. Temme, and A. Kandala, "Evidence for the utility of quantum
+    computing before fault tolerance," Nature 618, 500-505, 2023.
+    doi:10.1038/s41586-023-06096-3.
+[2] A. Mari, N. Shammah, and W. J. Zeng, "Extending quantum probabilistic error
+    cancellation by noise scaling," Physical Review A 104, 052607, 2021.
+    arXiv:2108.02237.
 """
 
 from __future__ import annotations
@@ -66,42 +76,22 @@ def amplify_depolarizing(
     identity term is the untouched circuit, which is the variant circuit the
     extrapolation starts from.
 
-    Parameters
-    ----------
-    instruction
-        Ideal standard-gate instruction, acting on one or two qubits.
-    noise_level
-        Baseline depolarizing strength of the device, in :math:`[0, 1)`.
-    scale_factor
-        Amplification factor :math:`s > 0` applied to ``noise_level``.
+    Args:
+        instruction: Ideal standard-gate instruction, acting on one or two qubits.
+        noise_level: Baseline depolarizing strength of the device, in :math:`[0, 1)`.
+        scale_factor: Amplification factor :math:`s > 0` applied to ``noise_level``.
 
-    Returns
-    -------
-    QuasiprobabilityRepresentation
+    Returns:
         Expansion whose basis is the identity followed by the Pauli
-        corrections, in Little-Endian qubit order, with
-        :math:`\Gamma = 1`.
+            corrections, in Little-Endian qubit order, with
+            :math:`\Gamma = 1`.
 
-    Raises
-    ------
-    ValueError
-        If ``instruction`` is not a standard gate or acts on more than two
-        qubits, if ``noise_level`` is not finite or negative, if
-        ``scale_factor`` is not finite or non-positive, or if the amplified
-        level reaches one, where the expansion stops being a probability
-        distribution.
-
-    References
-    ----------
-    .. [1] Y. Kim, A. Eddins, S. Anand, K. X. Wei, E. van den Berg,
-       S. Rosenblatt, H. Nayfeh, Y. Wu, M. Zaletel, K. Temme, and
-       A. Kandala,
-       "Evidence for the utility of quantum computing before fault
-       tolerance," Nature 618, 500-505, 2023.
-       doi:10.1038/s41586-023-06096-3.
-    .. [2] A. Mari, N. Shammah, and W. J. Zeng,
-       "Extending quantum probabilistic error cancellation by noise scaling,"
-       Physical Review A 104, 052607, 2021. arXiv:2108.02237.
+    Raises:
+        ValueError: If ``instruction`` is not a standard gate or acts on more than two
+            qubits, if ``noise_level`` is not finite or negative, if
+            ``scale_factor`` is not finite or non-positive, or if the amplified
+            level reaches one, where the expansion stops being a probability
+            distribution.
     """
     num_qubits = _instruction_num_qubits(instruction)
     amplified_level = _amplified_noise_level(noise_level, scale_factor)
@@ -120,11 +110,10 @@ def _amplified_noise_level(
 ) -> float:
     r"""Return the amplified noise level :math:`s\,\epsilon`.
 
-    Raises
-    ------
-    ValueError
-        If ``noise_level`` is not finite or negative, or if
-        ``scale_factor`` is not finite or non-positive.
+    Raises:
+        ValueError: If ``noise_level`` is not finite or negative, or if
+            ``scale_factor`` is not finite or non-positive.
+
     """
     if not np.isfinite(noise_level) or noise_level < 0.0:
         raise ValueError(
@@ -151,13 +140,12 @@ def _amplification_coefficients(
     :math:`\epsilon' / (4^k - 1)`; the weights sum to one, hence
     :math:`\Gamma = 1`.
 
-    Raises
-    ------
-    ValueError
-        If ``num_qubits`` is not one or two, or if ``amplified_level``
-        reaches one, where the identity weight would no longer be
-        non-negative and the expansion would stop being a probability
-        distribution.
+    Raises:
+        ValueError: If ``num_qubits`` is not one or two, or if ``amplified_level``
+            reaches one, where the identity weight would no longer be
+            non-negative and the expansion would stop being a probability
+            distribution.
+
     """
     if num_qubits == 1:
         corrections = 3

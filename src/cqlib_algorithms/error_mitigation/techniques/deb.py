@@ -37,8 +37,8 @@ them on an executor.
 
 References
 ----------
-.. [1] A. Maksymov, J. Nguyen, Y. Nam, and I. Markov, "Enhancing quantum
-   computer performance via symmetrization," arXiv:2301.07233, 2023.
+[1] A. Maksymov, J. Nguyen, Y. Nam, and I. Markov, "Enhancing quantum computer
+    performance via symmetrization," arXiv:2301.07233, 2023.
 """
 
 from __future__ import annotations
@@ -93,37 +93,28 @@ def construct_circuits(
     draw the permutations once and thread them through both stages instead, so
     they never depend on reproduction.
 
-    Parameters
-    ----------
-    circuit
-        Circuit whose expectation value is to be mitigated.
-    observable
-        Observable to estimate, permuted in lockstep with the circuit. It must
-        be diagonal in the :math:`Z` basis, that is, a sum of :math:`Z` and
-        identity products.
-    num_variants
-        Number of independent permutations to build, at least one.
-    seed
-        Seed of the permutation draw, or ``None`` for a fresh draw.
+    Args:
+        circuit: Circuit whose expectation value is to be mitigated.
+        observable: Observable to estimate, permuted in lockstep with the circuit. It must
+            be diagonal in the :math:`Z` basis, that is, a sum of :math:`Z` and
+            identity products.
+        num_variants: Number of independent permutations to build, at least one.
+        seed: Seed of the permutation draw, or ``None`` for a fresh draw.
 
-    Returns
-    -------
-    tuple[list[Circuit], list[Hamiltonian | PauliString]]
+    Returns:
         The ``num_variants`` permuted circuits and the matching permuted
-        observables, aligned by index. A bare
-        :class:`~cqlib.qis.PauliString` input yields permuted
-        :class:`~cqlib.qis.PauliString` outputs and a
-        :class:`~cqlib.qis.Hamiltonian` input yields permuted Hamiltonians.
+            observables, aligned by index. A bare
+            :class:`~cqlib.qis.PauliString` input yields permuted
+            :class:`~cqlib.qis.PauliString` outputs and a
+            :class:`~cqlib.qis.Hamiltonian` input yields permuted Hamiltonians.
 
-    Raises
-    ------
-    TypeError
-        If ``num_variants`` is not an integer, or if ``seed`` is neither an
-        integer nor ``None``.
-    ValueError
-        If ``num_variants`` is below one, if the observable is not diagonal in
-        the :math:`Z` basis, or if the observable and the circuit do not act
-        on the same number of qubits.
+    Raises:
+        TypeError: If ``num_variants`` is not an integer, or if ``seed`` is neither an
+            integer nor ``None``.
+        ValueError: If ``num_variants`` is below one, if the observable is not diagonal in
+            the :math:`Z` basis, or if the observable and the circuit do not act
+            on the same number of qubits.
+
     """
     _validate_num_variants(num_variants)
     _validate_seed(seed)
@@ -172,37 +163,28 @@ def combine_results(
     must have been sampled with the common shot count ``shots``; sharpening in
     particular has no well-defined per-shot vote otherwise.
 
-    Parameters
-    ----------
-    results
-        Measured counts of the circuits returned by :func:`construct_circuits`,
-        one :class:`cqlib.device.ExecutionResult` per variant, in that order.
-    mode
-        Aggregation to apply: ``"averaging"`` or ``"sharpening"``.
-    observable
-        Observable to estimate. It must be diagonal in the :math:`Z` basis,
-        that is, a sum of :math:`Z` and identity products.
-    shots
-        Shot count sampled for every variant. Each result must carry this many
-        shots.
+    Args:
+        results: Measured counts of the circuits returned by :func:`construct_circuits`,
+            one :class:`cqlib.device.ExecutionResult` per variant, in that order.
+        mode: Aggregation to apply: ``"averaging"`` or ``"sharpening"``.
+        observable: Observable to estimate. It must be diagonal in the :math:`Z` basis,
+            that is, a sum of :math:`Z` and identity products.
+        shots: Shot count sampled for every variant. Each result must carry this many
+            shots.
 
-    Returns
-    -------
-    float
+    Returns:
         Mitigated expectation value.
 
-    Raises
-    ------
-    TypeError
-        If ``mode`` is not a string, if ``shots`` is not an integer, or if an
-        entry of ``results`` is not a
-        :class:`cqlib.device.ExecutionResult`.
-    ValueError
-        If ``mode`` is not a supported aggregation, if ``shots`` is below one,
-        if ``observable`` is not diagonal in the :math:`Z` basis, if
-        ``results`` is empty, or if a variant was not sampled with ``shots``
-        shots. The last case is the guard that sharpening needs one shared
-        shot count across variants.
+    Raises:
+        TypeError: If ``mode`` is not a string, if ``shots`` is not an integer, or if an
+            entry of ``results`` is not a
+            :class:`cqlib.device.ExecutionResult`.
+        ValueError: If ``mode`` is not a supported aggregation, if ``shots`` is below one,
+            if ``observable`` is not diagonal in the :math:`Z` basis, if
+            ``results`` is empty, or if a variant was not sampled with ``shots``
+            shots. The last case is the guard that sharpening needs one shared
+            shot count across variants.
+
     """
     _validate_mode(mode)
     _validate_shots(shots)
@@ -234,37 +216,25 @@ def execute_with_deb(
                [EstimatorRequest(c, obs, shots=s)]
            )[0].expectation
 
-    Parameters
-    ----------
-    circuit
-        Circuit whose expectation value is to be mitigated.
-    executor
-        Execution backend supplying the sampling surface.
-    observable
-        Observable to estimate. It must be diagonal in the :math:`Z` basis.
-    mode
-        Aggregation to apply: ``"averaging"`` or ``"sharpening"``.
-    shots
-        Shot count for every permuted circuit.
-    num_variants
-        Number of independent permutations to aggregate over.
-    seed
-        Seed of the permutation draw, or ``None`` for a fresh draw.
+    Args:
+        circuit: Circuit whose expectation value is to be mitigated.
+        executor: Execution backend supplying the sampling surface.
+        observable: Observable to estimate. It must be diagonal in the :math:`Z` basis.
+        mode: Aggregation to apply: ``"averaging"`` or ``"sharpening"``.
+        shots: Shot count for every permuted circuit.
+        num_variants: Number of independent permutations to aggregate over.
+        seed: Seed of the permutation draw, or ``None`` for a fresh draw.
 
-    Returns
-    -------
-    float
+    Returns:
         Mitigated expectation value.
 
-    Raises
-    ------
-    TypeError
-        If ``mode`` is not a string, if ``shots`` or ``num_variants`` is not an
-        integer, or if ``seed`` is neither an integer nor ``None``.
-    ValueError
-        If ``mode`` is not a supported aggregation, if ``shots`` or
-        ``num_variants`` is below one, or if ``observable`` is not diagonal in
-        the :math:`Z` basis.
+    Raises:
+        TypeError: If ``mode`` is not a string, if ``shots`` or ``num_variants`` is not an
+            integer, or if ``seed`` is neither an integer nor ``None``.
+        ValueError: If ``mode`` is not a supported aggregation, if ``shots`` or
+            ``num_variants`` is below one, or if ``observable`` is not diagonal in
+            the :math:`Z` basis.
+
     """
     wrapped = deb_executor(
         executor,
@@ -293,33 +263,23 @@ def deb_executor(
     Symmetrization consumes counts and produces an expectation value, so it
     replaces the expectation surface while leaving sampling untouched.
 
-    Parameters
-    ----------
-    executor
-        Execution backend to wrap.
-    mode
-        Aggregation to apply: ``"averaging"`` or ``"sharpening"``.
-    shots
-        Shot count bound to every permuted circuit.
-    num_variants
-        Number of independent permutations aggregated for every request.
-    seed
-        Seed of the permutation draw, or ``None`` to defer to the request's own
-        seed.
+    Args:
+        executor: Execution backend to wrap.
+        mode: Aggregation to apply: ``"averaging"`` or ``"sharpening"``.
+        shots: Shot count bound to every permuted circuit.
+        num_variants: Number of independent permutations aggregated for every request.
+        seed: Seed of the permutation draw, or ``None`` to defer to the request's own
+            seed.
 
-    Returns
-    -------
-    QemExecutor
+    Returns:
         Executor whose expectation surface applies qubit-label symmetrization.
 
-    Raises
-    ------
-    TypeError
-        If ``mode`` is not a string, if ``shots`` or ``num_variants`` is not an
-        integer, or if ``seed`` is neither an integer nor ``None``.
-    ValueError
-        If ``mode`` is not a supported aggregation, or if ``shots`` or
-        ``num_variants`` is below one.
+    Raises:
+        TypeError: If ``mode`` is not a string, if ``shots`` or ``num_variants`` is not an
+            integer, or if ``seed`` is neither an integer nor ``None``.
+        ValueError: If ``mode`` is not a supported aggregation, or if ``shots`` or
+            ``num_variants`` is below one.
+
     """
     estimator = _DebEstimator(
         executor,
@@ -338,19 +298,14 @@ def deb_executor(
 class _DebEstimator(Estimator):
     r"""Expectation surface that permutes qubit labels and aggregates variants.
 
-    Parameters
-    ----------
-    executor
-        Execution backend supplying the sampling surface.
-    mode
-        Aggregation to apply: ``"averaging"`` or ``"sharpening"``.
-    shots
-        Shot count bound to every permuted circuit.
-    num_variants
-        Number of independent permutations aggregated for every request.
-    seed
-        Seed of the permutation draw, or ``None`` to defer to the request's own
-        seed.
+    Args:
+        executor: Execution backend supplying the sampling surface.
+        mode: Aggregation to apply: ``"averaging"`` or ``"sharpening"``.
+        shots: Shot count bound to every permuted circuit.
+        num_variants: Number of independent permutations aggregated for every request.
+        seed: Seed of the permutation draw, or ``None`` to defer to the request's own
+            seed.
+
     """
 
     __slots__ = ("_executor", "_mode", "_num_variants", "_seed", "_shots")
@@ -433,21 +388,16 @@ def _draw_permutations(
 ) -> list[np.ndarray]:
     r"""Draw one independent qubit-label permutation per variant.
 
-    Parameters
-    ----------
-    num_variants
-        Number of permutations to draw.
-    num_qubits
-        Number of qubit labels permuted, ``0`` to ``num_qubits - 1``.
-    seed
-        Seed of the draw, or ``None`` for entropy.
+    Args:
+        num_variants: Number of permutations to draw.
+        num_qubits: Number of qubit labels permuted, ``0`` to ``num_qubits - 1``.
+        seed: Seed of the draw, or ``None`` for entropy.
 
-    Returns
-    -------
-    list[numpy.ndarray]
+    Returns:
         ``num_variants`` permutations, each an integer array of length
-        ``num_qubits``; entry ``q`` is the physical label of logical qubit
-        ``q``.
+            ``num_qubits``; entry ``q`` is the physical label of logical qubit
+            ``q``.
+
     """
     rng = np.random.default_rng(seed)
     return [rng.permutation(num_qubits) for _ in range(num_variants)]
@@ -461,17 +411,13 @@ def _permute_circuit(circuit: Circuit, permutation: np.ndarray, /) -> Circuit:
     bitstring bit ``q`` stays attached to logical qubit ``q``. The global phase
     is carried over by going through :func:`_circuits.rebuild`.
 
-    Parameters
-    ----------
-    circuit
-        Circuit to relabel.
-    permutation
-        Physical label of every logical qubit.
+    Args:
+        circuit: Circuit to relabel.
+        permutation: Physical label of every logical qubit.
 
-    Returns
-    -------
-    Circuit
+    Returns:
         The relabelled circuit.
+
     """
     register = [int(permutation[index]) for index in range(circuit.num_qubits)]
     shell = Circuit(register)
@@ -499,17 +445,13 @@ def _permute_observable(
     ``permutation[q]``, matching the relabelling of :func:`_permute_circuit`, so
     the permuted pair still estimates the same physical quantity.
 
-    Parameters
-    ----------
-    observable
-        Observable to relabel.
-    permutation
-        Physical label of every logical qubit.
+    Args:
+        observable: Observable to relabel.
+        permutation: Physical label of every logical qubit.
 
-    Returns
-    -------
-    Hamiltonian | PauliString
+    Returns:
         The relabelled observable, with the same container type as the input.
+
     """
     if isinstance(observable, PauliString):
         return _permute_pauli(observable, permutation)
@@ -523,17 +465,13 @@ def _permute_observable(
 def _permute_pauli(pauli: PauliString, permutation: np.ndarray, /) -> PauliString:
     r"""Relabel one Pauli string, keeping its global phase.
 
-    Parameters
-    ----------
-    pauli
-        Pauli string to relabel.
-    permutation
-        Physical label of every logical qubit.
+    Args:
+        pauli: Pauli string to relabel.
+        permutation: Physical label of every logical qubit.
 
-    Returns
-    -------
-    PauliString
+    Returns:
         The relabelled Pauli string.
+
     """
     permuted = PauliString(pauli.num_qubits)
     for qubit in range(pauli.num_qubits):
@@ -553,17 +491,13 @@ def _average(
     so one all-:math:`Z` measurement basis serves every variant of a diagonal
     observable.
 
-    Parameters
-    ----------
-    results
-        One sampled result per variant.
-    hamiltonian
-        Observable to estimate, already wrapped as a Hamiltonian.
+    Args:
+        results: One sampled result per variant.
+        hamiltonian: Observable to estimate, already wrapped as a Hamiltonian.
 
-    Returns
-    -------
-    float
+    Returns:
         Mean of the per-variant expectation values.
+
     """
     num_qubits = hamiltonian.num_qubits
     measurement = PauliString.from_str("Z" * num_qubits)
@@ -584,24 +518,17 @@ def _sharpen(
 ) -> float:
     r"""Expectation value on the shot-by-shot majority record.
 
-    Parameters
-    ----------
-    results
-        One sampled result per variant, all with ``shots`` shots.
-    hamiltonian
-        Observable to estimate, already wrapped as a Hamiltonian.
-    shots
-        Shot count shared by every variant.
+    Args:
+        results: One sampled result per variant, all with ``shots`` shots.
+        hamiltonian: Observable to estimate, already wrapped as a Hamiltonian.
+        shots: Shot count shared by every variant.
 
-    Returns
-    -------
-    float
+    Returns:
         Expectation value on the sharpened record.
 
-    Raises
-    ------
-    ValueError
-        If every shot ties and the sharpened record is empty.
+    Raises:
+        ValueError: If every shot ties and the sharpened record is empty.
+
     """
     num_qubits = hamiltonian.num_qubits
     sequences = [_expand_shots(result, shots, num_qubits) for result in results]
@@ -632,18 +559,14 @@ def _normalised_distribution(
 ) -> dict[str, float]:
     r"""Return a variant's recorded counts as a normalised distribution.
 
-    Parameters
-    ----------
-    result
-        Sampled counts whose bitstrings are as wide as the circuit.
-    num_qubits
-        Width of the recorded bitstrings.
+    Args:
+        result: Sampled counts whose bitstrings are as wide as the circuit.
+        num_qubits: Width of the recorded bitstrings.
 
-    Returns
-    -------
-    dict[str, float]
+    Returns:
         Probability of each little-endian bitstring, keyed by a bitstring of
-        exactly ``num_qubits`` characters.
+            exactly ``num_qubits`` characters.
+
     """
     shots = result.shots
     distribution: dict[str, float] = {}
@@ -666,24 +589,17 @@ def _expand_shots(
     counted, in sorted bitstring order. The reconstruction is identical for
     every variant, so a shot index is a consistent key across variants.
 
-    Parameters
-    ----------
-    result
-        Sampled counts for one variant.
-    shots
-        Shot count the variant declares.
-    num_qubits
-        Width of the recorded bitstrings.
+    Args:
+        result: Sampled counts for one variant.
+        shots: Shot count the variant declares.
+        num_qubits: Width of the recorded bitstrings.
 
-    Returns
-    -------
-    list[str]
+    Returns:
         ``shots`` little-endian bitstrings of width ``num_qubits``.
 
-    Raises
-    ------
-    ValueError
-        If the recorded counts do not sum to ``shots``.
+    Raises:
+        ValueError: If the recorded counts do not sum to ``shots``.
+
     """
     sequence: list[str] = []
     # Sort the keys so the reconstruction never depends on the order the
@@ -702,16 +618,13 @@ def _expand_shots(
 def _majority(votes: Sequence[str], /) -> str | None:
     r"""Return the strict majority of ``votes``, or ``None`` on a tie.
 
-    Parameters
-    ----------
-    votes
-        One recorded bitstring per variant for a single shot index.
+    Args:
+        votes: One recorded bitstring per variant for a single shot index.
 
-    Returns
-    -------
-    str | None
+    Returns:
         The most frequent bitstring, or ``None`` when the two most frequent
-        bitstrings share the same count.
+            bitstrings share the same count.
+
     """
     ranking = Counter(votes).most_common(2)
     if len(ranking) > 1 and ranking[0][1] == ranking[1][1]:
@@ -727,7 +640,7 @@ def _as_hamiltonian(observable: Hamiltonian | PauliString, /) -> Hamiltonian:
 
 
 def _validate_mode(mode: str, /) -> None:
-    r"""Reject an aggregation mode outside the supported set."""
+    r"""Validate an aggregation mode."""
     if not isinstance(mode, str):
         raise TypeError("mode must be a string")
     if mode not in _MODES:
@@ -741,7 +654,7 @@ def _validate_variants(
     shots: int,
     /,
 ) -> None:
-    r"""Reject an empty variant set or one with mismatched shot counts."""
+    r"""Validate mitigation variants and their shot counts."""
     if len(results) < 1:
         raise ValueError("deb needs at least one variant to combine.")
     for result in results:
@@ -768,7 +681,7 @@ def _validate_num_variants(num_variants: int, /) -> None:
 
 
 def _validate_shots(shots: int, /) -> None:
-    r"""Reject a shot count that is not a positive integer."""
+    r"""Validate a positive shot count."""
     if isinstance(shots, bool) or not isinstance(shots, int):
         raise TypeError("shots must be an integer")
     if shots < 1:
@@ -776,7 +689,7 @@ def _validate_shots(shots: int, /) -> None:
 
 
 def _validate_seed(seed: int | None, /) -> None:
-    r"""Reject a seed that is neither an integer nor ``None``."""
+    r"""Validate an optional random seed."""
     if seed is None:
         return
     if isinstance(seed, bool) or not isinstance(seed, int):

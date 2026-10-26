@@ -37,13 +37,17 @@ returns the same computation as a reusable executor for chaining.
 
 References
 ----------
-.. [1] K. Temme, S. Bravyi, and J. M. Gambetta, "Error mitigation for
-   short-depth quantum circuits," Physical Review Letters 119, 180509, 2017.
-   arXiv:1612.02058.
-.. [2] T. Giurgica-Tiron, Y. Hindy, R. LaRose, A. Mari, and W. J. Zeng,
-   "Digital zero noise extrapolation for quantum error mitigation," IEEE
-   International Conference on Quantum Computing and Engineering (QCE),
-   pp. 306-316, 2020. arXiv:2005.10921.
+[1] K. Temme, S. Bravyi, and J. M. Gambetta, "Error mitigation for short-depth quantum
+    circuits," Physical Review Letters 119, 180509, 2017. arXiv:1612.02058.
+[2] T. Giurgica-Tiron, Y. Hindy, R. LaRose, A. Mari, and W. J. Zeng, "Digital zero noise
+    extrapolation for quantum error mitigation," IEEE International Conference on
+    Quantum Computing and Engineering (QCE), pp. 306-316, 2020. arXiv:2005.10921.
+[3] L. F. Richardson and J. A. Gaunt, "The deferred approach to the limit. Part I.
+    Single lattice. Part II. Interpenetrating lattices," Philosophical Transactions of
+    the Royal Society A 226, 299-361, 1927. doi:10.1098/rsta.1927.0008.
+[4] A. Kandala, K. Temme, A. D. Corcoles, A. Mezzacapo, J. M. Chow, and J. M. Gambetta,
+    "Error mitigation extends the computational reach of a noisy quantum processor,"
+    Nature 567, 491-495, 2019. arXiv:1805.04492.
 """
 
 from __future__ import annotations
@@ -95,16 +99,13 @@ class ScalingMethod(str, Enum):
     A plain :class:`str` enumeration is used rather than :class:`enum.StrEnum`
     so the type is available on Python 3.10.
 
-    Attributes
-    ----------
-    GLOBAL
-        Fold the whole gate body uniformly.
-    RANDOM
-        Fold a random subset of the gates; the selection is driven by
-        ``seed``.
-    LOCAL
-        Split the gate body into contiguous chunks and fold each one;
-        requires ``num_chunks``.
+    Attributes:
+        GLOBAL: Fold the whole gate body uniformly.
+        RANDOM: Fold a random subset of the gates; the selection is driven by
+            ``seed``.
+        LOCAL: Split the gate body into contiguous chunks and fold each one;
+            requires ``num_chunks``.
+
     """
 
     GLOBAL = "global"
@@ -127,32 +128,23 @@ def construct_circuits(
     carries its global phase. Measurements are removed before folding and
     re-appended afterwards.
 
-    Parameters
-    ----------
-    circuit
-        Circuit to fold.
-    scale_factors
-        Noise scale factors :math:`\lambda \ge 1`, in the order the results
-        will later be reduced.
-    scaling
-        Scaling strategy selecting the folding primitive.
-    seed
-        Seed for :attr:`ScalingMethod.RANDOM`. When ``None`` a fixed default
-        seed is used so the family stays reproducible.
-    num_chunks
-        Number of contiguous chunks for :attr:`ScalingMethod.LOCAL`.
+    Args:
+        circuit: Circuit to fold.
+        scale_factors: Noise scale factors :math:`\lambda \ge 1`, in the order the results
+            will later be reduced.
+        scaling: Scaling strategy selecting the folding primitive.
+        seed: Seed for :attr:`ScalingMethod.RANDOM`. When ``None`` a fixed default
+            seed is used so the family stays reproducible.
+        num_chunks: Number of contiguous chunks for :attr:`ScalingMethod.LOCAL`.
 
-    Returns
-    -------
-    list[Circuit]
+    Returns:
         One folded circuit per scale factor, in input order.
 
-    Raises
-    ------
-    ValueError
-        If ``scaling`` is not a recognized strategy, if
-        ``scaling=ScalingMethod.LOCAL`` and ``num_chunks`` is ``None``, or if
-        a scale factor is below one.
+    Raises:
+        ValueError: If ``scaling`` is not a recognized strategy, if
+            ``scaling=ScalingMethod.LOCAL`` and ``num_chunks`` is ``None``, or if
+            a scale factor is below one.
+
     """
     method = ScalingMethod(scaling)
     if method is ScalingMethod.GLOBAL:
@@ -185,34 +177,19 @@ def combine_results(
 ) -> float:
     r"""Reduce per-scale expectation values to the zero-noise limit.
 
-    Parameters
-    ----------
-    results
-        Expectation values measured on the circuits returned by
-        :func:`construct_circuits`, in the same order.
-    factory
-        Extrapolation factory. It is mutated: every result is pushed onto it
-        before the limit is fitted.
+    Args:
+        results: Expectation values measured on the circuits returned by
+            :func:`construct_circuits`, in the same order.
+        factory: Extrapolation factory. It is mutated: every result is pushed onto it
+            before the limit is fitted.
 
-    Returns
-    -------
-    float
+    Returns:
         The extrapolated zero-noise expectation value.
 
-    Raises
-    ------
-    ValueError
-        If more results are supplied than the factory expects.
-    ExtrapolationError
-        If the factory has not collected enough points, or if the fit is
-        numerically impossible.
-
-    References
-    ----------
-    .. [1] L. F. Richardson and J. A. Gaunt, "The deferred approach to the
-       limit. Part I. Single lattice. Part II. Interpenetrating lattices,"
-       Philosophical Transactions of the Royal Society A 226, 299-361, 1927.
-       doi:10.1098/rsta.1927.0008.
+    Raises:
+        ValueError: If more results are supplied than the factory expects.
+        ExtrapolationError: If the factory has not collected enough points, or if the fit is
+            numerically impossible.
     """
     for result in results:
         # The factory owns the noise schedule, so the scale factor paired with
@@ -251,60 +228,35 @@ def execute_with_zne(
                [EstimatorRequest(c, obs)]
            )[0].expectation
 
-    Parameters
-    ----------
-    circuit
-        Circuit whose expectation value is to be mitigated.
-    executor
-        Execution backend supplying the expectation surface.
-    observable
-        Observable to estimate. A bare Pauli string is interpreted as a
-        Hamiltonian with unit coefficient.
-    scale_factors
-        Noise scale factors :math:`\lambda \ge 1`.
-    factory
-        Extrapolation factory. When ``None`` and the local route is taken,
-        :class:`~cqlib_algorithms.error_mitigation.inference.RichardsonFactory`
-        is used on ``scale_factors``.
-    scaling
-        Scaling strategy used to build the folded circuits.
-    gate_set
-        Gate subset folded by cqlib's selective folding. A non-empty set
-        forces the cqlib route and therefore also requires an odd-integer
-        scale grid and a factory with a cqlib equivalent.
-    shots
-        Shot count for every folded circuit, or ``None`` for exact
-        evaluation.
-    seed
-        Seed of the folding draw and the shot sampling, or ``None`` for fresh
-        randomness. Pinning it reproduces the whole estimate.
-    num_chunks
-        Number of contiguous chunks for :attr:`ScalingMethod.LOCAL`.
+    Args:
+        circuit: Circuit whose expectation value is to be mitigated.
+        executor: Execution backend supplying the expectation surface.
+        observable: Observable to estimate. A bare Pauli string is interpreted as a
+            Hamiltonian with unit coefficient.
+        scale_factors: Noise scale factors :math:`\lambda \ge 1`.
+        factory: Extrapolation factory. When ``None`` and the local route is taken,
+            :class:`~cqlib_algorithms.error_mitigation.inference.RichardsonFactory`
+            is used on ``scale_factors``.
+        scaling: Scaling strategy used to build the folded circuits.
+        gate_set: Gate subset folded by cqlib's selective folding. A non-empty set
+            forces the cqlib route and therefore also requires an odd-integer
+            scale grid and a factory with a cqlib equivalent.
+        shots: Shot count for every folded circuit, or ``None`` for exact
+            evaluation.
+        seed: Seed of the folding draw and the shot sampling, or ``None`` for fresh
+            randomness. Pinning it reproduces the whole estimate.
+        num_chunks: Number of contiguous chunks for :attr:`ScalingMethod.LOCAL`.
 
-    Returns
-    -------
-    float
+    Returns:
         Mitigated expectation value.
 
-    Raises
-    ------
-    TypeError
-        If ``seed`` is neither an integer nor ``None``.
-    ValueError
-        If the parameters describe an unusable configuration, such as a
-        non-empty ``gate_set`` combined with a scale grid or factory that
-        cqlib folding cannot reproduce.
-    ExtrapolationError
-        If the extrapolation fit cannot be performed.
-    cqlib.error_mitigation.ErrorMitigationError
-        Propagated unchanged from the cqlib route.
-
-    References
-    ----------
-    .. [1] A. Kandala, K. Temme, A. D. Corcoles, A. Mezzacapo, J. M. Chow,
-       and J. M. Gambetta, "Error mitigation extends the computational reach
-       of a noisy quantum processor," Nature 567, 491-495, 2019.
-       arXiv:1805.04492.
+    Raises:
+        TypeError: If ``seed`` is neither an integer nor ``None``.
+        ValueError: If the parameters describe an unusable configuration, such as a
+            non-empty ``gate_set`` combined with a scale grid or factory that
+            cqlib folding cannot reproduce.
+        ExtrapolationError: If the extrapolation fit cannot be performed.
+        cqlib.error_mitigation.ErrorMitigationError: Propagated unchanged from the cqlib route.
     """
     wrapped = zne_executor(
         executor,
@@ -338,45 +290,24 @@ def zne_executor(
     caching flag, so ZNE can be chained on top of another technique without
     changing either semantics.
 
-    Parameters
-    ----------
-    executor
-        Execution backend to wrap.
-    scale_factors
-        Noise scale factors :math:`\lambda \ge 1`.
-    factory
-        Extrapolation factory, or ``None`` to select the default.
-    scaling
-        Scaling strategy used to build the folded circuits.
-    gate_set
-        Gate subset folded by cqlib's selective folding.
-    shots
-        Shot count bound to every request, or ``None`` to defer to the
-        request's own shot count.
-    seed
-        Seed of the folding draw and the shot sampling, or ``None`` to defer
-        to the request's own seed.
-    num_chunks
-        Number of contiguous chunks for :attr:`ScalingMethod.LOCAL`.
+    Args:
+        executor: Execution backend to wrap.
+        scale_factors: Noise scale factors :math:`\lambda \ge 1`.
+        factory: Extrapolation factory, or ``None`` to select the default.
+        scaling: Scaling strategy used to build the folded circuits.
+        gate_set: Gate subset folded by cqlib's selective folding.
+        shots: Shot count bound to every request, or ``None`` to defer to the
+            request's own shot count.
+        seed: Seed of the folding draw and the shot sampling, or ``None`` to defer
+            to the request's own seed.
+        num_chunks: Number of contiguous chunks for :attr:`ScalingMethod.LOCAL`.
 
-    Returns
-    -------
-    QemExecutor
+    Returns:
         Executor whose expectation surface applies zero-noise extrapolation.
 
-    Raises
-    ------
-    TypeError
-        If ``seed`` is neither an integer nor ``None``.
-    ValueError
-        If ``scaling`` is not a recognized strategy.
-
-    References
-    ----------
-    .. [1] A. Kandala, K. Temme, A. D. Corcoles, A. Mezzacapo, J. M. Chow,
-       and J. M. Gambetta, "Error mitigation extends the computational reach
-       of a noisy quantum processor," Nature 567, 491-495, 2019.
-       arXiv:1805.04492.
+    Raises:
+        TypeError: If ``seed`` is neither an integer nor ``None``.
+        ValueError: If ``scaling`` is not a recognized strategy.
     """
     _validate_seed(seed)
     estimator = _ZneEstimator(
@@ -399,27 +330,19 @@ def zne_executor(
 class _ZneEstimator(Estimator):
     r"""Expectation surface that folds, measures, and extrapolates.
 
-    Parameters
-    ----------
-    executor
-        Execution backend supplying the expectation surface for each folded
-        circuit.
-    scale_factors
-        Normalized noise scale factors.
-    factory
-        Extrapolation factory, or ``None`` for the default.
-    scaling
-        Normalized scaling strategy.
-    gate_set
-        Normalized folded-gate subset, or ``None``.
-    shots
-        Shot count bound to every request, or ``None`` to defer to the
-        request.
-    seed
-        Seed of the folding draw and the shot sampling, or ``None`` to defer
-        to the request's own seed.
-    num_chunks
-        Chunk count for local folding.
+    Args:
+        executor: Execution backend supplying the expectation surface for each folded
+            circuit.
+        scale_factors: Normalized noise scale factors.
+        factory: Extrapolation factory, or ``None`` for the default.
+        scaling: Normalized scaling strategy.
+        gate_set: Normalized folded-gate subset, or ``None``.
+        shots: Shot count bound to every request, or ``None`` to defer to the
+            request.
+        seed: Seed of the folding draw and the shot sampling, or ``None`` to defer
+            to the request's own seed.
+        num_chunks: Chunk count for local folding.
+
     """
 
     __slots__ = (
@@ -546,17 +469,14 @@ def _cqlib_plan(
     by cqlib folding, so it turns a rejected configuration into an error
     instead of a silent fallback.
 
-    Returns
-    -------
-    tuple[ExtrapolateMethod, int, list[int]] | None
+    Returns:
         Fitted model, polynomial degree, and cqlib fold levels, or ``None``
-        when the local route must be used.
+            when the local route must be used.
 
-    Raises
-    ------
-    ValueError
-        If a non-empty ``gate_set`` was requested but the remaining
-        parameters cannot be served by cqlib folding.
+    Raises:
+        ValueError: If a non-empty ``gate_set`` was requested but the remaining
+            parameters cannot be served by cqlib folding.
+
     """
     grid_is_foldable = scaling is ScalingMethod.GLOBAL and all(
         _is_odd_fold_level(factor) for factor in scale_factors
@@ -588,11 +508,10 @@ def _cqlib_extrapolation(
 ) -> tuple[ExtrapolateMethod, int] | None:
     r"""Map a factory onto the cqlib model that reproduces it.
 
-    Returns
-    -------
-    tuple[ExtrapolateMethod, int] | None
+    Returns:
         The cqlib extrapolation method and polynomial degree, or ``None``
-        when no cqlib model matches the factory.
+            when no cqlib model matches the factory.
+
     """
     if factory is None:
         return ExtrapolateMethod.polynomial(), len(scale_factors) - 1
@@ -650,7 +569,7 @@ def _is_odd_fold_level(scale_factor: float, /) -> bool:
 
 
 def _validate_seed(seed: int | None, /) -> None:
-    r"""Reject a seed that is neither an integer nor ``None``."""
+    r"""Validate an optional random seed."""
     if seed is None:
         return
     if isinstance(seed, bool) or not isinstance(seed, int):

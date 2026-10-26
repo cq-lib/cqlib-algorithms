@@ -31,11 +31,11 @@ blocks for ``l = 2, ..., k``.
 
 References
 ----------
-.. [1] Bärtschi, A., and Eidenbenz, S. (2019). Deterministic Preparation of
-       Dicke States. In *Fundamentals of Computation Theory (FCT 2019)*,
-       LNCS 11651, pp. 126-139. Springer.
-.. [2] Bärtschi, A., and Eidenbenz, S. (2022). Deterministic Preparation of
-       Dicke States. *Quantum Information Processing*, 21, 282.
+[1] Bärtschi, A., and Eidenbenz, S. (2019). Deterministic Preparation of Dicke States.
+    In *Fundamentals of Computation Theory (FCT 2019)*, LNCS 11651, pp. 126-139.
+    Springer.
+[2] Bärtschi, A., and Eidenbenz, S. (2022). Deterministic Preparation of Dicke States.
+    *Quantum Information Processing*, 21, 282.
 """
 
 from __future__ import annotations

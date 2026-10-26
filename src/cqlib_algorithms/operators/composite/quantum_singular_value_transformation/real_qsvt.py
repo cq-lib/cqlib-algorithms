@@ -10,7 +10,15 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-r"""Real-valued quantum singular value transformation via phase symmetrisation."""
+r"""Real-valued quantum singular value transformation via phase symmetrisation.
+
+References
+----------
+[1] A. Gilyen, Y. Su, G. H. Low, and N. Wiebe, "Quantum singular value transformation
+    and beyond: exponential improvements for quantum matrix arithmetics," Proceedings of
+    the 51st Annual ACM SIGACT Symposium on Theory of Computing, pp. 193-204, 2019.
+    arXiv:1806.01838.
+"""
 
 from __future__ import annotations
 
@@ -89,31 +97,16 @@ class RealValuedQSVT:
 
         H_a \, C \, H_a.
 
-    Parameters
-    ----------
-    block_encoding
-        Standard block encoding used as the QSVT signal operator.
-    phases
-        QSVT phase sequence ``\Phi`` for the positive branch.  The negative
-        branch uses ``-\Phi`` (every phase negated, order preserved).
-    degree
-        Polynomial degree of the target transformation.  When *None*
-        (default), inferred from ``len(phases)``.
+    Args:
+        block_encoding: Standard block encoding used as the QSVT signal operator.
+        phases: QSVT phase sequence ``\Phi`` for the positive branch.  The negative
+            branch uses ``-\Phi`` (every phase negated, order preserved).
+        degree: Polynomial degree of the target transformation.  When *None*
+            (default), inferred from ``len(phases)``.
 
-    Raises
-    ------
-    TypeError
-        If ``block_encoding`` or ``phases`` has an invalid type.
-    ValueError
-        If ``block_encoding`` is not standard.
-
-    References
-    ----------
-    .. [1] A. Gilyen, Y. Su, G. H. Low, and N. Wiebe,
-       "Quantum singular value transformation and beyond:
-       exponential improvements for quantum matrix arithmetics,"
-       Proceedings of the 51st Annual ACM SIGACT Symposium on Theory of
-       Computing, pp. 193-204, 2019. arXiv:1806.01838.
+    Raises:
+        TypeError: If ``block_encoding`` or ``phases`` has an invalid type.
+        ValueError: If ``block_encoding`` is not standard.
     """
 
     __slots__ = (
@@ -301,29 +294,20 @@ class RealValuedQSVT:
         real polynomial ``P`` itself through ``U_\Phi / U_{-\Phi}``
         symmetrisation (Corollary 18 in Ref. [1]).
 
-        Parameters
-        ----------
-        block_encoding
-            Standard block encoding used as the QSVT signal operator.
-        coefficients
-            Chebyshev-basis coefficients ``(c_0, c_1, ..., c_d)`` in ascending
-            order.
-        tolerance
-            Convergence tolerance for the QSP phase solver.
-        max_iterations
-            Maximum iterations for the QSP phase solver.
-        gradient_tolerance
-            Gradient convergence tolerance for the QSP phase solver.
+        Args:
+            block_encoding: Standard block encoding used as the QSVT signal operator.
+            coefficients: Chebyshev-basis coefficients ``(c_0, c_1, ..., c_d)`` in ascending
+                order.
+            tolerance: Convergence tolerance for the QSP phase solver.
+            max_iterations: Maximum iterations for the QSP phase solver.
+            gradient_tolerance: Gradient convergence tolerance for the QSP phase solver.
 
-        Returns
-        -------
-        RealValuedQSVT
+        Returns:
             A bound real-valued QSVT instance ready for circuit construction.
 
-        Raises
-        ------
-        ValueError
-            If a degree-0 coefficient lies outside ``[-1, 1]``.
+        Raises:
+            ValueError: If a degree-0 coefficient lies outside ``[-1, 1]``.
+
         """
 
         coeffs = np.asarray(coefficients, dtype=np.float64).reshape(-1)
@@ -365,24 +349,17 @@ class RealValuedQSVT:
         ``P(x) = a_0 + a_1 x + ... + a_d x^d``.  The coefficients are first
         converted to the Chebyshev basis before solving.
 
-        Parameters
-        ----------
-        block_encoding
-            Standard block encoding used as the QSVT signal operator.
-        coefficients
-            Power-basis coefficients ``(a_0, a_1, ..., a_d)`` in ascending
-            order.
-        tolerance
-            Convergence tolerance for the QSP phase solver.
-        max_iterations
-            Maximum iterations for the QSP phase solver.
-        gradient_tolerance
-            Gradient convergence tolerance for the QSP phase solver.
+        Args:
+            block_encoding: Standard block encoding used as the QSVT signal operator.
+            coefficients: Power-basis coefficients ``(a_0, a_1, ..., a_d)`` in ascending
+                order.
+            tolerance: Convergence tolerance for the QSP phase solver.
+            max_iterations: Maximum iterations for the QSP phase solver.
+            gradient_tolerance: Gradient convergence tolerance for the QSP phase solver.
 
-        Returns
-        -------
-        RealValuedQSVT
+        Returns:
             A bound real-valued QSVT instance ready for circuit construction.
+
         """
 
         return cls.from_chebyshev_coefficients(

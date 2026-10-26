@@ -24,12 +24,10 @@ allows. :data:`XX`, :data:`XYXY` and :data:`YY` are the standard sequences, and
 
 References
 ----------
-.. [1] L. Viola and S. Lloyd, "Dynamical suppression of decoherence in
-   two-state quantum systems," Physical Review A 58, 2733, 1998.
-   arXiv:quant-ph/9803057.
-.. [2] L. Viola, E. Knill, and S. Lloyd, "Dynamical decoupling of open quantum
-   systems," Physical Review Letters 82, 2417, 1999.
-   doi:10.1103/PhysRevLett.82.2417.
+[1] L. Viola and S. Lloyd, "Dynamical suppression of decoherence in two-state quantum
+    systems," Physical Review A 58, 2733, 1998. arXiv:quant-ph/9803057.
+[2] L. Viola, E. Knill, and S. Lloyd, "Dynamical decoupling of open quantum systems,"
+    Physical Review Letters 82, 2417, 1999. doi:10.1103/PhysRevLett.82.2417.
 """
 
 from __future__ import annotations
@@ -52,31 +50,25 @@ _DEFAULT_SPACING = -1
 class DDDRule:
     r"""Pulse sequence inserted into idle windows.
 
-    Parameters
-    ----------
-    gates
-        Pulses in application order. At least two single-qubit standard gates
-        are required, and their product must be the identity up to a global
-        phase.
-    spacing
-        Number of idle slots kept before the first pulse and between two
-        consecutive pulses. A negative value selects the widest spacing that
-        lets the pulses fit the window.
+    Args:
+        gates: Pulses in application order. At least two single-qubit standard gates
+            are required, and their product must be the identity up to a global
+            phase.
+        spacing: Number of idle slots kept before the first pulse and between two
+            consecutive pulses. A negative value selects the widest spacing that
+            lets the pulses fit the window.
 
-    Raises
-    ------
-    TypeError
-        If ``gates`` is not a sequence of ``StandardGate`` instances, or if
-        ``spacing`` is not an integer.
-    ValueError
-        If fewer than two pulses are given, or if a pulse acts on more than
-        one qubit.
+    Raises:
+        TypeError: If ``gates`` is not a sequence of ``StandardGate`` instances, or if
+            ``spacing`` is not an integer.
+        ValueError: If fewer than two pulses are given, or if a pulse acts on more than
+            one qubit.
 
-    Examples
-    --------
-    >>> from cqlib.circuit import StandardGate
-    >>> DDDRule(gates=(StandardGate.X, StandardGate.X)).sequence(4)
-    (None, StandardGate.X, StandardGate.X, None)
+    Examples:
+        >>> from cqlib.circuit import StandardGate
+        >>> DDDRule(gates=(StandardGate.X, StandardGate.X)).sequence(4)
+        (None, StandardGate.X, StandardGate.X, None)
+
     """
 
     gates: tuple[StandardGate, ...]
@@ -97,25 +89,19 @@ class DDDRule:
         left over are spread over the two ends of the window. A window too
         short for the pulse list is left untouched.
 
-        Parameters
-        ----------
-        slack_length
-            Number of time slots in the idle window.
+        Args:
+            slack_length: Number of time slots in the idle window.
 
-        Returns
-        -------
-        tuple[StandardGate | None, ...]
+        Returns:
             One entry per slot of the window, holding the pulse applied in
-            that slot or ``None`` for an idle slot. Empty when the window
-            cannot hold the pulses, or when ``spacing`` does not fit.
+                that slot or ``None`` for an idle slot. Empty when the window
+                cannot hold the pulses, or when ``spacing`` does not fit.
 
-        Raises
-        ------
-        TypeError
-            If ``slack_length`` is not an integer.
-        ValueError
-            If ``slack_length`` is negative, or if the pulses do not multiply
-            to the identity up to a global phase.
+        Raises:
+            TypeError: If ``slack_length`` is not an integer.
+            ValueError: If ``slack_length`` is negative, or if the pulses do not multiply
+                to the identity up to a global phase.
+
         """
         _validate_slack_length(slack_length)
         num_pulses = len(self.gates)
@@ -155,26 +141,22 @@ def general_rule(
 ) -> DDDRule:
     r"""Build a decoupling rule from an arbitrary pulse list.
 
-    Parameters
-    ----------
-    gates
-        Single-qubit standard gates whose product is the identity up to a
-        global phase, in application order.
-    spacing
-        Number of idle slots kept before the first pulse and between two
-        consecutive pulses. A negative value selects the widest spacing that
-        lets the pulses fit the window.
+    Args:
+        gates: Single-qubit standard gates whose product is the identity up to a
+            global phase, in application order.
+        spacing: Number of idle slots kept before the first pulse and between two
+            consecutive pulses. A negative value selects the widest spacing that
+            lets the pulses fit the window.
 
-    Returns
-    -------
-    DDDRule
+    Returns:
         The rule described by ``gates`` and ``spacing``.
+
     """
     return DDDRule(gates=tuple(gates), spacing=spacing)
 
 
 def _validate_gates(gates: Sequence[StandardGate], /) -> None:
-    r"""Reject pulse lists that cannot form a decoupling sequence."""
+    r"""Validate a dynamical-decoupling pulse sequence."""
     if isinstance(gates, (str, bytes)) or not isinstance(gates, Sequence):
         raise TypeError("gates must be a sequence of StandardGate instances")
     if len(gates) < 2:
@@ -196,13 +178,13 @@ def _validate_gates(gates: Sequence[StandardGate], /) -> None:
 
 
 def _validate_spacing(spacing: int, /) -> None:
-    r"""Reject a spacing that is not an integer."""
+    r"""Validate an integer pulse spacing."""
     if isinstance(spacing, bool) or not isinstance(spacing, int):
         raise TypeError("spacing must be an integer")
 
 
 def _validate_slack_length(slack_length: int, /) -> None:
-    r"""Reject a window length that is not a non-negative integer."""
+    r"""Validate a non-negative slack length."""
     if isinstance(slack_length, bool) or not isinstance(slack_length, int):
         raise TypeError("slack_length must be an integer")
     if slack_length < 0:
@@ -212,7 +194,7 @@ def _validate_slack_length(slack_length: int, /) -> None:
 
 
 def _validate_pulse_identity(gates: Sequence[StandardGate], /) -> None:
-    r"""Reject pulses whose ordered product is not the identity.
+    r"""Validate the ordered pulse product.
 
     The idling qubit must return to its original state once the sequence is
     over, so the pulses are applied in order and their product is compared to

@@ -10,7 +10,15 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-r"""Standard quantum singular value transformation circuit construction."""
+r"""Standard quantum singular value transformation circuit construction.
+
+References
+----------
+[1] A. Gilyen, Y. Su, G. H. Low, and N. Wiebe, "Quantum singular value transformation
+    and beyond: exponential improvements for quantum matrix arithmetics," Proceedings of
+    the 51st Annual ACM SIGACT Symposium on Theory of Computing, pp. 193-204, 2019.
+    arXiv:1806.01838.
+"""
 
 from __future__ import annotations
 
@@ -55,30 +63,15 @@ class QuantumSingularValueTransformation:
     additional ``U_\Phi / U_{-\Phi}`` symmetrisation of Corollary 18,
     which is outside the scope of this class.
 
-    Parameters
-    ----------
-    block_encoding
-        Standard block encoding used as the QSVT signal operator.
-    phases
-        QSVT phase sequence used by the alternating construction.
-    degree
-        Polynomial degree of the target transformation.  When *None*
-        (default), inferred from ``len(phases)``.
+    Args:
+        block_encoding: Standard block encoding used as the QSVT signal operator.
+        phases: QSVT phase sequence used by the alternating construction.
+        degree: Polynomial degree of the target transformation.  When *None*
+            (default), inferred from ``len(phases)``.
 
-    Raises
-    ------
-    TypeError
-        If ``block_encoding`` or ``phases`` has an invalid type.
-    ValueError
-        If ``block_encoding`` is not standard.
-
-    References
-    ----------
-    .. [1] A. Gilyen, Y. Su, G. H. Low, and N. Wiebe,
-       "Quantum singular value transformation and beyond:
-       exponential improvements for quantum matrix arithmetics,"
-       Proceedings of the 51st Annual ACM SIGACT Symposium on Theory of
-       Computing, pp. 193-204, 2019. arXiv:1806.01838.
+    Raises:
+        TypeError: If ``block_encoding`` or ``phases`` has an invalid type.
+        ValueError: If ``block_encoding`` is not standard.
     """
 
     __slots__ = (
@@ -190,29 +183,22 @@ class QuantumSingularValueTransformation:
     ) -> float:
         r"""Validate the standard projected identity ``A = PiTilde U Pi``.
 
-        Parameters
-        ----------
-        expected_matrix
-            Explicit target matrix ``A``. When omitted, the method uses the
-            ``matrix`` attribute of the current block encoding if available.
-        atol
-            Absolute tolerance for the projected-block comparison.
+        Args:
+            expected_matrix: Explicit target matrix ``A``. When omitted, the method uses the
+                ``matrix`` attribute of the current block encoding if available.
+            atol: Absolute tolerance for the projected-block comparison.
 
-        Returns
-        -------
-        float
+        Returns:
             Frobenius norm of the projected-block reconstruction error.
 
-        Raises
-        ------
-        TypeError
-            If the expected matrix or tolerance has an invalid type.
-        ValueError
-            If no explicit target matrix is available, if the target matrix has
-            an invalid shape, or if the projected identity is not satisfied.
+        Raises:
+            TypeError: If the expected matrix or tolerance has an invalid type.
+            ValueError: If no explicit target matrix is available, if the target matrix has
+                an invalid shape, or if the projected identity is not satisfied.
+
         """
 
-        tolerance = _coerce_tolerance(atol)
+        tolerance = _normalize_tolerance(atol)
         target = _resolve_expected_matrix(
             block_encoding=self.block_encoding,
             expected_matrix=expected_matrix,
@@ -251,29 +237,20 @@ class QuantumSingularValueTransformation:
         complex polynomial whose real part equals ``P`` (Corollary 10 in
         Ref. [1]).
 
-        Parameters
-        ----------
-        block_encoding
-            Standard block encoding used as the QSVT signal operator.
-        coefficients
-            Chebyshev-basis coefficients ``(c_0, c_1, ..., c_d)`` in ascending
-            order.
-        tolerance
-            Convergence tolerance for the QSP phase solver.
-        max_iterations
-            Maximum iterations for the QSP phase solver.
-        gradient_tolerance
-            Gradient convergence tolerance for the QSP phase solver.
+        Args:
+            block_encoding: Standard block encoding used as the QSVT signal operator.
+            coefficients: Chebyshev-basis coefficients ``(c_0, c_1, ..., c_d)`` in ascending
+                order.
+            tolerance: Convergence tolerance for the QSP phase solver.
+            max_iterations: Maximum iterations for the QSP phase solver.
+            gradient_tolerance: Gradient convergence tolerance for the QSP phase solver.
 
-        Returns
-        -------
-        QuantumSingularValueTransformation
+        Returns:
             A bound QSVT instance ready for circuit construction.
 
-        Raises
-        ------
-        ValueError
-            If a degree-0 coefficient lies outside ``[-1, 1]``.
+        Raises:
+            ValueError: If a degree-0 coefficient lies outside ``[-1, 1]``.
+
         """
 
         coeffs = np.asarray(coefficients, dtype=np.float64).reshape(-1)
@@ -315,24 +292,17 @@ class QuantumSingularValueTransformation:
         ``P(x) = a_0 + a_1 x + ... + a_d x^d``.  The coefficients are first
         converted to the Chebyshev basis before solving.
 
-        Parameters
-        ----------
-        block_encoding
-            Standard block encoding used as the QSVT signal operator.
-        coefficients
-            Power-basis coefficients ``(a_0, a_1, ..., a_d)`` in ascending
-            order.
-        tolerance
-            Convergence tolerance for the QSP phase solver.
-        max_iterations
-            Maximum iterations for the QSP phase solver.
-        gradient_tolerance
-            Gradient convergence tolerance for the QSP phase solver.
+        Args:
+            block_encoding: Standard block encoding used as the QSVT signal operator.
+            coefficients: Power-basis coefficients ``(a_0, a_1, ..., a_d)`` in ascending
+                order.
+            tolerance: Convergence tolerance for the QSP phase solver.
+            max_iterations: Maximum iterations for the QSP phase solver.
+            gradient_tolerance: Gradient convergence tolerance for the QSP phase solver.
 
-        Returns
-        -------
-        QuantumSingularValueTransformation
+        Returns:
             A bound QSVT instance ready for circuit construction.
+
         """
         return cls.from_chebyshev_coefficients(
             block_encoding,
@@ -360,41 +330,30 @@ class QuantumSingularValueTransformation:
         the full complex polynomial ``P`` on the singular values of the
         block-encoded matrix (Corollary 8 / Theorem 17 in Ref. [1]).
 
-        Parameters
-        ----------
-        block_encoding
-            Standard block encoding used as the QSVT signal operator.
-        coefficients
-            Chebyshev-basis coefficients ``(c_0, c_1, ..., c_d)`` in ascending
-            order.  May be complex.
-        synthesis
-            Phase-synthesis backend.  ``"bfgs"`` fits the QSP response with
-            the quasi-Newton solver; ``"haah"`` uses the deterministic
-            product decomposition of Haah (arXiv:1806.10236).
-        tolerance
-            Backend tolerance.  When *None* the backend default is used:
-            ``1e-12`` for ``"bfgs"`` (fitted mean-squared loss) and ``1e-10``
-            for ``"haah"`` (peeling tolerance).
-        max_iterations
-            Maximum iterations for the ``"bfgs"`` backend.  Ignored by
-            ``"haah"``.
-        gradient_tolerance
-            Gradient convergence tolerance for the ``"bfgs"`` backend.
-            Ignored by ``"haah"``.
+        Args:
+            block_encoding: Standard block encoding used as the QSVT signal operator.
+            coefficients: Chebyshev-basis coefficients ``(c_0, c_1, ..., c_d)`` in ascending
+                order.  May be complex.
+            synthesis: Phase-synthesis backend.  ``"bfgs"`` fits the QSP response with
+                the quasi-Newton solver; ``"haah"`` uses the deterministic
+                product decomposition of Haah (arXiv:1806.10236).
+            tolerance: Backend tolerance.  When *None* the backend default is used:
+                ``1e-12`` for ``"bfgs"`` (fitted mean-squared loss) and ``1e-10``
+                for ``"haah"`` (peeling tolerance).
+            max_iterations: Maximum iterations for the ``"bfgs"`` backend.  Ignored by
+                ``"haah"``.
+            gradient_tolerance: Gradient convergence tolerance for the ``"bfgs"`` backend.
+                Ignored by ``"haah"``.
 
-        Returns
-        -------
-        QuantumSingularValueTransformation
+        Returns:
             A bound QSVT instance ready for circuit construction.
 
-        Raises
-        ------
-        ValueError
-            If ``synthesis`` is not a supported backend, if the polynomial
-            violates the QSP parity or boundedness constraints, or if a
-            degree-0 coefficient does not lie on the unit circle.
-        RuntimeError
-            If the phase solver fails numerically.
+        Raises:
+            ValueError: If ``synthesis`` is not a supported backend, if the polynomial
+                violates the QSP parity or boundedness constraints, or if a
+                degree-0 coefficient does not lie on the unit circle.
+            RuntimeError: If the phase solver fails numerically.
+
         """
         coeffs = np.asarray(coefficients).reshape(-1)
         degree = int(len(coeffs)) - 1
@@ -437,29 +396,21 @@ class QuantumSingularValueTransformation:
         ``P(x) = a_0 + a_1 x + ... + a_d x^d``.  The coefficients are first
         converted to the Chebyshev basis before solving.
 
-        Parameters
-        ----------
-        block_encoding
-            Standard block encoding used as the QSVT signal operator.
-        coefficients
-            Power-basis coefficients ``(a_0, a_1, ..., a_d)`` in ascending
-            order.  May be complex.
-        synthesis
-            Phase-synthesis backend, forwarded to
-            :meth:`from_complex_chebyshev_coefficients`.
-        tolerance
-            Backend tolerance.  When *None* the backend default is used.
-        max_iterations
-            Maximum iterations for the ``"bfgs"`` backend.  Ignored by
-            ``"haah"``.
-        gradient_tolerance
-            Gradient convergence tolerance for the ``"bfgs"`` backend.
-            Ignored by ``"haah"``.
+        Args:
+            block_encoding: Standard block encoding used as the QSVT signal operator.
+            coefficients: Power-basis coefficients ``(a_0, a_1, ..., a_d)`` in ascending
+                order.  May be complex.
+            synthesis: Phase-synthesis backend, forwarded to
+                :meth:`from_complex_chebyshev_coefficients`.
+            tolerance: Backend tolerance.  When *None* the backend default is used.
+            max_iterations: Maximum iterations for the ``"bfgs"`` backend.  Ignored by
+                ``"haah"``.
+            gradient_tolerance: Gradient convergence tolerance for the ``"bfgs"`` backend.
+                Ignored by ``"haah"``.
 
-        Returns
-        -------
-        QuantumSingularValueTransformation
+        Returns:
             A bound QSVT instance ready for circuit construction.
+
         """
         return cls.from_complex_chebyshev_coefficients(
             block_encoding,
@@ -512,21 +463,16 @@ def _complex_degree_zero_phase(coefficient: complex) -> float:
     any constant polynomial onto the unit circle.  The phase is then
     ``arg(c_0)``, so no phase solver is invoked.
 
-    Parameters
-    ----------
-    coefficient
-        Constant Chebyshev coefficient ``c_0`` of the target polynomial.
+    Args:
+        coefficient: Constant Chebyshev coefficient ``c_0`` of the target polynomial.
 
-    Returns
-    -------
-    float
+    Returns:
         The QSVT phase ``arg(c_0)``.
 
-    Raises
-    ------
-    ValueError
-        If ``c_0`` violates the Corollary 8 magnitude conditions, i.e. does
-        not lie on the unit circle.
+    Raises:
+        ValueError: If ``c_0`` violates the Corollary 8 magnitude conditions, i.e. does
+            not lie on the unit circle.
+
     """
     constant = complex(coefficient)
     _validate_complex_qsp_constraints(
@@ -536,6 +482,7 @@ def _complex_degree_zero_phase(coefficient: complex) -> float:
 
 
 def _validate_tolerance(value: float) -> None:
+    r"""Validate a non-negative finite tolerance."""
     if isinstance(value, bool) or not isinstance(value, Real):
         raise TypeError("atol must be a real finite scalar")
     scalar = float(value)
@@ -545,8 +492,8 @@ def _validate_tolerance(value: float) -> None:
         raise ValueError("atol must be greater than or equal to zero")
 
 
-def _coerce_tolerance(value: float) -> float:
-    r"""Validate and coerce a tolerance value into a finite ``float``."""
+def _normalize_tolerance(value: float) -> float:
+    r"""Validate and return a tolerance in normalized form."""
     _validate_tolerance(value)
     return float(value)
 
@@ -554,6 +501,7 @@ def _coerce_tolerance(value: float) -> float:
 def _normalize_qsvt_phases(
     phases: Sequence[float] | np.ndarray,
 ) -> tuple[float, ...]:
+    r"""Validate and return a QSVT phase sequence in normalized form."""
     if isinstance(phases, np.ndarray):
         flattened = phases.reshape(-1).tolist()
     elif isinstance(phases, Sequence) and not isinstance(phases, (str, bytes)):

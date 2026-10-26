@@ -20,6 +20,13 @@ The phase sequence is constrained to the symmetric form
 ``(phi_0, phi_1, ..., phi_1, phi_0)`` (mirror), which halves the number of
 free parameters and is the convention used by the QSP-to-QSVT phase
 conversion in :mod:`_converters`.
+
+References
+----------
+[1] G. H. Low and I. L. Chuang, "Hamiltonian Simulation by Qubitization," Quantum 3,
+    163, 2019. arXiv:1610.06546.
+[2] Y. Dong, X. Meng, K. B. Whaley, and L. Lin, "Efficient phase-factor evaluation in
+    quantum signal processing," Physical Review A 103, 042419, 2021. arXiv:2002.11649.
 """
 
 from __future__ import annotations
@@ -36,10 +43,10 @@ from ._numerics import (
     _COEFFICIENT_TOLERANCE,
     _chebyshev_nodes,
     _loss,
+    _normalize_positive_scalar,
     _run_bfgs,
     _symmetric_phases,
     _validate_positive_integer,
-    _validate_positive_scalar,
     _wrap_phases,
 )
 
@@ -53,56 +60,37 @@ def solve_qsp_phases(
 ) -> np.ndarray:
     r"""Return a symmetric QSP phase sequence for a real Chebyshev polynomial.
 
-    Parameters
-    ----------
-    coefficients
-        Chebyshev-basis coefficients in ascending order. The implied degree is
-        the highest non-zero coefficient index after trimming trailing entries
-        smaller than ``1e-14`` in magnitude.
-    tolerance
-        Target mean-squared error on the Chebyshev-node training grid.
-    max_iterations
-        Maximum number of BFGS iterations.
-    gradient_tolerance
-        Infinity-norm tolerance used to stop when the loss surface is locally
-        flat enough.
+    Args:
+        coefficients: Chebyshev-basis coefficients in ascending order. The implied degree is
+            the highest non-zero coefficient index after trimming trailing entries
+            smaller than ``1e-14`` in magnitude.
+        tolerance: Target mean-squared error on the Chebyshev-node training grid.
+        max_iterations: Maximum number of BFGS iterations.
+        gradient_tolerance: Infinity-norm tolerance used to stop when the loss surface is locally
+            flat enough.
 
-    Returns
-    -------
-    numpy.ndarray
+    Returns:
         Full symmetric phase sequence of length ``degree + 1``.
 
-    Raises
-    ------
-    TypeError
-        If coefficients or solver controls have invalid types.
-    ValueError
-        If the polynomial violates the QSP parity or boundedness constraints,
-        or if the solver controls are outside their valid ranges.
-    RuntimeError
-        If the internal quasi-Newton solve does not converge.
-
-    References
-    ----------
-    .. [1] G. H. Low and I. L. Chuang,
-       "Hamiltonian Simulation by Qubitization,"
-       Quantum 3, 163, 2019. arXiv:1610.06546.
-    .. [2] Y. Dong, X. Meng, K. B. Whaley, and L. Lin,
-       "Efficient phase-factor evaluation in quantum signal processing,"
-       Physical Review A 103, 042419, 2021. arXiv:2002.11649.
+    Raises:
+        TypeError: If coefficients or solver controls have invalid types.
+        ValueError: If the polynomial violates the QSP parity or boundedness constraints,
+            or if the solver controls are outside their valid ranges.
+        RuntimeError: If the internal quasi-Newton solve does not converge.
     """
     trimmed = _normalize_coefficients(coefficients)
     degree = len(trimmed) - 1
 
-    tolerance_float = _validate_positive_scalar(tolerance, name="tolerance")
-    gradient_tolerance_float = _validate_positive_scalar(
+    tolerance_float = _normalize_positive_scalar(tolerance, name="tolerance")
+    gradient_tolerance_float = _normalize_positive_scalar(
         gradient_tolerance,
         name="gradient_tolerance",
     )
-    max_iterations_int = _validate_positive_integer(
+    _validate_positive_integer(
         max_iterations,
         name="max_iterations",
     )
+    max_iterations_int = max_iterations
 
     _validate_qsp_constraints(trimmed)
 
@@ -134,6 +122,7 @@ def solve_qsp_phases(
 def _normalize_coefficients(
     coefficients: Sequence[float] | np.ndarray,
 ) -> np.ndarray:
+    r"""Validate and return real coefficients in normalized form."""
     if isinstance(coefficients, np.ndarray):
         flattened = coefficients.reshape(-1).tolist()
     elif isinstance(coefficients, Sequence) and not isinstance(
@@ -163,6 +152,7 @@ def _normalize_coefficients(
 
 
 def _validate_qsp_constraints(coefficients: np.ndarray) -> None:
+    r"""Validate the parity and boundedness constraints for real QSP."""
     degree = len(coefficients) - 1
     parity = degree % 2
     for index, value in enumerate(coefficients):

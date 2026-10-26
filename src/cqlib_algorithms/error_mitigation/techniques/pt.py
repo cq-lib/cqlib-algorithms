@@ -31,9 +31,10 @@ computation as a reusable executor for chaining.
 
 References
 ----------
-.. [1] J. J. Wallman and J. Emerson, "Noise tailoring for scalable quantum
-   computation via randomized compiling," Physical Review A 94, 052325, 2016.
-   arXiv:1512.01098.
+[1] J. J. Wallman and J. Emerson, "Noise tailoring for scalable quantum computation via
+    randomized compiling," Physical Review A 94, 052325, 2016. arXiv:1512.01098.
+[2] A. Saki, A. Katabarwa, S. Resch, and others, "Hypothesis testing for error
+    mitigation: How to evaluate error mitigation," 2023. arXiv:2301.02690.
 """
 
 from __future__ import annotations
@@ -103,12 +104,7 @@ _TWIRLING_TABLES: dict[StandardGate, tuple[_TwirlRow, ...]] = {
 
 
 def _validate_twirl_tables() -> None:
-    r"""Check every twirling row against the gate it dresses.
-
-    Raises
-    ------
-    RuntimeError
-        If a row does not reproduce its gate up to a global phase.
+    r"""Validate the gate-twirling tables.
     """
     for gate, table in _TWIRLING_TABLES.items():
         matrix = gate.matrix()
@@ -138,27 +134,15 @@ _validate_twirl_tables()
 class PauliTwirling:
     r"""Line transform dressing two-qubit gates with Pauli pairs.
 
-    Parameters
-    ----------
-    num_randomizations
-        Number of dressed variants that :meth:`variants` produces.
-    seed
-        Seed of the Pauli draw, or ``None`` to draw fresh randomness on every
-        call.
+    Args:
+        num_randomizations: Number of dressed variants that :meth:`variants` produces.
+        seed: Seed of the Pauli draw, or ``None`` to draw fresh randomness on every
+            call.
 
-    Raises
-    ------
-    TypeError
-        If ``num_randomizations`` is not an integer, or if ``seed`` is neither
-        an integer nor ``None``.
-    ValueError
-        If ``num_randomizations`` is below one.
-
-    References
-    ----------
-    .. [1] A. Saki, A. Katabarwa, S. Resch, and others, "Hypothesis testing
-       for error mitigation: How to evaluate error mitigation," 2023.
-       arXiv:2301.02690.
+    Raises:
+        TypeError: If ``num_randomizations`` is not an integer, or if ``seed`` is neither
+            an integer nor ``None``.
+        ValueError: If ``num_randomizations`` is below one.
     """
 
     num_randomizations: int = 1
@@ -175,21 +159,11 @@ class PauliTwirling:
         for that gate, so the copy still realises the unitary of ``circuit``
         and differs from it only in the placement of those pairs.
 
-        Parameters
-        ----------
-        circuit
-            Circuit whose two-qubit gates receive the Pauli pairs.
+        Args:
+            circuit: Circuit whose two-qubit gates receive the Pauli pairs.
 
-        Returns
-        -------
-        Circuit
+        Returns:
             One dressed copy of ``circuit``.
-
-        References
-        ----------
-        .. [1] A. Saki, A. Katabarwa, S. Resch, and others, "Hypothesis
-           testing for error mitigation: How to evaluate error mitigation,"
-           2023. arXiv:2301.02690.
         """
         return _twirl(circuit, np.random.default_rng(self.seed))
 
@@ -199,21 +173,11 @@ class PauliTwirling:
         All copies are drawn from one stream seeded by ``seed``, so a given
         rule reproduces the same family and the copies differ from each other.
 
-        Parameters
-        ----------
-        circuit
-            Circuit whose two-qubit gates receive the Pauli pairs.
+        Args:
+            circuit: Circuit whose two-qubit gates receive the Pauli pairs.
 
-        Returns
-        -------
-        list[Circuit]
+        Returns:
             The dressed copies, in draw order.
-
-        References
-        ----------
-        .. [1] A. Saki, A. Katabarwa, S. Resch, and others, "Hypothesis
-           testing for error mitigation: How to evaluate error mitigation,"
-           2023. arXiv:2301.02690.
         """
         rng = np.random.default_rng(self.seed)
         return [_twirl(circuit, rng) for _ in range(self.num_randomizations)]
@@ -228,27 +192,19 @@ def construct_circuits(
 ) -> list[Circuit]:
     r"""Dress ``circuit`` once per randomization.
 
-    Parameters
-    ----------
-    circuit
-        Circuit whose two-qubit gates receive the Pauli pairs.
-    num_randomizations
-        Number of dressed variants to build.
-    seed
-        Seed of the Pauli draw, or ``None`` for a fresh draw.
+    Args:
+        circuit: Circuit whose two-qubit gates receive the Pauli pairs.
+        num_randomizations: Number of dressed variants to build.
+        seed: Seed of the Pauli draw, or ``None`` for a fresh draw.
 
-    Returns
-    -------
-    list[Circuit]
+    Returns:
         One dressed circuit per randomization, in draw order.
 
-    Raises
-    ------
-    TypeError
-        If ``num_randomizations`` is not an integer, or if ``seed`` is neither
-        an integer nor ``None``.
-    ValueError
-        If ``num_randomizations`` is below one.
+    Raises:
+        TypeError: If ``num_randomizations`` is not an integer, or if ``seed`` is neither
+            an integer nor ``None``.
+        ValueError: If ``num_randomizations`` is below one.
+
     """
     return PauliTwirling(
         num_randomizations=num_randomizations,
@@ -259,21 +215,16 @@ def construct_circuits(
 def combine_results(results: Sequence[EstimatorResult], /) -> float:
     r"""Average the expectation values of the dressed circuits.
 
-    Parameters
-    ----------
-    results
-        Expectation values measured on the circuits returned by
-        :func:`construct_circuits`, in the same order.
+    Args:
+        results: Expectation values measured on the circuits returned by
+            :func:`construct_circuits`, in the same order.
 
-    Returns
-    -------
-    float
+    Returns:
         The averaged expectation value.
 
-    Raises
-    ------
-    ValueError
-        If ``results`` is empty.
+    Raises:
+        ValueError: If ``results`` is empty.
+
     """
     if not results:
         raise ValueError(
@@ -301,42 +252,24 @@ def execute_with_pt(
                [EstimatorRequest(c, obs)]
            )[0].expectation
 
-    Parameters
-    ----------
-    circuit
-        Circuit whose expectation value is to be mitigated.
-    executor
-        Execution backend supplying the expectation surface.
-    observable
-        Observable to estimate. A bare Pauli string is interpreted as a
-        Hamiltonian with unit coefficient.
-    num_randomizations
-        Number of dressed variants to average over.
-    shots
-        Shot count for every dressed variant, or ``None`` for exact
-        evaluation.
-    seed
-        Seed of the Pauli draw and the shot sampling, or ``None`` for fresh
-        randomness. Pinning it reproduces the whole estimate.
+    Args:
+        circuit: Circuit whose expectation value is to be mitigated.
+        executor: Execution backend supplying the expectation surface.
+        observable: Observable to estimate. A bare Pauli string is interpreted as a
+            Hamiltonian with unit coefficient.
+        num_randomizations: Number of dressed variants to average over.
+        shots: Shot count for every dressed variant, or ``None`` for exact
+            evaluation.
+        seed: Seed of the Pauli draw and the shot sampling, or ``None`` for fresh
+            randomness. Pinning it reproduces the whole estimate.
 
-    Returns
-    -------
-    float
+    Returns:
         Mitigated expectation value.
 
-    Raises
-    ------
-    TypeError
-        If ``num_randomizations`` is not an integer, or if ``seed`` is neither
-        an integer nor ``None``.
-    ValueError
-        If ``num_randomizations`` is below one.
-
-    References
-    ----------
-    .. [1] A. Saki, A. Katabarwa, S. Resch, and others, "Hypothesis testing
-       for error mitigation: How to evaluate error mitigation," 2023.
-       arXiv:2301.02690.
+    Raises:
+        TypeError: If ``num_randomizations`` is not an integer, or if ``seed`` is neither
+            an integer nor ``None``.
+        ValueError: If ``num_randomizations`` is below one.
     """
     wrapped = pt_executor(
         executor,
@@ -362,31 +295,22 @@ def pt_executor(
     caching flag, so Pauli twirling can be chained on top of another technique
     without changing either semantics.
 
-    Parameters
-    ----------
-    executor
-        Execution backend to wrap.
-    num_randomizations
-        Number of dressed variants averaged for every request.
-    shots
-        Shot count bound to every request, or ``None`` to defer to the
-        request's own shot count.
-    seed
-        Seed of the Pauli draw and the shot sampling, or ``None`` to defer to
-        the request's own seed.
+    Args:
+        executor: Execution backend to wrap.
+        num_randomizations: Number of dressed variants averaged for every request.
+        shots: Shot count bound to every request, or ``None`` to defer to the
+            request's own shot count.
+        seed: Seed of the Pauli draw and the shot sampling, or ``None`` to defer to
+            the request's own seed.
 
-    Returns
-    -------
-    QemExecutor
+    Returns:
         Executor whose expectation surface applies Pauli twirling.
 
-    Raises
-    ------
-    TypeError
-        If ``num_randomizations`` is not an integer, or if ``seed`` is neither
-        an integer nor ``None``.
-    ValueError
-        If ``num_randomizations`` is below one.
+    Raises:
+        TypeError: If ``num_randomizations`` is not an integer, or if ``seed`` is neither
+            an integer nor ``None``.
+        ValueError: If ``num_randomizations`` is below one.
+
     """
     estimator = _PtEstimator(
         executor,
@@ -404,18 +328,14 @@ def pt_executor(
 class _PtEstimator(Estimator):
     r"""Expectation surface that averages over Pauli-dressed variants.
 
-    Parameters
-    ----------
-    executor
-        Execution backend supplying the expectation surface for each dressed
-        circuit.
-    num_randomizations
-        Number of dressed variants averaged for every request.
-    shots
-        Shot count bound to every request, or ``None`` to defer to the
-        request.
-    seed
-        Seed of the Pauli draw, or ``None`` for a fresh draw.
+    Args:
+        executor: Execution backend supplying the expectation surface for each dressed
+            circuit.
+        num_randomizations: Number of dressed variants averaged for every request.
+        shots: Shot count bound to every request, or ``None`` to defer to the
+            request.
+        seed: Seed of the Pauli draw, or ``None`` for a fresh draw.
+
     """
 
     __slots__ = ("_executor", "_num_randomizations", "_seed", "_shots")
@@ -482,17 +402,13 @@ def _twirl(
 ) -> Circuit:
     r"""Dress every two-qubit gate of ``circuit`` with one Pauli draw.
 
-    Parameters
-    ----------
-    circuit
-        Circuit whose two-qubit gates receive the Pauli pairs.
-    rng
-        Random stream the Pauli rows are drawn from.
+    Args:
+        circuit: Circuit whose two-qubit gates receive the Pauli pairs.
+        rng: Random stream the Pauli rows are drawn from.
 
-    Returns
-    -------
-    Circuit
+    Returns:
         A dressed copy of ``circuit``.
+
     """
     return expand(circuit, lambda operation: _twirl_operation(operation, rng))
 
@@ -504,18 +420,14 @@ def _twirl_operation(
 ) -> tuple[ValueOperation, ...]:
     r"""Replace one operation by its Pauli-dressed form.
 
-    Parameters
-    ----------
-    operation
-        Operation to dress. Gates outside the twirling tables are returned
-        unchanged.
-    rng
-        Random stream the Pauli row is drawn from.
+    Args:
+        operation: Operation to dress. Gates outside the twirling tables are returned
+            unchanged.
+        rng: Random stream the Pauli row is drawn from.
 
-    Returns
-    -------
-    tuple[ValueOperation, ...]
+    Returns:
         The operations taking the place of ``operation``.
+
     """
     if not operation.is_standard:
         return (operation,)
@@ -541,7 +453,7 @@ def _twirl_operation(
 
 
 def _validate_num_randomizations(num_randomizations: int, /) -> None:
-    r"""Reject a variant count that is not a positive integer."""
+    r"""Validate a positive randomization count."""
     if isinstance(num_randomizations, bool) or not isinstance(
         num_randomizations, int
     ):
@@ -554,7 +466,7 @@ def _validate_num_randomizations(num_randomizations: int, /) -> None:
 
 
 def _validate_seed(seed: int | None, /) -> None:
-    r"""Reject a seed that is neither an integer nor ``None``."""
+    r"""Validate an optional random seed."""
     if seed is None:
         return
     if isinstance(seed, bool) or not isinstance(seed, int):

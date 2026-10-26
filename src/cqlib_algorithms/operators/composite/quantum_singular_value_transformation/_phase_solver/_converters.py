@@ -18,6 +18,15 @@ polynomial specification and the phase solvers / QSVT circuit builder:
 * :func:`polynomial_to_chebyshev` — power-basis to Chebyshev-basis
   (supports both real and complex coefficients),
 * :func:`convert_qsp_phases` — full QSP phase sequence to QSVT ``W``-form.
+
+References
+----------
+[1] Y. Dong, X. Meng, K. B. Whaley, and L. Lin, "Efficient phase-factor evaluation in
+    quantum signal processing," Physical Review A 103, 042419, 2021. arXiv:2002.11649.
+[2] A. Gilyen, Y. Su, G. H. Low, and N. Wiebe, "Quantum singular value transformation
+    and beyond: exponential improvements for quantum matrix arithmetics," Proceedings of
+    the 51st Annual ACM SIGACT Symposium on Theory of Computing, pp. 193-204, 2019.
+    arXiv:1806.01838.
 """
 
 from __future__ import annotations
@@ -35,18 +44,15 @@ def polynomial_to_chebyshev(
 ) -> npt.NDArray[np.float64 | np.complex128]:
     r"""Convert power-basis polynomial coefficients to the Chebyshev basis.
 
-    Parameters
-    ----------
-    coefficients
-        Coefficients ``(a_0, a_1, ..., a_d)`` of
-        ``P(x) = a_0 + a_1 x + ... + a_d x^d`` in ascending order.  May be
-        real or complex.
+    Args:
+        coefficients: Coefficients ``(a_0, a_1, ..., a_d)`` of
+            ``P(x) = a_0 + a_1 x + ... + a_d x^d`` in ascending order.  May be
+            real or complex.
 
-    Returns
-    -------
-    numpy.ndarray
+    Returns:
         Chebyshev-basis coefficients in ascending order.  The dtype is
-        ``float64`` when the input is real, ``complex128`` otherwise.
+            ``float64`` when the input is real, ``complex128`` otherwise.
+
     """
     poly = np.asarray(coefficients).reshape(-1)
     if np.iscomplexobj(poly):
@@ -71,27 +77,11 @@ def convert_qsp_phases(
         \qquad
         \phi_k = \phi'_{k-1} - \tfrac{\pi}{2} \ (2 \le k \le d).
 
-    Parameters
-    ----------
-    phases
-        Full QSP phase sequence ``(phi'_0, ..., phi'_d)``.
+    Args:
+        phases: Full QSP phase sequence ``(phi'_0, ..., phi'_d)``.
 
-    Returns
-    -------
-    tuple[float, ...]
+    Returns:
         Converted QSVT phase sequence ``(phi_1, ..., phi_d)``.
-
-    References
-    ----------
-    .. [1] Y. Dong, X. Meng, K. B. Whaley, and L. Lin,
-       "Efficient phase-factor evaluation in quantum signal
-       processing," Physical Review A 103, 042419, 2021.
-       arXiv:2002.11649.
-    .. [2] A. Gilyen, Y. Su, G. H. Low, and N. Wiebe,
-       "Quantum singular value transformation and beyond:
-       exponential improvements for quantum matrix arithmetics,"
-       Proceedings of the 51st Annual ACM SIGACT Symposium on Theory
-       of Computing, pp. 193-204, 2019. arXiv:1806.01838.
     """
     normalized = _normalize_phase_sequence(phases)
     degree = len(normalized) - 1
@@ -108,6 +98,7 @@ def convert_qsp_phases(
 def _normalize_phase_sequence(
     phases: Sequence[float] | np.ndarray,
 ) -> tuple[float, ...]:
+    r"""Validate and return a phase sequence in normalized form."""
     if isinstance(phases, np.ndarray):
         flattened = phases.reshape(-1).tolist()
     elif isinstance(phases, Sequence) and not isinstance(phases, (str, bytes)):

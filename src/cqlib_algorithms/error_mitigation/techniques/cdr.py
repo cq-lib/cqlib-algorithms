@@ -35,9 +35,11 @@ independent of any executor and can be exercised on their own.
 
 References
 ----------
-.. [1] P. Czarnik, A. Arrasmith, P. J. Coles, and L. Cincio, "Error
-   mitigation with Clifford quantum-circuit data," Quantum 5, 592, 2021.
-   arXiv:2005.10189.
+[1] P. Czarnik, A. Arrasmith, P. J. Coles, and L. Cincio, "Error mitigation with
+    Clifford quantum-circuit data," Quantum 5, 592, 2021. arXiv:2005.10189.
+[2] A. Lowe, M. Medvidovic, R. Hayes, J. E. Rice, M. T. Rosenkrantz, T. J. Yoder, and H.
+    Eguchi, "Unified approach to data-driven quantum error mitigation," Physical Review
+    Research 3, 033098, 2021. arXiv:2011.01157.
 """
 
 from __future__ import annotations
@@ -97,29 +99,21 @@ def near_clifford_circuit(
     non-rotation gate is copied through, so a purely Clifford input is
     returned as itself, with the same operation order and global phase.
 
-    Parameters
-    ----------
-    circuit
-        Circuit whose rotations are snapped.
-    fraction_non_clifford
-        Probability, in ``[0, 1]``, that any one rotation is snapped.
-    rng
-        Random stream the per-rotation decisions are drawn from.
+    Args:
+        circuit: Circuit whose rotations are snapped.
+        fraction_non_clifford: Probability, in ``[0, 1]``, that any one rotation is snapped.
+        rng: Random stream the per-rotation decisions are drawn from.
 
-    Returns
-    -------
-    Circuit
+    Returns:
         A near-Clifford copy of ``circuit`` carrying its qubits, classical
-        state, and global phase.
+            state, and global phase.
 
-    Raises
-    ------
-    TypeError
-        If ``circuit`` is not a :class:`cqlib.Circuit`, if
-        ``fraction_non_clifford`` is not a real number, or if ``rng`` is not a
-        :class:`numpy.random.Generator`.
-    ValueError
-        If ``fraction_non_clifford`` lies outside ``[0, 1]``.
+    Raises:
+        TypeError: If ``circuit`` is not a :class:`cqlib.Circuit`, if
+            ``fraction_non_clifford`` is not a real number, or if ``rng`` is not a
+            :class:`numpy.random.Generator`.
+        ValueError: If ``fraction_non_clifford`` lies outside ``[0, 1]``.
+
     """
     if not isinstance(circuit, Circuit):
         raise TypeError("circuit must be a cqlib.Circuit")
@@ -162,41 +156,25 @@ def fit_linear_regression(
 
     with the two means dropped when ``intercept`` is ``False``.
 
-    Parameters
-    ----------
-    noisy
-        The independent values :math:`x_i`, nominally the expectation values
-        measured on the noisy backend.
-    ideal
-        The dependent values :math:`y_i`, nominally the exact expectation
-        values. It must have the same length as ``noisy``.
-    intercept
-        ``True`` to fit the offset :math:`b`, ``False`` to force
-        :math:`b = 0`.
+    Args:
+        noisy: The independent values :math:`x_i`, nominally the expectation values
+            measured on the noisy backend.
+        ideal: The dependent values :math:`y_i`, nominally the exact expectation
+            values. It must have the same length as ``noisy``.
+        intercept: ``True`` to fit the offset :math:`b`, ``False`` to force
+            :math:`b = 0`.
 
-    Returns
-    -------
-    tuple[float, float]
+    Returns:
         The fitted slope :math:`m` and intercept :math:`b`; ``b`` is ``0.0``
-        when ``intercept`` is ``False``.
+            when ``intercept`` is ``False``.
 
-    Raises
-    ------
-    TypeError
-        If ``intercept`` is not a bool, or if ``noisy`` or ``ideal`` is not a
-        sequence of real numbers.
-    ValueError
-        If the two inputs have different lengths, if they are non-finite, if
-        there are fewer points than the fit has parameters (two for the
-        intercept fit, one otherwise), or if the noisy values leave the slope
-        undetermined.
-
-    References
-    ----------
-    .. [1] A. Lowe, M. Medvidovic, R. Hayes, J. E. Rice, M. T. Rosenkrantz,
-       T. J. Yoder, and H. Eguchi, "Unified approach to data-driven quantum
-       error mitigation," Physical Review Research 3, 033098, 2021.
-       arXiv:2011.01157.
+    Raises:
+        TypeError: If ``intercept`` is not a bool, or if ``noisy`` or ``ideal`` is not a
+            sequence of real numbers.
+        ValueError: If the two inputs have different lengths, if they are non-finite, if
+            there are fewer points than the fit has parameters (two for the
+            intercept fit, one otherwise), or if the noisy values leave the slope
+            undetermined.
     """
     if not isinstance(intercept, bool):
         raise TypeError("intercept must be a bool")
@@ -265,54 +243,33 @@ def execute_with_cdr(
     values a noiseless backend supplies for it; both halves are therefore run
     inside the returned executor.
 
-    Parameters
-    ----------
-    circuit
-        Circuit whose expectation value is to be mitigated.
-    executor
-        Execution backend supplying the noisy expectation surface.
-    observable
-        Observable to estimate. It must be diagonal in the :math:`Z` basis,
-        that is, a sum of :math:`Z` and identity products.
-    ideal_estimator
-        Noiseless backend used to evaluate the exact training values
-        :math:`y_i`. It is driven with shot-free requests.
-    num_training_circuits
-        Number of near-Clifford training circuits to build and measure.
-    fraction_non_clifford
-        Probability, in ``[0, 1]``, that any one rotation of a training
-        circuit is snapped onto the Clifford grid.
-    shots
-        Shot count for every measurement on ``executor``, or ``None`` for
-        exact evaluation.
-    seed
-        Seed of the near-Clifford draws, or ``None`` to draw fresh randomness.
-        It is threaded into a :class:`numpy.random.Generator`.
+    Args:
+        circuit: Circuit whose expectation value is to be mitigated.
+        executor: Execution backend supplying the noisy expectation surface.
+        observable: Observable to estimate. It must be diagonal in the :math:`Z` basis,
+            that is, a sum of :math:`Z` and identity products.
+        ideal_estimator: Noiseless backend used to evaluate the exact training values
+            :math:`y_i`. It is driven with shot-free requests.
+        num_training_circuits: Number of near-Clifford training circuits to build and measure.
+        fraction_non_clifford: Probability, in ``[0, 1]``, that any one rotation of a training
+            circuit is snapped onto the Clifford grid.
+        shots: Shot count for every measurement on ``executor``, or ``None`` for
+            exact evaluation.
+        seed: Seed of the near-Clifford draws, or ``None`` to draw fresh randomness.
+            It is threaded into a :class:`numpy.random.Generator`.
 
-    Returns
-    -------
-    float
+    Returns:
         Mitigated expectation value.
 
-    Raises
-    ------
-    TypeError
-        If ``ideal_estimator`` is not an
-        :class:`~cqlib_algorithms.protocols.Estimator`, if
-        ``num_training_circuits`` is not an integer, if
-        ``fraction_non_clifford`` is not a real number, or if ``seed`` is
-        neither an integer nor ``None``.
-    ValueError
-        If ``num_training_circuits`` is below two, if
-        ``fraction_non_clifford`` lies outside ``[0, 1]``, or if
-        ``observable`` is not diagonal in the :math:`Z` basis.
-
-    References
-    ----------
-    .. [1] A. Lowe, M. Medvidovic, R. Hayes, J. E. Rice, M. T. Rosenkrantz,
-       T. J. Yoder, and H. Eguchi, "Unified approach to data-driven quantum
-       error mitigation," Physical Review Research 3, 033098, 2021.
-       arXiv:2011.01157.
+    Raises:
+        TypeError: If ``ideal_estimator`` is not an
+            :class:`~cqlib_algorithms.protocols.Estimator`, if
+            ``num_training_circuits`` is not an integer, if
+            ``fraction_non_clifford`` is not a real number, or if ``seed`` is
+            neither an integer nor ``None``.
+        ValueError: If ``num_training_circuits`` is below two, if
+            ``fraction_non_clifford`` lies outside ``[0, 1]``, or if
+            ``observable`` is not diagonal in the :math:`Z` basis.
     """
     wrapped = cdr_executor(
         executor,
@@ -342,39 +299,28 @@ def cdr_executor(
     caching flag, so the technique can be chained on top of another one without
     changing either semantics.
 
-    Parameters
-    ----------
-    executor
-        Execution backend to wrap.
-    ideal_estimator
-        Noiseless backend used to evaluate the exact training values.
-    num_training_circuits
-        Number of near-Clifford training circuits to build and measure.
-    fraction_non_clifford
-        Probability, in ``[0, 1]``, that any one rotation of a training
-        circuit is snapped onto the Clifford grid.
-    shots
-        Shot count bound to every request, or ``None`` to defer to the
-        request's own shot count.
-    seed
-        Seed of the near-Clifford draws, or ``None`` for a fresh draw.
+    Args:
+        executor: Execution backend to wrap.
+        ideal_estimator: Noiseless backend used to evaluate the exact training values.
+        num_training_circuits: Number of near-Clifford training circuits to build and measure.
+        fraction_non_clifford: Probability, in ``[0, 1]``, that any one rotation of a training
+            circuit is snapped onto the Clifford grid.
+        shots: Shot count bound to every request, or ``None`` to defer to the
+            request's own shot count.
+        seed: Seed of the near-Clifford draws, or ``None`` for a fresh draw.
 
-    Returns
-    -------
-    QemExecutor
+    Returns:
         Executor whose expectation surface applies Clifford data regression.
 
-    Raises
-    ------
-    TypeError
-        If ``ideal_estimator`` is not an
-        :class:`~cqlib_algorithms.protocols.Estimator`, if
-        ``num_training_circuits`` is not an integer, if
-        ``fraction_non_clifford`` is not a real number, or if ``seed`` is
-        neither an integer nor ``None``.
-    ValueError
-        If ``num_training_circuits`` is below two or if
-        ``fraction_non_clifford`` lies outside ``[0, 1]``.
+    Raises:
+        TypeError: If ``ideal_estimator`` is not an
+            :class:`~cqlib_algorithms.protocols.Estimator`, if
+            ``num_training_circuits`` is not an integer, if
+            ``fraction_non_clifford`` is not a real number, or if ``seed`` is
+            neither an integer nor ``None``.
+        ValueError: If ``num_training_circuits`` is below two or if
+            ``fraction_non_clifford`` lies outside ``[0, 1]``.
+
     """
     estimator = _CdrEstimator(
         executor,
@@ -394,22 +340,16 @@ def cdr_executor(
 class _CdrEstimator(Estimator):
     r"""Expectation surface that trains on near-Clifford data and regresses.
 
-    Parameters
-    ----------
-    executor
-        Execution backend supplying the noisy expectation surface.
-    ideal_estimator
-        Noiseless backend used to evaluate the exact training values.
-    num_training_circuits
-        Number of near-Clifford training circuits to build and measure.
-    fraction_non_clifford
-        Probability, in ``[0, 1]``, that any one rotation of a training
-        circuit is snapped onto the Clifford grid.
-    shots
-        Shot count bound to every request, or ``None`` to defer to the
-        request.
-    seed
-        Seed of the near-Clifford draws, or ``None`` for a fresh draw.
+    Args:
+        executor: Execution backend supplying the noisy expectation surface.
+        ideal_estimator: Noiseless backend used to evaluate the exact training values.
+        num_training_circuits: Number of near-Clifford training circuits to build and measure.
+        fraction_non_clifford: Probability, in ``[0, 1]``, that any one rotation of a training
+            circuit is snapped onto the Clifford grid.
+        shots: Shot count bound to every request, or ``None`` to defer to the
+            request.
+        seed: Seed of the near-Clifford draws, or ``None`` for a fresh draw.
+
     """
 
     __slots__ = (
@@ -526,20 +466,15 @@ def _near_clifford_operation(
 ) -> ValueOperation:
     r"""Return the near-Clifford image of one operation.
 
-    Parameters
-    ----------
-    operation
-        Operation to snap. Gates outside the single-qubit rotations are
-        returned unchanged.
-    fraction_non_clifford
-        Probability that a rotation is snapped.
-    rng
-        Random stream the decision is drawn from.
+    Args:
+        operation: Operation to snap. Gates outside the single-qubit rotations are
+            returned unchanged.
+        fraction_non_clifford: Probability that a rotation is snapped.
+        rng: Random stream the decision is drawn from.
 
-    Returns
-    -------
-    ValueOperation
+    Returns:
         The original operation, or the rotation carrying the snapped angle.
+
     """
     if not operation.is_standard:
         return operation
@@ -571,16 +506,13 @@ def _near_clifford_operation(
 def _rotation_base(gate: StandardGate, /) -> StandardGate | None:
     r"""Return the rotation definition ``gate`` matches, or ``None``.
 
-    Parameters
-    ----------
-    gate
-        Standard-gate definition read off an operation.
+    Args:
+        gate: Standard-gate definition read off an operation.
 
-    Returns
-    -------
-    StandardGate | None
+    Returns:
         :data:`StandardGate.RX`, :data:`StandardGate.RY`, or
-        :data:`StandardGate.RZ` when ``gate`` is that rotation, else ``None``.
+            :data:`StandardGate.RZ` when ``gate`` is that rotation, else ``None``.
+
     """
     for base in _ROTATION_GATES:
         if gate == base:
@@ -591,24 +523,17 @@ def _rotation_base(gate: StandardGate, /) -> StandardGate | None:
 def _as_float_array(values: Sequence[float], name: str, /) -> np.ndarray:
     r"""Return ``values`` as a one-dimensional float array, checking its type.
 
-    Parameters
-    ----------
-    values
-        Candidate sequence of real numbers.
-    name
-        Parameter name used in the error messages.
+    Args:
+        values: Candidate sequence of real numbers.
+        name: Parameter name used in the error messages.
 
-    Returns
-    -------
-    numpy.ndarray
+    Returns:
         The values as a float array, in input order.
 
-    Raises
-    ------
-    TypeError
-        If ``values`` is not a sequence of real numbers.
-    ValueError
-        If any value is non-finite.
+    Raises:
+        TypeError: If ``values`` is not a sequence of real numbers.
+        ValueError: If any value is non-finite.
+
     """
     if isinstance(values, (str, bytes)) or not isinstance(values, Sequence):
         raise TypeError(f"{name} must be a sequence of real numbers")
@@ -624,14 +549,7 @@ def _as_float_array(values: Sequence[float], name: str, /) -> np.ndarray:
 
 
 def _validate_num_training_circuits(num_training_circuits: int, /) -> None:
-    r"""Reject a training-set size that cannot support the intercept fit.
-
-    Raises
-    ------
-    TypeError
-        If ``num_training_circuits`` is not an integer.
-    ValueError
-        If ``num_training_circuits`` is below two.
+    r"""Validate the training-circuit count.
     """
     if isinstance(num_training_circuits, bool) or not isinstance(
         num_training_circuits, int
@@ -646,14 +564,7 @@ def _validate_num_training_circuits(num_training_circuits: int, /) -> None:
 
 
 def _validate_fraction_non_clifford(fraction_non_clifford: float, /) -> None:
-    r"""Reject a snap probability outside the unit interval.
-
-    Raises
-    ------
-    TypeError
-        If ``fraction_non_clifford`` is not a real number.
-    ValueError
-        If ``fraction_non_clifford`` lies outside ``[0, 1]``.
+    r"""Validate a near-Clifford snap probability.
     """
     if isinstance(fraction_non_clifford, bool) or not isinstance(
         fraction_non_clifford, Real
@@ -667,7 +578,7 @@ def _validate_fraction_non_clifford(fraction_non_clifford: float, /) -> None:
 
 
 def _validate_seed(seed: int | None, /) -> None:
-    r"""Reject a seed that is neither an integer nor ``None``."""
+    r"""Validate an optional random seed."""
     if seed is None:
         return
     if isinstance(seed, bool) or not isinstance(seed, int):

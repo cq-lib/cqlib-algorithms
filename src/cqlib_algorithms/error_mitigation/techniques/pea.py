@@ -43,13 +43,13 @@ executor for chaining.
 
 References
 ----------
-.. [1] Y. Kim, A. Eddins, S. Anand, K. X. Wei, E. van den Berg, S. Rosenblatt,
-   H. Nayfeh, Y. Wu, M. Zaletel, K. Temme, and A. Kandala, "Evidence for the
-   utility of quantum computing before fault tolerance," Nature 618,
-   500-505, 2023. doi:10.1038/s41586-023-06096-3.
-.. [2] A. Mari, N. Shammah, and W. J. Zeng, "Extending quantum probabilistic
-   error cancellation by noise scaling," Physical Review A 104, 052607, 2021.
-   arXiv:2108.02237.
+[1] Y. Kim, A. Eddins, S. Anand, K. X. Wei, E. van den Berg, S. Rosenblatt, H. Nayfeh,
+    Y. Wu, M. Zaletel, K. Temme, and A. Kandala, "Evidence for the utility of quantum
+    computing before fault tolerance," Nature 618, 500-505, 2023.
+    doi:10.1038/s41586-023-06096-3.
+[2] A. Mari, N. Shammah, and W. J. Zeng, "Extending quantum probabilistic error
+    cancellation by noise scaling," Physical Review A 104, 052607, 2021.
+    arXiv:2108.02237.
 """
 
 from __future__ import annotations
@@ -109,35 +109,25 @@ def construct_circuits(
     the resulting non-negative weights. The weights sum to one, so no sign is
     carried and the family is recombined by a plain average.
 
-    Parameters
-    ----------
-    circuit
-        Circuit to expand. Measurements are passed through unchanged and need
-        no representation.
-    noise_level
-        Baseline depolarizing strength of the device, in :math:`[0, 1)`.
-    scale_factor
-        Amplification factor :math:`s > 0` applied to ``noise_level``.
-    precision
-        Target precision :math:`\epsilon` of the estimate. The sample count is
-        :math:`\lceil 1 / \epsilon^2 \rceil`.
-    seed
-        Seed of the sampling stream, or ``None`` for fresh randomness.
+    Args:
+        circuit: Circuit to expand. Measurements are passed through unchanged and need
+            no representation.
+        noise_level: Baseline depolarizing strength of the device, in :math:`[0, 1)`.
+        scale_factor: Amplification factor :math:`s > 0` applied to ``noise_level``.
+        precision: Target precision :math:`\epsilon` of the estimate. The sample count is
+            :math:`\lceil 1 / \epsilon^2 \rceil`.
+        seed: Seed of the sampling stream, or ``None`` for fresh randomness.
 
-    Returns
-    -------
-    list[Circuit]
+    Returns:
         The sampled variant circuits, in draw order.
 
-    Raises
-    ------
-    TypeError
-        If ``precision`` is not a real number or ``seed`` is neither an
-        integer nor ``None``.
-    ValueError
-        If ``precision`` is not in :math:`(0, 1]`, if a gate acts on more than
-        two qubits, or if the amplified level reaches one so that the
-        expansion stops being a probability distribution.
+    Raises:
+        TypeError: If ``precision`` is not a real number or ``seed`` is neither an
+            integer nor ``None``.
+        ValueError: If ``precision`` is not in :math:`(0, 1]`, if a gate acts on more than
+            two qubits, or if the amplified level reaches one so that the
+            expansion stops being a probability distribution.
+
     """
     _validate_precision(precision)
     _validate_seed(seed)
@@ -164,21 +154,16 @@ def combine_results(results: Sequence[EstimatorResult], /) -> float:
     The amplified weights are non-negative and sum to one, so the estimate is
     an ordinary mean with no :math:`\Gamma` compensation.
 
-    Parameters
-    ----------
-    results
-        Expectation values measured on the circuits returned by
-        :func:`construct_circuits`, in the same order.
+    Args:
+        results: Expectation values measured on the circuits returned by
+            :func:`construct_circuits`, in the same order.
 
-    Returns
-    -------
-    float
+    Returns:
         The amplified expectation value at one scale factor.
 
-    Raises
-    ------
-    ValueError
-        If no result was supplied.
+    Raises:
+        ValueError: If no result was supplied.
+
     """
     if not results:
         raise ValueError(
@@ -210,45 +195,31 @@ def execute_with_pea(
                [EstimatorRequest(c, obs)]
            )[0].expectation
 
-    Parameters
-    ----------
-    circuit
-        Circuit whose expectation value is to be mitigated.
-    executor
-        Execution backend supplying the expectation surface.
-    observable
-        Observable to estimate. A bare Pauli string is interpreted as a
-        Hamiltonian with unit coefficient.
-    noise_level
-        Baseline depolarizing strength of the device, in :math:`[0, 1)`.
-    scale_factors
-        Amplification factors :math:`s > 0` at which the circuit is measured.
-    extrapolation_method
-        Name of the extrapolation model that reduces the amplified values to
-        the zero-amplification limit. Supported names are ``"richardson"``,
-        ``"linear"``, ``"polynomial"``, and ``"exponential"``.
-    precision
-        Target precision :math:`\epsilon` of every amplified estimate.
-    shots
-        Shot count for every variant circuit, or ``None`` for exact
-        evaluation.
-    seed
-        Seed of the sampling stream, or ``None`` for fresh randomness.
+    Args:
+        circuit: Circuit whose expectation value is to be mitigated.
+        executor: Execution backend supplying the expectation surface.
+        observable: Observable to estimate. A bare Pauli string is interpreted as a
+            Hamiltonian with unit coefficient.
+        noise_level: Baseline depolarizing strength of the device, in :math:`[0, 1)`.
+        scale_factors: Amplification factors :math:`s > 0` at which the circuit is measured.
+        extrapolation_method: Name of the extrapolation model that reduces the amplified values to
+            the zero-amplification limit. Supported names are ``"richardson"``,
+            ``"linear"``, ``"polynomial"``, and ``"exponential"``.
+        precision: Target precision :math:`\epsilon` of every amplified estimate.
+        shots: Shot count for every variant circuit, or ``None`` for exact
+            evaluation.
+        seed: Seed of the sampling stream, or ``None`` for fresh randomness.
 
-    Returns
-    -------
-    float
+    Returns:
         Mitigated expectation value.
 
-    Raises
-    ------
-    TypeError
-        If ``extrapolation_method`` is not a string, if ``precision`` is not
-        a real number, or if ``seed`` is neither an integer nor ``None``.
-    ValueError
-        If ``extrapolation_method`` is not a supported name, if ``precision``
-        is not in :math:`(0, 1]`, if a parameter describes an unusable
-        configuration, or if ``noise_level * max(scale_factors)`` reaches one.
+    Raises:
+        TypeError: If ``extrapolation_method`` is not a string, if ``precision`` is not
+            a real number, or if ``seed`` is neither an integer nor ``None``.
+        ValueError: If ``extrapolation_method`` is not a supported name, if ``precision``
+            is not in :math:`(0, 1]`, if a parameter describes an unusable
+            configuration, or if ``noise_level * max(scale_factors)`` reaches one.
+
     """
     wrapped = pea_executor(
         executor,
@@ -280,42 +251,30 @@ def pea_executor(
     caching flag, so PEA can be chained on top of another technique without
     changing either semantics.
 
-    Parameters
-    ----------
-    executor
-        Execution backend to wrap.
-    noise_level
-        Baseline depolarizing strength of the device, in :math:`[0, 1)`.
-    scale_factors
-        Amplification factors :math:`s > 0` at which every later circuit is
-        measured.
-    extrapolation_method
-        Name of the extrapolation model that reduces the amplified values to
-        the zero-amplification limit. Supported names are ``"richardson"``,
-        ``"linear"``, ``"polynomial"``, and ``"exponential"``.
-    precision
-        Target precision :math:`\epsilon` of every amplified estimate.
-    shots
-        Shot count bound to every request, or ``None`` to defer to the
-        request's own shot count.
-    seed
-        Seed of the sampling stream, or ``None`` for fresh randomness.
+    Args:
+        executor: Execution backend to wrap.
+        noise_level: Baseline depolarizing strength of the device, in :math:`[0, 1)`.
+        scale_factors: Amplification factors :math:`s > 0` at which every later circuit is
+            measured.
+        extrapolation_method: Name of the extrapolation model that reduces the amplified values to
+            the zero-amplification limit. Supported names are ``"richardson"``,
+            ``"linear"``, ``"polynomial"``, and ``"exponential"``.
+        precision: Target precision :math:`\epsilon` of every amplified estimate.
+        shots: Shot count bound to every request, or ``None`` to defer to the
+            request's own shot count.
+        seed: Seed of the sampling stream, or ``None`` for fresh randomness.
 
-    Returns
-    -------
-    QemExecutor
+    Returns:
         Executor whose expectation surface applies probabilistic error
-        amplification.
+            amplification.
 
-    Raises
-    ------
-    TypeError
-        If ``extrapolation_method`` is not a string, if ``precision`` is not
-        a real number, or if ``seed`` is neither an integer nor ``None``.
-    ValueError
-        If ``extrapolation_method`` is not a supported name, if ``precision``
-        is not in :math:`(0, 1]`, or if ``noise_level * max(scale_factors)``
-        reaches one.
+    Raises:
+        TypeError: If ``extrapolation_method`` is not a string, if ``precision`` is not
+            a real number, or if ``seed`` is neither an integer nor ``None``.
+        ValueError: If ``extrapolation_method`` is not a supported name, if ``precision``
+            is not in :math:`(0, 1]`, or if ``noise_level * max(scale_factors)``
+            reaches one.
+
     """
     estimator = _PeaEstimator(
         executor,
@@ -336,24 +295,17 @@ def pea_executor(
 class _PeaEstimator(Estimator):
     r"""Expectation surface that amplifies, measures, and extrapolates.
 
-    Parameters
-    ----------
-    executor
-        Execution backend supplying the expectation surface for each variant
-        circuit.
-    noise_level
-        Baseline depolarizing strength of the device.
-    scale_factors
-        Amplification factors at which every request is measured.
-    extrapolation_method
-        Normalized name of the extrapolation model.
-    precision
-        Target precision of every amplified estimate.
-    shots
-        Shot count bound to every request, or ``None`` to defer to the
-        request.
-    seed
-        Seed of the sampling stream, or ``None`` for fresh randomness.
+    Args:
+        executor: Execution backend supplying the expectation surface for each variant
+            circuit.
+        noise_level: Baseline depolarizing strength of the device.
+        scale_factors: Amplification factors at which every request is measured.
+        extrapolation_method: Normalized name of the extrapolation model.
+        precision: Target precision of every amplified estimate.
+        shots: Shot count bound to every request, or ``None`` to defer to the
+            request.
+        seed: Seed of the sampling stream, or ``None`` for fresh randomness.
+
     """
 
     __slots__ = (
@@ -461,20 +413,15 @@ def _amplified_representations(
 ) -> list[QuasiprobabilityRepresentation]:
     r"""Return one amplified representation per non-measurement operation.
 
-    Parameters
-    ----------
-    circuit
-        Circuit whose operations are expanded.
-    noise_level
-        Baseline depolarizing strength of the device.
-    scale_factor
-        Amplification factor applied to ``noise_level``.
+    Args:
+        circuit: Circuit whose operations are expanded.
+        noise_level: Baseline depolarizing strength of the device.
+        scale_factor: Amplification factor applied to ``noise_level``.
 
-    Returns
-    -------
-    list[QuasiprobabilityRepresentation]
+    Returns:
         One amplified expansion per non-measurement operation, in circuit
-        order.
+            order.
+
     """
     representations = []
     for operation in circuit.operations:
@@ -511,7 +458,7 @@ def _make_factory(
 
 
 def _validate_extrapolation_method(extrapolation_method: str, /) -> None:
-    r"""Reject an extrapolation method that is not a supported name."""
+    r"""Validate an extrapolation-method name."""
     if not isinstance(extrapolation_method, str):
         raise TypeError("extrapolation_method must be a string")
     if extrapolation_method.strip().lower() not in _SUPPORTED_EXTRAPOLATION_METHODS:
@@ -527,7 +474,7 @@ def _validate_amplification(
     scale_factors: Sequence[float],
     /,
 ) -> None:
-    r"""Reject a noise level and grid that cannot be amplified.
+    r"""Validate a noise level and amplification grid.
 
     The amplified level :math:`s\,\epsilon` must stay below one for the
     expansion to remain a probability distribution, so the product of the

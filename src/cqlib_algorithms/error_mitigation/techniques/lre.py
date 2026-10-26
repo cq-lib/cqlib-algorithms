@@ -46,9 +46,8 @@ the extrapolated limit), orchestrated by :func:`execute_with_lre`;
 
 References
 ----------
-.. [1] A. Russo and A. Mari,
-   "Quantum error mitigation by layerwise Richardson extrapolation,"
-   Physical Review A 110, 062420, 2024. arXiv:2402.04000.
+[1] A. Russo and A. Mari, "Quantum error mitigation by layerwise Richardson
+    extrapolation," Physical Review A 110, 062420, 2024. arXiv:2402.04000.
 """
 
 from __future__ import annotations
@@ -112,44 +111,34 @@ def construct_circuits(
     degree at most ``degree``, which is the smallest set of scale vectors that
     makes the multivariate extrapolation well posed.
 
-    Parameters
-    ----------
-    circuit
-        Circuit to scale. Measurements are stripped before folding and
-        re-appended afterwards.
-    degree
-        Multivariate polynomial degree :math:`d \ge 1`. A higher degree
-        cancels more noise orders at the cost of more executions.
-    fold_multiplier
-        Positive integer step between adjacent graded levels.
-    num_chunks
-        Number of contiguous chunks the gate body is split into, ``>= 1``.
-        ``1`` puts every gate in one chunk, which reduces LRE to standard
-        zero-noise extrapolation.
+    Args:
+        circuit: Circuit to scale. Measurements are stripped before folding and
+            re-appended afterwards.
+        degree: Multivariate polynomial degree :math:`d \ge 1`. A higher degree
+            cancels more noise orders at the cost of more executions.
+        fold_multiplier: Positive integer step between adjacent graded levels.
+        num_chunks: Number of contiguous chunks the gate body is split into, ``>= 1``.
+            ``1`` puts every gate in one chunk, which reduces LRE to standard
+            zero-noise extrapolation.
 
-    Returns
-    -------
-    tuple[list[Circuit], list[list[float]]]
+    Returns:
         The scaled circuits and, in the same order, their scale vectors. Each
-        scale vector holds one factor per chunk.
+            scale vector holds one factor per chunk.
 
-    Raises
-    ------
-    TypeError
-        If ``degree``, ``fold_multiplier``, or ``num_chunks`` is not an
-        integer.
-    ValueError
-        If ``degree < 1``, ``fold_multiplier < 1``, ``num_chunks < 1``, or
-        ``num_chunks`` exceeds the number of gate operations of ``circuit``.
+    Raises:
+        TypeError: If ``degree``, ``fold_multiplier``, or ``num_chunks`` is not an
+            integer.
+        ValueError: If ``degree < 1``, ``fold_multiplier < 1``, ``num_chunks < 1``, or
+            ``num_chunks`` exceeds the number of gate operations of ``circuit``.
 
-    Notes
-    -----
-    The family holds :math:`\binom{\text{num\_chunks} + \text{degree}}
-    {\text{degree}}` circuits, the graded-monomial subset of the
-    :math:`(\text{degree} + 1)^{\text{num\_chunks}}` full grid of per-chunk
-    scale choices. That count is exponential in ``num_chunks`` for a fixed
-    ``degree``, so the number of circuit executions grows quickly with the
-    chunk count; keep ``num_chunks`` small.
+    Note:
+        The family holds :math:`\binom{\text{num\_chunks} + \text{degree}}
+        {\text{degree}}` circuits, the graded-monomial subset of the
+        :math:`(\text{degree} + 1)^{\text{num\_chunks}}` full grid of per-chunk
+        scale choices. That count is exponential in ``num_chunks`` for a fixed
+        ``degree``, so the number of circuit executions grows quickly with the
+        chunk count; keep ``num_chunks`` small.
+
     """
     _validate_degree(degree)
     _validate_fold_multiplier(fold_multiplier)
@@ -189,32 +178,24 @@ def combine_results(
 ) -> float:
     r"""Reduce measured expectation values to the extrapolated limit.
 
-    Parameters
-    ----------
-    results
-        Expectation values measured on the circuits returned by
-        :func:`construct_circuits`, in the same order.
-    scale_points
-        The scale vectors paired with ``results``, one vector per measurement.
+    Args:
+        results: Expectation values measured on the circuits returned by
+            :func:`construct_circuits`, in the same order.
+        scale_points: The scale vectors paired with ``results``, one vector per measurement.
 
-    Returns
-    -------
-    float
+    Returns:
         The extrapolated zero-noise expectation value.
 
-    Raises
-    ------
-    ValueError
-        If the number of results does not match the number of scale points, if
-        the scale points do not span a graded monomial basis, if their
-        multivariate sample matrix is singular, or if the resulting weights do
-        not sum to one.
+    Raises:
+        ValueError: If the number of results does not match the number of scale points, if
+            the scale points do not span a graded monomial basis, if their
+            multivariate sample matrix is singular, or if the resulting weights do
+            not sum to one.
 
-    Warns
-    -----
-    ConvergenceWarning
-        If the multivariate sample matrix is ill-conditioned, in which case
-        the extrapolation amplifies measurement error.
+    Warns:
+        ConvergenceWarning: If the multivariate sample matrix is ill-conditioned, in which case
+            the extrapolation amplifies measurement error.
+
     """
     if len(results) != len(scale_points):
         raise ValueError(
@@ -259,49 +240,35 @@ def execute_with_lre(
                [EstimatorRequest(c, obs)]
            )[0].expectation
 
-    Parameters
-    ----------
-    circuit
-        Circuit whose expectation value is to be mitigated.
-    executor
-        Execution backend supplying the expectation surface.
-    observable
-        Observable to estimate.
-    degree
-        Multivariate polynomial degree :math:`d \ge 1`.
-    fold_multiplier
-        Positive integer step between adjacent graded levels.
-    num_chunks
-        Number of contiguous chunks the gate body is split into.
-    shots
-        Shot count for every scaled circuit, or ``None`` for exact evaluation.
-    seed
-        Seed of the sampled scaled circuits, or ``None`` for fresh randomness.
-        Every scaled circuit draws from its own child seed, so one value
-        reproduces the whole family.
+    Args:
+        circuit: Circuit whose expectation value is to be mitigated.
+        executor: Execution backend supplying the expectation surface.
+        observable: Observable to estimate.
+        degree: Multivariate polynomial degree :math:`d \ge 1`.
+        fold_multiplier: Positive integer step between adjacent graded levels.
+        num_chunks: Number of contiguous chunks the gate body is split into.
+        shots: Shot count for every scaled circuit, or ``None`` for exact evaluation.
+        seed: Seed of the sampled scaled circuits, or ``None`` for fresh randomness.
+            Every scaled circuit draws from its own child seed, so one value
+            reproduces the whole family.
 
-    Returns
-    -------
-    float
+    Returns:
         Mitigated expectation value.
 
-    Raises
-    ------
-    TypeError
-        If ``degree``, ``fold_multiplier``, or ``num_chunks`` is not an
-        integer, or if ``seed`` is neither an integer nor ``None``.
-    ValueError
-        If ``degree < 1``, ``fold_multiplier < 1``, ``num_chunks < 1``, or
-        ``num_chunks`` exceeds the number of gate operations of ``circuit``.
+    Raises:
+        TypeError: If ``degree``, ``fold_multiplier``, or ``num_chunks`` is not an
+            integer, or if ``seed`` is neither an integer nor ``None``.
+        ValueError: If ``degree < 1``, ``fold_multiplier < 1``, ``num_chunks < 1``, or
+            ``num_chunks`` exceeds the number of gate operations of ``circuit``.
 
-    Notes
-    -----
-    One call executes :math:`\binom{\text{num\_chunks} + \text{degree}}
-    {\text{degree}}` circuits, the graded-monomial subset of the
-    :math:`(\text{degree} + 1)^{\text{num\_chunks}}` full grid of per-chunk
-    scale choices. The count is exponential in ``num_chunks`` for a fixed
-    ``degree``, so the number of executions grows quickly with the chunk
-    count; keep ``num_chunks`` small.
+    Note:
+        One call executes :math:`\binom{\text{num\_chunks} + \text{degree}}
+        {\text{degree}}` circuits, the graded-monomial subset of the
+        :math:`(\text{degree} + 1)^{\text{num\_chunks}}` full grid of per-chunk
+        scale choices. The count is exponential in ``num_chunks`` for a fixed
+        ``degree``, so the number of executions grows quickly with the chunk
+        count; keep ``num_chunks`` small.
+
     """
     wrapped = lre_executor(
         executor,
@@ -331,35 +298,24 @@ def lre_executor(
     caching flag, so LRE can be chained on top of another technique without
     changing either semantics.
 
-    Parameters
-    ----------
-    executor
-        Execution backend to wrap.
-    degree
-        Multivariate polynomial degree :math:`d \ge 1`.
-    fold_multiplier
-        Positive integer step between adjacent graded levels.
-    num_chunks
-        Number of contiguous chunks the gate body is split into.
-    shots
-        Shot count bound to every request, or ``None`` to defer to the
-        request's own shot count.
-    seed
-        Seed of the sampled scaled circuits, or ``None`` to defer to the
-        request's own seed.
+    Args:
+        executor: Execution backend to wrap.
+        degree: Multivariate polynomial degree :math:`d \ge 1`.
+        fold_multiplier: Positive integer step between adjacent graded levels.
+        num_chunks: Number of contiguous chunks the gate body is split into.
+        shots: Shot count bound to every request, or ``None`` to defer to the
+            request's own shot count.
+        seed: Seed of the sampled scaled circuits, or ``None`` to defer to the
+            request's own seed.
 
-    Returns
-    -------
-    QemExecutor
+    Returns:
         Executor whose expectation surface applies layerwise extrapolation.
 
-    Raises
-    ------
-    TypeError
-        If ``degree``, ``fold_multiplier``, or ``num_chunks`` is not an
-        integer, or if ``seed`` is neither an integer nor ``None``.
-    ValueError
-        If ``degree < 1``, ``fold_multiplier < 1``, or ``num_chunks < 1``.
+    Raises:
+        TypeError: If ``degree``, ``fold_multiplier``, or ``num_chunks`` is not an
+            integer, or if ``seed`` is neither an integer nor ``None``.
+        ValueError: If ``degree < 1``, ``fold_multiplier < 1``, or ``num_chunks < 1``.
+
     """
     _validate_degree(degree)
     _validate_fold_multiplier(fold_multiplier)
@@ -384,23 +340,17 @@ def lre_executor(
 class _LreEstimator(Estimator):
     r"""Expectation surface that folds chunks, measures, and extrapolates.
 
-    Parameters
-    ----------
-    executor
-        Execution backend supplying the expectation surface for each scaled
-        circuit.
-    degree
-        Multivariate polynomial degree.
-    fold_multiplier
-        Step between adjacent graded levels.
-    num_chunks
-        Number of chunks the gate body is split into.
-    shots
-        Shot count bound to every request, or ``None`` to defer to the
-        request.
-    seed
-        Seed of the sampled scaled circuits, or ``None`` to defer to the
-        request's own seed.
+    Args:
+        executor: Execution backend supplying the expectation surface for each scaled
+            circuit.
+        degree: Multivariate polynomial degree.
+        fold_multiplier: Step between adjacent graded levels.
+        num_chunks: Number of chunks the gate body is split into.
+        shots: Shot count bound to every request, or ``None`` to defer to the
+            request.
+        seed: Seed of the sampled scaled circuits, or ``None`` to defer to the
+            request's own seed.
+
     """
 
     __slots__ = (
@@ -524,7 +474,7 @@ def _warn_if_ill_conditioned(
 
 
 def _validate_degree(degree: int, /) -> None:
-    r"""Reject a non-integer or sub-one polynomial degree."""
+    r"""Validate a positive polynomial degree."""
     if isinstance(degree, bool) or not isinstance(degree, int):
         raise TypeError("degree must be an integer")
     if degree < 1:
@@ -532,7 +482,7 @@ def _validate_degree(degree: int, /) -> None:
 
 
 def _validate_fold_multiplier(fold_multiplier: int, /) -> None:
-    r"""Reject a non-integer or sub-one fold multiplier."""
+    r"""Validate a positive fold multiplier."""
     if isinstance(fold_multiplier, bool) or not isinstance(fold_multiplier, int):
         raise TypeError("fold_multiplier must be an integer")
     if fold_multiplier < 1:
@@ -540,7 +490,7 @@ def _validate_fold_multiplier(fold_multiplier: int, /) -> None:
 
 
 def _validate_num_chunks(num_chunks: int, /) -> None:
-    r"""Reject a non-integer or sub-one chunk count."""
+    r"""Validate a positive chunk count."""
     if isinstance(num_chunks, bool) or not isinstance(num_chunks, int):
         raise TypeError("num_chunks must be an integer")
     if num_chunks < 1:
@@ -548,7 +498,7 @@ def _validate_num_chunks(num_chunks: int, /) -> None:
 
 
 def _validate_seed(seed: int | None, /) -> None:
-    r"""Reject a seed that is neither an integer nor ``None``."""
+    r"""Validate an optional random seed."""
     if seed is None:
         return
     if isinstance(seed, bool) or not isinstance(seed, int):

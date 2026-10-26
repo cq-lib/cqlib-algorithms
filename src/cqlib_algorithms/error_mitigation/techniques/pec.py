@@ -44,12 +44,10 @@ same computation as a reusable executor for chaining.
 
 References
 ----------
-.. [1] K. Temme, S. Bravyi, and J. M. Gambetta, "Error mitigation for
-   short-depth quantum circuits," Physical Review Letters 119, 180509, 2017.
-   arXiv:1612.02058.
-.. [2] S. Endo, S. C. Benjamin, and Y. Li, "Practical quantum error mitigation
-   for near-future applications," Physical Review X 8, 031027, 2018.
-   arXiv:1712.09271.
+[1] K. Temme, S. Bravyi, and J. M. Gambetta, "Error mitigation for short-depth quantum
+    circuits," Physical Review Letters 119, 180509, 2017. arXiv:1612.02058.
+[2] S. Endo, S. C. Benjamin, and Y. Li, "Practical quantum error mitigation for
+    near-future applications," Physical Review X 8, 031027, 2018. arXiv:1712.09271.
 """
 
 from __future__ import annotations
@@ -100,41 +98,30 @@ def construct_circuits(
     product of the signs of the corrections it drew, and ``norm`` is the
     one-norm :math:`\Gamma` of the whole circuit.
 
-    Parameters
-    ----------
-    circuit
-        Circuit to expand. Measurements are passed through unchanged and need
-        no representation.
-    quasiprobabilities
-        One representation per non-measurement operation, in circuit order.
-        Each must act on at most two qubits.
-    precision
-        Target precision :math:`\epsilon` of the estimate. The sample count is
-        :math:`\lceil (\Gamma / \epsilon)^2 \rceil`.
-    seed
-        Seed of the sampling stream, or ``None`` for fresh randomness.
+    Args:
+        circuit: Circuit to expand. Measurements are passed through unchanged and need
+            no representation.
+        quasiprobabilities: One representation per non-measurement operation, in circuit order.
+            Each must act on at most two qubits.
+        precision: Target precision :math:`\epsilon` of the estimate. The sample count is
+            :math:`\lceil (\Gamma / \epsilon)^2 \rceil`.
+        seed: Seed of the sampling stream, or ``None`` for fresh randomness.
 
-    Returns
-    -------
-    tuple[list[Circuit], list[int], float]
+    Returns:
         The sampled variant circuits, their signs in :math:`\{-1, +1\}`, and
-        the one-norm :math:`\Gamma` of the circuit representation.
+            the one-norm :math:`\Gamma` of the circuit representation.
 
-    Raises
-    ------
-    TypeError
-        If ``precision`` is not a real number or ``seed`` is neither an
-        integer nor ``None``.
-    ValueError
-        If ``precision`` is not in :math:`(0, 1]`, if a representation acts on
-        more than two qubits, if the representation count does not match the
-        circuit's operation count, or if :math:`\Gamma` exceeds
-        :data:`_MAX_NORM`.
+    Raises:
+        TypeError: If ``precision`` is not a real number or ``seed`` is neither an
+            integer nor ``None``.
+        ValueError: If ``precision`` is not in :math:`(0, 1]`, if a representation acts on
+            more than two qubits, if the representation count does not match the
+            circuit's operation count, or if :math:`\Gamma` exceeds
+            :data:`_MAX_NORM`.
 
-    Warns
-    -----
-    UserWarning
-        If the deduced sample count exceeds :data:`_MAX_SAMPLES`.
+    Warns:
+        UserWarning: If the deduced sample count exceeds :data:`_MAX_SAMPLES`.
+
     """
     _validate_precision(precision)
     _validate_seed(seed)
@@ -190,27 +177,20 @@ def combine_results(
     sign-weighted mean is :math:`1 / \Gamma` of the ideal value and only the
     multiplication by ``norm`` restores it.
 
-    Parameters
-    ----------
-    results
-        Expectation values measured on the circuits returned by
-        :func:`construct_circuits`, in the same order.
-    norm
-        One-norm :math:`\Gamma` returned by :func:`construct_circuits`.
-    signs
-        Per-circuit signs returned by :func:`construct_circuits`, in the same
-        order.
+    Args:
+        results: Expectation values measured on the circuits returned by
+            :func:`construct_circuits`, in the same order.
+        norm: One-norm :math:`\Gamma` returned by :func:`construct_circuits`.
+        signs: Per-circuit signs returned by :func:`construct_circuits`, in the same
+            order.
 
-    Returns
-    -------
-    float
+    Returns:
         The PEC estimate of the ideal expectation value.
 
-    Raises
-    ------
-    ValueError
-        If ``results`` and ``signs`` have different lengths, or if no result
-        was supplied.
+    Raises:
+        ValueError: If ``results`` and ``signs`` have different lengths, or if no result
+            was supplied.
+
     """
     if len(results) != len(signs):
         raise ValueError(
@@ -246,40 +226,28 @@ def execute_with_pec(
                [EstimatorRequest(c, obs)]
            )[0].expectation
 
-    Parameters
-    ----------
-    circuit
-        Circuit whose expectation value is to be mitigated.
-    executor
-        Execution backend supplying the expectation surface.
-    observable
-        Observable to estimate. A bare Pauli string is interpreted as a
-        Hamiltonian with unit coefficient.
-    quasiprobabilities
-        One representation per non-measurement operation of ``circuit``, in
-        circuit order.
-    precision
-        Target precision :math:`\epsilon` of the estimate.
-    shots
-        Shot count for every variant circuit, or ``None`` for exact
-        evaluation.
-    seed
-        Seed of the sampling stream, or ``None`` for fresh randomness.
+    Args:
+        circuit: Circuit whose expectation value is to be mitigated.
+        executor: Execution backend supplying the expectation surface.
+        observable: Observable to estimate. A bare Pauli string is interpreted as a
+            Hamiltonian with unit coefficient.
+        quasiprobabilities: One representation per non-measurement operation of ``circuit``, in
+            circuit order.
+        precision: Target precision :math:`\epsilon` of the estimate.
+        shots: Shot count for every variant circuit, or ``None`` for exact
+            evaluation.
+        seed: Seed of the sampling stream, or ``None`` for fresh randomness.
 
-    Returns
-    -------
-    float
+    Returns:
         Mitigated expectation value.
 
-    Raises
-    ------
-    TypeError
-        If ``precision`` is not a real number or ``seed`` is neither an
-        integer nor ``None``.
-    ValueError
-        If a parameter describes an unusable configuration, such as a
-        representation for a gate acting on more than two qubits or a
-        one-norm above the ceiling.
+    Raises:
+        TypeError: If ``precision`` is not a real number or ``seed`` is neither an
+            integer nor ``None``.
+        ValueError: If a parameter describes an unusable configuration, such as a
+            representation for a gate acting on more than two qubits or a
+            one-norm above the ceiling.
+
     """
     wrapped = pec_executor(
         executor,
@@ -307,34 +275,24 @@ def pec_executor(
     caching flag, so PEC can be chained on top of another technique without
     changing either semantics.
 
-    Parameters
-    ----------
-    executor
-        Execution backend to wrap.
-    quasiprobabilities
-        One representation per non-measurement operation of every circuit
-        later submitted, in circuit order.
-    precision
-        Target precision :math:`\epsilon` of the estimate.
-    shots
-        Shot count bound to every request, or ``None`` to defer to the
-        request's own shot count.
-    seed
-        Seed of the sampling stream, or ``None`` for fresh randomness.
+    Args:
+        executor: Execution backend to wrap.
+        quasiprobabilities: One representation per non-measurement operation of every circuit
+            later submitted, in circuit order.
+        precision: Target precision :math:`\epsilon` of the estimate.
+        shots: Shot count bound to every request, or ``None`` to defer to the
+            request's own shot count.
+        seed: Seed of the sampling stream, or ``None`` for fresh randomness.
 
-    Returns
-    -------
-    QemExecutor
+    Returns:
         Executor whose expectation surface applies probabilistic error
-        cancellation.
+            cancellation.
 
-    Raises
-    ------
-    TypeError
-        If ``precision`` is not a real number or ``seed`` is neither an
-        integer nor ``None``.
-    ValueError
-        If ``precision`` is not in :math:`(0, 1]`.
+    Raises:
+        TypeError: If ``precision`` is not a real number or ``seed`` is neither an
+            integer nor ``None``.
+        ValueError: If ``precision`` is not in :math:`(0, 1]`.
+
     """
     estimator = _PecEstimator(
         executor,
@@ -353,20 +311,15 @@ def pec_executor(
 class _PecEstimator(Estimator):
     r"""Expectation surface that samples, measures, and recombines variants.
 
-    Parameters
-    ----------
-    executor
-        Execution backend supplying the expectation surface for each variant
-        circuit.
-    quasiprobabilities
-        One representation per non-measurement operation, in circuit order.
-    precision
-        Target precision of the estimate.
-    shots
-        Shot count bound to every request, or ``None`` to defer to the
-        request.
-    seed
-        Seed of the sampling stream, or ``None`` for fresh randomness.
+    Args:
+        executor: Execution backend supplying the expectation surface for each variant
+            circuit.
+        quasiprobabilities: One representation per non-measurement operation, in circuit order.
+        precision: Target precision of the estimate.
+        shots: Shot count bound to every request, or ``None`` to defer to the
+            request.
+        seed: Seed of the sampling stream, or ``None`` for fresh randomness.
+
     """
 
     __slots__ = (
@@ -473,21 +426,15 @@ def _sample_circuits(
 ) -> tuple[list[Circuit], list[int]]:
     r"""Sample ``num_samples`` variant circuits and their signs.
 
-    Parameters
-    ----------
-    circuit
-        Circuit to expand.
-    representations
-        One representation per non-measurement operation, in circuit order.
-    num_samples
-        Number of variants to draw.
-    rng
-        Random stream the corrections are drawn from.
+    Args:
+        circuit: Circuit to expand.
+        representations: One representation per non-measurement operation, in circuit order.
+        num_samples: Number of variants to draw.
+        rng: Random stream the corrections are drawn from.
 
-    Returns
-    -------
-    tuple[list[Circuit], list[int]]
+    Returns:
         The variant circuits, then their signs, both in draw order.
+
     """
     sampled: list[Circuit] = []
     signs: list[int] = []
@@ -506,11 +453,10 @@ def _sample_variant(
 ) -> tuple[Circuit, int]:
     r"""Draw one variant circuit and its sign.
 
-    Returns
-    -------
-    tuple[Circuit, int]
+    Returns:
         The variant circuit and the product of the signs of the corrections
-        it drew.
+            it drew.
+
     """
     position = 0
     sign = 1
@@ -541,10 +487,9 @@ def _sample_variant(
 def _draw_correction(coefficients: Sequence[float], rng: np.random.Generator, /) -> int:
     r"""Draw a basis index with probability proportional to its weight.
 
-    Raises
-    ------
-    ValueError
-        If the weights do not form a finite, non-zero distribution.
+    Raises:
+        ValueError: If the weights do not form a finite, non-zero distribution.
+
     """
     magnitudes = np.abs(np.asarray(coefficients, dtype=float))
     total = float(magnitudes.sum())
@@ -557,7 +502,7 @@ def _draw_correction(coefficients: Sequence[float], rng: np.random.Generator, /)
 
 
 def _validate_precision(precision: float, /) -> None:
-    r"""Reject a precision outside the half-open interval :math:`(0, 1]`."""
+    r"""Validate a sampling precision."""
     if isinstance(precision, bool) or not isinstance(precision, Real):
         raise TypeError("precision must be a real number")
     if not 0.0 < float(precision) <= 1.0:
@@ -567,7 +512,7 @@ def _validate_precision(precision: float, /) -> None:
 
 
 def _validate_seed(seed: int | None, /) -> None:
-    r"""Reject a seed that is neither an integer nor ``None``."""
+    r"""Validate an optional random seed."""
     if seed is None:
         return
     if isinstance(seed, bool) or not isinstance(seed, int):
@@ -577,7 +522,7 @@ def _validate_seed(seed: int | None, /) -> None:
 
 
 def _validate_two_qubit_operations(circuit: Circuit, /) -> None:
-    r"""Reject any gate acting on more than two qubits."""
+    r"""Validate that operations act on at most two qubits."""
     for operation in circuit.operations:
         if is_measurement(operation):
             continue
@@ -596,7 +541,7 @@ def _validate_representations(
     representations: Sequence[QuasiprobabilityRepresentation],
     /,
 ) -> None:
-    r"""Reject a representation list that does not match the circuit."""
+    r"""Validate circuit quasi-probability representations."""
     if not representations:
         raise ValueError(
             "quasiprobabilities must contain at least one representation."

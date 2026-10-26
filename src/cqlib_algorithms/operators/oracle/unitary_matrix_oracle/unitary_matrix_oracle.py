@@ -14,9 +14,8 @@
 
 References
 ----------
-Krol, A. M., Al-Ars, Z. (2024). Beyond Quantum Shannon: Circuit
-Construction for General n-Qubit Gates Based on Block ZXZ-Decomposition.
-arXiv:2403.13692.
+[1] Krol, A. M., Al-Ars, Z. (2024). Beyond Quantum Shannon: Circuit Construction for
+    General n-Qubit Gates Based on Block ZXZ-Decomposition. arXiv:2403.13692.
 """
 
 from __future__ import annotations
@@ -33,8 +32,8 @@ from ._synthesis import synthesize_unitary_matrix_circuit
 from ._synthesis._common import assert_square_unitary, num_qubits_from_matrix
 from ._validation import (
     allclose_up_to_global_phase,
+    normalize_atol,
     reconstruction_error_norm,
-    validate_atol,
 )
 
 
@@ -47,25 +46,19 @@ class UnitaryMatrixOracle:
     recursive synthesis terminates at one- and two-qubit leaves using the
     native ``cqlib`` numeric unitary decomposers.
 
-    Parameters
-    ----------
-    unitary
-        Target unitary matrix with shape ``(2**n, 2**n)``.
-    atol
-        Non-negative absolute tolerance used for validation and the optional
-        reconstruction check.
-    validate
-        Whether to verify the synthesized circuit matrix against ``unitary``
-        up to global phase before storing the snapshot.
+    Args:
+        unitary: Target unitary matrix with shape ``(2**n, 2**n)``.
+        atol: Non-negative absolute tolerance used for validation and the optional
+            reconstruction check.
+        validate: Whether to verify the synthesized circuit matrix against ``unitary``
+            up to global phase before storing the snapshot.
 
-    Raises
-    ------
-    TypeError
-        If ``unitary`` is not a NumPy array, or if ``atol`` / ``validate`` have
-        invalid types.
-    ValueError
-        If ``unitary`` is not a finite square power-of-two unitary, or if the
-        validated reconstruction exceeds ``atol``.
+    Raises:
+        TypeError: If ``unitary`` is not a NumPy array, or if ``atol`` / ``validate`` have
+            invalid types.
+        ValueError: If ``unitary`` is not a finite square power-of-two unitary, or if the
+            validated reconstruction exceeds ``atol``.
+
     """
 
     __slots__ = ("_atol", "_circuit", "_unitary", "_validate")
@@ -88,7 +81,7 @@ class UnitaryMatrixOracle:
             raise TypeError("validate must be a bool")
 
         normalized = np.asarray(unitary, dtype=np.complex128).copy()
-        tolerance = validate_atol(atol)
+        tolerance = normalize_atol(atol)
         assert_square_unitary(normalized, atol=tolerance)
 
         circuit = synthesize_unitary_matrix_circuit(normalized, atol=tolerance)

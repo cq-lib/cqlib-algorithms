@@ -41,9 +41,9 @@ an executor.
 
 References
 ----------
-.. [1] W. J. Huggins, B. A. O'Gorman, N. C. Rubin, D. R. Hamel, H. Fu,
-   Y. Qiu, and K. B. Whaley, "Virtual distillation for quantum error
-   mitigation," Physical Review X 11, 041036, 2021. arXiv:2011.05165.
+[1] W. J. Huggins, B. A. O'Gorman, N. C. Rubin, D. R. Hamel, H. Fu, Y. Qiu, and K. B.
+    Whaley, "Virtual distillation for quantum error mitigation," Physical Review X 11,
+    041036, 2021. arXiv:2011.05165.
 """
 
 from __future__ import annotations
@@ -82,24 +82,17 @@ def construct_circuits(
     observable placed on the first copy yields
     :math:`\operatorname{Tr}(O\rho^M)`.
 
-    Parameters
-    ----------
-    circuit
-        Circuit whose expectation value is to be mitigated.
-    copies
-        Number of density-matrix copies :math:`M`, at least two.
+    Args:
+        circuit: Circuit whose expectation value is to be mitigated.
+        copies: Number of density-matrix copies :math:`M`, at least two.
 
-    Returns
-    -------
-    list[Circuit]
+    Returns:
         A single-element list holding the copy-swap circuit.
 
-    Raises
-    ------
-    TypeError
-        If ``copies`` is not an integer.
-    ValueError
-        If ``copies`` is below two.
+    Raises:
+        TypeError: If ``copies`` is not an integer.
+        ValueError: If ``copies`` is below two.
+
     """
     _validate_copies(copies)
     return [VirtualDistillation(circuit, copies).build_copy_swap_circuit()]
@@ -118,23 +111,17 @@ def combine_results(results: Sequence[EstimatorResult], /) -> float:
     where :math:`\mu_\text{num}` and :math:`\mu_\text{den}` are the two
     expectation values.
 
-    Parameters
-    ----------
-    results
-        Exactly two results, ordered numerator first and denominator second.
+    Args:
+        results: Exactly two results, ordered numerator first and denominator second.
 
-    Returns
-    -------
-    float
+    Returns:
         The distilled expectation value.
 
-    Raises
-    ------
-    TypeError
-        If an entry is not an :class:`EstimatorResult`.
-    ValueError
-        If ``results`` does not hold exactly two entries, or if the
-        denominator expectation is zero so the ratio is undefined.
+    Raises:
+        TypeError: If an entry is not an :class:`EstimatorResult`.
+        ValueError: If ``results`` does not hold exactly two entries, or if the
+            denominator expectation is zero so the ratio is undefined.
+
     """
     if len(results) != 2:
         raise ValueError(
@@ -179,45 +166,32 @@ def execute_with_vd(
     error only while the fidelity of :math:`\rho` with the ideal state exceeds
     one half; above that error rate the ordering of the components of
     :math:`\rho` reverses and the estimate is driven away from the ideal value.
+    The method also assumes independent noise across copies; correlated noise
+    shared by the copies invalidates the correction model.
 
-    Parameters
-    ----------
-    circuit
-        Circuit whose expectation value is to be mitigated.
-    executor
-        Execution backend supplying the expectation surface.
-    observable
-        Observable to estimate, acting on exactly the circuit's qubits.
-    copies
-        Number of density-matrix copies :math:`M`, at least two. Larger values
-        suppress the error more strongly but widen the circuit to
-        :math:`Mn + 1` qubits.
-    shots_numerator
-        Shot count for the numerator observable, at least one.
-    shots_denominator
-        Shot count for the denominator observable, at least one. An odd count
-        keeps the estimated moment from vanishing identically.
-    seed
-        Non-negative seed of the sampled numerator and denominator, or
-        ``None`` for fresh randomness. The two measurements draw from separate
-        child seeds, so one value reproduces the whole estimate.
+    Args:
+        circuit: Circuit whose expectation value is to be mitigated.
+        executor: Execution backend supplying the expectation surface.
+        observable: Observable to estimate, acting on exactly the circuit's qubits.
+        copies: Number of density-matrix copies :math:`M`, at least two. Larger values
+            suppress the error more strongly but widen the circuit to
+            :math:`Mn + 1` qubits.
+        shots_numerator: Shot count for the numerator observable, at least one.
+        shots_denominator: Shot count for the denominator observable, at least one. An odd count
+            keeps the estimated moment from vanishing identically.
+        seed: Non-negative seed of the sampled numerator and denominator, or
+            ``None`` for fresh randomness. The two measurements draw from separate
+            child seeds, so one value reproduces the whole estimate.
 
-    Returns
-    -------
-    float
+    Returns:
         The distilled expectation value.
 
-    Raises
-    ------
-    TypeError
-        If ``copies``, ``shots_numerator``, or ``shots_denominator`` is not an
-        integer, or if ``seed`` is neither an integer nor ``None``.
-    ValueError
-        If ``copies`` is below two, either shot count is below one, or ``seed``
-        is negative.
-    Warning
-        The method assumes the two copies are subject to independent noise; a
-        correlated noise channel shared by both copies voids the correction.
+    Raises:
+        TypeError: If ``copies``, ``shots_numerator``, or ``shots_denominator`` is not an
+            integer, or if ``seed`` is neither an integer nor ``None``.
+        ValueError: If ``copies`` is below two, either shot count is below one, or ``seed``
+            is negative.
+
     """
     wrapped = vd_executor(
         executor,
@@ -247,33 +221,23 @@ def vd_executor(
     expectation value, so it replaces the expectation surface while leaving
     sampling untouched.
 
-    Parameters
-    ----------
-    executor
-        Execution backend to wrap.
-    copies
-        Number of density-matrix copies :math:`M`, at least two.
-    shots_numerator
-        Shot count bound to the numerator observable, at least one.
-    shots_denominator
-        Shot count bound to the denominator observable, at least one.
-    seed
-        Non-negative seed of the sampled numerator and denominator, or
-        ``None`` to defer to the request's own seed.
+    Args:
+        executor: Execution backend to wrap.
+        copies: Number of density-matrix copies :math:`M`, at least two.
+        shots_numerator: Shot count bound to the numerator observable, at least one.
+        shots_denominator: Shot count bound to the denominator observable, at least one.
+        seed: Non-negative seed of the sampled numerator and denominator, or
+            ``None`` to defer to the request's own seed.
 
-    Returns
-    -------
-    QemExecutor
+    Returns:
         Executor whose expectation surface applies virtual distillation.
 
-    Raises
-    ------
-    TypeError
-        If ``copies``, ``shots_numerator``, or ``shots_denominator`` is not an
-        integer, or if ``seed`` is neither an integer nor ``None``.
-    ValueError
-        If ``copies`` is below two, either shot count is below one, or ``seed``
-        is negative.
+    Raises:
+        TypeError: If ``copies``, ``shots_numerator``, or ``shots_denominator`` is not an
+            integer, or if ``seed`` is neither an integer nor ``None``.
+        ValueError: If ``copies`` is below two, either shot count is below one, or ``seed``
+            is negative.
+
     """
     _validate_copies(copies)
     _validate_shots(shots_numerator, "shots_numerator")
@@ -297,20 +261,15 @@ def vd_executor(
 class _VdEstimator(Estimator):
     r"""Expectation surface that distils the moment ratio of a request.
 
-    Parameters
-    ----------
-    executor
-        Execution backend supplying the expectation surface of the copy-swap
-        circuit.
-    copies
-        Number of density-matrix copies :math:`M`, at least two.
-    shots_numerator
-        Shot count bound to the numerator observable, at least one.
-    shots_denominator
-        Shot count bound to the denominator observable, at least one.
-    seed
-        Non-negative seed of the sampled numerator and denominator, or
-        ``None`` to defer to the request's own seed.
+    Args:
+        executor: Execution backend supplying the expectation surface of the copy-swap
+            circuit.
+        copies: Number of density-matrix copies :math:`M`, at least two.
+        shots_numerator: Shot count bound to the numerator observable, at least one.
+        shots_denominator: Shot count bound to the denominator observable, at least one.
+        seed: Non-negative seed of the sampled numerator and denominator, or
+            ``None`` to defer to the request's own seed.
+
     """
 
     __slots__ = ("_copies", "_executor", "_seed", "_shots_denominator", "_shots_numerator")
@@ -391,7 +350,7 @@ class _VdEstimator(Estimator):
 
 
 def _validate_copies(copies: int, /) -> None:
-    r"""Reject a copy count that is not an integer of at least two."""
+    r"""Validate a virtual-distillation copy count."""
     if isinstance(copies, bool) or not isinstance(copies, int):
         raise TypeError("copies must be an integer")
     if copies < 2:
@@ -399,7 +358,7 @@ def _validate_copies(copies: int, /) -> None:
 
 
 def _validate_shots(shots: int, name: str, /) -> None:
-    r"""Reject a shot count that is not a positive integer."""
+    r"""Validate a positive shot count."""
     if isinstance(shots, bool) or not isinstance(shots, int):
         raise TypeError(f"{name} must be an integer")
     if shots < 1:
@@ -407,7 +366,7 @@ def _validate_shots(shots: int, name: str, /) -> None:
 
 
 def _validate_seed(seed: int | None, /) -> None:
-    r"""Reject a seed that is neither an integer nor ``None``."""
+    r"""Validate an optional random seed."""
     if seed is None:
         return
     if isinstance(seed, bool) or not isinstance(seed, int):

@@ -36,6 +36,15 @@ closed-form route reads a single scalar noise level and never touches a
 channel object; the matrix route reads a real channel, converts it to
 Kraus operators, and solves for the weights. The two agree exactly on
 depolarizing noise, which makes the pair a built-in cross-check.
+
+References
+----------
+[1] K. Temme, S. Bravyi, and J. M. Gambetta, "Error mitigation for short-depth quantum
+    circuits," Physical Review Letters 119, 180509, 2017. arXiv:1612.02058.
+[2] S. Endo, S. C. Benjamin, and Y. Li, "Practical quantum error mitigation for
+    near-future applications," Physical Review X 8, 031027, 2018. arXiv:1712.09271.
+[3] R. Takagi, "Optimal resource cost for error mitigation," Physical Review Research 3,
+    033178, 2021. arXiv:2006.12509.
 """
 
 from __future__ import annotations
@@ -73,20 +82,15 @@ _PAULI_MATRICES = {
 class QuasiprobabilityRepresentation:
     r"""Quasi-probability expansion of one ideal operation.
 
-    Parameters
-    ----------
-    ideal
-        The ideal instruction being decomposed.
-    basis
-        The Pauli corrections to append after ``ideal``. ``basis[0]`` is the
-        identity, so the first term is the ideal operation itself.
-    coefficients
-        The signed weights :math:`\eta_\alpha`, aligned with ``basis``.
+    Args:
+        ideal: The ideal instruction being decomposed.
+        basis: The Pauli corrections to append after ``ideal``. ``basis[0]`` is the
+            identity, so the first term is the ideal operation itself.
+        coefficients: The signed weights :math:`\eta_\alpha`, aligned with ``basis``.
 
-    Raises
-    ------
-    ValueError
-        If ``basis`` and ``coefficients`` have different lengths.
+    Raises:
+        ValueError: If ``basis`` and ``coefficients`` have different lengths.
+
     """
 
     ideal: Instruction
@@ -114,37 +118,20 @@ def quasiprobability_of_operation(
 ) -> QuasiprobabilityRepresentation:
     r"""Expand one instruction against an explicit noise channel.
 
-    Parameters
-    ----------
-    instruction
-        Ideal storage instruction. Parametric gates must already carry
-        their bound parameters, since a storage instruction owns none.
-    noise
-        Noise channel acting on the same number of qubits as ``instruction``.
+    Args:
+        instruction: Ideal storage instruction. Parametric gates must already carry
+            their bound parameters, since a storage instruction owns none.
+        noise: Noise channel acting on the same number of qubits as ``instruction``.
 
-    Returns
-    -------
-    QuasiprobabilityRepresentation
+    Returns:
         Expansion whose basis is the identity followed by the one- and
-        two-qubit Pauli corrections, in Little-Endian qubit order.
+            two-qubit Pauli corrections, in Little-Endian qubit order.
 
-    Raises
-    ------
-    TypeError
-        If ``noise`` is neither a :class:`SingleQubitNoise` nor a
-        :class:`TwoQubitNoise`.
-    ValueError
-        If ``instruction`` is not a standard gate with a matrix, or if the
-        channel and the instruction act on different numbers of qubits.
-
-    References
-    ----------
-    .. [1] K. Temme, S. Bravyi, and J. M. Gambetta,
-       "Error mitigation for short-depth quantum circuits,"
-       Physical Review Letters 119, 180509, 2017. arXiv:1612.02058.
-    .. [2] S. Endo, S. C. Benjamin, and Y. Li,
-       "Practical quantum error mitigation for near-future applications,"
-       Physical Review X 8, 031027, 2018. arXiv:1712.09271.
+    Raises:
+        TypeError: If ``noise`` is neither a :class:`SingleQubitNoise` nor a
+            :class:`TwoQubitNoise`.
+        ValueError: If ``instruction`` is not a standard gate with a matrix, or if the
+            channel and the instruction act on different numbers of qubits.
     """
     # The channel enters only through its Kraus operators. Each Pauli
     # correction gives one implementable basis channel with Kraus operators
@@ -186,34 +173,18 @@ def quasiprobability_of_circuit(
 ) -> list[QuasiprobabilityRepresentation]:
     r"""Expand every instruction against a ``NoiseModel``.
 
-    Parameters
-    ----------
-    circuit
-        Circuit whose operations are expanded.
-    noise_model
-        Noise model holding a channel for every single- and two-qubit gate.
-        Measurements are skipped, since noise is attached to gates only.
+    Args:
+        circuit: Circuit whose operations are expanded.
+        noise_model: Noise model holding a channel for every single- and two-qubit gate.
+            Measurements are skipped, since noise is attached to gates only.
 
-    Returns
-    -------
-    list[QuasiprobabilityRepresentation]
+    Returns:
         One expansion per non-measurement operation, in circuit order.
 
-    Raises
-    ------
-    ValueError
-        If an operation is not a standard gate with an explicit gate
-        definition, acts on more than two qubits, or has no channel
-        registered in ``noise_model``.
-
-    References
-    ----------
-    .. [1] K. Temme, S. Bravyi, and J. M. Gambetta,
-       "Error mitigation for short-depth quantum circuits,"
-       Physical Review Letters 119, 180509, 2017. arXiv:1612.02058.
-    .. [2] S. Endo, S. C. Benjamin, and Y. Li,
-       "Practical quantum error mitigation for near-future applications,"
-       Physical Review X 8, 031027, 2018. arXiv:1712.09271.
+    Raises:
+        ValueError: If an operation is not a standard gate with an explicit gate
+            definition, acts on more than two qubits, or has no channel
+            registered in ``noise_model``.
     """
     # A channel is looked up by gate definition and qubit indices. Noise is
     # keyed by the unparameterised gate, so a parametric gate is matched by its
@@ -252,34 +223,18 @@ def depolarizing_quasiprobability_of_operation(
     with :math:`\epsilon = \frac{4}{3}\,\text{noise\_level}` for one qubit
     and :math:`\epsilon = \frac{16}{15}\,\text{noise\_level}` for two.
 
-    Parameters
-    ----------
-    instruction
-        Ideal standard-gate instruction, acting on one or two qubits.
-    noise_level
-        Depolarizing strength of the device, in :math:`[0, 1)`.
+    Args:
+        instruction: Ideal standard-gate instruction, acting on one or two qubits.
+        noise_level: Depolarizing strength of the device, in :math:`[0, 1)`.
 
-    Returns
-    -------
-    QuasiprobabilityRepresentation
+    Returns:
         Expansion whose basis is the identity followed by the Pauli
-        corrections, in Little-Endian qubit order.
+            corrections, in Little-Endian qubit order.
 
-    Raises
-    ------
-    ValueError
-        If ``instruction`` is not a standard gate, acts on more than two
-        qubits, or has a noise level for which :math:`\epsilon \ge 1` and the
-        closed form therefore diverges.
-
-    References
-    ----------
-    .. [1] K. Temme, S. Bravyi, and J. M. Gambetta,
-       "Error mitigation for short-depth quantum circuits,"
-       Physical Review Letters 119, 180509, 2017. arXiv:1612.02058.
-    .. [2] R. Takagi,
-       "Optimal resource cost for error mitigation,"
-       Physical Review Research 3, 033178, 2021. arXiv:2006.12509.
+    Raises:
+        ValueError: If ``instruction`` is not a standard gate, acts on more than two
+            qubits, or has a noise level for which :math:`\epsilon \ge 1` and the
+            closed form therefore diverges.
     """
     num_qubits = _instruction_num_qubits(instruction)
     coefficients = _depolarizing_coefficients(num_qubits, noise_level)
@@ -302,32 +257,16 @@ def depolarizing_quasiprobability_of_circuit(
     expansion is positional: the returned list follows circuit order, so it
     stays aligned with the operations themselves even when a gate repeats.
 
-    Parameters
-    ----------
-    circuit
-        Circuit whose operations are expanded.
-    noise_level
-        Depolarizing strength of the device, in :math:`[0, 1)`.
+    Args:
+        circuit: Circuit whose operations are expanded.
+        noise_level: Depolarizing strength of the device, in :math:`[0, 1)`.
 
-    Returns
-    -------
-    list[QuasiprobabilityRepresentation]
+    Returns:
         One expansion per non-measurement operation, in circuit order.
 
-    Raises
-    ------
-    ValueError
-        If an operation is not a standard gate, acts on more than two
-        qubits, or has a noise level for which the closed form diverges.
-
-    References
-    ----------
-    .. [1] K. Temme, S. Bravyi, and J. M. Gambetta,
-       "Error mitigation for short-depth quantum circuits,"
-       Physical Review Letters 119, 180509, 2017. arXiv:1612.02058.
-    .. [2] R. Takagi,
-       "Optimal resource cost for error mitigation,"
-       Physical Review Research 3, 033178, 2021. arXiv:2006.12509.
+    Raises:
+        ValueError: If an operation is not a standard gate, acts on more than two
+            qubits, or has a noise level for which the closed form diverges.
     """
     representations: list[QuasiprobabilityRepresentation] = []
     for operation in circuit.operations:
@@ -345,10 +284,9 @@ def depolarizing_quasiprobability_of_circuit(
 def _instruction_num_qubits(instruction: Instruction, /) -> int:
     """Return the qubit count of a standard-gate instruction.
 
-    Raises
-    ------
-    ValueError
-        If the instruction carries no standard gate definition.
+    Raises:
+        ValueError: If the instruction carries no standard gate definition.
+
     """
     gate = instruction.standard_gate
     if gate is None:
@@ -362,10 +300,9 @@ def _instruction_num_qubits(instruction: Instruction, /) -> int:
 def _instruction_matrix(instruction: Instruction, /) -> np.ndarray:
     """Return the unitary matrix of a standard-gate instruction.
 
-    Raises
-    ------
-    ValueError
-        If the instruction carries no standard gate definition.
+    Raises:
+        ValueError: If the instruction carries no standard gate definition.
+
     """
     gate = instruction.standard_gate
     if gate is None:
@@ -380,11 +317,10 @@ def _instruction_matrix(instruction: Instruction, /) -> np.ndarray:
 def _storage_instruction(operation: ValueOperation, /) -> Instruction:
     """Return the storage instruction behind a circuit operation.
 
-    Raises
-    ------
-    ValueError
-        If the operation is classical control flow, which has no gate
-        definition and therefore no quasi-probability decomposition.
+    Raises:
+        ValueError: If the operation is classical control flow, which has no gate
+            definition and therefore no quasi-probability decomposition.
+
     """
     instruction = operation.instruction.instruction
     if instruction is None:
@@ -402,11 +338,10 @@ def _lookup_noise(
 ) -> SingleQubitNoise | TwoQubitNoise:
     """Return the first channel registered for one circuit operation.
 
-    Raises
-    ------
-    ValueError
-        If the operation is not a standard gate on one or two qubits, or if
-        the noise model registers no channel for it.
+    Raises:
+        ValueError: If the operation is not a standard gate on one or two qubits, or if
+            the noise model registers no channel for it.
+
     """
     instruction = _storage_instruction(operation)
     gate = instruction.standard_gate
@@ -446,10 +381,9 @@ def _pauli_strings(num_qubits: int, /) -> tuple[str, ...]:
     the first qubit, then those acting on the second, then the two-qubit
     corrections.
 
-    Raises
-    ------
-    ValueError
-        If ``num_qubits`` is not one or two.
+    Raises:
+        ValueError: If ``num_qubits`` is not one or two.
+
     """
     if num_qubits == 1:
         return ("I", "X", "Y", "Z")
@@ -517,12 +451,11 @@ def _depolarizing_epsilon(num_qubits: int, noise_level: float, /) -> float:
     :math:`\epsilon = 4\epsilon_{\text{1q}}/3` for one qubit and
     :math:`\epsilon = 16\epsilon_{\text{2q}}/15` for two.
 
-    Raises
-    ------
-    ValueError
-        If the noise level is not finite or negative, if the instruction
-        acts on more than two qubits, or if the implied :math:`\epsilon`
-        reaches one, where the closed form diverges.
+    Raises:
+        ValueError: If the noise level is not finite or negative, if the instruction
+            acts on more than two qubits, or if the implied :math:`\epsilon`
+            reaches one, where the closed form diverges.
+
     """
     if not np.isfinite(noise_level) or noise_level < 0.0:
         raise ValueError(

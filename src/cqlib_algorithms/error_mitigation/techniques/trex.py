@@ -32,9 +32,8 @@ orchestrate them on an executor.
 
 References
 ----------
-.. [1] E. van den Berg, Z. K. Minev, and K. Temme, "Model-free readout-error
-   mitigation for quantum expectation values," Physical Review A 105,
-   032620, 2022. arXiv:2012.09738.
+[1] E. van den Berg, Z. K. Minev, and K. Temme, "Model-free readout-error mitigation for
+    quantum expectation values," Physical Review A 105, 032620, 2022. arXiv:2012.09738.
 """
 
 from __future__ import annotations
@@ -93,28 +92,20 @@ def construct_circuits(
     module draw the table once and thread it through both stages instead, so
     they never depend on reproduction.
 
-    Parameters
-    ----------
-    circuit
-        Circuit whose expectation value is to be mitigated.
-    num_randomizations
-        Number of independent twirls to build, at least one.
-    seed
-        Seed of the twirl draw, or ``None`` for a fresh draw.
+    Args:
+        circuit: Circuit whose expectation value is to be mitigated.
+        num_randomizations: Number of independent twirls to build, at least one.
+        seed: Seed of the twirl draw, or ``None`` for a fresh draw.
 
-    Returns
-    -------
-    list[Circuit]
+    Returns:
         ``num_randomizations`` twirled circuits followed by
-        ``num_randomizations`` calibration circuits.
+            ``num_randomizations`` calibration circuits.
 
-    Raises
-    ------
-    TypeError
-        If ``num_randomizations`` is not an integer, or if ``seed`` is neither
-        an integer nor ``None``.
-    ValueError
-        If ``num_randomizations`` is below one.
+    Raises:
+        TypeError: If ``num_randomizations`` is not an integer, or if ``seed`` is neither
+            an integer nor ``None``.
+        ValueError: If ``num_randomizations`` is below one.
+
     """
     _validate_num_randomizations(num_randomizations)
     _validate_seed(seed)
@@ -148,32 +139,24 @@ def combine_results(
     symmetrizes the error down to. The observable must be diagonal in the
     :math:`Z` basis, the restriction every sampling surface imposes.
 
-    Parameters
-    ----------
-    results
-        Measured counts of the circuits returned by :func:`construct_circuits`,
-        in that order: the ``R`` twirled results first, then the ``R``
-        calibration results.
-    twirls
-        The ``R`` per-randomization bit tables, each holding one bit per
-        qubit, in the same order used to build the circuits.
-    observable
-        Observable to estimate. It must be diagonal in the :math:`Z` basis,
-        that is, a sum of :math:`Z` and identity products.
+    Args:
+        results: Measured counts of the circuits returned by :func:`construct_circuits`,
+            in that order: the ``R`` twirled results first, then the ``R``
+            calibration results.
+        twirls: The ``R`` per-randomization bit tables, each holding one bit per
+            qubit, in the same order used to build the circuits.
+        observable: Observable to estimate. It must be diagonal in the :math:`Z` basis,
+            that is, a sum of :math:`Z` and identity products.
 
-    Returns
-    -------
-    float
+    Returns:
         Mitigated expectation value.
 
-    Raises
-    ------
-    TypeError
-        If an entry of ``results`` is not a :class:`cqlib.device.ExecutionResult`.
-    ValueError
-        If ``observable`` is not diagonal in the :math:`Z` basis, if ``twirls``
-        is empty or a row has the wrong width, or if ``results`` does not hold
-        exactly two entries per twirl.
+    Raises:
+        TypeError: If an entry of ``results`` is not a :class:`cqlib.device.ExecutionResult`.
+        ValueError: If ``observable`` is not diagonal in the :math:`Z` basis, if ``twirls``
+            is empty or a row has the wrong width, or if ``results`` does not hold
+            exactly two entries per twirl.
+
     """
     _validate_z_diagonal(observable)
     num_randomizations = len(twirls)
@@ -261,35 +244,24 @@ def execute_with_trex(
                [EstimatorRequest(c, obs, shots=s)]
            )[0].expectation
 
-    Parameters
-    ----------
-    circuit
-        Circuit whose expectation value is to be mitigated.
-    executor
-        Execution backend supplying the sampling surface.
-    observable
-        Observable to estimate. It must be diagonal in the :math:`Z` basis.
-    shots
-        Shot count for every twirled and calibration circuit.
-    num_randomizations
-        Number of independent twirls to average over.
-    seed
-        Seed of the twirl draw and the measurements, or ``None`` for fresh
-        randomness.
+    Args:
+        circuit: Circuit whose expectation value is to be mitigated.
+        executor: Execution backend supplying the sampling surface.
+        observable: Observable to estimate. It must be diagonal in the :math:`Z` basis.
+        shots: Shot count for every twirled and calibration circuit.
+        num_randomizations: Number of independent twirls to average over.
+        seed: Seed of the twirl draw and the measurements, or ``None`` for fresh
+            randomness.
 
-    Returns
-    -------
-    float
+    Returns:
         Mitigated expectation value.
 
-    Raises
-    ------
-    TypeError
-        If ``shots`` or ``num_randomizations`` is not an integer, or if
-        ``seed`` is neither an integer nor ``None``.
-    ValueError
-        If ``shots`` or ``num_randomizations`` is below one, or if
-        ``observable`` is not diagonal in the :math:`Z` basis.
+    Raises:
+        TypeError: If ``shots`` or ``num_randomizations`` is not an integer, or if
+            ``seed`` is neither an integer nor ``None``.
+        ValueError: If ``shots`` or ``num_randomizations`` is below one, or if
+            ``observable`` is not diagonal in the :math:`Z` basis.
+
     """
     wrapped = trex_executor(
         executor,
@@ -317,30 +289,21 @@ def trex_executor(
     value, so it replaces the expectation surface while leaving sampling
     untouched.
 
-    Parameters
-    ----------
-    executor
-        Execution backend to wrap.
-    shots
-        Shot count bound to every twirled and calibration circuit.
-    num_randomizations
-        Number of independent twirls averaged for every request.
-    seed
-        Seed of the twirl draw and the measurements, or ``None`` to defer to
-        the request's own seed.
+    Args:
+        executor: Execution backend to wrap.
+        shots: Shot count bound to every twirled and calibration circuit.
+        num_randomizations: Number of independent twirls averaged for every request.
+        seed: Seed of the twirl draw and the measurements, or ``None`` to defer to
+            the request's own seed.
 
-    Returns
-    -------
-    QemExecutor
+    Returns:
         Executor whose expectation surface applies readout twirling.
 
-    Raises
-    ------
-    TypeError
-        If ``shots`` or ``num_randomizations`` is not an integer, or if
-        ``seed`` is neither an integer nor ``None``.
-    ValueError
-        If ``shots`` or ``num_randomizations`` is below one.
+    Raises:
+        TypeError: If ``shots`` or ``num_randomizations`` is not an integer, or if
+            ``seed`` is neither an integer nor ``None``.
+        ValueError: If ``shots`` or ``num_randomizations`` is below one.
+
     """
     estimator = _TrexEstimator(
         executor,
@@ -358,17 +321,13 @@ def trex_executor(
 class _TrexEstimator(Estimator):
     r"""Expectation surface that twirls the readout and divides by calibration.
 
-    Parameters
-    ----------
-    executor
-        Execution backend supplying the sampling surface.
-    shots
-        Shot count bound to every twirled and calibration circuit.
-    num_randomizations
-        Number of independent twirls averaged for every request.
-    seed
-        Seed of the twirl draw and the measurements, or ``None`` to defer to
-        the request's own seed.
+    Args:
+        executor: Execution backend supplying the sampling surface.
+        shots: Shot count bound to every twirled and calibration circuit.
+        num_randomizations: Number of independent twirls averaged for every request.
+        seed: Seed of the twirl draw and the measurements, or ``None`` to defer to
+            the request's own seed.
+
     """
 
     __slots__ = ("_executor", "_num_randomizations", "_seed", "_shots")
@@ -440,20 +399,15 @@ def _build_circuits(
 ) -> list[Circuit]:
     r"""Build the twirled circuits followed by the calibration circuits.
 
-    Parameters
-    ----------
-    circuit
-        Circuit whose expectation value is to be mitigated.
-    twirls
-        Per-randomization bit tables, each holding one bit per qubit.
-    twirl_pauli
-        Pauli placed on every qubit whose twirl bit is one.
+    Args:
+        circuit: Circuit whose expectation value is to be mitigated.
+        twirls: Per-randomization bit tables, each holding one bit per qubit.
+        twirl_pauli: Pauli placed on every qubit whose twirl bit is one.
 
-    Returns
-    -------
-    list[Circuit]
+    Returns:
         One twirled copy and one calibration circuit per twirl, twirled
-        circuits first.
+            circuits first.
+
     """
     num_qubits = circuit.num_qubits
     twirled = [
@@ -476,21 +430,15 @@ def _apply_twirl(
 ) -> Circuit:
     r"""Append one Pauli per set twirl bit, keeping the circuit's global phase.
 
-    Parameters
-    ----------
-    circuit
-        Circuit receiving the Paulis.
-    row
-        One bit per qubit; a set bit puts ``twirl_pauli`` on that qubit.
-    num_qubits
-        Number of qubits in ``row`` and in ``circuit``.
-    twirl_pauli
-        Pauli placed on every qubit whose twirl bit is one.
+    Args:
+        circuit: Circuit receiving the Paulis.
+        row: One bit per qubit; a set bit puts ``twirl_pauli`` on that qubit.
+        num_qubits: Number of qubits in ``row`` and in ``circuit``.
+        twirl_pauli: Pauli placed on every qubit whose twirl bit is one.
 
-    Returns
-    -------
-    Circuit
+    Returns:
         The rebuilt circuit with the twirl Paulis appended.
+
     """
     paulis: list[ValueOperation] = []
     for qubit in range(num_qubits):
@@ -510,20 +458,15 @@ def _draw_twirls(
 ) -> np.ndarray:
     r"""Draw one independent twirl bit per qubit per randomization.
 
-    Parameters
-    ----------
-    num_randomizations
-        Number of randomizations, one row per twirl.
-    num_qubits
-        Number of qubits, one column per qubit.
-    seed
-        Seed of the draw, or ``None`` for entropy.
+    Args:
+        num_randomizations: Number of randomizations, one row per twirl.
+        num_qubits: Number of qubits, one column per qubit.
+        seed: Seed of the draw, or ``None`` for entropy.
 
-    Returns
-    -------
-    numpy.ndarray
+    Returns:
         An integer array of shape ``(num_randomizations, num_qubits)`` holding
-        zeros and ones.
+            zeros and ones.
+
     """
     rng = np.random.default_rng(seed)
     return rng.integers(0, 2, size=(num_randomizations, num_qubits))
@@ -536,20 +479,15 @@ def _xor_distribution(
 ) -> dict[str, float]:
     r"""Flip the recorded bitstring of every set twirl bit and normalise.
 
-    Parameters
-    ----------
-    result
-        Sampled counts whose bitstrings are as wide as the circuit.
-    row
-        One bit per qubit; a set bit flips that qubit's recorded bit.
-    num_qubits
-        Width of the recorded bitstrings.
+    Args:
+        result: Sampled counts whose bitstrings are as wide as the circuit.
+        row: One bit per qubit; a set bit flips that qubit's recorded bit.
+        num_qubits: Width of the recorded bitstrings.
 
-    Returns
-    -------
-    dict[str, float]
+    Returns:
         The measured distribution after the classical un-twirl, keyed by
-        little-endian bitstring.
+            little-endian bitstring.
+
     """
     # cqlib bitstrings are little-endian, so qubit q is bit q of the integer
     # value of the bitstring and the whole flip is one XOR with a bit mask.
@@ -575,7 +513,7 @@ def _as_hamiltonian(observable: Hamiltonian | PauliString, /) -> Hamiltonian:
 
 
 def _validate_twirls(twirls: Sequence[Sequence[int]], num_qubits: int) -> None:
-    r"""Reject a twirl table that does not cover every qubit per row."""
+    r"""Validate a readout-twirl table."""
     for row in twirls:
         if len(row) != num_qubits:
             raise ValueError(
@@ -585,7 +523,7 @@ def _validate_twirls(twirls: Sequence[Sequence[int]], num_qubits: int) -> None:
 
 
 def _validate_num_randomizations(num_randomizations: int, /) -> None:
-    r"""Reject a variant count that is not a positive integer."""
+    r"""Validate a positive randomization count."""
     if isinstance(num_randomizations, bool) or not isinstance(
         num_randomizations, int
     ):
@@ -598,7 +536,7 @@ def _validate_num_randomizations(num_randomizations: int, /) -> None:
 
 
 def _validate_shots(shots: int, /) -> None:
-    r"""Reject a shot count that is not a positive integer."""
+    r"""Validate a positive shot count."""
     if isinstance(shots, bool) or not isinstance(shots, int):
         raise TypeError("shots must be an integer")
     if shots < 1:
@@ -606,7 +544,7 @@ def _validate_shots(shots: int, /) -> None:
 
 
 def _validate_seed(seed: int | None, /) -> None:
-    r"""Reject a seed that is neither an integer nor ``None``."""
+    r"""Validate an optional random seed."""
     if seed is None:
         return
     if isinstance(seed, bool) or not isinstance(seed, int):

@@ -34,12 +34,16 @@ any executor and can be exercised on their own.
 
 References
 ----------
-.. [1] F. B. Maciejewski, Z. Zimboras, and M. Oszmaniec, "Mitigation of readout
-   noise in near-term quantum devices by classical post-processing based on
-   detector tomography," Quantum 4, 257, 2020. arXiv:1907.08518.
-.. [2] S. Bravyi, S. Sheldon, A. Kandala, D. C. McKay, and J. M. Gambetta,
-   "Mitigating measurement errors in multiqubit experiments," Physical Review
-   A 103, 042605, 2021. arXiv:2006.14044.
+[1] F. B. Maciejewski, Z. Zimboras, and M. Oszmaniec, "Mitigation of readout noise in
+    near-term quantum devices by classical post-processing based on detector
+    tomography," Quantum 4, 257, 2020. arXiv:1907.08518.
+[2] S. Bravyi, S. Sheldon, A. Kandala, D. C. McKay, and J. M. Gambetta, "Mitigating
+    measurement errors in multiqubit experiments," Physical Review A 103, 042605, 2021.
+    arXiv:2006.14044.
+[3] J. Duchi, S. Shalev-Shwartz, Y. Singer, and T. Chandra, "Efficient projections onto
+    the l1-ball for learning in high dimensions," Proceedings of the 25th International
+    Conference on Machine Learning (ICML), pp. 272-279, 2008.
+    doi:10.1145/1390156.1390191.
 """
 
 from __future__ import annotations
@@ -81,18 +85,14 @@ _ILL_CONDITIONED_LIMIT = 1.0e4
 class ConfusionMatrix:
     r"""Per-qubit readout confusion data.
 
-    Parameters
-    ----------
-    per_qubit
-        One :class:`cqlib.device.ReadoutError` per qubit, ordered by qubit
-        index, each holding the two single-qubit flip rates of that qubit.
+    Args:
+        per_qubit: One :class:`cqlib.device.ReadoutError` per qubit, ordered by qubit
+            index, each holding the two single-qubit flip rates of that qubit.
 
-    Attributes
-    ----------
-    p0
-        Tuple of :math:`P(\text{read } 1 \mid \text{prepared } 0)` per qubit.
-    p1
-        Tuple of :math:`P(\text{read } 0 \mid \text{prepared } 1)` per qubit.
+    Attributes:
+        p0: Tuple of :math:`P(\text{read } 1 \mid \text{prepared } 0)` per qubit.
+        p1: Tuple of :math:`P(\text{read } 0 \mid \text{prepared } 1)` per qubit.
+
     """
 
     per_qubit: tuple[ReadoutError, ...]
@@ -133,32 +133,23 @@ def calibrate_readout(
     :math:`1 \to 0` transitions. Only the marginals are taken, since the
     uncorrelated model needs the single-qubit columns alone.
 
-    Parameters
-    ----------
-    executor
-        Execution backend supplying the sampling surface.
-    num_qubits
-        Number of qubits to calibrate.
-    shots
-        Shot count for each of the two calibration circuits.
-    seed
-        Seed of the two calibration measurements, or ``None`` for fresh
-        randomness. Each calibration circuit draws from its own child seed, so
-        one value reproduces the whole calibration.
+    Args:
+        executor: Execution backend supplying the sampling surface.
+        num_qubits: Number of qubits to calibrate.
+        shots: Shot count for each of the two calibration circuits.
+        seed: Seed of the two calibration measurements, or ``None`` for fresh
+            randomness. Each calibration circuit draws from its own child seed, so
+            one value reproduces the whole calibration.
 
-    Returns
-    -------
-    ConfusionMatrix
+    Returns:
         Estimated per-qubit readout errors.
 
-    Raises
-    ------
-    TypeError
-        If ``num_qubits`` or ``shots`` is not an integer, or if ``seed`` is
-        neither an integer nor ``None``.
-    ValueError
-        If ``num_qubits`` or ``shots`` is not positive, or if the executor
-        holds no sampling backend.
+    Raises:
+        TypeError: If ``num_qubits`` or ``shots`` is not an integer, or if ``seed`` is
+            neither an integer nor ``None``.
+        ValueError: If ``num_qubits`` or ``shots`` is not positive, or if the executor
+            holds no sampling backend.
+
     """
     if isinstance(num_qubits, bool) or not isinstance(num_qubits, int):
         raise TypeError("num_qubits must be an integer")
@@ -217,51 +208,32 @@ def mitigate_counts(
 ) -> np.ndarray:
     r"""Correct a measured count distribution for readout error.
 
-    Parameters
-    ----------
-    counts
-        Measured counts keyed by little-endian bitstring, the rightmost
-        character being qubit 0. Every key must be exactly
-        ``len(confusion.per_qubit)`` characters long.
-    confusion
-        Per-qubit readout errors describing the noise to invert.
-    post_select
-        Repair strategy for a corrected vector that leaves the probability
-        simplex. ``True`` screens out the negative entries and renormalises
-        the surviving mass; ``False`` projects the vector onto the simplex in
-        the Euclidean norm.
+    Args:
+        counts: Measured counts keyed by little-endian bitstring, the rightmost
+            character being qubit 0. Every key must be exactly
+            ``len(confusion.per_qubit)`` characters long.
+        confusion: Per-qubit readout errors describing the noise to invert.
+        post_select: Repair strategy for a corrected vector that leaves the probability
+            simplex. ``True`` screens out the negative entries and renormalises
+            the surviving mass; ``False`` projects the vector onto the simplex in
+            the Euclidean norm.
 
-    Returns
-    -------
-    numpy.ndarray
+    Returns:
         Corrected probability vector of length :math:`2^n`, indexed by the
-        integer value of the bitstring, so bit ``i`` of an index belongs to
-        qubit ``i``. Entries are non-negative and sum to one.
+            integer value of the bitstring, so bit ``i`` of an index belongs to
+            qubit ``i``. Entries are non-negative and sum to one.
 
-    Raises
-    ------
-    TypeError
-        If ``counts`` is not a mapping or ``confusion`` is not a
-        :class:`ConfusionMatrix`.
-    ValueError
-        If a count key has the wrong width or is not binary, if a count is
-        negative, if no shot was recorded, or if ``post_select`` screening
-        leaves no mass to normalise.
+    Raises:
+        TypeError: If ``counts`` is not a mapping or ``confusion`` is not a
+            :class:`ConfusionMatrix`.
+        ValueError: If a count key has the wrong width or is not binary, if a count is
+            negative, if no shot was recorded, or if ``post_select`` screening
+            leaves no mass to normalise.
 
-    Warns
-    -----
-    ConvergenceWarning
-        If the confusion matrix condition number exceeds
-        :data:`_ILL_CONDITIONED_LIMIT`, in which case the correction amplifies
-        measurement noise.
-
-    References
-    ----------
-    .. [1] J. Duchi, S. Shalev-Shwartz, Y. Singer, and T. Chandra,
-       "Efficient projections onto the l1-ball for learning in high
-       dimensions," Proceedings of the 25th International Conference on
-       Machine Learning (ICML), pp. 272-279, 2008.
-       doi:10.1145/1390156.1390191.
+    Warns:
+        ConvergenceWarning: If the confusion matrix condition number exceeds
+            :data:`_ILL_CONDITIONED_LIMIT`, in which case the correction amplifies
+            measurement noise.
     """
     if not isinstance(confusion, ConfusionMatrix):
         raise TypeError("confusion must be a ConfusionMatrix")
@@ -316,44 +288,30 @@ def execute_with_rem(
                [EstimatorRequest(c, obs, shots=s)]
            )[0].expectation
 
-    Parameters
-    ----------
-    circuit
-        Circuit whose expectation value is to be mitigated.
-    executor
-        Execution backend supplying the sampling surface.
-    observable
-        Observable to estimate. It must be diagonal in the :math:`Z` basis,
-        that is, a sum of :math:`Z` and identity products.
-    shots
-        Shot count for the sampled circuit.
-    confusion
-        Measured per-qubit readout errors, or ``None`` to synthesize the same
-        single-qubit model from ``p0`` and ``p1`` on every qubit.
-    p0
-        :math:`P(\text{read } 1 \mid \text{prepared } 0)`, used only when
-        ``confusion`` is ``None``.
-    p1
-        :math:`P(\text{read } 0 \mid \text{prepared } 1)`, used only when
-        ``confusion`` is ``None``.
-    post_select
-        Repair strategy for a corrected vector that leaves the simplex.
-    seed
-        Seed of the sampled circuit, or ``None`` for fresh randomness.
+    Args:
+        circuit: Circuit whose expectation value is to be mitigated.
+        executor: Execution backend supplying the sampling surface.
+        observable: Observable to estimate. It must be diagonal in the :math:`Z` basis,
+            that is, a sum of :math:`Z` and identity products.
+        shots: Shot count for the sampled circuit.
+        confusion: Measured per-qubit readout errors, or ``None`` to synthesize the same
+            single-qubit model from ``p0`` and ``p1`` on every qubit.
+        p0: :math:`P(\text{read } 1 \mid \text{prepared } 0)`, used only when
+            ``confusion`` is ``None``.
+        p1: :math:`P(\text{read } 0 \mid \text{prepared } 1)`, used only when
+            ``confusion`` is ``None``.
+        post_select: Repair strategy for a corrected vector that leaves the simplex.
+        seed: Seed of the sampled circuit, or ``None`` for fresh randomness.
 
-    Returns
-    -------
-    float
+    Returns:
         Mitigated expectation value.
 
-    Raises
-    ------
-    TypeError
-        If ``seed`` is neither an integer nor ``None``.
-    ValueError
-        If ``observable`` is not diagonal in the :math:`Z` basis, if
-        ``confusion`` does not cover the observable's qubits, or if the
-        executor holds no sampling backend.
+    Raises:
+        TypeError: If ``seed`` is neither an integer nor ``None``.
+        ValueError: If ``observable`` is not diagonal in the :math:`Z` basis, if
+            ``confusion`` does not cover the observable's qubits, or if the
+            executor holds no sampling backend.
+
     """
     wrapped = rem_executor(
         executor,
@@ -386,36 +344,25 @@ def rem_executor(
     correction consumes counts and produces an expectation value, so it
     replaces the expectation surface while leaving sampling untouched.
 
-    Parameters
-    ----------
-    executor
-        Execution backend to wrap.
-    shots
-        Shot count bound to every request.
-    confusion
-        Measured per-qubit readout errors, or ``None`` to synthesize the same
-        single-qubit model from ``p0`` and ``p1`` on every qubit.
-    p0
-        :math:`P(\text{read } 1 \mid \text{prepared } 0)`, used only when
-        ``confusion`` is ``None``.
-    p1
-        :math:`P(\text{read } 0 \mid \text{prepared } 1)`, used only when
-        ``confusion`` is ``None``.
-    post_select
-        Repair strategy for a corrected vector that leaves the simplex.
-    seed
-        Seed of the sampled circuit, or ``None`` to defer to the request's own
-        seed.
+    Args:
+        executor: Execution backend to wrap.
+        shots: Shot count bound to every request.
+        confusion: Measured per-qubit readout errors, or ``None`` to synthesize the same
+            single-qubit model from ``p0`` and ``p1`` on every qubit.
+        p0: :math:`P(\text{read } 1 \mid \text{prepared } 0)`, used only when
+            ``confusion`` is ``None``.
+        p1: :math:`P(\text{read } 0 \mid \text{prepared } 1)`, used only when
+            ``confusion`` is ``None``.
+        post_select: Repair strategy for a corrected vector that leaves the simplex.
+        seed: Seed of the sampled circuit, or ``None`` to defer to the request's own
+            seed.
 
-    Returns
-    -------
-    QemExecutor
+    Returns:
         Executor whose expectation surface applies readout-error mitigation.
 
-    Raises
-    ------
-    TypeError
-        If ``seed`` is neither an integer nor ``None``.
+    Raises:
+        TypeError: If ``seed`` is neither an integer nor ``None``.
+
     """
     _validate_seed(seed)
     estimator = _RemEstimator(
@@ -437,26 +384,19 @@ def rem_executor(
 class _RemEstimator(Estimator):
     r"""Expectation surface that samples counts and corrects readout error.
 
-    Parameters
-    ----------
-    executor
-        Execution backend supplying the sampling surface.
-    shots
-        Shot count bound to every request.
-    confusion
-        Measured per-qubit readout errors, or ``None`` to synthesize the same
-        single-qubit model from ``p0`` and ``p1`` on every qubit.
-    p0
-        :math:`P(\text{read } 1 \mid \text{prepared } 0)` of the synthesized
-        model.
-    p1
-        :math:`P(\text{read } 0 \mid \text{prepared } 1)` of the synthesized
-        model.
-    post_select
-        Repair strategy for a corrected vector that leaves the simplex.
-    seed
-        Seed of the sampled circuit, or ``None`` to defer to the request's own
-        seed.
+    Args:
+        executor: Execution backend supplying the sampling surface.
+        shots: Shot count bound to every request.
+        confusion: Measured per-qubit readout errors, or ``None`` to synthesize the same
+            single-qubit model from ``p0`` and ``p1`` on every qubit.
+        p0: :math:`P(\text{read } 1 \mid \text{prepared } 0)` of the synthesized
+            model.
+        p1: :math:`P(\text{read } 0 \mid \text{prepared } 1)` of the synthesized
+            model.
+        post_select: Repair strategy for a corrected vector that leaves the simplex.
+        seed: Seed of the sampled circuit, or ``None`` to defer to the request's own
+            seed.
+
     """
 
     __slots__ = (
@@ -558,19 +498,14 @@ def _marginal_ones(
 ) -> float:
     r"""Return the measured-one frequency of qubit ``index``.
 
-    Parameters
-    ----------
-    result
-        Sampled counts record whose bitstrings are as wide as the circuit.
-    index
-        Qubit whose marginal is extracted.
-    num_qubits
-        Width of the recorded bitstrings.
+    Args:
+        result: Sampled counts record whose bitstrings are as wide as the circuit.
+        index: Qubit whose marginal is extracted.
+        num_qubits: Width of the recorded bitstrings.
 
-    Returns
-    -------
-    float
+    Returns:
         Fraction of shots in which qubit ``index`` was read as one.
+
     """
     ones = 0
     for bitstring, count in result.counts.items():
@@ -624,17 +559,13 @@ def _apply_tensored_inverse(
 ) -> np.ndarray:
     r"""Apply the per-qubit inverses axis by axis without forming :math:`2^n`.
 
-    Parameters
-    ----------
-    observed
-        Probability vector indexed by bitstring value.
-    inverses
-        Pseudo-inverse of each qubit's confusion matrix, in qubit order.
+    Args:
+        observed: Probability vector indexed by bitstring value.
+        inverses: Pseudo-inverse of each qubit's confusion matrix, in qubit order.
 
-    Returns
-    -------
-    numpy.ndarray
+    Returns:
         Corrected probability vector in the same index convention.
+
     """
     num_qubits = len(inverses)
     tensored = observed.reshape((2,) * num_qubits)
@@ -650,10 +581,9 @@ def _apply_tensored_inverse(
 def _post_select(corrected: np.ndarray) -> np.ndarray:
     r"""Screen out negative entries and renormalise the remaining mass.
 
-    Raises
-    ------
-    ValueError
-        If every entry is non-positive, leaving nothing to normalise.
+    Raises:
+        ValueError: If every entry is non-positive, leaving nothing to normalise.
+
     """
     screened = np.clip(corrected, 0.0, None)
     mass = float(screened.sum())
@@ -713,12 +643,7 @@ def _warn_if_ill_conditioned(confusion: ConfusionMatrix) -> None:
 
 
 def _validate_z_diagonal(observable: Hamiltonian | PauliString) -> None:
-    r"""Reject observables that need measurements outside the :math:`Z` basis.
-
-    Raises
-    ------
-    ValueError
-        If any Pauli term carries an :math:`X` or :math:`Y` factor.
+    r"""Validate a Z-diagonal observable.
     """
     if isinstance(observable, PauliString):
         diagonal = observable.x_mask == 0
@@ -735,7 +660,7 @@ def _validate_z_diagonal(observable: Hamiltonian | PauliString) -> None:
 
 
 def _validate_seed(seed: int | None) -> None:
-    r"""Reject a seed that cannot initialise a random generator."""
+    r"""Validate an optional random seed."""
     if seed is None:
         return
     if isinstance(seed, bool) or not isinstance(seed, int):
@@ -747,24 +672,17 @@ def _validate_seed(seed: int | None) -> None:
 def _uniform_confusion(p0: float, p1: float, num_qubits: int) -> ConfusionMatrix:
     r"""Build the same single-qubit readout error for every qubit.
 
-    Parameters
-    ----------
-    p0
-        :math:`P(\text{read } 1 \mid \text{prepared } 0)`.
-    p1
-        :math:`P(\text{read } 0 \mid \text{prepared } 1)`.
-    num_qubits
-        Number of qubits to build.
+    Args:
+        p0: :math:`P(\text{read } 1 \mid \text{prepared } 0)`.
+        p1: :math:`P(\text{read } 0 \mid \text{prepared } 1)`.
+        num_qubits: Number of qubits to build.
 
-    Returns
-    -------
-    ConfusionMatrix
+    Returns:
         Uniform per-qubit readout errors.
 
-    Raises
-    ------
-    ValueError
-        If either rate lies outside ``[0, 1]``.
+    Raises:
+        ValueError: If either rate lies outside ``[0, 1]``.
+
     """
     error = ReadoutError(p_0_given_1=p1, p_1_given_0=p0)
     return ConfusionMatrix(per_qubit=tuple(error for _ in range(num_qubits)))

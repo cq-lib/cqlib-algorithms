@@ -30,6 +30,15 @@ the symmetric mirror form.  All ``degree + 1`` phases are free parameters,
 which is necessary to represent a generic complex polynomial.  The resulting
 full phase sequence can still be passed to
 :func:`._converters.convert_qsp_phases` to obtain QSVT ``W``-form phases.
+
+References
+----------
+[1] A. Gilyen, Y. Su, G. H. Low, and N. Wiebe, "Quantum singular value transformation
+    and beyond: exponential improvements for quantum matrix arithmetics," Proceedings of
+    the 51st Annual ACM SIGACT Symposium on Theory of Computing, pp. 193-204, 2019.
+    arXiv:1806.01838.
+[2] Y. Dong, X. Meng, K. B. Whaley, and L. Lin, "Efficient phase-factor evaluation in
+    quantum signal processing," Physical Review A 103, 042419, 2021. arXiv:2002.11649.
 """
 
 from __future__ import annotations
@@ -45,9 +54,9 @@ from ._numerics import (
     _COEFFICIENT_TOLERANCE,
     _chebyshev_nodes,
     _loss,
+    _normalize_positive_scalar,
     _run_bfgs,
     _validate_positive_integer,
-    _validate_positive_scalar,
     _wrap_phases,
 )
 
@@ -65,68 +74,46 @@ def solve_complex_qsp_phases(
     matrix to ``P(x)`` (Corollary 8).  All ``degree + 1`` phases are treated
     as free real parameters (no symmetry constraint).
 
-    Parameters
-    ----------
-    coefficients
-        Chebyshev-basis coefficients ``(c_0, c_1, ..., c_d)`` in ascending
-        order.  Coefficients may be complex.  The implied degree is the
-        highest non-zero coefficient index after trimming trailing entries
-        smaller than ``1e-14`` in magnitude.
-    tolerance
-        Target mean-squared error on the Chebyshev-node training grid.
-    max_iterations
-        Maximum number of BFGS iterations.
-    gradient_tolerance
-        Infinity-norm tolerance used to stop when the loss surface is locally
-        flat enough.
+    Args:
+        coefficients: Chebyshev-basis coefficients ``(c_0, c_1, ..., c_d)`` in ascending
+            order.  Coefficients may be complex.  The implied degree is the
+            highest non-zero coefficient index after trimming trailing entries
+            smaller than ``1e-14`` in magnitude.
+        tolerance: Target mean-squared error on the Chebyshev-node training grid.
+        max_iterations: Maximum number of BFGS iterations.
+        gradient_tolerance: Infinity-norm tolerance used to stop when the loss surface is locally
+            flat enough.
 
-    Returns
-    -------
-    numpy.ndarray
+    Returns:
         Full QSP phase sequence of length ``degree + 1`` (real-valued).
 
-    Raises
-    ------
-    TypeError
-        If coefficients or solver controls have invalid types.
-    ValueError
-        If the polynomial violates any of the Corollary 8 conditions on ``P``,
-        or if the solver controls are outside their valid ranges.
-    RuntimeError
-        If the internal quasi-Newton solve does not converge.
+    Raises:
+        TypeError: If coefficients or solver controls have invalid types.
+        ValueError: If the polynomial violates any of the Corollary 8 conditions on ``P``,
+            or if the solver controls are outside their valid ranges.
+        RuntimeError: If the internal quasi-Newton solve does not converge.
 
-    Notes
-    -----
-    The target follows Corollary 8 of Ref. [1]: the four conditions on ``P``
-    (parity; ``|P| <= 1`` on ``[-1, 1]``; ``|P| >= 1`` outside ``[-1, 1]``;
-    and ``P(ix) P*(ix) >= 1`` for ``x in R`` when ``d`` is even) are
-    necessary and sufficient for the existence of a phase sequence.  They are
-    checked numerically by :func:`_validate_complex_qsp_constraints` before the
-    solve, with the unbounded regions sampled on a finite grid.
-
-    References
-    ----------
-    .. [1] A. Gilyen, Y. Su, G. H. Low, and N. Wiebe,
-       "Quantum singular value transformation and beyond: exponential
-       improvements for quantum matrix arithmetics,"
-       Proceedings of the 51st Annual ACM SIGACT Symposium on Theory of
-       Computing, pp. 193-204, 2019. arXiv:1806.01838.
-    .. [2] Y. Dong, X. Meng, K. B. Whaley, and L. Lin,
-       "Efficient phase-factor evaluation in quantum signal processing,"
-       Physical Review A 103, 042419, 2021. arXiv:2002.11649.
+    Note:
+        The target follows Corollary 8 of Ref. [1]: the four conditions on ``P``
+        (parity; ``|P| <= 1`` on ``[-1, 1]``; ``|P| >= 1`` outside ``[-1, 1]``;
+        and ``P(ix) P*(ix) >= 1`` for ``x in R`` when ``d`` is even) are
+        necessary and sufficient for the existence of a phase sequence.  They are
+        checked numerically by :func:`_validate_complex_qsp_constraints` before the
+        solve, with the unbounded regions sampled on a finite grid.
     """
     trimmed = _normalize_complex_coefficients(coefficients)
     degree = len(trimmed) - 1
 
-    tolerance_float = _validate_positive_scalar(tolerance, name="tolerance")
-    gradient_tolerance_float = _validate_positive_scalar(
+    tolerance_float = _normalize_positive_scalar(tolerance, name="tolerance")
+    gradient_tolerance_float = _normalize_positive_scalar(
         gradient_tolerance,
         name="gradient_tolerance",
     )
-    max_iterations_int = _validate_positive_integer(
+    _validate_positive_integer(
         max_iterations,
         name="max_iterations",
     )
+    max_iterations_int = max_iterations
 
     _validate_complex_qsp_constraints(trimmed)
 
@@ -151,6 +138,7 @@ def solve_complex_qsp_phases(
 def _normalize_complex_coefficients(
     coefficients: Sequence[complex] | np.ndarray,
 ) -> np.ndarray:
+    r"""Validate and return complex coefficients in normalized form."""
     if isinstance(coefficients, np.ndarray):
         flattened = coefficients.reshape(-1).tolist()
     elif isinstance(coefficients, Sequence) and not isinstance(
