@@ -40,5 +40,6 @@ docstring 为准；本目录负责说明当前能力、使用方法和开发规�
 
 ## 开发者
 
+- [文档与 Docstring 规范](documentation-style.md)
 - [开发规范](development.md)
 - [Agent 协作流程](agent-workflow.md)
