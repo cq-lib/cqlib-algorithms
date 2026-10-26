@@ -18,9 +18,9 @@ import math
 
 import numpy as np
 import pytest
+from cqlib import Circuit, Parameter
 from cqlib.qis import Hamiltonian, PauliString, Phase
 
-from cqlib import Circuit, Parameter
 from cqlib_algorithms.operators.estimator import StatevectorEstimator
 from cqlib_algorithms.operators.estimator.statevector_estimator import (
     StatevectorEstimator as ModuleStatevectorEstimator,

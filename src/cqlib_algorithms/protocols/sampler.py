@@ -19,9 +19,8 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 import numpy as np
-from cqlib.device import ExecutionResult
-
 from cqlib import Circuit, Qubit
+from cqlib.device import ExecutionResult
 
 
 def _validate_seed(seed: int | None) -> None:

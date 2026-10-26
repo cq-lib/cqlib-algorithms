@@ -17,8 +17,8 @@ from __future__ import annotations
 import copy
 
 import numpy as np
-
 from cqlib import Circuit, Parameter
+
 from cqlib_algorithms.operators.oracle import GeneralStateReflection
 from cqlib_algorithms.operators.state_preparation import (
     UniformSuperposition,

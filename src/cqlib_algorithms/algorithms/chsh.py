@@ -29,9 +29,8 @@ from dataclasses import dataclass
 from numbers import Real
 from typing import ClassVar
 
-from cqlib.qis import Hamiltonian, Pauli, PauliString
-
 from cqlib import Circuit
+from cqlib.qis import Hamiltonian, Pauli, PauliString
 
 from ..operators.estimator._circuit_validation import (
     validate_unitary_state_preparation,

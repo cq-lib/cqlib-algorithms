@@ -26,10 +26,9 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import final
 
+from cqlib import Circuit, Qubit
 from cqlib.circuit import CircuitError
 from cqlib.qis import Pauli, PauliString
-
-from cqlib import Circuit, Qubit
 
 from .pauli_grouping_strategy import PauliGroupingStrategy, snapshot_terms
 

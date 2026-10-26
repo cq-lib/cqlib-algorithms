@@ -21,11 +21,11 @@ from types import SimpleNamespace
 
 import numpy as np
 import pytest
+from cqlib import Circuit, Parameter, Qubit
 from cqlib.circuit import ClassicalExpr, ClassicalType
 from cqlib.circuit.gates import UnitaryGate
 from cqlib.device import ExecutionResult
 
-from cqlib import Circuit, Parameter, Qubit
 from cqlib_algorithms.operators.sampler import StatevectorSampler
 from cqlib_algorithms.operators.state_fidelity import (
     CircuitFidelityRequest,

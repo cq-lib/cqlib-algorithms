@@ -19,10 +19,9 @@ from copy import copy
 from typing import final
 
 import numpy as np
+from cqlib import Circuit
 from cqlib.device import ExecutionResult, Outcome
 from cqlib.qis.state import Statevector
-
-from cqlib import Circuit
 
 from ...protocols.sampler import Sampler, SamplerRequest
 

@@ -59,9 +59,8 @@ import math
 from numbers import Real
 
 import numpy as np
-from cqlib.circuit.gates import StandardGate
-
 from cqlib import Circuit
+from cqlib.circuit.gates import StandardGate
 
 
 class GroverLong:
