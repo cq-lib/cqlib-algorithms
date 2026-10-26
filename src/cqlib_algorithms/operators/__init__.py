@@ -32,7 +32,15 @@ from .ansatz import (
     TwoLocalAnsatz,
 )
 from .arithmetic import QuadraticForm
-from .composite import GroverOperator, HadamardPhaseQuery, PhaseEstimationCircuit
+from .composite import (
+    GroverOperator,
+    HadamardPhaseQuery,
+    PhaseEstimationCircuit,
+    ProjectorControlledPhase,
+    QuantumSignalProcessing,
+    QuantumSingularValueTransformation,
+    RealValuedQSVT,
+)
 from .estimator import SamplingEstimator, StatevectorEstimator
 from .gradient import (
     FiniteDifferenceGradient,
@@ -132,6 +140,8 @@ __all__ = [
     "ControlledBitFlipMixer",
     "ControlledNullSwapMixer",
     "ControlledSwapMixer",
+    "DickeStatePreparation",
+    "DickeUnitary",
     "EfficientSU2Ansatz",
     "EvolvedOperatorAnsatz",
     "ExcitationPreservingAnsatz",
@@ -173,8 +183,11 @@ __all__ = [
     "QFIResult",
     "QGTResult",
     "QuadraticForm",
+    "QuantumSignalProcessing",
+    "QuantumSingularValueTransformation",
     "RandomLayersAnsatz",
     "RealAmplitudesAnsatz",
+    "RealValuedQSVT",
     "RingMixer",
     "SPSAGradient",
     "SPSAOptimizer",
@@ -196,6 +209,7 @@ __all__ = [
     "UserCircuitPreparation",
     "ValueIndependentPermutationSwapMixer",
     "ValueSelectivePermutationSwapMixer",
+    "WeightDistributionBlock",
     "ZeroStateReflection",
     "arithmetic",
 ]

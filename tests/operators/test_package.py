@@ -34,6 +34,7 @@ def test_state_preparation_operators_are_exported_from_functional_packages():
         "BasisEncoding",
         "BasisStateInitialization",
         "BRQI",
+        "DickeStatePreparation",
         "FeatureMapPreparation",
         "GHZStatePreparation",
         "ImageAngleEncoding",
@@ -86,6 +87,10 @@ def test_composite_operators_are_exported_from_functional_packages():
         "GroverOperator",
         "HadamardPhaseQuery",
         "PhaseEstimationCircuit",
+        "ProjectorControlledPhase",
+        "QuantumSignalProcessing",
+        "QuantumSingularValueTransformation",
+        "RealValuedQSVT",
     }
 
     assert expected <= set(operators.__all__)

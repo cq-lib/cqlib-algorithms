@@ -63,6 +63,11 @@ class BackendSampler(Sampler):
     here. Failed or cancelled terminal results are preserved; successful
     results are checked against the frozen Sampler contract.
 
+    The adapter callable receives no seed, so ``request.seed`` cannot reach a
+    remote device and the counts of this sampler are not reproducible. A
+    simulator-backed adapter that can honour a seed should be exposed instead
+    through :class:`~cqlib_algorithms.operators.sampler.StatevectorSampler`.
+
     Args:
         executor: Synchronous single-execution callback supplied by an adapter.
 

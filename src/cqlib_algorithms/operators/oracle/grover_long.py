@@ -240,8 +240,3 @@ class GroverLong:
         beta = cls.get_beta(num_find, num_total)
         it_num = cls.get_it_num(beta)
         return cls.get_phi(it_num, beta)
-
-
-if __name__ == "__main__":
-    operator = GroverLong(3, phase=math.pi)
-    print(operator.build_circuit().to_matrix())
