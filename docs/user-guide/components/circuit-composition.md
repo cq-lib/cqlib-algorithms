@@ -123,3 +123,29 @@ partial = GroverOperator(oracle, reflection_qubits=(0, 2)).build_circuit()
 
 更多反射与 Oracle 的数学约定见
 [布尔 Oracle 与反射算子](oracle.md)。
+
+## QSP 与 QSVT
+
+`QuantumSignalProcessing` 构建单量子比特 SU(2) 信号处理序列。调用方可以直接给出
+相位序列，也可以从满足奇偶性、有界性和可分解条件的多项式系数求解相位。
+`ProjectorControlledPhase` 提供 QSVT 序列使用的投影控制相位。
+
+`QuantumSingularValueTransformation` 将相位序列与 `BlockEncoding` 组合，对编码矩阵
+的奇异值实施多项式变换。`RealValuedQSVT` 提供实多项式入口，并负责 QSP/QSVT
+相位约定转换。组件返回线路，不执行输入态制备、测量或结果反演。
+
+相位求解是数值过程。当前 Haah 谱因子分解在约 16 阶以上可能因共轭根配对条件数
+恶化而拒绝输入；一般 QSVT 还会继承 `UnitaryMatrixOracle` 的两量子比特 KAK
+边界和酉特征分解容差限制。调用方应把这些异常解释为当前综合路径的支持边界，而不是
+自动放宽容差或假定目标多项式无效。
+
+```python
+import numpy as np
+
+from cqlib_algorithms.operators import QuantumSingularValueTransformation
+from cqlib_algorithms.operators.oracle import UnitaryDilation
+
+encoding = UnitaryDilation(np.array([[0.25]], dtype=np.complex128))
+operator = QuantumSingularValueTransformation(encoding, phases=(0.0, 0.0))
+circuit = operator.build_circuit()
+```

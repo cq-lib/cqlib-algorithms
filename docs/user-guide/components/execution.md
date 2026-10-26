@@ -12,6 +12,10 @@
 Sampler 在线路副本上补充终端测量，保持请求指定的量子比特顺序。返回频数是原始
 测量统计，不自动进行读出校正或误差缓解。
 
+`SamplerRequest.seed` 接受 `None` 或非负 Python 整数。`None` 表示由实现取得新的
+随机源；固定 seed 应复现同一请求的 counts。无法接收 seed 的外部后端可以忽略该
+字段，但相应适配器必须明确说明结果不可由该字段复现。
+
 ## Estimator
 
 - `StatevectorEstimator` 精确计算 Hermitian PauliString 或 Hamiltonian 的期望值，
@@ -21,6 +25,11 @@ Sampler 在线路副本上补充终端测量，保持请求指定的量子比特
 
 有限 shots 下，非对易项必须通过兼容的测量组分别采样。增加 shots 通常降低统计
 不确定度，但不能消除设备噪声或模型误差。
+
+`EstimatorRequest.seed` 使用相同合同。精确 Estimator 没有随机抽样，可以忽略合法
+seed；采样 Estimator 必须从父 seed 为不同 Pauli 项派生独立子 seed。公共
+`spawn_seeds(seed, count)` 对同一非负父 seed 返回可复现的子 seed 列表，避免多个
+子任务重复使用同一随机序列。
 
 ## 选择建议
 

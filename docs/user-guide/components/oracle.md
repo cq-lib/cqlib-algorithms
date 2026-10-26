@@ -77,6 +77,22 @@ XOR 的相位回踢与选择 `k = 2**i` 的 Phase Oracle 一致；多个被选�
 扩散算子的数学约定可参见 [Grover 的原始论文](https://arxiv.org/abs/quant-ph/9605043)；
 这里仅提供算子，不提供完整搜索算法或查询复杂度承诺。
 
+## 任意酉矩阵与块编码
+
+`UnitaryMatrixOracle(U)` 接受有限、方形、维数为 `2**n` 的酉矩阵，并通过递归
+Block-ZXZ 分解构建 Cqlib 线路。输入矩阵在构造时复制，`build_circuit()` 返回独立
+线路；可选重构检查按全局相位对齐后比较目标矩阵。当前两量子比特叶节点依赖 Core
+KAK 分解，Core 对 Weyl chamber 边界 `a=pi/4, c<0` 的拒绝会使少数合法矩阵无法
+综合。该限制会以异常暴露，不能视为输入矩阵非酉。
+
+`BlockEncoding` 定义块编码组件的公共接口。`UnitaryDilation(A)` 对谱范数不超过 1
+的方阵构造酉扩张，使目标矩阵出现在更大酉矩阵的指定块中。它使用稠密数值矩阵，
+适合小规模精确构造，不代表稀疏访问 Oracle、QRAM 或渐近最优块编码。
+
+`DickeUnitary`、`SplitCycleShift` 和 `WeightDistributionBlock` 是 Dicke 态制备使用的
+可逆权重分布组件。它们公开为可复用线路算子，但不单独执行采样或 Hamming weight
+估计。
+
 ## 可运行示例
 
 ```python

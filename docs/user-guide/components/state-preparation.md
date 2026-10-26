@@ -7,7 +7,7 @@
 
 | 目标 | 推荐组件 |
 | --- | --- |
-| 固定计算基态、均匀叠加、GHZ | `BasisStateInitialization`、`UniformSuperposition`、`GHZStatePreparation` |
+| 固定计算基态、均匀叠加、GHZ、Dicke | `BasisStateInitialization`、`UniformSuperposition`、`GHZStatePreparation`、`DickeStatePreparation` |
 | 任意纯态或独立单比特乘积态 | `ArbitraryStatePreparation`、`ProductStatePreparation` |
 | 稠密或稀疏幅度数据 | `AmplitudeEncoding`、`SparseAmplitudeEncoding` |
 | 角度、布尔或 Core Feature Map 数据 | `AngleEncoding`、`BasisEncoding`、`FeatureMapPreparation` |
@@ -32,6 +32,19 @@ Cqlib 使用小端基态索引：量子比特 0 对应索引最低有效位。�
 数值态综合保留相对相位和全局相位。验证线路输出时应比较
 `Circuit.to_matrix()[:, 0]` 与目标复幅度向量；Core 的 Statevector 演化不包含线路的
 `global_phase`，因此不能单独用于精确全局相位验收。
+
+## Dicke 态
+
+`DickeStatePreparation(n, k)` 制备 `n` 个量子比特上 Hamming weight 恰为 `k`
+的均匀叠加态：
+
+```text
+|D(n,k)> = 1/sqrt(C(n,k)) * sum_(|x|=k) |x>
+```
+
+量子比特 0 仍是最低有效位，但目标态包含全部 weight-`k` 位串，因此不依赖某一种
+位串书写方向。`k=0` 返回全零态，`k=n` 返回全一态；中间权重通过 Dicke
+权重分布酉线路构造。组件不测量 Hamming weight，也不替调用方选择问题相关的 `k`。
 
 ## 稠密态综合
 

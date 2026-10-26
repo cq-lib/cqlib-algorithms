@@ -36,6 +36,7 @@ docstring 为准；本目录负责说明当前能力、使用方法和开发规�
 - [微分、量子几何与优化](user-guide/components/differentiation.md)
 - [量子信息度量](user-guide/components/quantum-information.md)
 - [线路态保真度](user-guide/components/state-fidelity.md)
+- [量子误差缓解](user-guide/components/error-mitigation.md)
 
 ## 开发者
 
