@@ -414,6 +414,12 @@ def test_quantum_teleportation_is_exported_from_public_namespaces():
     assert QuantumTeleportationResult is AlgorithmQuantumTeleportationResult
 
 
+def test_quantum_teleportation_is_exported_from_public_namespaces():
+    assert QuantumTeleportation is AlgorithmQuantumTeleportation
+    assert QuantumTeleportationRequest is AlgorithmQuantumTeleportationRequest
+    assert QuantumTeleportationResult is AlgorithmQuantumTeleportationResult
+
+
 def test_deutsch_jozsa_is_exported_from_public_namespaces():
     assert DeutschJozsa is AlgorithmDeutschJozsa
     assert DeutschJozsaRequest is AlgorithmDeutschJozsaRequest

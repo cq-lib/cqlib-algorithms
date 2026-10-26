@@ -34,6 +34,7 @@ def test_state_preparation_operators_are_exported_from_functional_packages():
         "BasisEncoding",
         "BasisStateInitialization",
         "BRQI",
+        "DickeStatePreparation",
         "FeatureMapPreparation",
         "GHZStatePreparation",
         "ImageAngleEncoding",
@@ -57,13 +58,19 @@ def test_oracle_operators_are_exported_from_functional_packages():
     oracle = import_module("cqlib_algorithms.operators.oracle")
     state_preparation = import_module("cqlib_algorithms.operators.state_preparation")
     expected = {
+        "BlockEncoding",
         "BitFlipOracle",
         "BooleanFunction",
         "BooleanVectorFunction",
+        "DickeUnitary",
         "GeneralStateReflection",
         "GroverDiffusion",
         "GroverLong",
         "PhaseOracle",
+        "SplitCycleShift",
+        "UnitaryDilation",
+        "UnitaryMatrixOracle",
+        "WeightDistributionBlock",
         "ZeroStateReflection",
     }
 
@@ -81,6 +88,10 @@ def test_composite_operators_are_exported_from_functional_packages():
         "HadamardPhaseQuery",
         "HiddenLinearFunctionCircuit",
         "PhaseEstimationCircuit",
+        "ProjectorControlledPhase",
+        "QuantumSignalProcessing",
+        "QuantumSingularValueTransformation",
+        "RealValuedQSVT",
     }
 
     assert expected <= set(operators.__all__)
