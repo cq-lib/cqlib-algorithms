@@ -48,8 +48,9 @@ class QGTResult:
 
     Raises:
         TypeError: If a field has the wrong type.
-        ValueError: If names are duplicated, shapes disagree, or the
-            tensor is not Hermitian and real-part symmetric within 1e-9.
+        ValueError: If names are duplicated, shapes disagree, or the tensor
+            is not Hermitian, the metric is not symmetric, or the metric is
+            not the real part of the tensor (all within 1e-9).
     """
 
     parameter_names: tuple[str, ...]

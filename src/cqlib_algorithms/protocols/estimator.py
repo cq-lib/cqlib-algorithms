@@ -35,6 +35,13 @@ def _validate_positive_shots(shots: int | None) -> None:
         raise ValueError("shots must be greater than zero")
 
 
+def _validate_seed(seed: int | None) -> None:
+    if seed is None:
+        return
+    if isinstance(seed, bool) or not isinstance(seed, int):
+        raise TypeError("seed must be an integer or None")
+
+
 def _immutable_bindings(bindings: Mapping[str, float]) -> Mapping[str, float]:
     if not isinstance(bindings, Mapping):
         raise TypeError("parameter_bindings must be a mapping")
@@ -104,6 +111,10 @@ class EstimatorRequest:
         parameter_bindings: Exact finite bindings for all used symbols. Values
             are defensively copied into an immutable mapping.
         shots: ``None`` for exact evaluation or a positive shot count.
+        seed: Seed of the estimation, or ``None`` to draw fresh randomness. An
+            estimator that draws shot-based results from a random source must
+            derive that source from this value, so that one request is
+            reproducible.
 
     Raises:
         TypeError: If an argument has the wrong type.
@@ -115,6 +126,7 @@ class EstimatorRequest:
     observable: Hamiltonian | PauliString
     parameter_bindings: Mapping[str, float] = field(default_factory=dict)
     shots: int | None = None
+    seed: int | None = None
 
     __hash__ = None  # type: ignore[assignment]
 
@@ -156,6 +168,7 @@ class EstimatorRequest:
             )
 
         _validate_positive_shots(self.shots)
+        _validate_seed(self.seed)
         _validate_hermitian(self.observable)
 
 
@@ -203,6 +216,12 @@ class Estimator(ABC):
     order. Empty input produces an empty list. Implementations may raise
     ``ValueError`` when they do not support exact requests, shot-based
     requests, or another requested execution mode.
+
+    An implementation whose estimates come from a random source must derive
+    that source from :attr:`EstimatorRequest.seed`, so that a request with an
+    explicit seed reproduces its estimate. An implementation backed by a
+    device or simulator that does not accept a seed may ignore it, and must
+    then document that its estimates are not reproducible.
 
     This type is distinct from ``cqlib.error_mitigation.Estimator``, which is a
     single-call callback alias in a separate namespace.

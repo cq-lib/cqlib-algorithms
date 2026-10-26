@@ -19,6 +19,7 @@ from .optimizer import Optimizer, OptimizerRequest, OptimizerResult, OptimizerSt
 from .sampler import (
     Sampler,
     SamplerRequest,
+    spawn_seeds,
     validate_sampler_result,
     validate_sampler_results,
 )
@@ -39,6 +40,7 @@ __all__ = [
     "Sampler",
     "SamplerRequest",
     "StatePreparation",
+    "spawn_seeds",
     "validate_sampler_result",
     "validate_sampler_results",
 ]

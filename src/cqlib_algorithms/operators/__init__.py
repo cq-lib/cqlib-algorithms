@@ -32,7 +32,15 @@ from .ansatz import (
     TwoLocalAnsatz,
 )
 from .arithmetic import QuadraticForm
-from .composite import GroverOperator, HadamardPhaseQuery, PhaseEstimationCircuit
+from .composite import (
+    GroverOperator,
+    HadamardPhaseQuery,
+    PhaseEstimationCircuit,
+    ProjectorControlledPhase,
+    QuantumSignalProcessing,
+    QuantumSingularValueTransformation,
+    RealValuedQSVT,
+)
 from .estimator import SamplingEstimator, StatevectorEstimator
 from .gradient import (
     FiniteDifferenceGradient,
@@ -72,12 +80,18 @@ from .mixer import (
 from .optimizer import Adam, GradientDescent, SPSAOptimizer
 from .oracle import (
     BitFlipOracle,
+    BlockEncoding,
     BooleanFunction,
     BooleanVectorFunction,
+    DickeUnitary,
     GeneralStateReflection,
     GroverDiffusion,
     GroverLong,
     PhaseOracle,
+    SplitCycleShift,
+    UnitaryDilation,
+    UnitaryMatrixOracle,
+    WeightDistributionBlock,
     ZeroStateReflection,
 )
 from .sampler import BackendSampler, StatevectorSampler
@@ -93,6 +107,7 @@ from .state_preparation import (
     ArbitraryStatePreparation,
     BasisEncoding,
     BasisStateInitialization,
+    DickeStatePreparation,
     FeatureMapPreparation,
     GHZStatePreparation,
     ImageAngleEncoding,
@@ -114,6 +129,7 @@ __all__ = [
     "BasisEncoding",
     "BasisStateInitialization",
     "BitFlipOracle",
+    "BlockEncoding",
     "BooleanFunction",
     "BooleanVectorFunction",
     "CircuitFidelityRequest",
@@ -124,6 +140,8 @@ __all__ = [
     "ControlledBitFlipMixer",
     "ControlledNullSwapMixer",
     "ControlledSwapMixer",
+    "DickeStatePreparation",
+    "DickeUnitary",
     "EfficientSU2Ansatz",
     "EvolvedOperatorAnsatz",
     "ExcitationPreservingAnsatz",
@@ -159,19 +177,24 @@ __all__ = [
     "PhaseEstimationCircuit",
     "PhaseOracle",
     "ProductStatePreparation",
+    "ProjectorControlledPhase",
     "QAOACostEvolution",
     "QAOAMixerEvolution",
     "QFIResult",
     "QGTResult",
     "QuadraticForm",
+    "QuantumSignalProcessing",
+    "QuantumSingularValueTransformation",
     "RandomLayersAnsatz",
     "RealAmplitudesAnsatz",
+    "RealValuedQSVT",
     "RingMixer",
     "SPSAGradient",
     "SPSAOptimizer",
     "SamplingEstimator",
     "SimplifiedTwoDesignAnsatz",
     "SparseAmplitudeEncoding",
+    "SplitCycleShift",
     "StatevectorEstimator",
     "StatevectorQFI",
     "StatevectorQGT",
@@ -181,9 +204,12 @@ __all__ = [
     "TimeSwapMixer",
     "TwoLocalAnsatz",
     "UniformSuperposition",
+    "UnitaryDilation",
+    "UnitaryMatrixOracle",
     "UserCircuitPreparation",
     "ValueIndependentPermutationSwapMixer",
     "ValueSelectivePermutationSwapMixer",
+    "WeightDistributionBlock",
     "ZeroStateReflection",
     "arithmetic",
 ]

@@ -17,6 +17,7 @@ from .angle_encoding import AngleEncoding
 from .arbitrary_state_preparation import ArbitraryStatePreparation
 from .basis_encoding import BasisEncoding
 from .basis_state_initialization import BasisStateInitialization
+from .dicke_state_preparation import DickeStatePreparation
 from .feature_map_preparation import FeatureMapPreparation
 from .ghz_state_preparation import GHZStatePreparation
 from .image_angle_encoding import ImageAngleEncoding
@@ -33,6 +34,7 @@ __all__ = [
     "ArbitraryStatePreparation",
     "BasisEncoding",
     "BasisStateInitialization",
+    "DickeStatePreparation",
     "FeatureMapPreparation",
     "GHZStatePreparation",
     "ImageAngleEncoding",
