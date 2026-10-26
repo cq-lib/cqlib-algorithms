@@ -27,14 +27,12 @@ half. Below one half the ordering of the components reverses and the estimate
 is driven away from the ideal value.
 
 Both moments are read from one copy-swap circuit that holds :math:`M`
-independent copies of the circuit and applies a SWAP network that exchanges
-the first copy with every other copy. The observable whose expectation is
-:math:`\operatorname{Tr}(\rho^M)` is the Hermitian part of that network; the
-observable whose expectation is :math:`\operatorname{Tr}(O \rho^M)` is the
-Hermitian part of the network composed with the copy-symmetrised observable
-:math:`O_\text{sym} = \frac{1}{M}\sum_c O^{(c)}`. Both are assembled here as
-Pauli strings over the widened register of :math:`Mn` qubits and evaluated on
-the copy-swap circuit.
+independent copies of the circuit, a Hadamard gate on an ancillary qubit, and
+a ladder of ancillary-controlled SWAP gates between adjacent copies. The
+ancilla measured in the :math:`X` basis gives the denominator moment; the
+ancilla measured together with the observable placed on the first copy gives
+the numerator moment. Both the circuit and the two observables come from
+:class:`cqlib.error_mitigation.VirtualDistillation`.
 
 :func:`construct_circuits` builds the copy-swap circuit and
 :func:`combine_results` turns a numerator/denominator pair into the distilled
@@ -53,276 +51,12 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from cqlib.error_mitigation import VirtualDistillation
-from cqlib.qis import Hamiltonian, Pauli, PauliString
+from cqlib.qis import Hamiltonian, PauliString
 
 from cqlib import Circuit
 
 from ...protocols import Estimator, EstimatorRequest, EstimatorResult, spawn_seeds
 from ..core import QemExecutor, make_cqlib_estimator
-    
-_PAULI_BY_BITS: dict[tuple[int, int], Pauli] = {
-    (0, 0): Pauli.i(),
-    (1, 0): Pauli.x(),
-    (1, 1): Pauli.y(),
-    (0, 1): Pauli.z(),
-}
-
-# The complex value of each phase exponent of Z4.
-_PHASE_OF_EXPONENT: dict[int, complex] = {
-    0: 1.0 + 0.0j,
-    1: 1.0j,
-    2: -1.0 + 0.0j,
-    3: -1.0j,
-}
-
-
-def _build_product_table() -> dict[tuple[int, int, int, int], tuple[int, int, int]]:
-    r"""Return the product table of the four single-qubit Paulis.
-
-    Each entry is keyed by the symplectic codes of the two factors and holds
-    the symplectic code of their product together with its phase exponent. The
-    table is built from cqlib's own multiplication, so the expansions below can
-    never drift from cqlib's phase convention.
-    """
-    table: dict[tuple[int, int, int, int], tuple[int, int, int]] = {}
-    for left in _PAULI_BY_BITS.values():
-        for right in _PAULI_BY_BITS.values():
-            product, phase = left.mul_with_phase(right)
-            table[(*left.to_symplectic(), *right.to_symplectic())] = (
-                *product.to_symplectic(),
-                phase.exponent,
-            )
-    return table
-
-
-_PRODUCT = _build_product_table()
-
-_Symplectic = tuple[int, int]
-_Expansion = dict[_Symplectic, complex]
-
-
-def _multiply(
-    left: _Symplectic, right: _Symplectic, num_qubits: int
-) -> tuple[_Symplectic, complex]:
-    r"""Return the symplectic code and phase of a product of two Pauli strings.
-
-    Parameters
-    ----------
-    left, right
-        Symplectic codes ``(x_mask, z_mask)`` of the two factors, each acting
-        on ``num_qubits`` qubits.
-    num_qubits
-        Width of both factors.
-
-    Returns
-    -------
-    tuple[tuple[int, int], complex]
-        The symplectic code of the product and its complex phase.
-    """
-    left_x, left_z = left
-    right_x, right_z = right
-    # The qubits of a Pauli string commute, so the product phase is the sum of
-    # the per-qubit phases of the four Pauli products.
-    exponent = 0
-    for qubit in range(num_qubits):
-        key = (
-            (left_x >> qubit) & 1,
-            (left_z >> qubit) & 1,
-            (right_x >> qubit) & 1,
-            (right_z >> qubit) & 1,
-        )
-        exponent += _PRODUCT[key][2]
-    return (left_x ^ right_x, left_z ^ right_z), _PHASE_OF_EXPONENT[exponent & 3]
-
-
-def _swap_expansion(num_qubits: int, first: int, second: int) -> _Expansion:
-    r"""Return the Pauli expansion of the SWAP between two register copies.
-
-    Parameters
-    ----------
-    num_qubits
-        Width :math:`n` of one copy.
-    first, second
-        Copy indices the SWAP exchanges.
-
-    Returns
-    -------
-    dict[tuple[int, int], complex]
-        The expansion of
-        :math:`\mathrm{SWAP} = \frac{1}{d}\sum_P P \otimes P` transcribed to
-        the two copies, one :math:`n`-qubit Pauli per term with weight
-        :math:`1/d`, :math:`d = 2^n`.
-    """
-    dimension = 1 << num_qubits
-    expansion: _Expansion = {}
-    for x in range(dimension):
-        for z in range(dimension):
-            key = (
-                (x << (first * num_qubits)) | (x << (second * num_qubits)),
-                (z << (first * num_qubits)) | (z << (second * num_qubits)),
-            )
-            expansion[key] = expansion.get(key, 0.0j) + 1.0 / dimension
-    return expansion
-
-
-def _network_expansion(num_qubits: int, copies: int, *, adjoint: bool) -> _Expansion:
-    r"""Return the Pauli expansion of the copy-swap network or of its adjoint.
-
-    Parameters
-    ----------
-    num_qubits
-        Width :math:`n` of one copy.
-    copies
-        Number of copies :math:`M`.
-    adjoint
-        ``False`` for the network and ``True`` for its adjoint, which is the
-        same SWAP sequence multiplied in the opposite order.
-
-    Returns
-    -------
-    dict[tuple[int, int], complex]
-        The expansion of the star SWAP network
-        :math:`S = \mathrm{SWAP}_{0,M-1}\cdots \mathrm{SWAP}_{0,1}` over the
-        widened register of :math:`Mn` qubits.
-    """
-    total = num_qubits * copies
-    network: _Expansion = {(0, 0): 1.0 + 0.0j}
-    for other in range(1, copies):
-        gate = _swap_expansion(num_qubits, 0, other)
-        combined: _Expansion = {}
-        for gate_key, gate_coefficient in gate.items():
-            for net_key, net_coefficient in network.items():
-                if adjoint:
-                    key, phase = _multiply(net_key, gate_key, total)
-                else:
-                    key, phase = _multiply(gate_key, net_key, total)
-                combined[key] = combined.get(key, 0.0j) + (
-                    gate_coefficient * net_coefficient * phase
-                )
-        network = combined
-    return network
-
-
-def _accumulate(destination: _Expansion, source: _Expansion, scale: float) -> None:
-    r"""Add ``scale`` times one expansion into another, in place."""
-    for key, coefficient in source.items():
-        destination[key] = destination.get(key, 0.0j) + scale * coefficient
-
-
-def _pauli_expansion(observable: Hamiltonian) -> _Expansion:
-    r"""Return the symplectic-keyed Pauli expansion of an observable.
-
-    Each term's Pauli phase is folded into its coefficient, so terms that
-    differ only by a phase share one key and are combined.
-    """
-    expansion: _Expansion = {}
-    for pauli, coefficient in observable.terms:
-        key = (pauli.x_mask, pauli.z_mask)
-        effective = complex(coefficient) * pauli.phase.to_complex()
-        expansion[key] = expansion.get(key, 0.0j) + effective
-    return expansion
-
-
-def _hamiltonian_from_expansion(expansion: _Expansion, num_qubits: int) -> Hamiltonian:
-    r"""Rebuild a Hamiltonian from a real symplectic-keyed Pauli expansion.
-
-    Parameters
-    ----------
-    expansion
-        Pauli expansion over ``num_qubits`` qubits.
-    num_qubits
-        Width of the widened register.
-
-    Returns
-    -------
-    Hamiltonian
-        A Hermitian Hamiltonian holding one term per non-zero expansion entry.
-    """
-    entries: list[tuple[PauliString, float]] = []
-    for (x, z), coefficient in expansion.items():
-        if coefficient == 0.0j:
-            continue
-        pauli = PauliString(num_qubits)
-        for qubit in range(num_qubits):
-            axis = ((x >> qubit) & 1, (z >> qubit) & 1)
-            pauli.set_pauli(qubit, _PAULI_BY_BITS[axis])
-        # Every expansion below is Hermitian by construction, so a coefficient
-        # has no imaginary part beyond floating-point residue.
-        entries.append((pauli, float(coefficient.real)))
-    return Hamiltonian.from_list(entries)
-
-
-def _denominator_observable(num_qubits: int, copies: int) -> Hamiltonian:
-    r"""Return the observable whose expectation is :math:`\operatorname{Tr}(\rho^M)`.
-
-    Parameters
-    ----------
-    num_qubits
-        Width :math:`n` of one copy.
-    copies
-        Number of copies :math:`M`.
-
-    Returns
-    -------
-    Hamiltonian
-        The Hermitian part :math:`(S + S^\dagger)/2` of the copy-swap network
-        :math:`S`, acting on the widened register of :math:`Mn` qubits.
-    """
-    total = num_qubits * copies
-    expansion: _Expansion = {}
-    _accumulate(expansion, _network_expansion(num_qubits, copies, adjoint=False), 0.5)
-    _accumulate(expansion, _network_expansion(num_qubits, copies, adjoint=True), 0.5)
-    return _hamiltonian_from_expansion(expansion, total)
-
-
-def _numerator_observable(observable: Hamiltonian, copies: int) -> Hamiltonian:
-    r"""Return the observable whose expectation is :math:`\operatorname{Tr}(O\rho^M)`.
-
-    The returned operator is the Hermitian part of the copy-swap network
-    composed with the copy-symmetrised observable
-    :math:`O_\text{sym} = \frac{1}{M}\sum_c O^{(c)}`, where :math:`O^{(c)}`
-    is ``observable`` placed on copy :math:`c`.
-
-    Parameters
-    ----------
-    observable
-        Observable :math:`O` acting on one copy, of width :math:`n`.
-    copies
-        Number of copies :math:`M`.
-
-    Returns
-    -------
-    Hamiltonian
-        The numerator observable acting on the widened register of
-        :math:`Mn` qubits.
-    """
-    num_qubits = observable.num_qubits
-    total = num_qubits * copies
-    network = _network_expansion(num_qubits, copies, adjoint=False)
-    adjoint_network = _network_expansion(num_qubits, copies, adjoint=True)
-    observable_expansion = _pauli_expansion(observable)
-    # The factor 1/2 hermitises S O_sym + O_sym S^dagger, and 1/copies
-    # symmetrises the observable over the copies.
-    weight = 0.5 / copies
-    expansion: _Expansion = {}
-    for copy in range(copies):
-        placed = {
-            (x << copy * num_qubits, z << copy * num_qubits): coefficient
-            for (x, z), coefficient in observable_expansion.items()
-        }
-        for net_key, net_coefficient in network.items():
-            for placed_key, placed_coefficient in placed.items():
-                key, phase = _multiply(net_key, placed_key, total)
-                expansion[key] = expansion.get(key, 0.0j) + (
-                    weight * net_coefficient * placed_coefficient * phase
-                )
-        for placed_key, placed_coefficient in placed.items():
-            for adjoint_key, adjoint_coefficient in adjoint_network.items():
-                key, phase = _multiply(placed_key, adjoint_key, total)
-                expansion[key] = expansion.get(key, 0.0j) + (
-                    weight * placed_coefficient * adjoint_coefficient * phase
-                )
-    return _hamiltonian_from_expansion(expansion, total)
 
 
 def _as_hamiltonian(observable: Hamiltonian | PauliString, /) -> Hamiltonian:
@@ -340,11 +74,13 @@ def construct_circuits(
 ) -> list[Circuit]:
     r"""Build the copy-swap circuit for one virtual-distillation measurement.
 
-    The circuit decomposes ``circuit``, appends it once per copy on a register
-    of :math:`Mn` qubits, and then exchanges the first copy with every other
-    copy. Measuring the numerator and the denominator observables built by this
-    module on that state yields :math:`\operatorname{Tr}(O\rho^M)` and
-    :math:`\operatorname{Tr}(\rho^M)` respectively.
+    The circuit holds ``circuit`` laid out on :math:`M` copies over a register
+    of :math:`Mn + 1` qubits, a Hadamard gate on the last (ancillary) qubit,
+    and a ladder of :math:`(M - 1) n` ancillary-controlled SWAP gates that
+    exchanges adjacent copies. Measuring the ancillary qubit yields
+    :math:`\operatorname{Tr}(\rho^M)`, and measuring it together with the
+    observable placed on the first copy yields
+    :math:`\operatorname{Tr}(O\rho^M)`.
 
     Parameters
     ----------
@@ -454,8 +190,8 @@ def execute_with_vd(
         Observable to estimate, acting on exactly the circuit's qubits.
     copies
         Number of density-matrix copies :math:`M`, at least two. Larger values
-        suppress the error more strongly but widen the circuit to :math:`Mn`
-        qubits.
+        suppress the error more strongly but widen the circuit to
+        :math:`Mn + 1` qubits.
     shots_numerator
         Shot count for the numerator observable, at least one.
     shots_denominator
@@ -612,29 +348,25 @@ class _VdEstimator(Estimator):
 
     def _mitigate(self, request: EstimatorRequest) -> EstimatorResult:
         r"""Evaluate the moment ratio of one request on its copy-swap circuit."""
-        copies = self._copies
         observable = _as_hamiltonian(request.observable)
-        runner = VirtualDistillation(request.circuit, copies)
+        runner = VirtualDistillation(request.circuit, self._copies)
         seed = self._seed if self._seed is not None else request.seed
         # The numerator and denominator are independent measurements, so each
         # takes its own child seed while one run seed still reproduces the
         # moment ratio.
         numerator_seed, denominator_seed = spawn_seeds(seed, 2)
-        # cqlib sizes its own numerator observable from the Hamiltonian passed
-        # below, but expands it under an observation convention this library
-        # replaces. Each callback therefore binds the copy-swap observable
-        # built here; only the circuit, the shot plumbing, and the result
-        # contract of the runner are reused. See the virtual-distillation entry
-        # of the self-built-component table in the interface specification.
+        # cqlib reports both moments on the ancillary qubit: the denominator is
+        # a bare X on the ancilla and the numerator is the observable on the
+        # first copy together with that X. The callbacks forward whichever one
+        # cqlib supplies, so only the circuit, the shot plumbing, and the
+        # result contract of the runner are reused here.
         numerator_callback = make_cqlib_estimator(
             self._executor,
-            _numerator_observable(observable, copies),
             shots=self._shots_numerator,
             seed=numerator_seed,
         )
         denominator_callback = make_cqlib_estimator(
             self._executor,
-            _denominator_observable(request.circuit.num_qubits, copies),
             shots=self._shots_denominator,
             seed=denominator_seed,
         )

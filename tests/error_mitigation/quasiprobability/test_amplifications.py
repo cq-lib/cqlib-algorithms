@@ -104,8 +104,8 @@ def test_the_amplified_representation_at_scale_one_is_the_original() -> None:
     # At scale one the amplified level is the bare noise level, so the first
     # term is still the untouched gate: the identity correction carries weight
     # 1 - noise_level and leaves the remaining weight for the Pauli
-    # corrections. This is the quasiprobability-layer reading of checkpoint
-    # PEA-1, where the originally sampled variant is the unmodified circuit.
+    # corrections. The originally sampled variant is therefore the unmodified
+    # circuit.
     assert expansion.ideal.standard_gate == StandardGate.H
     assert expansion.basis[0].standard_gate == StandardGate.I
     assert expansion.coefficients[0] == pytest.approx(1.0 - _NOISE_LEVEL)
@@ -139,9 +139,9 @@ def test_the_amplified_overhead_is_monotone_in_the_scale_factor() -> None:
     scale_factors = (1.0, 2.0, 3.0, 4.0)
     gate = _hadamard()
 
-    # Checkpoint PEA-2: the amplified family itself carries no overhead
-    # (Gamma = 1), but the PEC overhead needed to invert the amplified channel
-    # -- the variance the extrapolation buys back -- grows with the factor.
+    # The amplified family itself carries no overhead (Gamma = 1), but the PEC
+    # overhead needed to invert the amplified channel -- the variance the
+    # extrapolation buys back -- grows with the factor.
     overheads = [
         depolarizing_quasiprobability_of_operation(
             gate,

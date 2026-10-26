@@ -575,7 +575,7 @@ def _validate_seed(seed: int | None, /) -> None:
 
 
 def _validate_two_qubit_operations(circuit: Circuit, /) -> None:
-    r"""Reject any gate acting on more than two qubits (trap T10)."""
+    r"""Reject any gate acting on more than two qubits."""
     for operation in circuit.operations:
         if is_measurement(operation):
             continue

@@ -222,9 +222,9 @@ def combine_results(
         scalar = complex(coefficient) * complex(pauli.phase.to_complex())
         corrected = 0.0
         for i in range(num_randomizations):
-            # (TREX-1) The correction is a per-qubit sign ratio over sampled
-            # counts. No 2**n readout matrix is ever built or inverted here, so
-            # the cost of the recombination stays linear in the qubit count.
+            # The correction is a per-qubit sign ratio over sampled counts. No
+            # 2**n readout matrix is ever built or inverted here, so the cost of
+            # the recombination stays linear in the qubit count.
             twirled = single.expectation_probs(
                 [(measurement, twirled_distributions[i])]
             )

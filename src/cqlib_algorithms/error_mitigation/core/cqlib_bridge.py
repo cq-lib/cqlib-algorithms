@@ -35,24 +35,27 @@ from .executor import QemExecutor
 
 def make_cqlib_estimator(
     executor: QemExecutor,
-    observable: Hamiltonian,
+    observable: Hamiltonian | None = None,
     *,
     shots: int | None = None,
     seed: int | None = None,
 ) -> CqlibEstimator:
-    r"""Bind a library executor and one observable into a cqlib callback.
+    r"""Bind a library executor into a cqlib mitigation callback.
 
     The returned callback satisfies cqlib's mitigation estimator contract.
-    The observable and shot count cqlib passes in are ignored in favour of
-    the ones bound here, so every call inherits the executor's caching and
-    request validation behaviour.
+    When ``observable`` is given it fixes the observable for the lifetime of
+    the callback and the observable cqlib passes in is ignored; when it is
+    ``None`` the observable cqlib passes in is forwarded instead. The shot
+    count cqlib passes in is always ignored in favour of ``shots``. Every call
+    inherits the executor's caching and request validation behaviour.
 
     Parameters
     ----------
     executor
         Executor supplying the expectation-value backend.
     observable
-        Observable fixed for the lifetime of the returned callback.
+        Observable fixed for the lifetime of the returned callback, or ``None``
+        to forward the observable cqlib supplies on each call.
     shots
         Shot count attached to every request, or ``None`` for exact
         evaluation.
@@ -63,16 +66,26 @@ def make_cqlib_estimator(
     -------
     CqlibEstimator
         Callback ``(circuit, hamiltonian, shots) -> (mean, variance)``.
+
+    Raises
+    ------
+    ValueError
+        If no observable is bound and cqlib calls the callback without one.
     """
 
     def callback(
         circuit: Circuit,
-        _hamiltonian: Hamiltonian | None,
+        hamiltonian: Hamiltonian | None,
         _shots: int | None,
     ) -> tuple[float, float]:
-        r"""Return the bound observable's ``(mean, variance)`` for ``circuit``."""
+        r"""Return the callback observable's ``(mean, variance)`` for ``circuit``."""
+        chosen = observable if observable is not None else hamiltonian
+        if chosen is None:
+            raise ValueError(
+                "no observable is bound to this callback and cqlib passed none"
+            )
         request = EstimatorRequest(
-            circuit=circuit, observable=observable, shots=shots, seed=seed
+            circuit=circuit, observable=chosen, shots=shots, seed=seed
         )
         result = executor.estimate([request])[0]
         return (result.expectation, result.variance or 0.0)

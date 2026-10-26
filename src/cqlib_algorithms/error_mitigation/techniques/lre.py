@@ -213,8 +213,8 @@ def combine_results(
     Warns
     -----
     ConvergenceWarning
-        If the multivariate extrapolation system is ill-conditioned, so the
-        extrapolation amplifies measurement error.
+        If the multivariate sample matrix is ill-conditioned, in which case
+        the extrapolation amplifies measurement error.
     """
     if len(results) != len(scale_points):
         raise ValueError(
@@ -223,8 +223,8 @@ def combine_results(
         )
 
     weights = multivariate_richardson_coefficients(scale_points)
-    # LRE-3 invariant: the constant monomial must survive with unit weight so
-    # that the extrapolation reproduces the noise-free value.
+    # The constant monomial must survive with unit weight so that the
+    # extrapolation reproduces the noise-free value.
     total = float(np.sum(weights))
     if not np.isclose(total, 1.0, rtol=0.0, atol=_WEIGHT_SUM_TOLERANCE):
         raise ValueError(
@@ -468,6 +468,10 @@ class _LreEstimator(Estimator):
             for index, circuit in enumerate(circuits)
         ]
         results = self._executor.estimate(requests)
+        # TODO: the extrapolation weights depend only on the scale points,
+        # which are the same for every request of a batch, so this re-solves
+        # the identical linear system once per request. Cache the weights on
+        # the estimator if the per-request cost ever becomes significant.
         return EstimatorResult(expectation=combine_results(results, scale_points))
 
 

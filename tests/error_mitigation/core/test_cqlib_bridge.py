@@ -102,3 +102,23 @@ def test_bridge_raises_without_an_estimator_backend(
 
     with pytest.raises(ValueError, match="no estimator backend"):
         callback(Circuit(1), None, None)
+
+
+def test_bridge_forwards_the_observable_when_none_is_bound(
+    z_hamiltonian: Hamiltonian,
+) -> None:
+    backend = _RecordingEstimator()
+    executor = QemExecutor(estimator=backend)
+    callback = make_cqlib_estimator(executor)
+
+    callback(Circuit(1), z_hamiltonian, None)
+
+    assert len(backend.requests) == 1
+    assert backend.requests[0].observable is z_hamiltonian
+
+
+def test_bridge_requires_an_observable_from_either_side() -> None:
+    callback = make_cqlib_estimator(QemExecutor(estimator=_RecordingEstimator()))
+
+    with pytest.raises(ValueError, match="observable"):
+        callback(Circuit(1), None, None)
