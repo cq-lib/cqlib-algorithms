@@ -23,6 +23,9 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Physics",
 ]
 
+[project.optional-dependencies]
+chemistry = ["pyscf>=2.6,<3"]
+
 [dependency-groups]
 dev = [
     "build>=1.2.2,<2",
