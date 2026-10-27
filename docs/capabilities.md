@@ -17,8 +17,8 @@
 
 | 类别 | 已实现能力 |
 | --- | --- |
-| 状态制备 | 基态、均匀叠加、任意纯态、乘积态、GHZ、Dicke、稠密/稀疏幅度编码、角度/基编码、图像角度编码、BRQI、用户线路与 Feature Map 适配 |
-| Ansatz | TwoLocal、RealAmplitudes、EfficientSU2、硬件高效、双量子比特参数化酉、PauliTwoDesign、算符演化、Hamiltonian 变分、激发保持、SimplifiedTwoDesign、随机层、MPS、TTN、MERA、QAOA 成本/混合演化 |
+| 状态制备 | 基态、均匀叠加、任意纯态、乘积态、GHZ、Dicke、稠密/稀疏幅度编码、角度/基编码、图像角度编码、BRQI、用户线路、Feature Map、Hartree–Fock、Slater、费米 Gaussian、晶格参考态与 VSCF |
+| Ansatz | TwoLocal、RealAmplitudes、EfficientSU2、硬件高效、双量子比特参数化酉、PauliTwoDesign、算符演化、Hamiltonian 变分、激发保持、SimplifiedTwoDesign、随机层、MPS、TTN、MERA、UCC/UCCSD、PUCCD/PUCCSD、UVCC/UVCCSD、晶格守恒拟设、QAOA 成本/混合演化 |
 | Mixer | nearby-values、ring、fully-connected、null-swap、受控交换、排列交换、时间调度和有序组合 |
 | Oracle 与反射 | 布尔函数、位翻转/相位 Oracle、零态/一般态反射、Grover diffusion、Long 相位反射、任意酉矩阵综合、酉扩张块编码和 Dicke 权重分布组件 |
 | 线路组合 | Hadamard 相位查询、隐藏线性函数电路、Grover 迭代单元、相位估计电路、QSP 与 QSVT |
@@ -30,6 +30,14 @@
 | 误差缓解 | CDR、DDD、DEB、LRE、PEA、PEC、Pauli twirling、QSE、读出缓解、classical shadows、T-REx、Virtual Distillation 和 ZNE |
 | 线路变换 | 可配置近似阶和输出 SWAP 的 `QFT` |
 
+## 科研计算链
+
+| 方向 | 已实现能力 |
+| --- | --- |
+| 分子电子结构 | RHF/ROHF/UHF 数据、限制性与自旋分辨活性空间、费米 Hamiltonian、Jordan–Wigner 映射、HF/Slater/Gaussian 参考态、UCC 系列、VQE 基态、中性 qEOM、粒子数与自旋诊断 |
+| 晶格与自旋 | 通用/线形/矩形/超立方晶格、Fermi–Hubbard、Ising、Heisenberg、守恒扇区、物理参考态与拟设、VQE 基态、占据/磁化/关联观测量 |
+| 振动系统 | 有限 modal 积分、稀疏振动算符、one-hot 映射、VSCF 参考、UVCC 系列、VQE 基态、modal 占据与严格 one-hot 泄漏诊断 |
+
 量子算术子包已经存在，但不属于本轮文档与 docstring 整理范围；其接口保持现状。
 
 ## 完整算法
@@ -38,7 +46,7 @@
 | --- | --- |
 | 相位估计 | 标准 QPE、迭代 QPE、Hamiltonian 相位估计 |
 | 振幅估计 | 标准 AE、迭代 AE、最大似然 AE、快速 AE |
-| 变分算法 | VQE、QAOA |
+| 变分算法 | VQE、QAOA、电子结构基态与 qEOM、晶格基态、振动基态 |
 | Oracle 算法 | Deutsch–Jozsa、Bernstein–Vazirani、Simon |
 | 量子信息与协议 | CHSH、BB84 协议实验、量子隐形传态、超密编码 |
 

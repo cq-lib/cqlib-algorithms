@@ -117,6 +117,21 @@ seed，也不保证产生相同的随机轴序列。
 
 ## 算符演化系列
 
+### 晶格守恒拟设
+
+`FermionicHoppingAnsatz` 表示单个复 hopping 的精确参数化演化。它固定采用
+Jordan--Wigner 直接占据编码，通过数目相位共轭把复 hopping 归约为两个严格对易的
+实 hopping Pauli 项，因此非相邻模式的奇偶串和复相位都被完整保留。
+
+`FermiHubbardAnsatz` 先制备与 `FermionicSector` 一致的计算基配置；每层按格点边和
+up/down 顺序作用独立 hopping 因子，再精确演化全部对角在位势与 onsite interaction。
+这是一种有序 Hamiltonian-inspired 因子线路，不把非对易 hopping 总和当成单次精确
+演化。线路的变分部分严格保持 `N_up` 与 `N_down`。
+
+`SpinExchangeAnsatz` 从守恒自旋系统的非零晶格边构造拓扑，并复用
+`ExcitationPreservingAnsatz`。它要求显式 `SpinMagnetizationSector` 和匹配参考配置，
+支持 iSWAP-like 与 fSim-like 模式，严格保持总 `S_z`。
+
 ### `EvolvedOperatorAnsatz`
 
 对有序 Hermitian Hamiltonian 序列 `O_0, ..., O_(m-1)`，每个 repetition 按输入
@@ -148,6 +163,116 @@ circuit = ansatz.build_circuit("theta")
 默认 `remove_identity_operators=True`，纯 identity Hamiltonian 因只产生全局相位而
 不占参数槽；如果参数化全局相位本身需要保留，可将其设为 `False`。若全部算符被
 移除或 `reps=0`，返回保持原寄存器宽度的无参数 identity 线路。
+
+### `UCCAnsatz` 与 `UCCSDAnsatz`
+
+`UCCAnsatz` 接收有序费米激发或共享一个参数的实系数分组生成元。序列项 `k` 的
+Core Hermitian 生成元为
+`G_k=i(T_k-T_k†)`，线路在时间顺序中依次追加
+
+```text
+U_k(theta_k) = exp(-i * theta_k * G_k)
+             = exp(theta_k * (T_k-T_k†)).
+```
+
+因此输入 `0, ..., m-1` 的激发酉矩阵是 `U_(m-1) ... U_0`；若配置固定初态线路
+`A`，完整线路矩阵是 `U_(m-1) ... U_0 A`。这是有序分解的 disentangled UCC；
+未配置初态时 `A=I`。当生成元不对易时，该乘积一般不等于
+`exp(sum_k theta_k*(T_k-T_k†))`。输入顺序具有物理意义，重复激发也保留为不同参数
+因子。每个费米生成元只映射一次，映射结果被冻结；因子使用 Core 精确 Pauli 演化。
+若一个映射后生成元内部包含不对易 Pauli 项，构造器会拒绝它，而不会在该因子内部
+静默引入乘积公式近似。参数稳定命名为 `{prefix}_theta_0, ...`。
+
+`UCCSDAnsatz` 从 `ElectronicOccupation` 生成保持 alpha、beta 电子数的单激发和
+双激发，并按稳定的“单激发在前、双激发在后”顺序委托 `UCCAnsatz`。未显式提供
+固定初态时，它用同一映射器构造 Hartree--Fock 参考态。该构造保持总粒子数和
+`S_z`，但不是保持 `S^2` 的自旋适配拟设。
+自定义固定初态必须构建无活跃参数、宽度一致且可由 Core 静态求逆的线路；测量、
+重置及包含这类操作的嵌套线路会在构造时被拒绝。该检查验证可组合线路能力，
+不宣称对任意自定义矩阵执行额外的数值幺正性证明。
+显式激发序列以及自动生成的 UCCSD 激发池都必须非空；真空或满占据等无激发配置
+会被拒绝，而不是隐式构造无参数参考态线路。
+
+```python
+from cqlib_algorithms.extension.chemistry import ElectronicOccupation
+from cqlib_algorithms.operators import UCCSDAnsatz
+
+occupation = ElectronicOccupation.closed_shell(2, 2)
+ansatz = UCCSDAnsatz(occupation)
+circuit = ansatz.build_circuit("ucc")
+```
+
+### `UVCCAnsatz` 与 `UVCCSDAnsatz`
+
+`UVCCAnsatz` 接收作用于同一 `ModalSpace` 的有序 `VibrationalExcitation`。对
+excitation `k` 的 modal 转移算符 `T_k`，它构造
+
+```text
+G_k = i * (T_k - T_k†),
+U_k(theta_k) = exp(-i * theta_k * G_k)
+             = exp(theta_k * (T_k - T_k†)).
+```
+
+`T_k` 先由 `OneHotVibrationalMapper` 精确映射，再交给公共
+`EvolvedOperatorAnsatz` 的精确 Pauli 演化。输入顺序、重复 excitation 和重复层均
+保留；每个位置使用独立参数。若有 `m` 个 excitation 和 `reps=r`，参数数目为
+`m*r`，命名为 `{prefix}_theta_0, ...`。初态只在全部演化因子之前准备一次。
+
+`UVCCSDAnsatz` 是固定的 VSCF 相对单、双激发组合：先枚举所有单激发，再枚举作用于
+两个不同 mode 的全部双激发。若每个 mode 有 `n_i` 个 modal，则单激发数和双激发数
+分别为
+
+```text
+S = sum_i (n_i - 1),
+D = sum_(i<j) (n_i - 1) * (n_j - 1).
+```
+
+默认初态为同一参考构型的 `VSCFStatePreparation`，也可提供宽度相同、无活跃参数且
+静态可逆的固定初态。每个生成元只在所属 mode 内移动 one-hot 占据，因此线路保持
+每个 mode 恰有一个 modal 的物理子空间。`reps=0` 时只保留固定初态。
+
+```python
+from cqlib_algorithms.extension.vibration import ModalSpace
+from cqlib_algorithms.operators import UVCCSDAnsatz
+
+space = ModalSpace((3, 3, 2))
+ansatz = UVCCSDAnsatz(space, reps=2)
+circuit = ansatz.build_circuit("uvcc")
+```
+
+### `PUCCDAnsatz` 与 `PUCCSDAnsatz`
+
+`PUCCDAnsatz` 面向非空、非满的闭壳层参考占据。对每个占据空间轨道 `p` 和虚空间
+轨道 `q`，它构造配对双激发
+
+```text
+(2p, 2p+1) -> (2q, 2q+1).
+```
+
+激发按 `p`、`q` 字典序排列，每个激发对应一个参数和一个精确演化因子。
+
+`PUCCSDAnsatz` 使用固定的 generalized spin-adapted s-UPS 生成元池。对每个空间轨道
+对 `p<q`，先生成共享同一参数且系数均为 1 的 alpha/beta 互补单激发组，再生成一个
+配对双激发。线路顺序固定为全部分组单激发在前、全部配对双激发在后，参数数量为
+
+```text
+2 * C(num_spatial_orbitals, 2).
+```
+
+两种线路都委托 `UCCAnsatz`，所以其矩阵是按输入时间顺序形成的有序因子乘积，一般
+不等于生成元加权和的整体指数。`PUCCSDAnsatz` 的每个因子及完整线路保持粒子数、
+`S_z` 与 `S^2`。它提供固定池和固定因子顺序，不执行离散顺序优化、轨道优化或
+repetitions。默认初态为使用同一映射器构造的闭壳层 Hartree--Fock 占据；自定义固定
+初态仍须满足 `UCCAnsatz` 的宽度、无活跃参数和静态可逆约束。
+
+```python
+from cqlib_algorithms.extension.chemistry import ElectronicOccupation
+from cqlib_algorithms.operators import PUCCDAnsatz, PUCCSDAnsatz
+
+occupation = ElectronicOccupation.closed_shell(2, 2)
+paired_doubles = PUCCDAnsatz(occupation).build_circuit("pair")
+spin_adapted = PUCCSDAnsatz(occupation).build_circuit("spin")
+```
 
 ### `HamiltonianVariationalAnsatz`
 
@@ -342,6 +467,21 @@ mixer_layer = QAOAMixerEvolution(2).build_circuit("qaoa")
 - Gard 等，
   [Efficient symmetry-preserving state preparation circuits for the variational quantum eigensolver algorithm](https://arxiv.org/abs/1904.10910)，
   说明固定粒子数子空间中变分线路的价值及守恒结构。
+- Romero 等，
+  [Strategies for quantum computing molecular energies using the unitary coupled cluster ansatz](https://doi.org/10.1088/2058-9565/aad3e4)，
+  讨论量子计算中的酉耦合簇构造、映射和线路组织。
+- O'Malley 等，
+  [Scalable Quantum Simulation of Molecular Energies](https://doi.org/10.1103/PhysRevX.6.031007)，
+  展示分解酉耦合簇线路在变分分子能量计算中的使用。
+- McArdle 等，
+  [Digital quantum simulation of molecular vibrations](https://doi.org/10.1039/C9SC01313J)，
+  给出 one-hot modal 编码、VSCF 参考和酉振动耦合簇线路的组合方式。
+- Sokolov 等，
+  [Quantum Orbital-Optimized Unitary Coupled Cluster Methods in the Strongly Correlated Regime](https://arxiv.org/abs/1911.10864)，
+  给出闭壳层占据轨道到虚轨道的配对双激发构造，是本文 `PUCCDAnsatz` 激发池的依据。
+- Burton 等，
+  [Exact electronic states with shallow quantum circuits through global optimisation](https://arxiv.org/abs/2207.00085)，
+  给出本文固定 `PUCCSDAnsatz` 使用的自旋适配 paired s-UPS 元素。
 - Cerezo 等，
   [Cost function dependent barren plateaus in shallow parametrized quantum circuits](https://arxiv.org/abs/2001.00550)，
   给出本文采用的简化 two-design 线路结构和可训练性分析。

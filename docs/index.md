@@ -38,6 +38,12 @@ docstring 为准；本目录负责说明当前能力、使用方法和开发规�
 - [线路态保真度](user-guide/components/state-fidelity.md)
 - [量子误差缓解](user-guide/components/error-mitigation.md)
 
+### 科研计算链
+
+- [分子电子结构](user-guide/domains/electronic-structure.md)
+- [晶格与自旋模型](user-guide/domains/lattice-models.md)
+- [振动与有限 Modal 系统](user-guide/domains/vibrational-systems.md)
+
 ## 开发者
 
 - [文档与 Docstring 规范](documentation-style.md)

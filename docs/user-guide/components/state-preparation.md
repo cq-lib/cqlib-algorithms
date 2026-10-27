@@ -13,6 +13,8 @@
 | 角度、布尔或 Core Feature Map 数据 | `AngleEncoding`、`BasisEncoding`、`FeatureMapPreparation` |
 | 图像数据 | `ImageAngleEncoding`、`ImageBasisEncoding`（`BRQI`） |
 | 已有可逆线路 | `UserCircuitPreparation` |
+| 电子结构参考态 | `HartreeFockStatePreparation`、`SlaterDeterminantStatePreparation`、`FermionicGaussianStatePreparation` |
+| 晶格和振动参考态 | `LatticeReferenceStatePreparation`、`VSCFStatePreparation` |
 
 `num_qubits` 和所有索引必须是真正的 Python `int`，不接受 `bool` 代替整数。
 数值输入必须可转换为有限复数。配置或数值非法时抛出 `ValueError`，输入类型不匹配时
@@ -76,6 +78,20 @@ Gleinig 与 Hoefler 的
 求逆，因此拒绝测量、重置、动态控制等非幺正操作。当前 Core 也不能对三量子比特及
 以上的矩阵型 `UnitaryGate` 求逆，即使矩阵本身是幺正的；该限制会在构造时明确暴露，
 不能用稠密酉门绕过。
+
+## 物理参考态
+
+`HartreeFockStatePreparation` 将 `ElectronicOccupation` 交给同一费米映射器生成计算
+基占据态。`SlaterDeterminantStatePreparation` 接收列正交的轨道系数矩阵，用相邻
+Givens 旋转制备固定粒子数 Slater 行列式。`FermionicGaussianStatePreparation` 进一步
+接受规范 Bogoliubov 变换，可制备粒子数不守恒但费米宇称确定的 Gaussian 态；纯
+粒子数守恒输入自动复用 Slater 制备。
+
+`LatticeReferenceStatePreparation` 校验计算基配置与 `LatticeSystem` 的模型、宽度和
+守恒扇区一致。`VSCFStatePreparation` 在每个振动 mode 的 one-hot qubit 块中选择
+恰好一个 modal，默认选择 modal 0。完整领域用法见[分子电子结构](../domains/electronic-structure.md)、
+[晶格与自旋模型](../domains/lattice-models.md)和
+[振动与有限 Modal 系统](../domains/vibrational-systems.md)。
 
 ## 图像编码
 
