@@ -41,6 +41,7 @@ from .electronic_structure import (
     ElectronicQEOM,
     ElectronicQEOMResult,
 )
+from .grover import Grover, GroverRequest, GroverResult
 from .lattice import LatticeGroundState, LatticeGroundStateResult
 from .phase_estimation import (
     HamiltonianPhaseEstimation,
@@ -113,6 +114,9 @@ __all__ = [
     "FasterAmplitudeEstimation",
     "FasterAmplitudeEstimationRequest",
     "FasterAmplitudeEstimationResult",
+    "Grover",
+    "GroverRequest",
+    "GroverResult",
     "HamiltonianPhaseEstimation",
     "HamiltonianPhaseEstimationRequest",
     "HamiltonianPhaseEstimationResult",

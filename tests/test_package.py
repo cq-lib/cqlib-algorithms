@@ -50,6 +50,9 @@ from cqlib_algorithms import (
     FasterAmplitudeEstimation,
     FasterAmplitudeEstimationRequest,
     FasterAmplitudeEstimationResult,
+    Grover,
+    GroverRequest,
+    GroverResult,
     HamiltonianPhaseEstimation,
     HamiltonianPhaseEstimationRequest,
     HamiltonianPhaseEstimationResult,
@@ -149,6 +152,9 @@ from cqlib_algorithms.algorithms import (
 from cqlib_algorithms.algorithms import (
     FasterAmplitudeEstimationResult as AlgorithmFasterAmplitudeEstimationResult,
 )
+from cqlib_algorithms.algorithms import Grover as AlgorithmGrover
+from cqlib_algorithms.algorithms import GroverRequest as AlgorithmGroverRequest
+from cqlib_algorithms.algorithms import GroverResult as AlgorithmGroverResult
 from cqlib_algorithms.algorithms import (
     HamiltonianPhaseEstimation as AlgorithmHamiltonianPhaseEstimation,
 )
@@ -331,6 +337,9 @@ PUBLIC_COMPONENTS = {
     "FasterAmplitudeEstimation": FasterAmplitudeEstimation,
     "FasterAmplitudeEstimationRequest": FasterAmplitudeEstimationRequest,
     "FasterAmplitudeEstimationResult": FasterAmplitudeEstimationResult,
+    "Grover": Grover,
+    "GroverRequest": GroverRequest,
+    "GroverResult": GroverResult,
     "HamiltonianPhaseEstimation": HamiltonianPhaseEstimation,
     "HamiltonianPhaseEstimationRequest": HamiltonianPhaseEstimationRequest,
     "HamiltonianPhaseEstimationResult": HamiltonianPhaseEstimationResult,
@@ -542,6 +551,12 @@ def test_amplitude_estimation_is_exported_from_public_namespaces():
 def test_qaoa_is_exported_from_public_namespaces():
     assert QAOA is AlgorithmQAOA is VariationalQAOA
     assert QAOAResult is AlgorithmQAOAResult is VariationalQAOAResult
+
+
+def test_grover_is_exported_from_public_namespaces():
+    assert Grover is AlgorithmGrover
+    assert GroverRequest is AlgorithmGroverRequest
+    assert GroverResult is AlgorithmGroverResult
 
 
 def test_quantum_teleportation_is_exported_from_public_namespaces():
