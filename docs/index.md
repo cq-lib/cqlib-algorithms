@@ -18,6 +18,7 @@ docstring 为准；本目录负责说明当前能力、使用方法和开发规�
 - [ADAPT-VQE](user-guide/algorithms/adapt-vqe.md)
 - [Sampling VQE](user-guide/algorithms/sampling-vqe.md)
 - [QAOA](user-guide/algorithms/qaoa.md)
+- [PVQD 实时演化](user-guide/algorithms/pvqd.md)
 - [Deutsch–Jozsa](user-guide/algorithms/deutsch-jozsa.md)
 - [Bernstein–Vazirani](user-guide/algorithms/bernstein-vazirani.md)
 - [Simon](user-guide/algorithms/simon.md)

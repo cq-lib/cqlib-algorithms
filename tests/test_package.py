@@ -24,6 +24,7 @@ import cqlib_algorithms
 from cqlib_algorithms import (
     BB84,
     CHSH,
+    PVQD,
     QAOA,
     QFT,
     VQE,
@@ -68,6 +69,7 @@ from cqlib_algorithms import (
     PhaseEstimationProblem,
     PhaseEstimationRequest,
     PhaseEstimationResult,
+    PVQDResult,
     QAOAResult,
     QuantumTeleportation,
     QuantumTeleportationRequest,
@@ -92,6 +94,7 @@ from cqlib_algorithms import (
 )
 from cqlib_algorithms.algorithms import BB84 as AlgorithmBB84
 from cqlib_algorithms.algorithms import CHSH as AlgorithmCHSH
+from cqlib_algorithms.algorithms import PVQD as AlgorithmPVQD
 from cqlib_algorithms.algorithms import QAOA as AlgorithmQAOA
 from cqlib_algorithms.algorithms import VQE as AlgorithmVQE
 from cqlib_algorithms.algorithms import AdaptVQE as AlgorithmAdaptVQE
@@ -198,6 +201,7 @@ from cqlib_algorithms.algorithms import (
 from cqlib_algorithms.algorithms import (
     PhaseEstimationResult as AlgorithmPhaseEstimationResult,
 )
+from cqlib_algorithms.algorithms import PVQDResult as AlgorithmPVQDResult
 from cqlib_algorithms.algorithms import QAOAResult as AlgorithmQAOAResult
 from cqlib_algorithms.algorithms import (
     QuantumTeleportation as AlgorithmQuantumTeleportation,
@@ -247,6 +251,10 @@ from cqlib_algorithms.algorithms import (
 )
 from cqlib_algorithms.algorithms import VQAResult as AlgorithmVQAResult
 from cqlib_algorithms.algorithms import VQEResult as AlgorithmVQEResult
+from cqlib_algorithms.algorithms.time_evolution import PVQD as TimeEvolutionPVQD
+from cqlib_algorithms.algorithms.time_evolution import (
+    PVQDResult as TimeEvolutionPVQDResult,
+)
 from cqlib_algorithms.algorithms.variational import QAOA as VariationalQAOA
 from cqlib_algorithms.algorithms.variational import VQE as VariationalVQE
 from cqlib_algorithms.algorithms.variational import (
@@ -347,6 +355,8 @@ PUBLIC_COMPONENTS = {
     "OptimizerRequest": OptimizerRequest,
     "OptimizerResult": OptimizerResult,
     "OptimizerStatus": OptimizerStatus,
+    "PVQD": PVQD,
+    "PVQDResult": PVQDResult,
     "QAOA": QAOA,
     "QAOAResult": QAOAResult,
     "PhaseEstimation": PhaseEstimation,
@@ -451,6 +461,8 @@ def test_phase_estimation_is_exported_from_public_namespaces():
 def test_vqe_is_exported_from_public_namespaces():
     assert VQE is AlgorithmVQE is VariationalVQE
     assert VQEResult is AlgorithmVQEResult is VariationalVQEResult
+    assert PVQD is AlgorithmPVQD is TimeEvolutionPVQD
+    assert PVQDResult is AlgorithmPVQDResult is TimeEvolutionPVQDResult
     assert VQAResult is AlgorithmVQAResult is VariationalVQAResult
 
 

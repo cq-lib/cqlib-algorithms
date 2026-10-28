@@ -46,7 +46,7 @@
 | --- | --- |
 | 相位估计 | 标准 QPE、迭代 QPE、Hamiltonian 相位估计 |
 | 振幅估计 | 标准 AE、迭代 AE、最大似然 AE、快速 AE |
-| 变分算法 | VQE、ADAPT-VQE、Sampling VQE、QAOA、电子结构基态与 qEOM、晶格基态、振动基态 |
+| 变分算法 | VQE、ADAPT-VQE、Sampling VQE、QAOA、PVQD 实时演化、电子结构基态与 qEOM、晶格基态、振动基态 |
 | Oracle 算法 | Deutsch–Jozsa、Bernstein–Vazirani、Simon |
 | 量子信息与协议 | CHSH、BB84 协议实验、量子隐形传态、超密编码 |
 

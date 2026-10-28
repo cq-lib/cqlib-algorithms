@@ -17,6 +17,7 @@ from importlib.metadata import PackageNotFoundError, version
 from .algorithms import (
     BB84,
     CHSH,
+    PVQD,
     QAOA,
     VQE,
     AdaptVQE,
@@ -59,6 +60,7 @@ from .algorithms import (
     PhaseEstimationProblem,
     PhaseEstimationRequest,
     PhaseEstimationResult,
+    PVQDResult,
     QAOAResult,
     QuantumTeleportation,
     QuantumTeleportationRequest,
@@ -108,6 +110,7 @@ except PackageNotFoundError:
 __all__ = [
     "BB84",
     "CHSH",
+    "PVQD",
     "QAOA",
     "QFT",
     "VQE",
@@ -158,6 +161,7 @@ __all__ = [
     "OptimizerRequest",
     "OptimizerResult",
     "OptimizerStatus",
+    "PVQDResult",
     "PhaseEstimation",
     "PhaseEstimationCircuit",
     "PhaseEstimationProblem",

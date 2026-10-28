@@ -65,6 +65,7 @@ from .superdense_coding import (
     SuperdenseCodingRequest,
     SuperdenseCodingResult,
 )
+from .time_evolution import PVQD, PVQDResult
 from .variational import (
     QAOA,
     VQE,
@@ -87,6 +88,7 @@ from .vibration import (
 __all__ = [
     "BB84",
     "CHSH",
+    "PVQD",
     "QAOA",
     "VQE",
     "AdaptVQE",
@@ -125,6 +127,7 @@ __all__ = [
     "MaximumLikelihoodAmplitudeEstimation",
     "MaximumLikelihoodAmplitudeEstimationRequest",
     "MaximumLikelihoodAmplitudeEstimationResult",
+    "PVQDResult",
     "PhaseEstimation",
     "PhaseEstimationProblem",
     "PhaseEstimationRequest",
