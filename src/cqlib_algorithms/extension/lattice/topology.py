@@ -216,7 +216,12 @@ class Lattice:
         return None
 
     def to_adjacency_matrix(self, *, weighted: bool = False) -> NDArray[np.complex128]:
-        """Return a binary or weighted Hermitian adjacency matrix."""
+        """Return a binary or weighted Hermitian adjacency matrix.
+
+        The binary form records declared connectivity, including zero-weight
+        edges and declared self-loops. The weighted form records physical edge
+        weights and is therefore zero at a declared zero-weight edge.
+        """
         if type(weighted) is not bool:
             raise TypeError("weighted must be a bool")
         matrix = np.zeros((self.num_nodes, self.num_nodes), dtype=np.complex128)
@@ -297,6 +302,11 @@ def _normalize_boundary_conditions(
 
 class HyperCubicLattice(Lattice):
     """Nearest-neighbor lattice in an arbitrary number of dimensions.
+
+    The topology is a simple graph with at most one undirected edge per node
+    pair. Consequently a periodic axis of extent two has the same connectivity
+    as its open counterpart; the representation does not duplicate the two
+    directed nearest-neighbor displacements as parallel edges.
 
     Args:
         size: Positive extent of each dimension, with axis zero fastest.

@@ -69,6 +69,19 @@ def test_integrals_reject_complex_and_nonfinite_values():
         ElectronicIntegrals(float("nan"), np.eye(1), np.ones((1,) * 4))
 
 
+@pytest.mark.parametrize(
+    "one_body",
+    [
+        [[True]],
+        np.array([[np.bool_(False)]]),
+        np.array([[True]], dtype=object),
+    ],
+)
+def test_integrals_reject_boolean_array_entries(one_body):
+    with pytest.raises(TypeError, match="without booleans"):
+        ElectronicIntegrals(0.0, one_body, np.ones((1,) * 4))
+
+
 def test_integrals_reject_ragged_input_with_stable_type_and_message():
     with pytest.raises(TypeError, match="one_body must be a rectangular real array"):
         ElectronicIntegrals(

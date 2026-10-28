@@ -139,9 +139,10 @@ class SpinCorrelation:
     r"""Factory for the unconnected product :math:`\sigma_i^a\sigma_j^a`.
 
     Equal sites are allowed and yield the identity because
-    :math:`(\sigma_i^a)^2=I`. A connected correlator additionally subtracts
-    :math:`\langle\sigma_i^a\rangle\langle\sigma_j^a\rangle` during classical
-    expectation-value post-processing.
+    :math:`(\sigma_i^a)^2=I`. This component does not perform connected-
+    correlator post-processing; callers may separately subtract
+    :math:`\langle\sigma_i^a\rangle\langle\sigma_j^a\rangle` from measured
+    expectations.
 
     Args:
         model: Supported spin-one-half lattice model.

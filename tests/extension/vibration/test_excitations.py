@@ -60,9 +60,11 @@ def test_custom_reference_generates_all_other_targets_in_each_mode():
         (ModalTransition(0, 2, 1),),
         (ModalTransition(1, 0, 1),),
     )
-    assert all(
-        space.modal_basis_index(excitation.apply((1, 1))) >= 0
-        for excitation in excitations
+    outputs = tuple(excitation.apply((1, 1)) for excitation in excitations)
+    assert outputs == (
+        (0, 1),
+        (2, 1),
+        (1, 0),
     )
 
 

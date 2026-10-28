@@ -44,6 +44,41 @@ def _load_pyscf() -> tuple[ModuleType, ModuleType, ModuleType]:
         ) from exc
 
 
+def _real_core_and_overlap(
+    mean_field: Any,
+    *,
+    label: str,
+    num_atomic_orbitals: int,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Return validated real AO core and overlap matrices."""
+    core_source = np.asarray(mean_field.get_hcore())
+    overlap_source = np.asarray(mean_field.get_ovlp())
+    if np.iscomplexobj(core_source) or np.iscomplexobj(overlap_source):
+        raise ValueError(f"{label} core and overlap matrices must be real")
+    core = np.asarray(core_source, dtype=np.float64)
+    overlap = np.asarray(overlap_source, dtype=np.float64)
+    expected_shape = (num_atomic_orbitals,) * 2
+    if core.shape != expected_shape:
+        raise ValueError(f"AO core Hamiltonian shape must match {label} orbitals")
+    if overlap.shape != expected_shape:
+        raise ValueError("AO overlap shape must match the core Hamiltonian")
+    return core, overlap
+
+
+def _validate_orthonormal_orbitals(
+    coefficients: np.ndarray,
+    overlap: np.ndarray,
+    *,
+    label: str,
+) -> None:
+    """Validate orbital orthonormality in the AO overlap metric."""
+    num_orbitals = coefficients.shape[1]
+    metric = coefficients.T @ overlap @ coefficients
+    identity = np.eye(num_orbitals, dtype=np.float64)
+    if not np.allclose(metric, identity, rtol=0.0, atol=1e-8):
+        raise ValueError(f"{label} orbitals must be orthonormal")
+
+
 class PySCFDriver:
     """Compute real restricted or unrestricted molecular-orbital integrals.
 
@@ -204,7 +239,17 @@ class PySCFDriver:
         coefficients = coefficients[:, order]
         orbital_energies = orbital_energies[order]
 
-        one_body = coefficients.T @ np.asarray(mean_field.get_hcore()) @ coefficients
+        core, overlap = _real_core_and_overlap(
+            mean_field,
+            label="restricted",
+            num_atomic_orbitals=coefficients.shape[0],
+        )
+        _validate_orthonormal_orbitals(
+            coefficients,
+            overlap,
+            label="restricted",
+        )
+        one_body = coefficients.T @ core @ coefficients
         packed_eri = ao2mo.kernel(pyscf_molecule, coefficients)
         two_body = np.asarray(
             ao2mo.restore(1, packed_eri, num_orbitals),
@@ -288,24 +333,20 @@ class PySCFDriver:
 
         alpha_coefficients, beta_coefficients = ordered_coefficients
         alpha_energies, beta_energies = ordered_energies
-        core_source = np.asarray(mean_field.get_hcore())
-        overlap_source = np.asarray(mean_field.get_ovlp())
-        if np.iscomplexobj(core_source) or np.iscomplexobj(overlap_source):
-            raise ValueError("UHF core and overlap matrices must be real")
-        core = np.asarray(core_source, dtype=np.float64)
-        overlap = np.asarray(overlap_source, dtype=np.float64)
-        if core.shape != (coefficients.shape[1],) * 2:
-            raise ValueError("AO core Hamiltonian shape must match UHF orbitals")
-        if overlap.shape != core.shape:
-            raise ValueError("AO overlap shape must match the core Hamiltonian")
-        identity = np.eye(num_orbitals, dtype=np.float64)
+        core, overlap = _real_core_and_overlap(
+            mean_field,
+            label="UHF",
+            num_atomic_orbitals=coefficients.shape[1],
+        )
         for label, orbital_coefficients in (
             ("alpha", alpha_coefficients),
             ("beta", beta_coefficients),
         ):
-            metric = orbital_coefficients.T @ overlap @ orbital_coefficients
-            if not np.allclose(metric, identity, rtol=0.0, atol=1e-8):
-                raise ValueError(f"UHF {label} orbitals must be orthonormal")
+            _validate_orthonormal_orbitals(
+                orbital_coefficients,
+                overlap,
+                label=f"UHF {label}",
+            )
         one_alpha = alpha_coefficients.T @ core @ alpha_coefficients
         one_beta = beta_coefficients.T @ core @ beta_coefficients
         alpha_beta_overlap = alpha_coefficients.T @ overlap @ beta_coefficients

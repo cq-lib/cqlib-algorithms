@@ -93,6 +93,7 @@ def test_rohf_driver_reorders_common_orbitals_and_preserves_spin_counts(monkeypa
         mo_energy=np.array([0.5, -0.2, -1.0]),
         mo_occ=np.array([0.0, 1.0, 2.0]),
         get_hcore=lambda: np.diag([0.5, -0.2, -1.0]),
+        get_ovlp=lambda: np.eye(3),
     )
 
     def build_molecule(**kwargs):
@@ -154,6 +155,29 @@ def test_rohf_driver_rejects_occupation_count_inconsistent_with_backend(monkeypa
 
     with pytest.raises(ValueError, match="num_alpha"):
         PySCFDriver().run(_helium_hydride_doublet())
+
+
+def test_restricted_driver_rejects_nonorthonormal_orbitals(monkeypatch):
+    molecule = SimpleNamespace(nelec=(1, 1), energy_nuc=lambda: 0.0)
+    mean_field = SimpleNamespace(
+        converged=True,
+        kernel=lambda: -1.0,
+        mo_coeff=np.eye(2),
+        mo_energy=np.array([-1.0, 0.2]),
+        mo_occ=np.array([2.0, 0.0]),
+        get_hcore=lambda: np.eye(2),
+        get_ovlp=lambda: 2.0 * np.eye(2),
+    )
+    gto = SimpleNamespace(M=lambda **kwargs: molecule)
+    scf = SimpleNamespace(RHF=lambda value: mean_field)
+    monkeypatch.setattr(
+        driver_module,
+        "_load_pyscf",
+        lambda: (SimpleNamespace(), gto, scf),
+    )
+
+    with pytest.raises(ValueError, match="restricted orbitals must be orthonormal"):
+        PySCFDriver().run(_hydrogen_molecule())
 
 
 def test_driver_rejects_wrong_input_type():

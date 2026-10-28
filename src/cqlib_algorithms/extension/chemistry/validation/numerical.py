@@ -56,6 +56,14 @@ def immutable_real_array(value: ArrayLike, *, name: str) -> NDArray[np.float64]:
     if np.iscomplexobj(source):
         raise TypeError(f"{name} must contain real values")
     try:
+        object_values = np.asarray(value, dtype=object)
+    except (TypeError, ValueError) as exc:
+        raise TypeError(f"{name} must be a rectangular real array") from exc
+    if any(
+        isinstance(item, (bool, np.bool_, str, bytes)) for item in object_values.flat
+    ):
+        raise TypeError(f"{name} must contain numeric values without booleans")
+    try:
         copied = np.array(value, dtype=np.float64, copy=True)
     except (TypeError, ValueError) as exc:
         raise TypeError(f"{name} must be a rectangular real array") from exc

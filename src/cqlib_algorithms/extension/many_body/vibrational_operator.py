@@ -316,15 +316,13 @@ class VibrationalOp:
         """Return the physical modal-space matrix for small-system validation."""
         dimension = self.modal_space.dimension
         result = np.zeros((dimension, dimension), dtype=np.complex128)
+        physical_basis_indices = self.modal_space.physical_basis_indices
         encoded_to_modal = {
-            encoded: modal
-            for modal, encoded in enumerate(self.modal_space.physical_basis_indices)
+            encoded: modal for modal, encoded in enumerate(physical_basis_indices)
         }
 
         for term, coefficient in self.terms:
-            for column, encoded_input in enumerate(
-                self.modal_space.physical_basis_indices
-            ):
+            for column, encoded_input in enumerate(physical_basis_indices):
                 encoded_output = encoded_input
                 nonzero = True
                 for ladder in reversed(term):
