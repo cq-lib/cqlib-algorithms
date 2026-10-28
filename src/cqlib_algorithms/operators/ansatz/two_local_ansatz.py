@@ -28,11 +28,11 @@ from ._validation import (
     validate_positive_qubit_count,
     validate_repetitions,
 )
-from .base_ansatz import BaseAnsatz
+from .base_ansatz import _DelegatingAnsatz
 
 
 @final
-class TwoLocalAnsatz(BaseAnsatz):
+class TwoLocalAnsatz(_DelegatingAnsatz):
     """Alternate local rotations with topology-defined entanglement layers.
 
     Parameter slots are ordered by rotation layer, qubit, and then position in

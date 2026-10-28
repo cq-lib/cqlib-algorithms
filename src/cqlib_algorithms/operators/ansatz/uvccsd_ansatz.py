@@ -24,12 +24,12 @@ from ...extension.vibration import (
 )
 from ...protocols.state_preparation import StatePreparation
 from ..state_preparation.vscf_state_preparation import VSCFStatePreparation
-from .base_ansatz import BaseAnsatz
+from .base_ansatz import _DelegatingAnsatz
 from .uvcc_ansatz import UVCCAnsatz
 
 
 @final
-class UVCCSDAnsatz(BaseAnsatz):
+class UVCCSDAnsatz(_DelegatingAnsatz):
     """Build VSCF-relative vibrational single and double excitation factors.
 
     Args:

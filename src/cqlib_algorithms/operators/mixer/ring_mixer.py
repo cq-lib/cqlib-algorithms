@@ -44,7 +44,7 @@ class RingMixer(_BaseMixer):
         ValueError: If the value count or strategy is invalid.
     """
 
-    __slots__ = ()
+    __slots__ = ("_inner",)
 
     def __init__(
         self,

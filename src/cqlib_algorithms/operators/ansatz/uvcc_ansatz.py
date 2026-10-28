@@ -14,19 +14,22 @@
 
 from __future__ import annotations
 
-import copy
 from collections.abc import Sequence
 from typing import final
 
-from cqlib.circuit import Circuit, CircuitError
+from cqlib.circuit import Circuit
 from cqlib.circuit.ansatz import EvolutionStrategy
 from cqlib.qis import Hamiltonian
 
 from ...extension.many_body import OneHotVibrationalMapper
 from ...extension.vibration import VibrationalExcitation
 from ...protocols.state_preparation import StatePreparation
+from ._ordered_evolution import (
+    build_fixed_reference_evolution,
+    validate_fixed_reference_evolution,
+)
 from ._validation import copy_hermitian_hamiltonian, snapshot_fixed_initial_state
-from .base_ansatz import BaseAnsatz
+from .base_ansatz import _DelegatingAnsatz
 from .evolved_operator_ansatz import EvolvedOperatorAnsatz
 
 
@@ -72,13 +75,15 @@ def _mapped_generator_snapshots(
 
 
 @final
-class UVCCAnsatz(BaseAnsatz):
+class UVCCAnsatz(_DelegatingAnsatz):
     """Build an ordered factorized unitary vibrational coupled-cluster circuit.
 
     Excitation ``k`` defines ``T_k`` and the Hermitian generator
     ``G_k=i(T_k-T_k†)``. Each repetition appends ``exp(-i theta_k G_k)`` in
     input order. Repeated excitations are preserved as independent ordered
-    factors. The optional fixed initial state is prepended once.
+    factors. The optional fixed initial state is prepended once. Trainable
+    symbols are repetition-major, then excitation-major, and are named
+    ``{prefix}_theta_0``, ``{prefix}_theta_1``, and so on.
 
     Args:
         excitations: Non-empty ordered excitations in one modal space.
@@ -117,31 +122,15 @@ class UVCCAnsatz(BaseAnsatz):
 
     def _validate_configuration(self) -> None:
         """Validate the exact evolution and fixed initial-state snapshots."""
-        self._inner.validate()
-        if self._initial_circuit is None:
-            return
-        self._initial_circuit.validate()
-        if self._initial_circuit.num_qubits != self._inner.num_qubits():
-            raise ValueError("initial_state snapshot has an inconsistent width")
-        if self._initial_circuit.used_symbols:
-            raise ValueError("initial_state snapshot must not contain active symbols")
-        try:
-            self._initial_circuit.inverse()
-        except CircuitError as error:
-            raise ValueError(
-                "initial_state snapshot must contain only statically invertible operations"
-            ) from error
+        validate_fixed_reference_evolution(self._initial_circuit, self._inner)
 
     def _build_circuit(self, prefix: str) -> Circuit:
         """Return the fixed initial state followed by ordered excitation factors."""
-        circuit = (
-            Circuit(self._inner.num_qubits())
-            if self._initial_circuit is None
-            else copy.copy(self._initial_circuit)
+        return build_fixed_reference_evolution(
+            self._initial_circuit,
+            self._inner,
+            parameter_prefix=f"{prefix}_theta",
         )
-        evolution = self._inner.build_circuit(f"{prefix}_theta")
-        circuit.compose(evolution, circuit.qubits)
-        return circuit
 
 
 __all__ = ["UVCCAnsatz"]

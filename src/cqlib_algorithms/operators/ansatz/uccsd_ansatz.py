@@ -16,26 +16,24 @@ from __future__ import annotations
 
 from typing import final
 
-from cqlib.qis import (
-    FermionToQubitMapper,
-    JordanWignerMapper,
-    OccupationStateMapper,
-)
+from cqlib.qis import FermionToQubitMapper
 
 from ...extension.chemistry import (
     ElectronicOccupation,
     generate_uccsd_excitations,
 )
 from ...protocols.state_preparation import StatePreparation
-from ..state_preparation.hartree_fock_state_preparation import (
-    HartreeFockStatePreparation,
+from ._chemistry_defaults import (
+    select_fermion_mapper,
+    select_hartree_fock_reference,
+    validate_electronic_occupation,
 )
-from .base_ansatz import BaseAnsatz
+from .base_ansatz import _DelegatingAnsatz
 from .ucc_ansatz import UCCAnsatz
 
 
 @final
-class UCCSDAnsatz(BaseAnsatz):
+class UCCSDAnsatz(_DelegatingAnsatz):
     """Build alpha/beta-number-conserving singles and doubles as UCC factors.
 
     Args:
@@ -58,23 +56,18 @@ class UCCSDAnsatz(BaseAnsatz):
         mapper: FermionToQubitMapper | None = None,
         initial_state: StatePreparation | None = None,
     ) -> None:
-        if not isinstance(occupation, ElectronicOccupation):
-            raise TypeError("occupation must be an ElectronicOccupation")
-        selected_mapper = JordanWignerMapper() if mapper is None else mapper
-        if not isinstance(selected_mapper, FermionToQubitMapper):
-            raise TypeError("mapper must implement FermionToQubitMapper")
+        validate_electronic_occupation(occupation)
+        selected_mapper = select_fermion_mapper(mapper)
 
         excitations = generate_uccsd_excitations(occupation)
         if not excitations:
             raise ValueError("occupation must produce at least one UCCSD excitation")
 
-        state = initial_state
-        if state is None:
-            if not isinstance(selected_mapper, OccupationStateMapper):
-                raise TypeError(
-                    "mapper must implement OccupationStateMapper when initial_state is None"
-                )
-            state = HartreeFockStatePreparation(occupation, selected_mapper)
+        state = select_hartree_fock_reference(
+            occupation,
+            selected_mapper,
+            initial_state,
+        )
         inner = UCCAnsatz(
             excitations,
             mapper=selected_mapper,

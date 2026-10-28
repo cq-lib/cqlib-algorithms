@@ -47,7 +47,8 @@ class SpinExchangeAnsatz(BaseAnsatz):
     Args:
         system: Spin lattice system with a conserved magnetization sector.
         configuration: Reference configuration belonging to that sector.
-        reps: Non-negative number of exchange layers.
+        reps: Non-negative number of exchange layers. At zero repetitions,
+            only the fixed reference state is returned and no parameter is used.
         mode: ``"iswap"`` or ``"fsim"`` exchange block.
 
     Raises:

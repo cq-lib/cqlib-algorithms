@@ -19,12 +19,12 @@ from typing import final
 from cqlib.circuit.ansatz import EntanglementTopology
 from cqlib.circuit.gates import StandardGate
 
-from .base_ansatz import BaseAnsatz
+from .base_ansatz import _DelegatingAnsatz
 from .two_local_ansatz import TwoLocalAnsatz
 
 
 @final
-class EfficientSU2Ansatz(BaseAnsatz):
+class EfficientSU2Ansatz(_DelegatingAnsatz):
     """Two-local ansatz specialized to RY/RZ rotations and CX entanglers.
 
     Parameters are ordered by rotation layer, qubit, then RY followed by RZ.

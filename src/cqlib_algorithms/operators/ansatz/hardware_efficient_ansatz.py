@@ -26,12 +26,12 @@ from typing import final
 from cqlib.circuit.ansatz import EntanglementTopology
 from cqlib.circuit.gates import StandardGate
 
-from .base_ansatz import BaseAnsatz
+from .base_ansatz import _DelegatingAnsatz
 from .two_local_ansatz import TwoLocalAnsatz
 
 
 @final
-class HardwareEfficientAnsatz(BaseAnsatz):
+class HardwareEfficientAnsatz(_DelegatingAnsatz):
     """A digital hardware-efficient ansatz with RZ-RX-RZ Euler blocks.
 
     This class freezes one useful hardware-efficient architecture; it is not a

@@ -14,18 +14,21 @@
 
 from __future__ import annotations
 
-import copy
 from collections.abc import Sequence
 from typing import final
 
-from cqlib.circuit import Circuit, CircuitError
+from cqlib.circuit import Circuit
 from cqlib.circuit.ansatz import EvolutionStrategy
 from cqlib.qis import FermionToQubitMapper, Hamiltonian, JordanWignerMapper
 
 from ...extension.chemistry import FermionicExcitation, GroupedFermionicGenerator
 from ...protocols.state_preparation import StatePreparation
+from ._ordered_evolution import (
+    build_fixed_reference_evolution,
+    validate_fixed_reference_evolution,
+)
 from ._validation import copy_hermitian_hamiltonian, snapshot_fixed_initial_state
-from .base_ansatz import BaseAnsatz
+from .base_ansatz import _DelegatingAnsatz
 from .evolved_operator_ansatz import EvolvedOperatorAnsatz
 
 FermionicGenerator = FermionicExcitation | GroupedFermionicGenerator
@@ -87,7 +90,7 @@ def _mapped_operator_snapshots(
 
 
 @final
-class UCCAnsatz(BaseAnsatz):
+class UCCAnsatz(_DelegatingAnsatz):
     """Build an ordered factorized unitary coupled-cluster circuit.
 
     Sequence item ``k`` defines the Hermitian generator ``G_k=i(T_k-T_k†)``
@@ -97,7 +100,8 @@ class UCCAnsatz(BaseAnsatz):
     ``A``, the full matrix is ``U_(m-1) ... U_0 A``; without one, ``A`` is the
     identity. This disentangled product generally differs from the exponential
     of the summed generators, and repeated excitations remain meaningful
-    ordered factors.
+    ordered factors. Trainable symbols follow excitation order and are named
+    ``{prefix}_theta_0`` through ``{prefix}_theta_(m-1)``.
 
     Args:
         excitations: Non-empty ordered fermionic generators with equal width.
@@ -138,31 +142,15 @@ class UCCAnsatz(BaseAnsatz):
 
     def _validate_configuration(self) -> None:
         """Validate the exact evolution and fixed initial-state snapshots."""
-        self._inner.validate()
-        if self._initial_circuit is None:
-            return
-        self._initial_circuit.validate()
-        if self._initial_circuit.num_qubits != self._inner.num_qubits():
-            raise ValueError("initial_state snapshot has an inconsistent width")
-        if self._initial_circuit.used_symbols:
-            raise ValueError("initial_state snapshot must not contain active symbols")
-        try:
-            self._initial_circuit.inverse()
-        except CircuitError as error:
-            raise ValueError(
-                "initial_state snapshot must contain only statically invertible operations"
-            ) from error
+        validate_fixed_reference_evolution(self._initial_circuit, self._inner)
 
     def _build_circuit(self, prefix: str) -> Circuit:
         """Return the fixed initial state followed by ordered excitation factors."""
-        circuit = (
-            Circuit(self._inner.num_qubits())
-            if self._initial_circuit is None
-            else copy.copy(self._initial_circuit)
+        return build_fixed_reference_evolution(
+            self._initial_circuit,
+            self._inner,
+            parameter_prefix=f"{prefix}_theta",
         )
-        evolution = self._inner.build_circuit(f"{prefix}_theta")
-        circuit.compose(evolution, circuit.qubits)
-        return circuit
 
 
 __all__ = ["UCCAnsatz"]

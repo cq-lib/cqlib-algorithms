@@ -29,7 +29,7 @@ from cqlib.qis import Hamiltonian
 
 from ..measurement import CommutingObservableGrouping
 from ._validation import copy_hermitian_hamiltonian, validate_repetitions
-from .base_ansatz import BaseAnsatz
+from .base_ansatz import _DelegatingAnsatz
 from .evolved_operator_ansatz import EvolvedOperatorAnsatz
 
 
@@ -81,7 +81,7 @@ def _explicit_blocks(
 
 
 @final
-class HamiltonianVariationalAnsatz(BaseAnsatz):
+class HamiltonianVariationalAnsatz(_DelegatingAnsatz):
     """Build repeated exact evolutions of commuting Hamiltonian blocks.
 
     A single Hamiltonian is partitioned by stable first-fit global

@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+from abc import abstractmethod
 from typing import final
 
 from cqlib.circuit import Circuit
@@ -26,20 +27,15 @@ _InnerAnsatz = Ansatz | TwoLocal | PauliEvolutionAnsatz
 
 
 class BaseAnsatz(Ansatz):
-    """Validate and expose a supported Cqlib ansatz through the public protocol.
+    """Template base for validated variational circuit components.
 
-    Args:
-        inner: Supported Cqlib ansatz instance to snapshot and delegate.
-
-    Raises:
-        TypeError: If ``inner`` is not a supported ansatz.
-        ValueError: If the delegated component is invalid.
+    Subclasses implement four protected hooks for configuration validation,
+    circuit construction, parameter count, and qubit count. Components that
+    merely expose another supported ansatz use the private delegating template
+    in this module instead of storing unused delegate state in every subclass.
     """
 
-    __slots__ = ("_inner",)
-
-    def __init__(self, inner: _InnerAnsatz) -> None:
-        self._inner = inner
+    __slots__ = ()
 
     @final
     def validate(self) -> None:
@@ -64,6 +60,37 @@ class BaseAnsatz(Ansatz):
     def num_qubits(self) -> int:
         """Return the register width."""
         return self._qubit_count()
+
+    @abstractmethod
+    def _validate_configuration(self) -> None:
+        """Validate subclass-owned immutable configuration."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def _build_circuit(self, prefix: str) -> Circuit:
+        """Build an independent circuit after common validation."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def _parameter_count(self) -> int:
+        """Return the logical trainable-parameter count."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def _qubit_count(self) -> int:
+        """Return the generated circuit width."""
+        raise NotImplementedError
+
+
+class _DelegatingAnsatz(BaseAnsatz):
+    """Private template for components that expose another ansatz unchanged."""
+
+    __slots__ = ("_inner",)
+
+    def __init__(self, inner: _InnerAnsatz) -> None:
+        if not isinstance(inner, (Ansatz, TwoLocal, PauliEvolutionAnsatz)):
+            raise TypeError("inner must be a supported ansatz")
+        self._inner = inner
 
     def _validate_configuration(self) -> None:
         self._inner.validate()

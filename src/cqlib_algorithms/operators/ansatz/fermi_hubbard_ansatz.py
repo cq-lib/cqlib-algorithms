@@ -26,31 +26,31 @@ from ...extension.lattice import (
     LatticeSystem,
 )
 from ..state_preparation import LatticeReferenceStatePreparation
+from ._fermionic_hopping import (
+    _HoppingEvolution,
+    build_exact_commuting_evolution,
+    hopping_operator,
+)
 from ._validation import (
     validate_hermitian_hamiltonian,
     validate_repetitions,
 )
 from .base_ansatz import BaseAnsatz
-from .fermionic_hopping_ansatz import (
-    FermionicHoppingAnsatz,
-    _build_exact_commuting_evolution,
-    _hopping_operator,
-)
 
 
 def _model_factors(
     model: FermiHubbardModel,
-) -> tuple[tuple[FermionicHoppingAnsatz, ...], Hamiltonian | None]:
+) -> tuple[tuple[_HoppingEvolution, ...], Hamiltonian | None]:
     hopping_sum = FermionicOp(model.num_modes)
-    factors: list[FermionicHoppingAnsatz] = []
+    factors: list[_HoppingEvolution] = []
     for source, target, weight in model.lattice.weighted_edges:
         if source == target or weight == 0.0:
             continue
-        for spin_offset in (0, 1):
-            source_mode = 2 * source + spin_offset
-            target_mode = 2 * target + spin_offset
+        for spin in ("up", "down"):
+            source_mode = model.mode_index(source, spin)
+            target_mode = model.mode_index(target, spin)
             hopping = complex(weight)
-            factor_operator = _hopping_operator(
+            factor_operator = hopping_operator(
                 model.num_modes,
                 source_mode,
                 target_mode,
@@ -58,7 +58,7 @@ def _model_factors(
             )
             hopping_sum = hopping_sum + factor_operator
             factors.append(
-                FermionicHoppingAnsatz(
+                _HoppingEvolution.create(
                     model.num_modes,
                     source_mode,
                     target_mode,
@@ -156,7 +156,7 @@ class FermiHubbardAnsatz(BaseAnsatz):
             raise ValueError("initial lattice reference must be fixed")
         for factor in self._hopping_factors:
             factor.validate()
-            if factor.num_qubits() != self._initial_circuit.num_qubits:
+            if factor.num_modes != self._initial_circuit.num_qubits:
                 raise ValueError("hopping factor width is inconsistent")
         if self._diagonal_operator is not None:
             validate_hermitian_hamiltonian(
@@ -171,11 +171,11 @@ class FermiHubbardAnsatz(BaseAnsatz):
         parameter_index = 0
         for _ in range(self._reps):
             for factor in self._hopping_factors:
-                evolution = factor._build_for_parameter(f"{prefix}_{parameter_index}")
+                evolution = factor.build_circuit(f"{prefix}_{parameter_index}")
                 circuit.compose(evolution, circuit.qubits)
                 parameter_index += 1
             if self._diagonal_operator is not None:
-                evolution = _build_exact_commuting_evolution(
+                evolution = build_exact_commuting_evolution(
                     self._diagonal_operator,
                     parameter_name=f"{prefix}_{parameter_index}",
                 )

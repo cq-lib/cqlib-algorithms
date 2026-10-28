@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 from dataclasses import InitVar, dataclass, field
+from typing import Literal
 
 from cqlib.qis import (
     FermionicLadder,
@@ -77,6 +78,14 @@ class FermiHubbardModel:
     def onsite_interactions(self) -> tuple[float, ...]:
         """Return the immutable onsite interaction vector."""
         return self._onsite_interactions
+
+    def mode_index(self, site: int, spin: Literal["up", "down"]) -> int:
+        """Return the interleaved spin-orbital mode for one model site."""
+        if type(site) is not int:
+            raise TypeError("site must be an int")
+        if site < 0 or site >= self.lattice.num_nodes:
+            raise ValueError("site is out of range")
+        return fermionic_mode(site, spin)
 
     def fermionic_operator(self) -> FermionicOp:
         """Return the second-quantized many-body Hamiltonian."""

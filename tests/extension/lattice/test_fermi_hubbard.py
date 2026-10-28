@@ -109,6 +109,9 @@ def test_interleaved_modes_and_particle_number_observables_are_explicit():
     model = FermiHubbardModel(LineLattice(3), onsite_interaction=2.0)
 
     assert model.num_modes == 6
+    assert tuple(
+        model.mode_index(site, spin) for site in range(3) for spin in ("up", "down")
+    ) == tuple(range(6))
     expected_up = FermionicOp.number(6, 0) + FermionicOp.number(6, 2)
     expected_up = expected_up + FermionicOp.number(6, 4)
     expected_down = FermionicOp.number(6, 1) + FermionicOp.number(6, 3)
@@ -116,6 +119,23 @@ def test_interleaved_modes_and_particle_number_observables_are_explicit():
     assert model.up_particle_number().equiv(expected_up)
     assert model.down_particle_number().equiv(expected_down)
     assert model.total_particle_number().equiv(expected_up + expected_down)
+
+
+@pytest.mark.parametrize(
+    ("site", "spin", "error"),
+    [
+        (True, "up", TypeError),
+        (-1, "up", ValueError),
+        (2, "down", ValueError),
+        (0, 0, TypeError),
+        (0, "left", ValueError),
+    ],
+)
+def test_mode_index_rejects_invalid_site_and_spin_labels(site, spin, error):
+    model = FermiHubbardModel(LineLattice(2))
+
+    with pytest.raises(error):
+        model.mode_index(site, spin)
 
 
 def test_hamiltonian_commutes_with_total_and_spin_resolved_particle_numbers():

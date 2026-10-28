@@ -19,12 +19,12 @@ from typing import final
 from cqlib.circuit.ansatz import EntanglementTopology
 from cqlib.circuit.gates import StandardGate
 
-from .base_ansatz import BaseAnsatz
+from .base_ansatz import _DelegatingAnsatz
 from .two_local_ansatz import TwoLocalAnsatz
 
 
 @final
-class RealAmplitudesAnsatz(BaseAnsatz):
+class RealAmplitudesAnsatz(_DelegatingAnsatz):
     """Two-local ansatz specialized to RY rotations and CX entanglers.
 
     All generated gate matrices are real. Parameters are ordered by rotation

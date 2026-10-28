@@ -29,11 +29,11 @@ from cqlib.circuit.ansatz import EvolutionStrategy, PauliEvolutionAnsatz
 from cqlib.qis import Hamiltonian
 
 from ._validation import copy_hermitian_hamiltonian
-from .base_ansatz import BaseAnsatz
+from .base_ansatz import _DelegatingAnsatz
 
 
 @final
-class QAOACostEvolution(BaseAnsatz):
+class QAOACostEvolution(_DelegatingAnsatz):
     """Build one QAOA cost layer ``exp(-i gamma H_C)``.
 
     The Hamiltonian and optional evolution strategy are copied at
