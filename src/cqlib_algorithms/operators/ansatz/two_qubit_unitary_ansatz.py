@@ -9,12 +9,14 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
-#
-# The circuit templates in this file are derived from piQture:
-# (C) Copyright SaashaJoshi 2024.
-# Modified by China Telecom Quantum Group 2026 for Cqlib.
 
-"""Provide fixed-width parameterizations of two-qubit unitary blocks."""
+"""Provide fixed-width parameterizations of two-qubit unitary blocks.
+
+References
+----------
+[1] S. Joshi, *piQture*, GitHub repository, 2024,
+    https://github.com/SaashaJoshi/piQture.
+"""
 
 from __future__ import annotations
 

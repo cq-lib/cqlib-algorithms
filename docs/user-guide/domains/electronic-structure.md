@@ -24,6 +24,9 @@ MolecularSpecification
 轨道分离的自旋分辨数据。`ElectronicSystem.from_data()` 保留电子数、轨道能量、
 alpha/beta 重叠和能量组成，并可执行显式活性空间变换。默认费米到量子比特转换使用
 Jordan–Wigner；自定义 mapper 必须同时用于 Hamiltonian、初态、拟设和观测量。
+`PySCFDriver` 在生成数据前验证轨道在 AO overlap 度量下正交归一；直接构造
+`ElectronicStructureData` 或 `SpinResolvedElectronicStructureData` 时，调用方必须
+保证输入轨道已经满足同一契约，因为后端无关的数据快照不保存完整 AO overlap。
 
 ## 选择组件
 

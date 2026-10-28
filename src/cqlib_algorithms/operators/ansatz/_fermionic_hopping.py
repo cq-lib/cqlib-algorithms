@@ -83,6 +83,7 @@ def build_exact_commuting_evolution(
     *,
     parameter_name: str,
 ) -> Circuit:
+    """Return an exact one-parameter evolution of a commuting Hamiltonian."""
     evolution = (
         PauliEvolutionAnsatz(operator)
         .with_strategy(copy.copy(EvolutionStrategy.exact()))
