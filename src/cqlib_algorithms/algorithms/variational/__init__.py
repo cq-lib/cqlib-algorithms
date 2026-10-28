@@ -12,8 +12,22 @@
 
 """Variational quantum algorithms and their shared result type."""
 
+from .adapt_vqe import AdaptVQE, AdaptVQEResult, AdaptVQETermination
 from .qaoa import QAOA, QAOAResult
 from .result import VQAResult
+from .sampling_vqe import SamplingVQE, SamplingVQEMeasurement, SamplingVQEResult
 from .vqe import VQE, VQEResult
 
-__all__ = ["QAOA", "VQE", "QAOAResult", "VQAResult", "VQEResult"]
+__all__ = [
+    "QAOA",
+    "VQE",
+    "AdaptVQE",
+    "AdaptVQEResult",
+    "AdaptVQETermination",
+    "QAOAResult",
+    "SamplingVQE",
+    "SamplingVQEMeasurement",
+    "SamplingVQEResult",
+    "VQAResult",
+    "VQEResult",
+]

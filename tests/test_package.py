@@ -27,6 +27,9 @@ from cqlib_algorithms import (
     QAOA,
     QFT,
     VQE,
+    AdaptVQE,
+    AdaptVQEResult,
+    AdaptVQETermination,
     AmplitudeEstimationProblem,
     BB84Basis,
     BB84Request,
@@ -69,6 +72,9 @@ from cqlib_algorithms import (
     QuantumTeleportation,
     QuantumTeleportationRequest,
     QuantumTeleportationResult,
+    SamplingVQE,
+    SamplingVQEMeasurement,
+    SamplingVQEResult,
     Simon,
     SimonRequest,
     SimonResult,
@@ -88,6 +94,13 @@ from cqlib_algorithms.algorithms import BB84 as AlgorithmBB84
 from cqlib_algorithms.algorithms import CHSH as AlgorithmCHSH
 from cqlib_algorithms.algorithms import QAOA as AlgorithmQAOA
 from cqlib_algorithms.algorithms import VQE as AlgorithmVQE
+from cqlib_algorithms.algorithms import AdaptVQE as AlgorithmAdaptVQE
+from cqlib_algorithms.algorithms import (
+    AdaptVQEResult as AlgorithmAdaptVQEResult,
+)
+from cqlib_algorithms.algorithms import (
+    AdaptVQETermination as AlgorithmAdaptVQETermination,
+)
 from cqlib_algorithms.algorithms import (
     AmplitudeEstimationProblem as AlgorithmAmplitudeEstimationProblem,
 )
@@ -195,6 +208,13 @@ from cqlib_algorithms.algorithms import (
 from cqlib_algorithms.algorithms import (
     QuantumTeleportationResult as AlgorithmQuantumTeleportationResult,
 )
+from cqlib_algorithms.algorithms import SamplingVQE as AlgorithmSamplingVQE
+from cqlib_algorithms.algorithms import (
+    SamplingVQEMeasurement as AlgorithmSamplingVQEMeasurement,
+)
+from cqlib_algorithms.algorithms import (
+    SamplingVQEResult as AlgorithmSamplingVQEResult,
+)
 from cqlib_algorithms.algorithms import Simon as AlgorithmSimon
 from cqlib_algorithms.algorithms import SimonRequest as AlgorithmSimonRequest
 from cqlib_algorithms.algorithms import SimonResult as AlgorithmSimonResult
@@ -230,7 +250,25 @@ from cqlib_algorithms.algorithms import VQEResult as AlgorithmVQEResult
 from cqlib_algorithms.algorithms.variational import QAOA as VariationalQAOA
 from cqlib_algorithms.algorithms.variational import VQE as VariationalVQE
 from cqlib_algorithms.algorithms.variational import (
+    AdaptVQE as VariationalAdaptVQE,
+)
+from cqlib_algorithms.algorithms.variational import (
+    AdaptVQEResult as VariationalAdaptVQEResult,
+)
+from cqlib_algorithms.algorithms.variational import (
+    AdaptVQETermination as VariationalAdaptVQETermination,
+)
+from cqlib_algorithms.algorithms.variational import (
     QAOAResult as VariationalQAOAResult,
+)
+from cqlib_algorithms.algorithms.variational import (
+    SamplingVQE as VariationalSamplingVQE,
+)
+from cqlib_algorithms.algorithms.variational import (
+    SamplingVQEMeasurement as VariationalSamplingVQEMeasurement,
+)
+from cqlib_algorithms.algorithms.variational import (
+    SamplingVQEResult as VariationalSamplingVQEResult,
 )
 from cqlib_algorithms.algorithms.variational import (
     VQAResult as VariationalVQAResult,
@@ -260,6 +298,9 @@ from cqlib_algorithms.protocols import (
 from cqlib_algorithms.transforms import QFT as TransformQFT
 
 PUBLIC_COMPONENTS = {
+    "AdaptVQE": AdaptVQE,
+    "AdaptVQEResult": AdaptVQEResult,
+    "AdaptVQETermination": AdaptVQETermination,
     "AmplitudeEstimationProblem": AmplitudeEstimationProblem,
     "Ansatz": Ansatz,
     "BB84": BB84,
@@ -318,6 +359,9 @@ PUBLIC_COMPONENTS = {
     "QuantumTeleportationResult": QuantumTeleportationResult,
     "Sampler": Sampler,
     "SamplerRequest": SamplerRequest,
+    "SamplingVQE": SamplingVQE,
+    "SamplingVQEMeasurement": SamplingVQEMeasurement,
+    "SamplingVQEResult": SamplingVQEResult,
     "Simon": Simon,
     "SimonRequest": SimonRequest,
     "SimonResult": SimonResult,
@@ -408,6 +452,25 @@ def test_vqe_is_exported_from_public_namespaces():
     assert VQE is AlgorithmVQE is VariationalVQE
     assert VQEResult is AlgorithmVQEResult is VariationalVQEResult
     assert VQAResult is AlgorithmVQAResult is VariationalVQAResult
+
+
+def test_adaptive_and_sampling_vqe_are_exported_from_public_namespaces():
+    assert AdaptVQE is AlgorithmAdaptVQE is VariationalAdaptVQE
+    assert AdaptVQEResult is AlgorithmAdaptVQEResult is VariationalAdaptVQEResult
+    assert (
+        AdaptVQETermination
+        is AlgorithmAdaptVQETermination
+        is VariationalAdaptVQETermination
+    )
+    assert SamplingVQE is AlgorithmSamplingVQE is VariationalSamplingVQE
+    assert (
+        SamplingVQEMeasurement
+        is AlgorithmSamplingVQEMeasurement
+        is VariationalSamplingVQEMeasurement
+    )
+    assert (
+        SamplingVQEResult is AlgorithmSamplingVQEResult is VariationalSamplingVQEResult
+    )
 
 
 def test_electronic_ground_state_is_exported_from_public_namespaces():

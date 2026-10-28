@@ -65,7 +65,19 @@ from .superdense_coding import (
     SuperdenseCodingRequest,
     SuperdenseCodingResult,
 )
-from .variational import QAOA, VQE, QAOAResult, VQAResult, VQEResult
+from .variational import (
+    QAOA,
+    VQE,
+    AdaptVQE,
+    AdaptVQEResult,
+    AdaptVQETermination,
+    QAOAResult,
+    SamplingVQE,
+    SamplingVQEMeasurement,
+    SamplingVQEResult,
+    VQAResult,
+    VQEResult,
+)
 from .vibration import (
     VibrationalGroundState,
     VibrationalGroundStateResult,
@@ -77,6 +89,9 @@ __all__ = [
     "CHSH",
     "QAOA",
     "VQE",
+    "AdaptVQE",
+    "AdaptVQEResult",
+    "AdaptVQETermination",
     "AmplitudeEstimationProblem",
     "BB84Basis",
     "BB84Request",
@@ -118,6 +133,9 @@ __all__ = [
     "QuantumTeleportation",
     "QuantumTeleportationRequest",
     "QuantumTeleportationResult",
+    "SamplingVQE",
+    "SamplingVQEMeasurement",
+    "SamplingVQEResult",
     "Simon",
     "SimonRequest",
     "SimonResult",
