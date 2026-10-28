@@ -72,9 +72,17 @@ class IsingModel:
         """Return the immutable site-dependent transverse-field vector."""
         return self._transverse_fields
 
+    def interaction_operator(self) -> SpinOp:
+        """Return weighted Ising interactions without transverse fields."""
+        return self._heisenberg_model.interaction_operator()
+
+    def field_operator(self) -> SpinOp:
+        """Return transverse-field terms without pair interactions."""
+        return self._heisenberg_model.field_operator()
+
     def spin_operator(self) -> SpinOp:
         """Return an equivalent physical-spin-one-half operator."""
-        return self._heisenberg_model.spin_operator()
+        return self.interaction_operator() + self.field_operator()
 
     def qubit_hamiltonian(self) -> Hamiltonian:
         """Return the exact Pauli Hamiltonian for the model."""

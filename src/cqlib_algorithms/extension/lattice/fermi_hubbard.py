@@ -24,6 +24,7 @@ from cqlib.qis import (
     JordanWignerMapper,
 )
 
+from ._fermionic_layout import FERMION_SPINS, fermionic_mode
 from ._model_validation import RealVectorParameter, real_vector, require_lattice
 from .topology import Lattice
 
@@ -77,18 +78,14 @@ class FermiHubbardModel:
         """Return the immutable onsite interaction vector."""
         return self._onsite_interactions
 
-    @staticmethod
-    def _mode(node: int, spin_offset: int) -> int:
-        return 2 * node + spin_offset
-
     def fermionic_operator(self) -> FermionicOp:
         """Return the second-quantized many-body Hamiltonian."""
         terms: list[tuple[tuple[FermionicLadder, ...], complex]] = []
         for source, target, weight in self.lattice.weighted_edges:
             if source == target:
                 if weight != 0.0:
-                    for spin_offset in (0, 1):
-                        mode = self._mode(source, spin_offset)
+                    for spin in FERMION_SPINS:
+                        mode = fermionic_mode(source, spin)
                         terms.append(
                             (
                                 (
@@ -99,9 +96,9 @@ class FermiHubbardModel:
                             )
                         )
                 continue
-            for spin_offset in (0, 1):
-                source_mode = self._mode(source, spin_offset)
-                target_mode = self._mode(target, spin_offset)
+            for spin in FERMION_SPINS:
+                source_mode = fermionic_mode(source, spin)
+                target_mode = fermionic_mode(target, spin)
                 terms.extend(
                     (
                         (
@@ -124,8 +121,8 @@ class FermiHubbardModel:
         for node, interaction in enumerate(self._onsite_interactions):
             if interaction == 0.0:
                 continue
-            up = self._mode(node, 0)
-            down = self._mode(node, 1)
+            up = fermionic_mode(node, "up")
+            down = fermionic_mode(node, "down")
             terms.append(
                 (
                     (
@@ -150,8 +147,8 @@ class FermiHubbardModel:
             (
                 (
                     (
-                        FermionicLadder.create(self._mode(node, 0)),
-                        FermionicLadder.annihilate(self._mode(node, 0)),
+                        FermionicLadder.create(fermionic_mode(node, "up")),
+                        FermionicLadder.annihilate(fermionic_mode(node, "up")),
                     ),
                     1.0,
                 )
@@ -166,8 +163,8 @@ class FermiHubbardModel:
             (
                 (
                     (
-                        FermionicLadder.create(self._mode(node, 1)),
-                        FermionicLadder.annihilate(self._mode(node, 1)),
+                        FermionicLadder.create(fermionic_mode(node, "down")),
+                        FermionicLadder.annihilate(fermionic_mode(node, "down")),
                     ),
                     1.0,
                 )

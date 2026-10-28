@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Literal, TypeAlias
 
+from ._fermionic_layout import fermionic_mode_layout
 from .fermi_hubbard import FermiHubbardModel
 from .heisenberg import HeisenbergModel
 from .ising import IsingModel
@@ -142,10 +143,7 @@ class LatticeSystem:
         """
         if not isinstance(self.model, FermiHubbardModel):
             return None
-        return tuple(
-            (mode // 2, "up" if mode % 2 == 0 else "down")
-            for mode in range(self.model.num_modes)
-        )
+        return fermionic_mode_layout(self.num_sites)
 
 
 __all__ = [

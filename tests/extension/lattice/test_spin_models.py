@@ -92,6 +92,26 @@ def test_ising_is_exact_heisenberg_specialization_and_accepts_local_fields():
     )
 
 
+@pytest.mark.parametrize(
+    "model",
+    [
+        HeisenbergModel(
+            Lattice.from_nodes_and_edges(3, ((0, 1, 0.3), (1, 2, -0.5))),
+            coupling=(0.7, -0.4, 1.2),
+            external_field=((0.1, 0.2, 0.3), (0.0, -0.4, 0.5), (0.6, 0.0, -0.7)),
+        ),
+        IsingModel(
+            Lattice.from_nodes_and_edges(3, ((0, 1, 0.3), (1, 2, -0.5))),
+            transverse_field=(0.2, -0.3, 0.6),
+        ),
+    ],
+)
+def test_spin_model_is_exact_sum_of_interaction_and_field_operators(model):
+    recomposed = model.interaction_operator() + model.field_operator()
+
+    assert model.spin_operator().equiv(recomposed, atol=0.0)
+
+
 def test_transverse_field_ising_preserves_global_spin_flip_symmetry():
     model = IsingModel(LineLattice(3), transverse_field=(0.2, -0.4, 0.7))
     hamiltonian = model.qubit_hamiltonian().to_matrix()

@@ -52,28 +52,6 @@ def _map_spin_observable(operator: SpinOp) -> Hamiltonian:
     return SpinHalfMapper().map_operator(operator).normalized_hermitian()
 
 
-def _field_operator(model: SpinLatticeModel) -> SpinOp:
-    if isinstance(model, HeisenbergModel):
-        axes: tuple[SpinAxis, SpinAxis, SpinAxis] = ("X", "Y", "Z")
-        return SpinOp.from_terms(
-            model.lattice.num_nodes,
-            (
-                (((axis, site),), 2.0 * field)
-                for site, fields in enumerate(model.external_fields)
-                for axis, field in zip(axes, fields, strict=True)
-                if field != 0.0
-            ),
-        )
-    return SpinOp.from_terms(
-        model.lattice.num_nodes,
-        (
-            ((("X", site),), 2.0 * field)
-            for site, field in enumerate(model.transverse_fields)
-            if field != 0.0
-        ),
-    )
-
-
 @dataclass(frozen=True, slots=True)
 class TotalMagnetization:
     r"""Factory for physical :math:`M_z=\sum_i S_i^z=\frac12\sum_i Z_i`.
@@ -196,7 +174,7 @@ class SpinInteractionEnergy:
 
     def to_spin_op(self) -> SpinOp:
         """Return all pair-interaction terms and no local-field terms."""
-        return self.model.spin_operator() - _field_operator(self.model)
+        return self.model.interaction_operator()
 
     def to_qubit_hamiltonian(self) -> Hamiltonian:
         """Return the exact spin-one-half interaction Hamiltonian."""

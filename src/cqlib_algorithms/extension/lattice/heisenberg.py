@@ -94,8 +94,8 @@ class HeisenbergModel:
         """Return one immutable ``(hx, hy, hz)`` vector per site."""
         return self._external_fields
 
-    def spin_operator(self) -> SpinOp:
-        """Return an equivalent physical-spin-one-half operator."""
+    def interaction_operator(self) -> SpinOp:
+        """Return pair-interaction terms without local-field terms."""
         axes: tuple[SpinAxis, SpinAxis, SpinAxis] = ("X", "Y", "Z")
         terms: list[tuple[tuple[tuple[SpinAxis, int], ...], complex]] = []
         for source, target, weight in self._interaction_edges:
@@ -105,12 +105,22 @@ class HeisenbergModel:
                     terms.append(
                         (((axis, source), (axis, target)), complex(coefficient))
                     )
+        return SpinOp.from_terms(self.lattice.num_nodes, terms)
+
+    def field_operator(self) -> SpinOp:
+        """Return local-field terms without pair interactions."""
+        axes: tuple[SpinAxis, SpinAxis, SpinAxis] = ("X", "Y", "Z")
+        terms: list[tuple[tuple[tuple[SpinAxis, int], ...], complex]] = []
         for node, field_vector in enumerate(self._external_fields):
             for axis, field_strength in zip(axes, field_vector, strict=True):
                 coefficient = 2.0 * field_strength
                 if coefficient != 0.0:
                     terms.append((((axis, node),), complex(coefficient)))
         return SpinOp.from_terms(self.lattice.num_nodes, terms)
+
+    def spin_operator(self) -> SpinOp:
+        """Return an equivalent physical-spin-one-half operator."""
+        return self.interaction_operator() + self.field_operator()
 
     def qubit_hamiltonian(self) -> Hamiltonian:
         """Return the exact Pauli Hamiltonian for the model."""

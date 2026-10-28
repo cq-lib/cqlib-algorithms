@@ -19,6 +19,7 @@ from dataclasses import dataclass
 from cqlib.qis import FermionicOp, FermionToQubitMapper, Hamiltonian
 
 from ...many_body._fermionic_mapping import map_fermionic_operator
+from .._fermionic_layout import fermionic_mode
 from ..fermi_hubbard import FermiHubbardModel
 
 
@@ -163,8 +164,8 @@ class SiteOccupation:
 
     def to_fermionic_op(self) -> FermionicOp:
         """Return the total occupation of the selected site."""
-        up_mode = 2 * self.site
-        down_mode = up_mode + 1
+        up_mode = fermionic_mode(self.site, "up")
+        down_mode = fermionic_mode(self.site, "down")
         return FermionicOp.number(
             self.model.num_modes,
             up_mode,
@@ -204,8 +205,8 @@ class DoubleOccupation:
 
     def to_fermionic_op(self) -> FermionicOp:
         """Return the double-occupation projector of the selected site."""
-        up_mode = 2 * self.site
-        down_mode = up_mode + 1
+        up_mode = fermionic_mode(self.site, "up")
+        down_mode = fermionic_mode(self.site, "down")
         return FermionicOp.number(
             self.model.num_modes,
             up_mode,

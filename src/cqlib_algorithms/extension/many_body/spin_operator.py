@@ -327,7 +327,13 @@ class SpinOp:
         )
 
     def is_hermitian(self, *, atol: float = 0.0) -> bool:
-        """Return whether this operator equals its adjoint."""
+        """Return whether this operator equals its adjoint.
+
+        Distinct ordered products on one site can represent the same operator,
+        so an inconclusive sparse comparison uses the same dense small-system
+        fallback as :meth:`equiv`. This method is not a scalable many-spin
+        certification routine.
+        """
         return self.equiv(self.adjoint(), atol=atol)
 
     def to_matrix(self) -> NDArray[np.complex128]:

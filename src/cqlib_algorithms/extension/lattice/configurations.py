@@ -17,6 +17,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
 
+from ._fermionic_layout import fermionic_mode
 from .sectors import FermionicSector, SpinMagnetizationSector
 
 
@@ -122,13 +123,12 @@ class FermionicLatticeConfiguration:
     @property
     def occupation(self) -> tuple[int, ...]:
         """Return occupations in interleaved mode order."""
-        up = set(self.occupied_up_sites)
-        down = set(self.occupied_down_sites)
-        return tuple(
-            occupied
-            for site in range(self.num_sites)
-            for occupied in (int(site in up), int(site in down))
-        )
+        occupation = [0] * (2 * self.num_sites)
+        for site in self.occupied_up_sites:
+            occupation[fermionic_mode(site, "up")] = 1
+        for site in self.occupied_down_sites:
+            occupation[fermionic_mode(site, "down")] = 1
+        return tuple(occupation)
 
     @property
     def basis_index(self) -> int:

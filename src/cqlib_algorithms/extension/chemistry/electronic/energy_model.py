@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+import numpy as np
 from cqlib.qis import (
     FermionicLadder,
     FermionicOp,
@@ -79,43 +80,36 @@ class ElectronicEnergy:
         if self.integrals.constant != 0.0:
             terms.append(((), self.integrals.constant))
 
-        n = self.integrals.num_spatial_orbitals
-        for p in range(n):
-            for q in range(n):
-                coefficient = float(self.integrals.one_body[p, q])
-                if coefficient == 0.0:
-                    continue
-                for spin in range(2):
+        for index in np.argwhere(self.integrals.one_body != 0.0):
+            p, q = map(int, index)
+            coefficient = float(self.integrals.one_body[p, q])
+            for spin in range(2):
+                terms.append(
+                    (
+                        (
+                            FermionicLadder.create(2 * p + spin),
+                            FermionicLadder.annihilate(2 * q + spin),
+                        ),
+                        coefficient,
+                    )
+                )
+
+        for index in np.argwhere(self.integrals.two_body != 0.0):
+            p, q, r, s = map(int, index)
+            coefficient = 0.5 * float(self.integrals.two_body[p, q, r, s])
+            for sigma in range(2):
+                for tau in range(2):
                     terms.append(
                         (
                             (
-                                FermionicLadder.create(2 * p + spin),
-                                FermionicLadder.annihilate(2 * q + spin),
+                                FermionicLadder.create(2 * p + sigma),
+                                FermionicLadder.create(2 * r + tau),
+                                FermionicLadder.annihilate(2 * s + tau),
+                                FermionicLadder.annihilate(2 * q + sigma),
                             ),
                             coefficient,
                         )
                     )
-
-        for p in range(n):
-            for q in range(n):
-                for r in range(n):
-                    for s in range(n):
-                        coefficient = 0.5 * float(self.integrals.two_body[p, q, r, s])
-                        if coefficient == 0.0:
-                            continue
-                        for sigma in range(2):
-                            for tau in range(2):
-                                terms.append(
-                                    (
-                                        (
-                                            FermionicLadder.create(2 * p + sigma),
-                                            FermionicLadder.create(2 * r + tau),
-                                            FermionicLadder.annihilate(2 * s + tau),
-                                            FermionicLadder.annihilate(2 * q + sigma),
-                                        ),
-                                        coefficient,
-                                    )
-                                )
         return FermionicOp.from_terms(self.num_spin_orbitals, terms)
 
     def _spin_resolved_fermionic_op(self) -> FermionicOp:
@@ -125,68 +119,73 @@ class ElectronicEnergy:
         if integrals.constant != 0.0:
             terms.append(((), integrals.constant))
 
-        n = integrals.num_spatial_orbitals
-        for p in range(n):
-            for q in range(n):
-                alpha = float(integrals.one_body_alpha[p, q])
-                beta = float(integrals.one_body_beta[p, q])
-                if alpha != 0.0:
-                    terms.append(
+        one_body_support = (integrals.one_body_alpha != 0.0) | (
+            integrals.one_body_beta != 0.0
+        )
+        for index in np.argwhere(one_body_support):
+            p, q = map(int, index)
+            alpha = float(integrals.one_body_alpha[p, q])
+            beta = float(integrals.one_body_beta[p, q])
+            if alpha != 0.0:
+                terms.append(
+                    (
                         (
-                            (
-                                FermionicLadder.create(2 * p),
-                                FermionicLadder.annihilate(2 * q),
-                            ),
-                            alpha,
-                        )
+                            FermionicLadder.create(2 * p),
+                            FermionicLadder.annihilate(2 * q),
+                        ),
+                        alpha,
                     )
-                if beta != 0.0:
-                    terms.append(
+                )
+            if beta != 0.0:
+                terms.append(
+                    (
                         (
-                            (
-                                FermionicLadder.create(2 * p + 1),
-                                FermionicLadder.annihilate(2 * q + 1),
-                            ),
-                            beta,
-                        )
+                            FermionicLadder.create(2 * p + 1),
+                            FermionicLadder.annihilate(2 * q + 1),
+                        ),
+                        beta,
                     )
+                )
 
-        for p in range(n):
-            for q in range(n):
-                for r in range(n):
-                    for s in range(n):
-                        same_spin = (
-                            0.5 * float(integrals.two_body_alpha_alpha[p, q, r, s]),
-                            0.5 * float(integrals.two_body_beta_beta[p, q, r, s]),
-                        )
-                        for spin, coefficient in enumerate(same_spin):
-                            if coefficient == 0.0:
-                                continue
-                            terms.append(
-                                (
-                                    (
-                                        FermionicLadder.create(2 * p + spin),
-                                        FermionicLadder.create(2 * r + spin),
-                                        FermionicLadder.annihilate(2 * s + spin),
-                                        FermionicLadder.annihilate(2 * q + spin),
-                                    ),
-                                    coefficient,
-                                )
-                            )
+        two_body_support = (
+            (integrals.two_body_alpha_alpha != 0.0)
+            | (integrals.two_body_beta_beta != 0.0)
+            | (integrals.two_body_alpha_beta != 0.0)
+        )
+        for index in np.argwhere(two_body_support):
+            p, q, r, s = map(int, index)
+            same_spin = (
+                0.5 * float(integrals.two_body_alpha_alpha[p, q, r, s]),
+                0.5 * float(integrals.two_body_beta_beta[p, q, r, s]),
+            )
+            for spin, coefficient in enumerate(same_spin):
+                if coefficient == 0.0:
+                    continue
+                terms.append(
+                    (
+                        (
+                            FermionicLadder.create(2 * p + spin),
+                            FermionicLadder.create(2 * r + spin),
+                            FermionicLadder.annihilate(2 * s + spin),
+                            FermionicLadder.annihilate(2 * q + spin),
+                        ),
+                        coefficient,
+                    )
+                )
 
-                        mixed = float(integrals.two_body_alpha_beta[p, q, r, s])
-                        if mixed != 0.0:
-                            terms.append(
-                                (
-                                    (
-                                        FermionicLadder.create(2 * p),
-                                        FermionicLadder.create(2 * r + 1),
-                                        FermionicLadder.annihilate(2 * s + 1),
-                                        FermionicLadder.annihilate(2 * q),
-                                    ),
-                                    mixed,
-                                )
-                            )
+            mixed = float(integrals.two_body_alpha_beta[p, q, r, s])
+            if mixed != 0.0:
+                terms.append(
+                    (
+                        (
+                            FermionicLadder.create(2 * p),
+                            FermionicLadder.create(2 * r + 1),
+                            FermionicLadder.annihilate(2 * s + 1),
+                            FermionicLadder.annihilate(2 * q),
+                        ),
+                        mixed,
+                    )
+                )
         return FermionicOp.from_terms(self.num_spin_orbitals, terms)
 
     def to_qubit_hamiltonian(
