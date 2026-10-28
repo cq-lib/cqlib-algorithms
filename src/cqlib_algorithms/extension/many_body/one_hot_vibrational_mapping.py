@@ -15,14 +15,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
 
 from cqlib.qis import Hamiltonian, Pauli, PauliString, Phase
 
+from .modal_space import ModalSpace
 from .vibrational_operator import VibrationalLadder, VibrationalOp
-
-if TYPE_CHECKING:
-    from ..vibration.modal_space import ModalSpace
 
 
 def _local_pauli(width: int, qubit: int, pauli: Pauli) -> PauliString:
@@ -95,8 +92,6 @@ class OneHotVibrationalMapper:
     @staticmethod
     def num_qubits(modal_space: ModalSpace) -> int:
         """Return one qubit per modal."""
-        from ..vibration.modal_space import ModalSpace
-
         if not isinstance(modal_space, ModalSpace):
             raise TypeError("modal_space must be a ModalSpace")
         return modal_space.num_qubits

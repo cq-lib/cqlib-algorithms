@@ -23,9 +23,8 @@ import numpy as np
 from cqlib.qis import Hamiltonian
 from numpy.typing import NDArray
 
-from ..many_body import OneHotVibrationalMapper, VibrationalOp
+from ..many_body import ModalSpace, OneHotVibrationalMapper, VibrationalOp
 from .energy_model import VibrationalEnergy
-from .modal_space import ModalSpace
 from .observables import OccupiedModals, OneHotLeakage
 
 

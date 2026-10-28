@@ -12,6 +12,7 @@
 
 """Vibrational-domain data models, Hamiltonians, and observables."""
 
+from ..many_body import ModalSpace, OneHotVibrationalMapper, VibrationalOp
 from .energy_model import VibrationalEnergy
 from .excitations import (
     VibrationalExcitation,
@@ -25,7 +26,6 @@ from .modal_integrals import (
     ModalIntegralTerm,
     ModalTransition,
 )
-from .modal_space import ModalSpace
 from .observables import ModalOccupation, OccupiedModals, OneHotLeakage
 from .system import VibrationalSystem
 
@@ -38,8 +38,10 @@ __all__ = [
     "ModalTransition",
     "OccupiedModals",
     "OneHotLeakage",
+    "OneHotVibrationalMapper",
     "VibrationalEnergy",
     "VibrationalExcitation",
+    "VibrationalOp",
     "VibrationalSystem",
     "generate_vibrational_double_excitations",
     "generate_vibrational_single_excitations",

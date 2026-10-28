@@ -18,13 +18,12 @@ import math
 import numbers
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Literal, cast
+from typing import Literal, cast
 
 import numpy as np
 from numpy.typing import NDArray
 
-if TYPE_CHECKING:
-    from ..vibration.modal_space import ModalSpace
+from .modal_space import ModalSpace
 
 VibrationalLadderKind = Literal["+", "-"]
 VibrationalCoefficient = complex | float | int
@@ -184,8 +183,6 @@ class VibrationalOp:
     terms: tuple[VibrationalTermEntry, ...]
 
     def __post_init__(self) -> None:
-        from ..vibration.modal_space import ModalSpace
-
         if not isinstance(self.modal_space, ModalSpace):
             raise TypeError("modal_space must be a ModalSpace")
         object.__setattr__(self, "terms", _copy_terms(self.modal_space, self.terms))

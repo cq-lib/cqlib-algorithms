@@ -12,6 +12,7 @@
 
 """Many-body intermediate representations missing from the current Core."""
 
+from .modal_space import ModalSpace
 from .one_hot_vibrational_mapping import OneHotVibrationalMapper
 from .spin_half_mapping import SpinHalfMapper
 from .spin_operator import SpinAxis, SpinFactor, SpinOp, SpinTerm
@@ -24,6 +25,7 @@ from .vibrational_operator import (
 )
 
 __all__ = [
+    "ModalSpace",
     "OneHotVibrationalMapper",
     "SpinAxis",
     "SpinFactor",

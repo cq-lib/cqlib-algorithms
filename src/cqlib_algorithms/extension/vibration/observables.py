@@ -18,8 +18,12 @@ from dataclasses import dataclass
 
 from cqlib.qis import Hamiltonian
 
-from ..many_body import OneHotVibrationalMapper, VibrationalLadder, VibrationalOp
-from .modal_space import ModalSpace
+from ..many_body import (
+    ModalSpace,
+    OneHotVibrationalMapper,
+    VibrationalLadder,
+    VibrationalOp,
+)
 
 
 def _validate_modal_space(modal_space: ModalSpace) -> None:

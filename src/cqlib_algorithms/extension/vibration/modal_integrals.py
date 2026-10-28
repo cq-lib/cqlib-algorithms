@@ -22,8 +22,12 @@ from typing import cast
 
 import numpy as np
 
-from ..many_body import VibrationalCoefficient, VibrationalLadder, VibrationalOp
-from .modal_space import ModalSpace
+from ..many_body import (
+    ModalSpace,
+    VibrationalCoefficient,
+    VibrationalLadder,
+    VibrationalOp,
+)
 
 _HERMITIAN_ATOL = 1e-12
 

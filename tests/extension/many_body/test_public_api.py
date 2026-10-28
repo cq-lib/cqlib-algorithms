@@ -18,6 +18,7 @@ from importlib import import_module
 def test_many_body_public_api_is_explicit():
     many_body = import_module("cqlib_algorithms.extension.many_body")
     expected = {
+        "ModalSpace",
         "OneHotVibrationalMapper",
         "SpinAxis",
         "SpinFactor",

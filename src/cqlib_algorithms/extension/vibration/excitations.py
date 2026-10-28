@@ -20,9 +20,8 @@ from itertools import combinations
 from types import MappingProxyType
 from typing import cast
 
-from ..many_body import VibrationalLadder, VibrationalOp
+from ..many_body import ModalSpace, VibrationalLadder, VibrationalOp
 from .modal_integrals import ModalTransition
-from .modal_space import ModalSpace
 
 
 def _copy_reference_modals(

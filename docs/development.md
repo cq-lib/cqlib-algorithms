@@ -9,7 +9,8 @@ docstring；算法的使用方法和结果解释写在 `docs/user-guide/`。
   `algorithms/`，纯线路变换放在 `transforms/`。
 - 化学、晶格和振动等领域数据模型及其中间表示放在 `extension/`。通用算子可以依赖
   领域扩展，领域扩展不得反向依赖具体算子或完整算法；领域扩展内部保持低层表示到
-  高层系统模型的单向依赖。
+  高层系统模型的单向依赖。`extension/many_body/` 持有跨领域的低层表示；例如
+  `ModalSpace`、`VibrationalOp` 和 one-hot 映射由振动领域模型单向复用。
 - 只为已经实现的能力建立模块，不预建空分类。
 - 算法依赖公共协议，不直接绑定具体模拟器、云平台或适配器。
 - 复用 Cqlib Core 的线路、门、参数、Hamiltonian 和执行能力，不在本库重复实现
