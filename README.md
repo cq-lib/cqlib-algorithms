@@ -9,6 +9,8 @@ Pauli 测量规划、同步采样器、期望值估计器、梯度、量子几�
 CHSH 不等式验证、BB84 协议实验、量子隐形传态与超密编码算法。
 现亦提供标准、迭代与最大似然三种振幅估计算法，以及标准 QPE、迭代 QPE 和
 Hamiltonian 相位估计算法。
+量子机器学习部分提供量子贝叶斯推断 `QBayesian`、保真度量子核和量子核回归 `QSVR`。
+现亦提供变分量子回归 `VQR`、投影次梯度量子核分类 `PegasosQSVC`，以及监督核目标对齐训练 `QuantumKernelTrainer`。
 
 ## 目录
 
@@ -91,6 +93,10 @@ src/cqlib_algorithms/
 │   │   ├── zero_state_reflection.py
 │   │   ├── general_state_reflection.py
 │   │   └── grover_diffusion.py
+│   ├── quantum_kernel/
+│   │   ├── __init__.py
+│   │   ├── fidelity_quantum_kernel.py
+│   │   └── _validation.py
 │   ├── sampler/
 │   │   ├── statevector_sampler.py
 │   │   └── backend_sampler.py
@@ -133,9 +139,15 @@ src/cqlib_algorithms/
     ├── bb84.py
     ├── chsh.py
     ├── deutsch_jozsa.py
+    ├── pegasos_qsvc.py
+    ├── qbayesian.py
+    ├── qsvr.py
+    ├── quantum_kernel.py          # 算子兼容导出
+    ├── quantum_kernel_trainer.py
     ├── quantum_teleportation.py
     ├── simon.py
-    └── superdense_coding.py
+    ├── superdense_coding.py
+    └── vqr.py
 tests/protocols/
 tests/operators/state_preparation/
 tests/operators/ansatz/
@@ -145,6 +157,7 @@ tests/operators/gradient/
 tests/operators/optimizer/
 tests/operators/measurement/
 tests/operators/sampler/
+tests/operators/quantum_kernel/
 docs/development.md
 AGENTS.md
 pyproject.toml
@@ -458,6 +471,46 @@ Bell 基解码，并把末端测量委托公共 `Sampler`。结果保留固定 `
 容量保证。数学约定、结果语义与边界见
 [超密编码](docs/superdense_coding.md)。
 
+## 量子机器学习
+
+`QBayesian` 接收表示联合概率分布的 Cqlib 线路和变量位置映射，通过公共 `Sampler`
+执行振幅放大与联合证据筛选，返回查询变量的经验条件分布、接受数和预算使用情况。
+幂次序列与采样预算均显式受限；没有接受样本时返回无估计，不能据此判定证据不可能。
+接口、端序、数学依据及示例见 [量子贝叶斯推断](docs/qbayesian.md)。
+
+`FidelityQuantumKernel` 位于 `operators/quantum_kernel/`，从
+`cqlib_algorithms.operators` 或 `cqlib_algorithms.operators.quantum_kernel` 导入。
+它根据显式的数据参数顺序计算纯态保真度核，支持 Core 态矢量
+精确路径，以及注入 `Sampler` 的有限 shots 路径。`QSVR` 使用该核与经典 ε-SVR
+完成标量回归，提供训练、预测、R² 评分和求解状态。有限 shots 下的训练核矩阵可显式
+修复为半正定矩阵；此操作仅作用于训练矩阵，预测交叉核保留原始估计。
+接口、资源上限、修正语义及示例见 [保真度核与量子核回归](docs/qsvr.md)。
+
+`VQR` 以 Hermitian 可观测量期望值作为单输出预测，使用真实 `Estimator` 批量执行，
+通过经典 COBYLA 最小化训练集均方误差。显式区分数据符号、可训练权重和固定绑定，
+公开初始与最终损失、优化状态及评估次数。说明和示例见 [变分量子回归](docs/vqr.md)。
+
+`PegasosQSVC` 自行实现无偏置、包含球投影的随机次梯度核分类器，支持两类数值标签。
+训练使用半正定修复后的 Gram 矩阵，预测使用原始矩形交叉核；结果是固定迭代预算内的
+模型，不保证收敛，也不提供校准概率。说明和示例见 [Pegasos 量子核分类](docs/pegasos_qsvc.md)。
+
+`QuantumKernelTrainer` 调整特征线路参数，使原始量子核与类别平衡的目标核对齐。
+采用不中心化的监督对齐目标，输出可直接交给 QSVR 或 PegasosQSVC 的保真度核，
+不直接预测标签，也不保证测试性能提高。说明和示例见 [量子核训练](docs/quantum_kernel_training.md)。
+
+五个完整算法从 `cqlib_algorithms.algorithms` 导入，保真度量子核从
+`cqlib_algorithms.operators` 导入；原算法层的核导出保留为兼容入口。QSVR 在训练时加载可选的
+`scikit-learn` 经典求解器；VQR 和核训练在训练时加载 `SciPy`。源码开发环境可按需安装：
+
+```powershell
+uv pip install "scikit-learn>=1.4,<2"
+uv pip install "scipy>=1.13,<2"
+uv pip install --no-deps -e .
+```
+
+发布包同时声明 `machine-learning` 可选依赖组。当前验证环境为 Python 3.11.15
+和 Cqlib 2.0.0b6；该 Core 版本要求 Python 3.11 或更新版本。
+
 ## 量子傅里叶变换
 
 `QFT` 构建新的 Cqlib `Circuit`。正向变换采用正指数约定，量子位 `0`
@@ -485,13 +538,14 @@ approximate = QFT(
 
 ## 开发
 
-运行依赖为 `cqlib>=1.4.0b1,<1.5` 和 `numpy>=2.1.0`。首版协议已针对 Cqlib `develop`
-分支提交 `c3abe91a4adf804b6fb3304fab6ec3dc24a4ad85` 的 Python 接口核验。
-SDK 尚未发布期间由开发者手动安装。
+运行依赖为 `cqlib>=2.0.0b5,<2.1` 和 `numpy>=2.1.0`，以 `pyproject.toml` 为准。
+当前回归验证使用 Python 3.11.15 和 Cqlib 2.0.0b6；该 Core 版本要求 Python 3.11+。
+源码保持 Python 3.10 兼容语法，不代表已在 Python 3.10 上验证当前 SDK。
+SDK 由开发者按批准来源安装。
 使用已有 `.venv` 时跳过创建环境的步骤：
 
 ```bash
-uv venv --python 3.10
+uv venv --python 3.11
 source .venv/bin/activate
 ```
 

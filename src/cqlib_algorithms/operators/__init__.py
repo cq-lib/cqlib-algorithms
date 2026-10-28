@@ -10,6 +10,8 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+# Modified to integrate the shared fidelity kernel into the operator layer.
+
 """Operator subpackage for algorithmic quantum building blocks."""
 
 from . import arithmetic
@@ -80,6 +82,7 @@ from .oracle import (
     PhaseOracle,
     ZeroStateReflection,
 )
+from .quantum_kernel import FidelityQuantumKernel
 from .sampler import BackendSampler, StatevectorSampler
 from .state_fidelity import (
     CircuitFidelityRequest,
@@ -128,6 +131,7 @@ __all__ = [
     "EvolvedOperatorAnsatz",
     "ExcitationPreservingAnsatz",
     "FeatureMapPreparation",
+    "FidelityQuantumKernel",
     "FiniteDifferenceGradient",
     "FullyConnectedMixer",
     "GHZStatePreparation",

@@ -4,6 +4,8 @@
 
 - 使用 `src/cqlib_algorithms/` 布局。稳定的公共协议集中放在 `protocols/`，可复用的线路变换放在 `transforms/`，其他具体组件按实际功能增加模块或子包。
 - 完整算法放在 `algorithms/`，随实际实现按功能增加模块；不预建空分类目录。
+- 保真度量子核位于 `operators/quantum_kernel/`，由 QSVR、PegasosQSVC 和
+  QuantumKernelTrainer 共用；该算子子包只依赖 Core、协议及其他算子，保持算法向算子的单向依赖。
 - 不设置泛化的 `components` 或 `contracts` 层；`protocols` 只收纳已经冻结并被多个实现复用的公共契约。
 - `StatePreparation`、`Ansatz`、`Sampler`、`Estimator`、`Gradient` 和 `Optimizer` 是首批公共抽象基类；请求和结果类型与对应契约放在同一模块。
 - 稳定协议同时从 `cqlib_algorithms.protocols` 和包顶层导出，具体实现从所属功能模块导出。
@@ -21,7 +23,9 @@
   Sampler 返回容器、结果类型、执行状态、shots、qubit 顺序和完整计数；允许后选择
   或过滤频数的调用方不得误用该严格契约。
 - 请求数据结构仅浅冻结；Cqlib 的线路和可观测量仍可变，调用方不得在请求生命周期内修改它们，执行实现必须在运行前重新验证可检测的不变量。
-- 当前 Core 兼容基线为 Python 包 `cqlib>=1.4.0b1,<1.5`；扩大版本范围前必须通过兼容性测试。
+- Core 依赖范围以 `pyproject.toml` 的 `cqlib>=2.0.0b5,<2.1` 为准；当前回归验证基线为
+  Cqlib 2.0.0b6 和 Python 3.11.15。该 Core 版本要求 Python 3.11+；源码保持
+  Python 3.10 兼容语法不等于已验证 Python 3.10 运行环境。扩大版本范围前必须通过兼容性测试。
 - 保持依赖无环；新增公共接口或第三方依赖时说明必要性。
 
 ## QFT 约定

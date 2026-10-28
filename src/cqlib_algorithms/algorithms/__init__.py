@@ -9,9 +9,13 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
+# Modified to export the five quantum machine learning algorithms.
+
+# Modified to use the shared fidelity quantum-kernel operator.
 
 """Complete quantum algorithms composed from reusable components."""
 
+from ..operators.quantum_kernel import FidelityQuantumKernel
 from .amplitude_estimation import (
     AmplitudeEstimationProblem,
     IterativeAmplitudeEstimation,
@@ -32,6 +36,7 @@ from .bernstein_vazirani import (
 )
 from .chsh import CHSH, CHSHRequest, CHSHResult
 from .deutsch_jozsa import DeutschJozsa, DeutschJozsaRequest, DeutschJozsaResult
+from .pegasos_qsvc import PegasosQSVC
 from .phase_estimation import (
     HamiltonianPhaseEstimation,
     HamiltonianPhaseEstimationRequest,
@@ -44,6 +49,14 @@ from .phase_estimation import (
     PhaseEstimationRequest,
     PhaseEstimationResult,
 )
+from .qbayesian import (
+    QBayesian,
+    QBayesianResult,
+    QBayesianRound,
+    QBayesianStatus,
+)
+from .qsvr import QSVR
+from .quantum_kernel_trainer import QuantumKernelTrainer
 from .quantum_teleportation import (
     QuantumTeleportation,
     QuantumTeleportationRequest,
@@ -56,12 +69,15 @@ from .superdense_coding import (
     SuperdenseCodingResult,
 )
 from .variational import QAOA, VQE, QAOAResult, VQAResult, VQEResult
+from .vqr import VQR
 
 __all__ = [
     "BB84",
     "CHSH",
     "QAOA",
+    "QSVR",
     "VQE",
+    "VQR",
     "AmplitudeEstimationProblem",
     "BB84Basis",
     "BB84Request",
@@ -74,6 +90,7 @@ __all__ = [
     "DeutschJozsa",
     "DeutschJozsaRequest",
     "DeutschJozsaResult",
+    "FidelityQuantumKernel",
     "HamiltonianPhaseEstimation",
     "HamiltonianPhaseEstimationRequest",
     "HamiltonianPhaseEstimationResult",
@@ -86,11 +103,17 @@ __all__ = [
     "MaximumLikelihoodAmplitudeEstimation",
     "MaximumLikelihoodAmplitudeEstimationRequest",
     "MaximumLikelihoodAmplitudeEstimationResult",
+    "PegasosQSVC",
     "PhaseEstimation",
     "PhaseEstimationProblem",
     "PhaseEstimationRequest",
     "PhaseEstimationResult",
     "QAOAResult",
+    "QBayesian",
+    "QBayesianResult",
+    "QBayesianRound",
+    "QBayesianStatus",
+    "QuantumKernelTrainer",
     "QuantumTeleportation",
     "QuantumTeleportationRequest",
     "QuantumTeleportationResult",
