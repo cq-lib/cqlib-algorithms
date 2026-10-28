@@ -37,8 +37,7 @@ f(x)=\sum_i(\alpha_i-\alpha_i^*)K(x_i,x)+b,
 
 目标与对偶形式来源于 [Smola 与 Schölkopf，A tutorial on support vector regression，2004](https://alex.smola.org/papers/2004/SmoSch04.pdf)
 （[DOI](https://doi.org/10.1023/B:STCO.0000035301.49549.88)）。
-实现将经典求解委托给 [scikit-learn `SVR(kernel="precomputed")`](https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html)，
-不实现量子线性方程求解器，不声明量子加速或模型质量保证。
+经典求解使用 [scikit-learn `SVR(kernel="precomputed")`](https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html)。
 
 ## FidelityQuantumKernel 接口
 
@@ -52,14 +51,12 @@ evaluate(X, Y=None) -> numpy.ndarray
 `feature_map` 是 Cqlib `Circuit`。`input_parameters` 是非空、唯一、有序的活跃符号名称序列，
 第 `j` 列数据绑定第 `j` 个名称，顺序由调用方明确给出。`parameter_bindings` 给出其他符号
 的固定有限实数绑定，必须与输入符号不相交，两者恰好覆盖全部活跃符号。
-重复使用同一输入符号是允许的；固定参数在此版本中不可训练。
+线路可以重复使用同一输入符号，固定参数由 `parameter_bindings` 设置。
 
 构造时复用 `UserCircuitPreparation` 复制线路，并按量子比特插入位置归一化为连续位置。
-两种执行方式都要求绑定后线路静态酉、可逆；拒绝测量、reset、delay、动态控制和不支持的
-Core 求逆结构。构造时仅绑定用户提供的固定参数，验证符号线路结构及其中完全数值化的操作；
-不会选择任何代表输入值。参数表达式只要求在实际使用的数据定义域内有效，例如 `RY(1/x)`
-可以用于非零输入。每次非空求值都会对所有不同数据行绑定并严格验证，包括核值直接取 1 的
-相同行快捷路径；表达式奇点或运算溢出会被拒绝。
+两种执行方式都要求绑定后线路静态酉、可逆。构造时绑定固定参数并检查线路结构；
+求值时按实际数据行绑定输入参数并校验数值。例如 `RY(1/x)` 可以用于非零输入。
+所有不同数据行完成校验后，再执行保真度计算和相同行快捷处理。
 `feature_map` 属性返回独立副本，`parameter_bindings` 是不可变映射，
 `input_parameters` 是元组，`num_features` 给出输入列数。
 
@@ -68,17 +65,17 @@ Core 求逆结构。构造时仅绑定用户提供的固定参数，验证符号
 | `sampler=None, shots=None` | 默认精确本地路径：Core `Statevector.from_circuit` 与 `state_fidelity_pure` |
 | 同时提供 `Sampler` 和正整数 `shots` | 通过现有 `ComputeUncomputeFidelity` 批量估计全零概率 |
 
-只提供 sampler 或 shots 会报错。精确路径在一次调用中复用不同数据行的态矢量；
-不生成完整酉矩阵。有限 shots 的 `shots` 是每个执行配对的成本，不是数据集总预算。
+`sampler` 和 `shots` 成对提供。精确路径在一次调用中复用不同数据行的态矢量；
+采样路径对每个执行配对使用指定的 `shots`。
 两种方式都将**完全相同的数据行**的核值直接设为 1，包括对角项；有噪声的 sampler
-也采用这个理想归一化约定，不测量这些配对。不同数据行即使偶然制备同一物理态，仍照常求值。
+也采用这个归一化约定。不同数据行按所选执行方式求值。
 
-`X` 和 `Y` 必须是有限实数二维数组 `(n_samples, num_features)`；普通整数可接受，
-拒绝复数、纯布尔、字符串、object、ragged 和非有限输入。无数据缩放或隐式归一化。
+`X` 和 `Y` 是有限实数二维数组 `(n_samples, num_features)`，普通整数也可作为输入。
+输入数值直接绑定线路参数。
 省略 `Y` 时仅计算上三角并镜像，返回精确对称的 Gram 矩阵；提供 `Y` 时返回
 `(len(X), len(Y))` 的交叉核，保留行顺序。
-显式 `(0,d)` 输入返回相应空矩阵且不执行量子计算，裸 `[]` 不是二维输入。
-每次返回独立的 float64 数组，不保留跨调用的数据集缓存。
+形状为 `(0,d)` 的输入返回相应空矩阵。每次调用返回独立的 float64 数组，
+态矢量复用范围为本次求值。
 
 精确路径分配态矢量前检查 qubit 上限，以及
 
@@ -88,10 +85,10 @@ Core 求逆结构。构造时仅绑定用户提供的固定参数，验证符号
 \]
 
 默认最多 20 qubits、256 MiB 的保留 complex128 幅度数据；两个输入集合的不同数据行共同计数。
-这不是进程总内存保证，Core 临时缓冲、线路和输出矩阵仍需额外内存。输出矩阵尺寸也检查
-平台可表示性；分配失败转换为 `ValueError`。两个上限必须为非布尔正整数，调用方可显式提高。
+该预算统计保留的态矢量幅度，Core 临时缓冲、线路和输出矩阵的存储另计。
+输出矩阵尺寸在分配前检查；分配失败转换为 `ValueError`。两个上限为正整数，可按需设置。
 精确核仅夹取不超过 `1e-12` 的 `[0,1]` 浮点边界越界；更大偏差或非有限 Core 输出报错。
-核组件返回原始保真度，不修复 PSD。
+核组件返回原始保真度矩阵，训练矩阵处理由 QSVR 完成。
 
 ## QSVR 接口与模型状态
 
@@ -103,11 +100,11 @@ predict(X) -> numpy.ndarray
 score(X, y, *, sample_weight=None) -> float
 ```
 
-`quantum_kernel` 必须是 `FidelityQuantumKernel`。`C`、`tol` 为有限正实数，
-`epsilon` 为有限非负实数；这些参数拒绝 bool。`max_iter` 为 -1 或非布尔正整数，
+`quantum_kernel` 为 `FidelityQuantumKernel`。`C`、`tol` 为有限正实数，
+`epsilon` 为有限非负实数。`max_iter` 为 -1 或正整数，
 `enforce_psd` 为 bool。`fit` 要求非空二维 `X` 和匹配长度的一维有限实数 `y`，
-只支持单目标回归；权重若提供，须为匹配长度的一维有限严格正数。
-无效输入在量子核求值前被拒绝。
+目标为单个数值；权重若提供，须为匹配长度的一维有限严格正数。
+输入校验在量子核求值前完成。
 
 默认将训练核 `K_raw` 的特征值裁剪至非负：
 
@@ -116,16 +113,12 @@ K_{raw}=V\operatorname{diag}(\lambda)V^T,\qquad
 K_{fit}=V\operatorname{diag}(\max(\lambda,0))V^T.
 \]
 
-重构后再对称化，保留原始矩阵，不逐元素夹取或重设对角项。
-因此修复后的对角线和元素可能超出原始保真度范围。
-`enforce_psd=False` 原样使用训练核；有限 shots 的不定噪声矩阵不再有凸核保证。
-**PSD 修复只作用于有限训练矩阵**。预测始终使用原始 `K(X_new, X_train)`，
-不单独投影矩形矩阵；这一近似没有定义全局半正定的样本外核。
-有限 shots 重新预测训练数据也不保证复现 `K_fit`。
+重构后再对称化，得到交给求解器的 `K_fit`，同时保留原始矩阵 `K_raw`。
+`enforce_psd=False` 时使用 `K_raw` 训练。
+预测时计算交叉核 `K(X_new, X_train)`，再与学得的系数及截距组合得到预测值。
 
-`fit` 返回自身，成功取得求解器结果后才替换已有状态。失败的重新训练保留旧模型；
-首次训练失败保持未拟合。触及迭代上限的求解结果仍可预测，其 convergence warning
-保留，调用方应查看 `fit_status_`。
+`fit` 返回自身，训练完成后更新模型；重拟合失败时保留旧模型。
+求解状态由 `fit_status_` 记录，触及迭代上限时同时保留求解器的 convergence warning。
 
 `predict` 在拟合前抛出 `ValueError`；输入 `(0,d)` 返回空 `(0,)`，无量子或求解器调用。
 `score` 是单输出 `R² = 1 - weighted_MSE / weighted_variance`，至少需要两个目标值，
@@ -138,24 +131,19 @@ K_{fit}=V\operatorname{diag}(\max(\lambda,0))V^T.
 | `raw_kernel_matrix_`, `kernel_matrix_` | 原始训练核与实际交给求解器的训练核副本 |
 | `support_` | 支持样本在 `training_data_` 中的索引副本 |
 | `dual_coef_`, `intercept_` | 形状 `(1,n_support)` 的带符号系数与长度 1 的截距副本 |
-| `fit_status_`, `n_iter_` | 求解状态（0 表示未触及迭代失败）及迭代数 |
+| `fit_status_`, `n_iter_` | 求解状态（0 表示正常结束）及迭代数 |
 | `psd_correction_norm_` | `||K_fit-K_raw||_F` |
 | `minimum_raw_eigenvalue_` | 原始对称训练核的最小特征值 |
 
-除 `is_fitted` 外，这些属性均要求已拟合。返回数组是副本，修改它们不影响后续预测。
-模型不暴露可变 sklearn 对象，也不将 precomputed SVR 的空 `support_vectors_` 当作量子输入。
-此版本不提供完整 sklearn estimator/模型选择协议、序列化、核训练或多目标回归。
+除 `is_fitted` 外，这些属性均在拟合后读取，数组属性返回独立副本。
 
-scikit-learn 仅在 `fit` 时加载。缺少它仍可导入包、QBayesian、核和 QSVR 类；
-训练时抛出包含 `cqlib-algorithms[machine-learning]` 安装指引的 `ImportError`。
-发布包可按需安装 `cqlib-algorithms[machine-learning]`，其中经典依赖范围为
-`scikit-learn>=1.4,<2`。未发布的 Core SDK 按项目流程由开发者提供，不自动同步或安装。
-其他执行错误原样传播，不会被误报成可选依赖缺失。
+scikit-learn 在 `fit` 时加载。通过 `cqlib-algorithms[machine-learning]` 安装经典计算依赖，
+其中 scikit-learn 版本范围为 `>=1.4,<2`。
 
 ## 可运行示例：精确核与回归
 
 一量子比特 `RY(x)` 的独立解析核为 `cos((x-y)/2)^2`。
-以下数据选自 `sin(x)`，输出展示小样本训练结果，不是泛化性能结论。
+以下数据选自 `sin(x)`，展示训练、预测和解析核校验。
 
 ```python
 import numpy as np
@@ -183,9 +171,8 @@ assert model.is_fitted and model.fit_status_ == 0
 ## 可运行示例：有限 shots
 
 下面三行中有两行相同，只有两个不同数据行配对执行，各用 64 shots，总计 128 shots。
-两对分别是正交态，结果确定；一般非正交态的有限 shots 输出会波动，
-`StatevectorSampler` 不提供 seed。采样训练可将同样配置的 kernel 直接传给 `QSVR`，
-训练、每次预测和评分都可能触发新的配对采样。
+两对分别是正交态，结果确定。采样训练可将同样配置的 kernel 直接传给 `QSVR`，
+训练、预测和评分按需执行配对采样。
 
 ```python
 import math
@@ -211,6 +198,4 @@ print("Sampled model predictions:", model.predict([[0.0], [math.pi]]))
 assert model.fit_status_ == 0
 ```
 
-精确态矢量存储随 qubit 数指数增长；训练 Gram 存储随样本数平方增长，PSD 特征分解
-和经典 SVR 求解也可能成为瓶颈。验证环境为 Python 3.11.15、Cqlib 2.0.0b6、
-scikit-learn 1.9.1；源码保持 Python 3.10 兼容语法，该 Core 版本要求 Python 3.11+。
+精确态矢量存储为 O(2^q)，训练 Gram 矩阵存储为 O(n²)，其中 q 为量子比特数，n 为训练样本数。

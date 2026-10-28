@@ -474,42 +474,24 @@ Bell 基解码，并把末端测量委托公共 `Sampler`。结果保留固定 `
 ## 量子机器学习
 
 `QBayesian` 接收表示联合概率分布的 Cqlib 线路和变量位置映射，通过公共 `Sampler`
-执行振幅放大与联合证据筛选，返回查询变量的经验条件分布、接受数和预算使用情况。
-幂次序列与采样预算均显式受限；没有接受样本时返回无估计，不能据此判定证据不可能。
-接口、端序、数学依据及示例见 [量子贝叶斯推断](docs/qbayesian.md)。
+执行振幅放大与证据筛选，估计查询变量的条件分布。
+接口和示例见 [量子贝叶斯推断](docs/qbayesian.md)。
 
-`FidelityQuantumKernel` 位于 `operators/quantum_kernel/`，从
-`cqlib_algorithms.operators` 或 `cqlib_algorithms.operators.quantum_kernel` 导入。
-它根据显式的数据参数顺序计算纯态保真度核，支持 Core 态矢量
-精确路径，以及注入 `Sampler` 的有限 shots 路径。`QSVR` 使用该核与经典 ε-SVR
-完成标量回归，提供训练、预测、R² 评分和求解状态。有限 shots 下的训练核矩阵可显式
-修复为半正定矩阵；此操作仅作用于训练矩阵，预测交叉核保留原始估计。
-接口、资源上限、修正语义及示例见 [保真度核与量子核回归](docs/qsvr.md)。
+`FidelityQuantumKernel` 提供精确态矢量和 Sampler 采样两种保真度核计算方式；
+`QSVR` 结合该核与经典 ε-SVR 完成回归，提供训练、预测和 R² 评分。
+接口和示例见 [保真度核与量子核回归](docs/qsvr.md)。
 
-`VQR` 以 Hermitian 可观测量期望值作为单输出预测，使用真实 `Estimator` 批量执行，
-通过经典 COBYLA 最小化训练集均方误差。显式区分数据符号、可训练权重和固定绑定，
-公开初始与最终损失、优化状态及评估次数。说明和示例见 [变分量子回归](docs/vqr.md)。
+`VQR` 通过公共 `Estimator` 计算预测值，以 COBYLA 调整线路参数，最小化训练集均方误差。
+接口和示例见 [变分量子回归](docs/vqr.md)。
 
-`PegasosQSVC` 自行实现无偏置、包含球投影的随机次梯度核分类器，支持两类数值标签。
-训练使用半正定修复后的 Gram 矩阵，预测使用原始矩形交叉核；结果是固定迭代预算内的
-模型，不保证收敛，也不提供校准概率。说明和示例见 [Pegasos 量子核分类](docs/pegasos_qsvc.md)。
+`PegasosQSVC` 将量子核与 Pegasos 随机次梯度、球投影结合，完成二分类训练和预测。
+接口和示例见 [Pegasos 量子核分类](docs/pegasos_qsvc.md)。
 
-`QuantumKernelTrainer` 调整特征线路参数，使原始量子核与类别平衡的目标核对齐。
-采用不中心化的监督对齐目标，输出可直接交给 QSVR 或 PegasosQSVC 的保真度核，
-不直接预测标签，也不保证测试性能提高。说明和示例见 [量子核训练](docs/quantum_kernel_training.md)。
+`QuantumKernelTrainer` 根据类别标签优化特征线路参数，输出供 QSVR 或 PegasosQSVC
+使用的量子核。接口和示例见 [量子核训练](docs/quantum_kernel_training.md)。
 
-五个完整算法从 `cqlib_algorithms.algorithms` 导入，保真度量子核从
-`cqlib_algorithms.operators` 导入；原算法层的核导出保留为兼容入口。QSVR 在训练时加载可选的
-`scikit-learn` 经典求解器；VQR 和核训练在训练时加载 `SciPy`。源码开发环境可按需安装：
-
-```powershell
-uv pip install "scikit-learn>=1.4,<2"
-uv pip install "scipy>=1.13,<2"
-uv pip install --no-deps -e .
-```
-
-发布包同时声明 `machine-learning` 可选依赖组。当前验证环境为 Python 3.11.15
-和 Cqlib 2.0.0b6；该 Core 版本要求 Python 3.11 或更新版本。
+算法从 `cqlib_algorithms.algorithms` 导入，量子核从 `cqlib_algorithms.operators` 导入。
+经典计算依赖通过 `machine-learning` 可选依赖组提供。
 
 ## 量子傅里叶变换
 
@@ -539,9 +521,7 @@ approximate = QFT(
 ## 开发
 
 运行依赖为 `cqlib>=2.0.0b5,<2.1` 和 `numpy>=2.1.0`，以 `pyproject.toml` 为准。
-当前回归验证使用 Python 3.11.15 和 Cqlib 2.0.0b6；该 Core 版本要求 Python 3.11+。
-源码保持 Python 3.10 兼容语法，不代表已在 Python 3.10 上验证当前 SDK。
-SDK 由开发者按批准来源安装。
+开发环境使用 Python 3.11，SDK 由开发者安装。
 使用已有 `.venv` 时跳过创建环境的步骤：
 
 ```bash

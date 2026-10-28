@@ -22,8 +22,8 @@ P(Q=q\mid e)=
      {\sum_{z:e(z)}|a_z|^2}.
 \]
 
-未命名量子比特和未查询变量均被求和消去。输入允许复振幅；调用方负责保证线路所表示
-的分布符合自己的模型，组件不读取条件概率表，也不验证网络分解。
+未命名量子比特和未查询变量均被求和消去。输入允许复振幅，联合分布由调用方提供的
+制备线路定义。
 
 证据相位 Oracle 与 Grover 迭代采用
 
@@ -38,7 +38,7 @@ G=(2|\psi\rangle\langle\psi|-I)O_e.
 的归一化条件态保持不变，因此可以汇总不同幂次的接受频数。
 这一构造采用 [Low、Yoder 与 Chuang 的量子拒绝采样方法，arXiv:1402.7359v1](https://arxiv.org/abs/1402.7359v1)
 以及 [Brassard 等的振幅放大恒等式，arXiv:quant-ph/0005055v1](https://arxiv.org/abs/quant-ph/0005055v1)。
-本实现使用显式有限幂次序列，不实现论文的无界停止过程或其期望复杂度保证。
+放大幂次由 `amplification_powers` 指定，按给定序列逐轮执行。
 
 ## 接口与输入约定
 
@@ -52,22 +52,21 @@ infer(query, evidence=None, *, target_accepted=256, shots_per_round=256,
 ```
 
 - `state_preparation` 是至少含一个量子比特、完全绑定、静态酉且可逆的 Cqlib `Circuit`。
-  允许 barrier；拒绝 measurement、reset、delay、经典数据、动态控制及嵌套的非酉操作。
-  Core 当前不能静态求逆的结构也会被拒绝。
+  线路可包含 barrier，求逆由 Core 完成。
 - `variable_qubits: Mapping[str, int]` 必须非空，名称为非空字符串，位置唯一且在范围内。
-  位置是原线路 `circuit.qubits` 的索引，不是 `Qubit` 的数字标识；例如插入顺序
-  `[Qubit(7), Qubit(2)]` 的位置 0 指向 `Qubit(7)`。布尔位置不作为整数接受。
+  位置按原线路 `circuit.qubits` 的插入顺序编号；例如
+  `[Qubit(7), Qubit(2)]` 的位置 0 指向 `Qubit(7)`。
 - `sampler` 必须实现本库公共 `Sampler` 抽象契约。构造时复制线路及变量映射；
   `state_preparation` 属性返回独立副本，`variable_qubits` 属性为不可变映射。
-- `query` 是非空、名称唯一、全部已知的有限序列，拒绝单独的字符串。
+- `query` 是非空、名称唯一、全部已知的有限序列。
   返回元组的第 `i` 位对应 `query[i]`。
 - `evidence` 是已知名称到整数 0/1 或 bool 的映射；`None` 和 `{}` 表示不条件化。
   查询和证据可以重叠，此时相应查询位在接受记录中固定为证据取值。
 - `build_circuit` 每次返回独立、未测量的线路。空证据使有效 Grover 幂次为 0，直接返回 `A`。
 
-整数预算和幂次拒绝 bool。除 `max_grover_power` 可以为 0、幂次可以为非负整数外，
-预算均须为正整数。`amplification_powers` 必须是非空有限 `Sequence`，可包含重复值或全零；
-不消耗任意迭代器。调用前会验证**整个序列**，即使首轮可能达到目标，也必须满足：
+预算参数为正整数，`max_grover_power` 和幂次允许为 0。
+`amplification_powers` 是非空有限 `Sequence`，可包含重复值或全零。
+执行前对整个序列检查以下预算：
 
 \[
 \begin{aligned}
@@ -78,9 +77,8 @@ infer(query, evidence=None, *, target_accepted=256, shots_per_round=256,
 \end{aligned}
 \]
 
-空证据的有效幂次均为 0，但提供的幂次仍须满足 `max_grover_power`。
-超限直接抛出 `ValueError`，不会裁剪序列、隐式重试或改用态矢量选择幂次。
-这些上限限制工作量，不保证上限内的任意线路都适合具体后端。
+空证据的有效幂次均为 0，输入幂次仍按 `max_grover_power` 校验。
+预算超限时抛出 `ValueError`。
 
 ## 采样与结果
 
@@ -97,21 +95,18 @@ Sampler 约定中，第 `i` 个请求量子比特对应字符串 `bits[-1-i]`。
 | --- | --- |
 | `query`, `evidence` | 查询顺序与规范化为 0/1 的证据 |
 | `counts` | 稀疏 `Mapping[tuple[int, ...], int]` 接受频数，仅保存正计数 |
-| `probabilities` | `counts / accepted`；没有接受样本时为 `None` |
+| `probabilities` | `counts / accepted`；接受数为 0 时为 `None` |
 | `accepted`, `attempted_shots`, `target_accepted` | 实际接受、实际采样和目标数量 |
 | `rounds` | `QBayesianRound(grover_power, shots, accepted)` 的元组，记录有效幂次 |
 | `status` | `QBayesianStatus.TARGET_REACHED` 或 `BUDGET_EXHAUSTED` |
 | `num_grover_queries` | `sum(round.grover_power * round.shots)` |
 | `num_state_preparation_queries` | `sum((2 * round.grover_power + 1) * round.shots)`，合计 `A` 和 `A†` |
 
-有估计时，未出现的元组代表经验零；`probabilities=None` 表示没有估计。
-零接受不证明 `P(e)=0`，放大后的接受率也不是原始证据概率。
-组件不返回置信区间、逐 shot 历史或网络概率认证。公共结果构造会检查计数、概率、轮次与状态的一致性。
+有估计时，未出现的元组代表经验零；接受数为 0 时，`probabilities` 为 `None`。
+条件概率由接受样本的频数归一化得到，轮次记录用于追踪采样量和查询次数。
 
 无效输入和 Sampler 契约错误使用英文 `TypeError`/`ValueError`；后端执行异常原样传播。
-算法自身不分配态矢量或完整联合概率表。单轮线路大小随幂次与制备/Oracle 大小增长。
-条件分布保持不变的推导要求理想执行；有噪声时结果只表示实际后选择经验分布。
-`StatevectorSampler` 不提供 seed，因此这里不承诺有限 shots 结果可复现。
+单轮线路由制备线路和指定次数的 Grover 迭代组成，采样结果经证据筛选后汇总为经验条件分布。
 
 ## 可运行示例：联合分布与证据放大
 
@@ -148,10 +143,10 @@ assert result.accepted >= 128
 assert result.probabilities is not None
 ```
 
-## 可运行示例：有限预算内没有接受样本
+## 可运行示例：采样预算与返回状态
 
-这个制备线路保持 `e=0`，而查询要求 `e=1`。调用严格执行三个 8-shot 轮次后返回无估计。
-一般任务中同样的返回值只能说明给定预算未观察到证据。
+这个制备线路保持 `e=0`，而查询要求 `e=1`。执行三个 8-shot 轮次后，
+返回 `BUDGET_EXHAUSTED` 状态和 `probabilities=None`。
 
 ```python
 from cqlib import Circuit
@@ -173,6 +168,3 @@ assert result.status is QBayesianStatus.BUDGET_EXHAUSTED
 assert result.accepted == 0 and result.attempted_shots == 24
 assert result.probabilities is None
 ```
-
-验证环境为 Python 3.11.15、Cqlib 2.0.0b6。项目源码保持 Python 3.10 兼容语法，
-该 Core 版本自身要求 Python 3.11+。
