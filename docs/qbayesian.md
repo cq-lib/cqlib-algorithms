@@ -89,7 +89,7 @@ Sampler 约定中，第 `i` 个请求量子比特对应字符串 `bits[-1-i]`。
 累计接受数首次达到 `target_accepted` 时停止，保留终止轮的全部接受计数；因此接受数可以超过目标。
 序列结束仍未达到目标则返回已有的部分估计。
 
-`QBayesianResult` 是冻结、slotted 的 dataclass，映射均为复制后的不可变快照：
+`QBayesianResult` 是冻结且使用 slots 的 dataclass，映射字段保存为不可变快照：
 
 | 字段或属性 | 含义 |
 | --- | --- |
@@ -108,9 +108,9 @@ Sampler 约定中，第 `i` 个请求量子比特对应字符串 `bits[-1-i]`。
 无效输入和 Sampler 契约错误使用英文 `TypeError`/`ValueError`；后端执行异常原样传播。
 单轮线路由制备线路和指定次数的 Grover 迭代组成，采样结果经证据筛选后汇总为经验条件分布。
 
-## 可运行示例：联合分布与证据放大
+## 使用示例：联合分布与证据放大
 
-下面的基态索引按小端解释：`index = q + 2*e`。原始 `P(e=1)=0.25`，
+示例的基态索引采用小端约定：`index = q + 2*e`。原始 `P(e=1)=0.25`，
 `P(q=1 | e=1)=0.8`；一次 Grover 迭代将理想证据接受概率提高到 1。
 有限 shots 的经验后验会波动。
 
@@ -143,9 +143,9 @@ assert result.accepted >= 128
 assert result.probabilities is not None
 ```
 
-## 可运行示例：采样预算与返回状态
+## 使用示例：采样预算与返回状态
 
-这个制备线路保持 `e=0`，而查询要求 `e=1`。执行三个 8-shot 轮次后，
+示例制备线路使 `e=0`，查询证据设置为 `e=1`。执行三个 8-shot 轮次后，
 返回 `BUDGET_EXHAUSTED` 状态和 `probabilities=None`。
 
 ```python

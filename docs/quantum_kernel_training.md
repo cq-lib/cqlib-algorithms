@@ -1,21 +1,21 @@
-# QuantumKernelTrainer：训练量子“相似度尺”
+# 基于核目标对齐的量子核训练 QuantumKernelTrainer
 
-## 为什么要训练核
+## 算法背景
 
-量子核给出两个输入经线路编码后的相似程度。固定的线路不一定适合当前数据：
-本该区分的样本可能被看成很相似。核训练利用已知类别调整线路，让相似度表更符合
-分类任务。它训练的是一把尺，输出的仍是核；真正的回归或分类交给 QSVR、PegasosQSVC。
-输出类型 `FidelityQuantumKernel` 是 `operators/quantum_kernel/` 中的共享算子，
+量子核通过特征线路定义样本之间的相似度。核训练利用类别标签优化特征线路参数，
+使核矩阵与监督目标矩阵对齐。训练结果以固定参数的 `FidelityQuantumKernel` 返回，
+供 QSVR 或 PegasosQSVC 构建回归与分类模型。
+该核算子位于 `operators/quantum_kernel/`，
 可从 `cqlib_algorithms.operators` 导入。
 
 采用 Hubregtsen 等
 [arXiv:2105.02276v1](https://arxiv.org/abs/2105.02276v1) §IV Eq.(27)
 及不平衡类别缩放的核目标对齐，在原始核矩阵上按类别样本数平衡目标。
 
-## 先跑一个小例子
+## 使用示例
 
-`RY(w*x)` 中 w 控制不同输入被转开多少。只有两个训练点时，初始 w 很小会让它们
-几乎相同；训练后可接近正交。示例展示核参数训练，以及与分类器、回归器的组合。
+示例采用 `RY(w*x)` 特征线路，参数 w 调节输入角度差与编码态重叠之间的关系。
+训练数据包含两个异类样本，训练过程优化两者的核值，并将结果用于分类和回归。
 
 ```python
 import numpy as np
@@ -40,11 +40,11 @@ regressor.fit([[0.0], [1.0]], [0.0, 1.0])
 np.testing.assert_allclose(regressor.predict([[0.0], [1.0]]), [0.0, 1.0], atol=1e-5)
 ```
 
-## 到底优化了什么
+## 优化目标
 
-先将两类按数值升序映射为 `z_i=-1,+1`，再令
+两类标签按数值升序映射为 `z_i=-1,+1`，定义
 `t_i=z_i/n_class(i)`，其中分母是该样本所在类别的训练样本数。
-目标矩阵为 `T=t*t.T`。候选线路给出原始 Gram `K_theta` 后：
+目标矩阵为 `T=t*t.T`。对于候选参数对应的原始 Gram 矩阵 `K_theta`，定义：
 
 `alignment = sum(K_theta*T)/(||K_theta||_F * sum(t**2))`；
 `loss = -alignment`。
@@ -53,20 +53,20 @@ np.testing.assert_allclose(regressor.predict([[0.0], [1.0]]), [0.0, 1.0], atol=1
 K 和 T 按上述原始矩阵计算 Frobenius 内积与范数，采样模式使用本次估计的 K。
 对齐范围为 [-1,1]，计算时处理机器精度量级的越界。
 
-两点不同类的例子里，若交叉相似度为 k，则对齐为
+对于包含两个异类样本的训练集，若交叉核值为 k，则对齐值为
 `(1-k)/sqrt(2*(1+k*k))`，k=0 时对齐值为 `1/sqrt(2)`。
 
-## 实现如何连接现有组件
+## 实现流程与组件分工
 
 构造时保存完整符号线路、显式数据参数、显式训练参数及固定参数的快照。
-每个候选从这个符号模板重新构造公开 `FidelityQuantumKernel`，把候选权重放进
-固定绑定后调用 `evaluate(X)`。因此复用已有核的精确/采样执行、去重、数值绑定验证、
+每组候选参数均基于保存的符号模板构造 `FidelityQuantumKernel`，将候选权重作为
+固定绑定后调用 `evaluate(X)`，复用量子核的精确或采样计算、样本去重、参数绑定校验、
 静态酉校验及态矢量资源管理。
 
-经典 COBYLA 只接收完整的标量负对齐目标。初始与最终诊断各实际计算一次；最终
+COBYLA 以负对齐值作为标量优化目标。初始与最终诊断分别执行一次目标评估；最终
 `kernel_matrix_`、`alignment_`、`loss_` 来自同一次评估，采样模式下也如此。
 
-## 接口与数据
+## 接口与输入要求
 
 ```text
 QuantumKernelTrainer(feature_map, input_parameters, trainable_parameters,
@@ -88,9 +88,9 @@ X 为有限实二维矩阵、非空、列数匹配；y 为同长度一维有限�
 `max_statevector_qubits/bytes` 配置态矢量的量子比特数和保留幅度存储预算，
 输出矩阵和模拟器临时存储另计。
 
-## 结果、停止及错误
+## 结果与终止状态
 
-`quantum_kernel_` 可直接交给 QSVR 或 PegasosQSVC 进行训练和预测。
+`quantum_kernel_` 可作为 QSVR 或 PegasosQSVC 的输入核，参与后续训练与预测。
 `optimal_parameters_` 为不可变映射，`kernel_matrix_`
 返回副本，`classes_` 为原始类别二元组；`n_features_in_` 是训练的特征数。
 `initial_alignment_`、`alignment_`、`loss_` 反映实际初始和最终目标。
@@ -108,7 +108,7 @@ X 为有限实二维矩阵、非空、列数匹配；y 为同长度一维有限�
 
 `tests/algorithms/test_quantum_kernel_trainer.py` 用解析
 `cos²(w*(x_i-x_j)/2)` 独立生成核与平衡对齐，覆盖不平衡类别和两点闭式公式。
-真实 COBYLA 训练验证对齐提升，输出核实际组合已有 QSVR 和新 PegasosQSVC。
+优化测试调用 COBYLA 验证对齐值变化，并将输出核与 QSVR、PegasosQSVC 组合验证。
 测试还检查非字典序多参数、固定绑定、输入快照、每个候选重新绑定、平坦目标、
 确定性 shot 频数下的不定 raw Gram 与最终结果一致性，以及奇点、资源、异常返回、
 缺 SciPy、预算、失败重拟合等边界。

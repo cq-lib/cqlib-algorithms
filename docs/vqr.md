@@ -1,34 +1,35 @@
-# VQR：直接训练量子线路来预测数值
+# 变分量子回归 VQR
 
-## 先理解它解决什么问题
+## 算法背景
 
-回归是在学习输入与数值答案的关系。普通模型可以调整一条直线的斜率；这里调整的是
-量子线路中的旋转角度。每个样本先作为线路参数输入，线路执行后，一个可观测量的
-期望值就是模型的预测。经典优化器根据“预测离答案多远”调整权重，再重复这一过程。
+变分量子回归以参数化量子线路构建回归模型。输入样本通过数据参数编码，
+模型预测值由指定可观测量的期望值给出。经典优化器根据预测值与目标值的均方误差
+更新线路权重，形成量子执行与经典优化相结合的训练过程。
 
 本实现采用 Mitarai 等的量子线路学习思路中的单输出平方损失版本，
 来源为 [Quantum Circuit Learning, arXiv:1803.00745v3](https://arxiv.org/abs/1803.00745v3)，
 Phys. Rev. A 98, 032309 (2018)。
 
-与 [QSVR](qsvr.md) 的区别是：QSVR 用固定量子核训练经典系数；VQR 直接改变
-产生预测的线路权重，预测值直接由可观测量期望值给出。
+与 [QSVR](qsvr.md) 基于固定量子核优化经典回归系数的方式相比，VQR 优化的是
+预测线路中的可训练参数。
 
-## 数学定义与职责
+## 数学定义与实现
 
-完整线路记作 `U(x, theta, b)`，其中 x 是输入，theta 是可训练权重，b 是固定值。
-给定有限 Hermitian observable O，预测为：
+完整线路记作 `U(x, theta, b)`，其中 x 为输入，theta 为可训练权重，b 为固定参数。
+给定有限 Hermitian 可观测量 O，预测值定义为：
 
 `f(x) = <0| U(x,theta,b)† O U(x,theta,b) |0>`。
 
 训练目标是 `mean((f(X_i)-y_i)**2)`。预测值的范围由可观测量的谱决定，
 例如 O=Z 时为 [-1,1]；线路和目标数据可据此选择尺度。
 
-算法通过公共 `Estimator` 批量计算预测，线路和 observable 使用 Cqlib Core 类型。
+算法通过公共 `Estimator` 批量计算预测值，线路和可观测量使用 Cqlib Core 类型。
 SciPy COBYLA 根据整批预测的均方误差更新权重，具体线路执行由 Estimator 完成。
 
-## 可以直接运行的精确示例
+## 使用示例：精确期望值计算
 
-示例使用一个量子比特，以解析 `cos(x+theta)` 产生训练和留出数据，展示参数训练与预测。
+示例使用单量子比特线路，以解析函数 `cos(x+theta)` 生成训练数据和留出数据，
+验证参数拟合与预测结果。
 
 ```python
 import numpy as np
@@ -57,11 +58,10 @@ assert model.training_loss_ < 1e-8
 np.testing.assert_allclose(prediction, np.cos(held_out[:, 0]+0.43), atol=5e-4)
 ```
 
-使用有限 shots 时，将 `StatevectorEstimator()` 换成已有
-`SamplingEstimator(sampler)` 并传 `shots=正整数`。
+有限采样模式使用 `SamplingEstimator(sampler)`，并设置正整数参数 `shots`。
 每个样本使用指定采样次数，所得期望值估计参与均方误差计算。
 
-## 接口与数据要求
+## 接口与输入要求
 
 ```text
 VQR(circuit, input_parameters, weight_parameters, observable, estimator,
@@ -72,16 +72,16 @@ predict(X) -> 一维 float64 预测
 score(X, y) -> R²
 ```
 
-- 数据名与权重名均为非空、无重复、有序字符串序列，固定绑定是名称到有限实数的映射。
+- 数据参数名与权重参数名均为非空、无重复、有序字符串序列，固定绑定是名称到有限实数的映射。
   三组名称互斥，并恰好覆盖线路活跃符号。数据列和初值向量都按显式名称顺序绑定。
 - X 是有限实数二维矩阵 `(n,d)`，y 是同长度一维实数向量。
   训练至少一个样本，预测允许 `(0,d)`。
 - `initial_point` 按名称给出全部权重的初值，与权重参数一一对应。
-- observable 为同宽有限 Hermitian `Hamiltonian` 或 `PauliString`。其位置 i 对应
+- 可观测量为与线路量子比特数相同的有限 Hermitian `Hamiltonian` 或 `PauliString`。其位置 i 对应
   原线路第 i 个插入量子比特；Pauli 的最右字符为位置 0。原线路 ID 可以乱序或不连续。
 - 线路在构造时快照并归一化，包含静态酉操作及可选 barrier。
 - 每组候选权重与整批样本绑定、完成数值校验后，再调用 Estimator。
-- `score` 至少两个答案。R² 可以为负；恒定目标若精确预测为 1，否则为 0。
+- `score` 要求至少两个目标值。R² 可取负值；目标值恒定时，精确预测的评分为 1，否则为 0。
 
 ## 优化配置与结果
 
@@ -100,10 +100,10 @@ score(X, y) -> R²
 
 ## 测试与依赖
 
-对应 `tests/algorithms/test_vqr.py`。测试包括真实 COBYLA 对解析余弦数据的训练与留出
-预测、Y observable 的符号、乱序量子位的 IZ/ZI、非字典序参数和构造输入快照。
-记录型 Estimator 检查整批完全绑定及返回契约；确定性频数配真实 SamplingEstimator
+测试位于 `tests/algorithms/test_vqr.py`，覆盖 COBYLA 对解析余弦数据的拟合与留出
+预测、Y 可观测量的符号、非连续量子比特标识下的 IZ/ZI、显式参数顺序和构造输入快照。
+记录型 Estimator 检查批量参数绑定及返回契约；确定性频数与 SamplingEstimator 组合
 验证 shots；另有奇点/溢出、错误形状、无效初值、缺 SciPy、预算终止、失败重拟合及
 空预测等情况。期望值参考由独立解析公式计算。
 
-经典优化依赖为可选 extra `cqlib-algorithms[machine-learning]`，SciPy 仅在 fit 内导入。
+经典优化依赖通过 `cqlib-algorithms[machine-learning]` 可选依赖组提供，SciPy 在 `fit` 时加载。

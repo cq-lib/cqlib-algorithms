@@ -1,6 +1,6 @@
 # 保真度量子核与 QSVR
 
-`FidelityQuantumKernel` 计算固定量子特征线路的纯态保真度核；`QSVR` 用这个核训练经典
+`FidelityQuantumKernel` 计算固定量子特征线路的纯态保真度核；`QSVR` 基于该核训练经典
 单输出 ε-SVR。核组件位于 `operators/quantum_kernel/fidelity_quantum_kernel.py`，
 从 `cqlib_algorithms.operators` 导入；QSVR 位于 `algorithms/qsvr.py`，
 从 `cqlib_algorithms.algorithms` 导入。原算法层的核导出保留为兼容入口。
@@ -18,7 +18,7 @@ K(x,y)=|\langle\phi(x)|\phi(y)\rangle|^2
 
 密度算符的 Hilbert–Schmidt 内积说明理想精确核是半正定的。量子特征空间与重叠核构造
 参考 [Havlíček 等，arXiv:1804.11326v2](https://arxiv.org/abs/1804.11326v2)。
-原论文讨论分类；这里将同类量子核用于回归。
+该量子核构造在本实现中应用于回归任务。
 
 ε-SVR 训练目标采用
 
@@ -113,9 +113,9 @@ K_{raw}=V\operatorname{diag}(\lambda)V^T,\qquad
 K_{fit}=V\operatorname{diag}(\max(\lambda,0))V^T.
 \]
 
-重构后再对称化，得到交给求解器的 `K_fit`，同时保留原始矩阵 `K_raw`。
+重构并对称化后得到用于求解的 `K_fit`，同时保留原始矩阵 `K_raw`。
 `enforce_psd=False` 时使用 `K_raw` 训练。
-预测时计算交叉核 `K(X_new, X_train)`，再与学得的系数及截距组合得到预测值。
+预测时计算交叉核 `K(X_new, X_train)`，结合训练得到的系数及截距计算预测值。
 
 `fit` 返回自身，训练完成后更新模型；重拟合失败时保留旧模型。
 求解状态由 `fit_status_` 记录，触及迭代上限时同时保留求解器的 convergence warning。
@@ -128,7 +128,7 @@ K_{fit}=V\operatorname{diag}(\max(\lambda,0))V^T.
 | --- | --- |
 | `is_fitted`, `n_features_in_` | 是否已拟合、训练输入列数 |
 | `training_data_` | 训练量子输入的副本，保持样本顺序 |
-| `raw_kernel_matrix_`, `kernel_matrix_` | 原始训练核与实际交给求解器的训练核副本 |
+| `raw_kernel_matrix_`, `kernel_matrix_` | 原始训练核与求解器使用的训练核副本 |
 | `support_` | 支持样本在 `training_data_` 中的索引副本 |
 | `dual_coef_`, `intercept_` | 形状 `(1,n_support)` 的带符号系数与长度 1 的截距副本 |
 | `fit_status_`, `n_iter_` | 求解状态（0 表示正常结束）及迭代数 |
@@ -140,7 +140,7 @@ K_{fit}=V\operatorname{diag}(\max(\lambda,0))V^T.
 scikit-learn 在 `fit` 时加载。通过 `cqlib-algorithms[machine-learning]` 安装经典计算依赖，
 其中 scikit-learn 版本范围为 `>=1.4,<2`。
 
-## 可运行示例：精确核与回归
+## 使用示例：精确核与回归
 
 一量子比特 `RY(x)` 的独立解析核为 `cos((x-y)/2)^2`。
 以下数据选自 `sin(x)`，展示训练、预测和解析核校验。
@@ -168,10 +168,10 @@ np.testing.assert_allclose(kernel.evaluate(X_train), analytic, rtol=0, atol=1e-1
 assert model.is_fitted and model.fit_status_ == 0
 ```
 
-## 可运行示例：有限 shots
+## 使用示例：有限采样
 
-下面三行中有两行相同，只有两个不同数据行配对执行，各用 64 shots，总计 128 shots。
-两对分别是正交态，结果确定。采样训练可将同样配置的 kernel 直接传给 `QSVR`，
+示例输入包含三行数据，其中一行重复；实际执行两个数据配对，各使用 64 shots，总计 128 shots。
+两个配对均对应正交态，结果确定。相同配置的量子核可作为 `QSVR` 的输入，
 训练、预测和评分按需执行配对采样。
 
 ```python
