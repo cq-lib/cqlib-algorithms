@@ -44,6 +44,10 @@ class ElectronicSystem:
     optional because exact Hamiltonian mapping and Hartree--Fock initialization
     do not require canonical energies; perturbative initialization does.
 
+    Orthonormality is an input contract of manually constructed integral
+    objects. Systems created from :class:`ElectronicStructureData` inherit the
+    validation performed by the originating electronic-structure driver.
+
     Args:
         integrals: Restricted or spin-resolved electronic integrals.
         occupation: Reference alpha/beta occupation.

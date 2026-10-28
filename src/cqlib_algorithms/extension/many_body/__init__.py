@@ -10,7 +10,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Many-body intermediate representations missing from the current Core."""
+"""Low-level many-body representations shared by domain extensions."""
 
 from .modal_space import ModalSpace
 from .one_hot_vibrational_mapping import OneHotVibrationalMapper

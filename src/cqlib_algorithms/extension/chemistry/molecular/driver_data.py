@@ -37,6 +37,12 @@ class ElectronicStructureData:
     The reference uses the highest-weight spin projection, so
     ``num_alpha - num_beta = multiplicity - 1``.
 
+    Direct constructors must provide coefficients that are already
+    orthonormal in their atomic-orbital overlap metric. The overlap matrix is
+    intentionally not stored in this backend-independent snapshot, so that
+    condition cannot be reconstructed here. :class:`PySCFDriver` validates
+    ``C.T @ S @ C = I`` before constructing this object.
+
     Args:
         molecule: Molecular input used to generate this snapshot.
         num_alpha: Number of alpha electrons.
@@ -123,6 +129,11 @@ class SpinResolvedElectronicStructureData:
     Alpha and beta electrons occupy separate real orthonormal orbital bases.
     ``alpha_beta_overlap[p, q]`` stores the overlap between alpha orbital
     ``p`` and beta orbital ``q`` in the common atomic-orbital metric.
+
+    Direct constructors are responsible for supplying separately
+    orthonormal alpha and beta coefficient matrices. Their common AO overlap
+    matrix is not retained, so individual orthonormality cannot be recomputed
+    here. :class:`PySCFDriver` validates both bases before construction.
 
     Args:
         molecule: Molecular input used to generate this snapshot.

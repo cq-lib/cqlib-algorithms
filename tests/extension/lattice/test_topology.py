@@ -333,6 +333,20 @@ def test_three_dimensional_periodic_edge_count_matches_independent_formula():
     assert lattice.num_edges == expected_offsite_edges + np.prod(size)
 
 
+def test_extent_two_periodic_axis_obeys_documented_simple_graph_semantics():
+    open_lattice = LineLattice(2, boundary_condition=BoundaryCondition.OPEN)
+    periodic_lattice = LineLattice(2, boundary_condition=BoundaryCondition.PERIODIC)
+
+    assert _offsite_pairs(open_lattice) == {(0, 1)}
+    assert periodic_lattice.weighted_edges == open_lattice.weighted_edges
+
+    three_site_periodic = LineLattice(
+        3,
+        boundary_condition=BoundaryCondition.PERIODIC,
+    )
+    assert _offsite_pairs(three_site_periodic) == {(0, 1), (0, 2), (1, 2)}
+
+
 def test_periodic_square_spectrum_is_sum_of_independent_axis_dispersions():
     rows, cols = 3, 4
     row_hopping, col_hopping = 0.7, -0.4
