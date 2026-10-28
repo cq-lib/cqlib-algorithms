@@ -291,7 +291,13 @@ class VibrationalOp:
         )
 
     def is_hermitian(self, *, atol: float = 0.0) -> bool:
-        """Return whether the exact one-hot qubit representation is Hermitian."""
+        """Return whether the represented finite-modal operator is Hermitian.
+
+        The check is performed on the exact one-hot qubit representation so
+        that local ladder identities, including nilpotency, are respected.
+        Comparing only stored ladder words would not be an operator-level
+        Hermiticity test because distinct words can represent the same matrix.
+        """
         threshold = _normalize_atol(atol)
         # The import is local to keep the sparse representation independent of
         # the concrete mapper during module initialization.

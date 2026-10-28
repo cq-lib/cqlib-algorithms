@@ -89,7 +89,9 @@ class FermiHubbardAnsatz(BaseAnsatz):
     The circuit uses the model's interleaved Jordan--Wigner mode order and
     preserves ``N_up`` and ``N_down`` exactly. It is a factorized variational
     family, not an assertion that noncommuting hopping factors equal one exact
-    evolution under their sum.
+    evolution under their sum. Parameters are ordered repetition by repetition:
+    all hopping factors in lattice-edge order and spin-up-before-spin-down order,
+    followed by the optional diagonal block.
 
     Args:
         system: Fermi--Hubbard lattice system with a fermionic sector.
@@ -144,6 +146,11 @@ class FermiHubbardAnsatz(BaseAnsatz):
     def configuration(self) -> FermionicLatticeConfiguration:
         """Return the fixed reference configuration."""
         return self._configuration
+
+    @property
+    def reps(self) -> int:
+        """Return the number of ordered physical-factor layers."""
+        return self._reps
 
     def _validate_configuration(self) -> None:
         validate_repetitions(self._reps)

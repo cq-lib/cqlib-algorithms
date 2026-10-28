@@ -305,7 +305,13 @@ class ModalIntegrals:
         )
 
     def is_hermitian(self, *, atol: float = _HERMITIAN_ATOL) -> bool:
-        """Return whether all integral coefficients obey conjugate symmetry."""
+        """Recheck the stored conjugate symmetry within ``atol``.
+
+        Construction projects accepted numerical residuals onto an exactly
+        Hermitian snapshot, so a normally constructed instance returns
+        ``True``. The method remains an explicit invariant check and validates
+        the supplied tolerance.
+        """
         if isinstance(atol, (bool, np.bool_)) or not isinstance(atol, numbers.Real):
             raise TypeError("atol must be a real number")
         threshold = float(atol)

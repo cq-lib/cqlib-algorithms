@@ -172,7 +172,8 @@ class SpinOp:
     ``X``, ``Y`` and ``Z`` denote :math:`S^x`, :math:`S^y` and :math:`S^z`.
     For spin one half these are one half of the corresponding Pauli matrices.
     Factors on different sites are canonically reordered, while factor order on
-    the same site is retained because those factors need not commute.
+    the same site is retained because those factors need not commute. Site zero
+    is the least-significant tensor factor in :meth:`to_matrix`.
 
     Args:
         num_spins: Positive number of physical spin sites.

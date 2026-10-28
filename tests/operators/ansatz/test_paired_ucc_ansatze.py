@@ -317,9 +317,9 @@ def test_paired_ansatze_reject_open_shell_and_invalid_primary_inputs(component_t
 
 
 def test_degenerate_paired_pools_are_rejected():
-    with pytest.raises(ValueError, match="paired double"):
+    with pytest.raises(ValueError, match="nonempty, non-full closed shell"):
         PUCCDAnsatz(ElectronicOccupation(2, 0, 0))
-    with pytest.raises(ValueError, match="paired double"):
+    with pytest.raises(ValueError, match="nonempty, non-full closed shell"):
         PUCCDAnsatz(ElectronicOccupation(2, 2, 2))
     with pytest.raises(ValueError, match="nonempty, non-full closed shell"):
         PUCCSDAnsatz(ElectronicOccupation.closed_shell(1, 0))
@@ -338,6 +338,23 @@ def test_puccsd_rejects_vacuum_and_full_occupations(
             occupation,
             initial_state=BasisStateInitialization(2 * num_spatial_orbitals, 0),
         )
+
+
+@pytest.mark.parametrize("component_type", [PUCCDAnsatz, PUCCSDAnsatz])
+@pytest.mark.parametrize(
+    "occupation",
+    [
+        ElectronicOccupation(2, 1, 0),
+        ElectronicOccupation.closed_shell(2, 0),
+        ElectronicOccupation.closed_shell(2, 4),
+    ],
+)
+def test_paired_ansatze_share_the_closed_shell_reference_contract(
+    component_type,
+    occupation,
+):
+    with pytest.raises(ValueError, match="nonempty, non-full closed shell"):
+        component_type(occupation)
 
 
 @pytest.mark.parametrize("component_type", [PUCCDAnsatz, PUCCSDAnsatz])

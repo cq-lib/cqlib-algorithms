@@ -26,7 +26,7 @@ from ...protocols.state_preparation import StatePreparation
 from ._chemistry_defaults import (
     select_fermion_mapper,
     select_hartree_fock_reference,
-    validate_electronic_occupation,
+    validate_nonempty_nonfull_closed_shell,
 )
 from .base_ansatz import _DelegatingAnsatz
 from .ucc_ansatz import UCCAnsatz
@@ -56,7 +56,7 @@ class PUCCDAnsatz(_DelegatingAnsatz):
         mapper: FermionToQubitMapper | None = None,
         initial_state: StatePreparation | None = None,
     ) -> None:
-        validate_electronic_occupation(occupation)
+        validate_nonempty_nonfull_closed_shell(occupation)
         selected_mapper = select_fermion_mapper(mapper)
 
         excitations = generate_paired_double_excitations(occupation)

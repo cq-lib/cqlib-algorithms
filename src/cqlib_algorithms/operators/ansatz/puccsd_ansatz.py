@@ -26,7 +26,7 @@ from ...protocols.state_preparation import StatePreparation
 from ._chemistry_defaults import (
     select_fermion_mapper,
     select_hartree_fock_reference,
-    validate_electronic_occupation,
+    validate_nonempty_nonfull_closed_shell,
 )
 from .base_ansatz import _DelegatingAnsatz
 from .ucc_ansatz import UCCAnsatz
@@ -56,16 +56,7 @@ class PUCCSDAnsatz(_DelegatingAnsatz):
         mapper: FermionToQubitMapper | None = None,
         initial_state: StatePreparation | None = None,
     ) -> None:
-        validate_electronic_occupation(occupation)
-        if not (
-            1
-            <= occupation.num_alpha
-            == occupation.num_beta
-            < occupation.num_spatial_orbitals
-        ):
-            raise ValueError(
-                "occupation must be a nonempty, non-full closed shell occupation"
-            )
+        validate_nonempty_nonfull_closed_shell(occupation)
         selected_mapper = select_fermion_mapper(mapper)
 
         generators = generate_puccsd_generators(occupation)

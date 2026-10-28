@@ -31,6 +31,22 @@ def validate_electronic_occupation(occupation: ElectronicOccupation) -> None:
         raise TypeError("occupation must be an ElectronicOccupation")
 
 
+def validate_nonempty_nonfull_closed_shell(
+    occupation: ElectronicOccupation,
+) -> None:
+    """Validate a closed-shell reference with occupied and virtual orbitals."""
+    validate_electronic_occupation(occupation)
+    if not (
+        1
+        <= occupation.num_alpha
+        == occupation.num_beta
+        < occupation.num_spatial_orbitals
+    ):
+        raise ValueError(
+            "occupation must be a nonempty, non-full closed shell occupation"
+        )
+
+
 def select_fermion_mapper(
     mapper: FermionToQubitMapper | None,
 ) -> FermionToQubitMapper:

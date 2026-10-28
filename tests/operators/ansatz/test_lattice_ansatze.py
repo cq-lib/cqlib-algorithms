@@ -279,6 +279,7 @@ def test_fermi_hubbard_ansatz_has_zero_sector_leakage_for_multiple_layers():
             assert abs(amplitude) <= _ATOL
     assert circuit.used_symbols == [f"fh_{index}" for index in range(6)]
     assert component.num_parameters() == 6
+    assert component.reps == 2
 
 
 def test_fermi_hubbard_zero_repetitions_and_zero_model_return_reference():

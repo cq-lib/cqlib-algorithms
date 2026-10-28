@@ -118,6 +118,22 @@ def test_add_scale_subtract_multiply_and_adjoint_match_modal_linear_algebra():
     assert ((2.0 * raising - raising) * (0.5 - 0.5j)).equiv(raising.scaled(0.5 - 0.5j))
 
 
+def test_hermiticity_respects_exact_local_ladder_identities():
+    space = ModalSpace((2,))
+    creation = VibrationalLadder("+", 0, 0)
+    nilpotent_word = VibrationalOp.from_terms(
+        space,
+        (((creation, creation), 1.0 + 2.0j),),
+    )
+
+    assert not nilpotent_word.equiv(nilpotent_word.adjoint())
+    np.testing.assert_array_equal(
+        nilpotent_word.to_modal_matrix(),
+        np.zeros((2, 2), dtype=np.complex128),
+    )
+    assert nilpotent_word.is_hermitian()
+
+
 def test_normalization_drops_only_the_requested_numerical_residuals():
     space = ModalSpace((2,))
     small = _transition(space, (1,), (0,), 1e-13)
