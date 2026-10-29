@@ -90,6 +90,40 @@ def test_spin_one_matrices_obey_angular_momentum_commutation_relation():
     )
 
 
+def test_spin_half_equivalence_uses_sparse_mapping_without_dense_matrices(
+    monkeypatch,
+):
+    num_spins = 64
+    sx = SpinOp.from_terms(num_spins, (((("X", 0),), 1.0),))
+    sy = SpinOp.from_terms(num_spins, (((("Y", 0),), 1.0),))
+    sz = SpinOp.from_terms(num_spins, (((("Z", 0),), 1.0),))
+    represented_sx = sx + (sx @ sy - 0.5j * sz)
+
+    def fail_dense_conversion(self):
+        raise AssertionError("spin-one-half equivalence must stay sparse")
+
+    monkeypatch.setattr(SpinOp, "to_matrix", fail_dense_conversion)
+
+    assert represented_sx.equiv(sx, atol=1e-14)
+    assert represented_sx.is_hermitian(atol=1e-14)
+
+
+def test_large_higher_spin_equivalence_stops_before_dense_allocation(monkeypatch):
+    left = SpinOp.from_terms(7, (((("X", 0), ("Y", 0)), 1.0),), spin=1)
+    right = 1.0j * SpinOp.from_terms(7, (((("Z", 0),), 1.0),), spin=1)
+
+    def fail_dense_conversion(self):
+        raise AssertionError("resource guard must run before dense conversion")
+
+    monkeypatch.setattr(SpinOp, "to_matrix", fail_dense_conversion)
+
+    with (
+        pytest.warns(RuntimeWarning, match="dense comparison"),
+        pytest.raises(MemoryError, match="estimated"),
+    ):
+        left.equiv(right)
+
+
 def test_construction_merges_duplicate_terms_and_defensively_copies_input():
     mutable_term = [("Z", 1), ("X", 0)]
     entries = [(mutable_term, 2.0), ((("X", 0), ("Z", 1)), -0.5)]

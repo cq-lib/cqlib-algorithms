@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import math
 import numbers
+import warnings
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from fractions import Fraction
@@ -30,6 +31,9 @@ SpinFactor: TypeAlias = tuple[SpinAxis, int]
 SpinTerm: TypeAlias = tuple[SpinFactor, ...]
 SpinCoefficient: TypeAlias = complex | float | int
 SpinTermEntry: TypeAlias = tuple[SpinTerm, complex]
+
+_DENSE_EQUIV_MAX_BYTES = 256 * 1024**2
+_DENSE_EQUIV_BYTES_PER_ELEMENT = 64
 
 
 def _normalize_num_spins(num_spins: int) -> int:
@@ -163,6 +167,24 @@ def _single_spin_matrices(
             np.complex128
         ),
     }
+
+
+def _require_dense_equivalence_capacity(num_spins: int, spin: Fraction) -> None:
+    """Reject a higher-spin dense comparison before unsafe allocation."""
+    local_dimension = 2 * spin.numerator // spin.denominator + 1
+    full_dimension = local_dimension**num_spins
+    estimated_bytes = full_dimension * full_dimension * _DENSE_EQUIV_BYTES_PER_ELEMENT
+    if estimated_bytes <= _DENSE_EQUIV_MAX_BYTES:
+        return
+
+    estimated_mib = estimated_bytes / 1024**2
+    message = (
+        "higher-spin operator equivalence would require an estimated "
+        f"{estimated_mib:.1f} MiB dense comparison; reduce the register size "
+        "or provide a scalable mapping"
+    )
+    warnings.warn(message, RuntimeWarning, stacklevel=3)
+    raise MemoryError(message)
 
 
 @dataclass(frozen=True, slots=True)
@@ -301,9 +323,13 @@ class SpinOp:
     def equiv(self, other: SpinOp, *, atol: float = 0.0) -> bool:
         """Compare represented operators within an absolute tolerance.
 
-        The fallback matrix comparison is necessary because distinct ordered
-        products on one site may represent the same spin operator. This helper
-        is therefore intended for small-system validation, like ``to_matrix``.
+        Spin-one-half operators use their exact sparse qubit representation.
+        Higher-spin operators use a dense fallback only when its estimated
+        temporary memory is within the validation safety limit.
+
+        Raises:
+            MemoryError: If a required higher-spin dense comparison exceeds
+                the safety limit.
         """
         if not isinstance(other, SpinOp):
             return False
@@ -318,6 +344,17 @@ class SpinOp:
         keys = left.keys() | right.keys()
         if all(abs(left.get(key, 0.0j) - right.get(key, 0.0j)) <= atol for key in keys):
             return True
+        if self.spin == Fraction(1, 2):
+            # The import is local to avoid a module-initialization cycle.
+            from .spin_half_mapping import SpinHalfMapper
+
+            mapper = SpinHalfMapper()
+            return mapper.map_operator(self).equiv(
+                mapper.map_operator(other),
+                atol=float(atol),
+            )
+
+        _require_dense_equivalence_capacity(self.num_spins, self.spin)
         return bool(
             np.allclose(
                 self.to_matrix(),
@@ -330,10 +367,8 @@ class SpinOp:
     def is_hermitian(self, *, atol: float = 0.0) -> bool:
         """Return whether this operator equals its adjoint.
 
-        Distinct ordered products on one site can represent the same operator,
-        so an inconclusive sparse comparison uses the same dense small-system
-        fallback as :meth:`equiv`. This method is not a scalable many-spin
-        certification routine.
+        Spin-one-half checks are exact sparse comparisons. Higher-spin checks
+        have the resource boundary documented by :meth:`equiv`.
         """
         return self.equiv(self.adjoint(), atol=atol)
 

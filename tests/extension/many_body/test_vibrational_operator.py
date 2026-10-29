@@ -126,11 +126,12 @@ def test_hermiticity_respects_exact_local_ladder_identities():
         (((creation, creation), 1.0 + 2.0j),),
     )
 
-    assert not nilpotent_word.equiv(nilpotent_word.adjoint())
+    assert not nilpotent_word.coefficient_equiv(nilpotent_word.adjoint())
     np.testing.assert_array_equal(
         nilpotent_word.to_modal_matrix(),
         np.zeros((2, 2), dtype=np.complex128),
     )
+    assert nilpotent_word.equiv(nilpotent_word.adjoint())
     assert nilpotent_word.is_hermitian()
 
 

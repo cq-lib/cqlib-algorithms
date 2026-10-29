@@ -276,8 +276,12 @@ class VibrationalOp:
             ),
         )
 
-    def equiv(self, other: VibrationalOp, *, atol: float = 0.0) -> bool:
-        """Compare canonical sparse coefficients within absolute tolerance."""
+    def coefficient_equiv(self, other: VibrationalOp, *, atol: float = 0.0) -> bool:
+        """Compare stored canonical coefficients within absolute tolerance.
+
+        This representation-level comparison does not apply local ladder
+        identities. Use :meth:`equiv` to compare represented operators.
+        """
         if not isinstance(other, VibrationalOp):
             return False
         if self.modal_space != other.modal_space:
@@ -288,6 +292,30 @@ class VibrationalOp:
         return all(
             abs(left.get(term, 0.0j) - right.get(term, 0.0j)) <= threshold
             for term in left.keys() | right.keys()
+        )
+
+    def equiv(self, other: VibrationalOp, *, atol: float = 0.0) -> bool:
+        """Compare represented finite-modal operators.
+
+        The exact one-hot representation applies local ladder identities such
+        as nilpotency before comparing normalized coefficients.
+        """
+        if not isinstance(other, VibrationalOp):
+            return False
+        if self.modal_space != other.modal_space:
+            return False
+        threshold = _normalize_atol(atol)
+        if self.coefficient_equiv(other, atol=threshold):
+            return True
+
+        # The import is local to keep the sparse representation independent of
+        # the concrete mapper during module initialization.
+        from .one_hot_vibrational_mapping import OneHotVibrationalMapper
+
+        mapper = OneHotVibrationalMapper()
+        return mapper.map_operator(self).equiv(
+            mapper.map_operator(other),
+            atol=threshold,
         )
 
     def is_hermitian(self, *, atol: float = 0.0) -> bool:
