@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import math
 import numbers
+import warnings
 from collections.abc import Iterable, Sequence
 from dataclasses import FrozenInstanceError, dataclass
 from enum import Enum
@@ -317,6 +318,10 @@ class HyperCubicLattice(Lattice):
     Raises:
         TypeError: If a size, weight, or boundary value has the wrong type.
         ValueError: If dimensions, values, or sequence lengths are invalid.
+
+    Warns:
+        RuntimeWarning: If a periodic axis has extent two and therefore uses
+            the same simple-graph edge as its open counterpart.
     """
 
     __slots__ = (
@@ -354,6 +359,23 @@ class HyperCubicLattice(Lattice):
             dimension,
         )
         onsite = _normalize_real_weight(onsite_parameter, name="onsite_parameter")
+
+        extent_two_periodic_axes = tuple(
+            axis
+            for axis, (extent, condition) in enumerate(
+                zip(normalized_size, boundary_conditions, strict=True)
+            )
+            if extent == 2 and condition is BoundaryCondition.PERIODIC
+        )
+        if extent_two_periodic_axes:
+            warnings.warn(
+                "periodic axis indices "
+                f"{extent_two_periodic_axes} have extent two; simple-graph "
+                "semantics do not add parallel wrap edges, so these axes have "
+                "the same connectivity and edge weights as open boundaries",
+                RuntimeWarning,
+                stacklevel=2,
+            )
 
         edges: list[WeightedEdge] = []
         coordinates = tuple(product(*(range(extent) for extent in normalized_size)))

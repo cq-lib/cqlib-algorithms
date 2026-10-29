@@ -270,11 +270,10 @@ def test_real_line_spectrum_matches_analytic_tight_binding_result(boundary):
     )
 
 
-@pytest.mark.parametrize("num_nodes", [1, 2])
-def test_short_periodic_line_does_not_create_duplicate_or_self_wrap(num_nodes):
-    lattice = LineLattice(num_nodes, boundary_condition=BoundaryCondition.PERIODIC)
+def test_single_site_periodic_line_does_not_create_a_self_wrap():
+    lattice = LineLattice(1, boundary_condition=BoundaryCondition.PERIODIC)
 
-    assert len(_offsite_pairs(lattice)) == max(0, num_nodes - 1)
+    assert not _offsite_pairs(lattice)
 
 
 def test_square_lattice_uses_axis_zero_fastest_indexing():
@@ -325,7 +324,8 @@ def test_three_dimensional_periodic_edge_count_matches_independent_formula():
         BoundaryCondition.OPEN,
         BoundaryCondition.PERIODIC,
     )
-    lattice = HyperCubicLattice(size, boundary_condition=conditions)
+    with pytest.warns(RuntimeWarning, match=r"axis indices \(2,\)"):
+        lattice = HyperCubicLattice(size, boundary_condition=conditions)
 
     # Axis counts: 3*4*2, 3*(4-1)*2, and 3*4*(2-1).
     expected_offsite_edges = 24 + 18 + 12
@@ -335,7 +335,11 @@ def test_three_dimensional_periodic_edge_count_matches_independent_formula():
 
 def test_extent_two_periodic_axis_obeys_documented_simple_graph_semantics():
     open_lattice = LineLattice(2, boundary_condition=BoundaryCondition.OPEN)
-    periodic_lattice = LineLattice(2, boundary_condition=BoundaryCondition.PERIODIC)
+    with pytest.warns(RuntimeWarning, match=r"axis indices \(0,\)"):
+        periodic_lattice = LineLattice(
+            2,
+            boundary_condition=BoundaryCondition.PERIODIC,
+        )
 
     assert _offsite_pairs(open_lattice) == {(0, 1)}
     assert periodic_lattice.weighted_edges == open_lattice.weighted_edges
