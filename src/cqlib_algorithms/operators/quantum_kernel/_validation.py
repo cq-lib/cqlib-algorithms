@@ -23,7 +23,7 @@ from numpy.typing import ArrayLike, NDArray
 
 
 def _real_array(values: ArrayLike, name: str, ndim: int) -> NDArray[np.float64]:
-    """Copy finite real numeric data without accepting strings or complex values."""
+    """Copy finite arrays of real numbers."""
     try:
         raw = np.asarray(values)
     except (TypeError, ValueError) as error:

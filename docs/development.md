@@ -6,6 +6,9 @@
 - 完整算法放在 `algorithms/`，随实际实现按功能增加模块；不预建空分类目录。
 - 保真度量子核位于 `operators/quantum_kernel/`，由 QSVR、PegasosQSVC 和
   QuantumKernelTrainer 共用；该算子子包只依赖 Core、协议及其他算子，保持算法向算子的单向依赖。
+- 核训练通过 `QuantumKernel`、`TrainableQuantumKernel`、`KernelLoss` 和 `ScalarMinimizer`
+  组合核求值、参数绑定、损失与搜索；其公共契约位于 `protocols/`。机器学习输入和线路校验
+  集中在算法层 `_ml_validation.py`，标量优化与数值目标计算由 `_ml_common.py` 共享。
 - 不设置泛化的 `components` 或 `contracts` 层；`protocols` 只收纳已经冻结并被多个实现复用的公共契约。
 - `StatePreparation`、`Ansatz`、`Sampler`、`Estimator`、`Gradient` 和 `Optimizer` 是首批公共抽象基类；请求和结果类型与对应契约放在同一模块。
 - 稳定协议同时从 `cqlib_algorithms.protocols` 和包顶层导出，具体实现从所属功能模块导出。

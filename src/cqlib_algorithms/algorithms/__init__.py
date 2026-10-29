@@ -15,7 +15,6 @@
 
 """Complete quantum algorithms composed from reusable components."""
 
-from ..operators.quantum_kernel import FidelityQuantumKernel
 from .amplitude_estimation import (
     AmplitudeEstimationProblem,
     IterativeAmplitudeEstimation,
@@ -56,7 +55,7 @@ from .qbayesian import (
     QBayesianStatus,
 )
 from .qsvr import QSVR
-from .quantum_kernel_trainer import QuantumKernelTrainer
+from .quantum_kernel_trainer import QuantumKernelTrainer, QuantumKernelTrainerResult
 from .quantum_teleportation import (
     QuantumTeleportation,
     QuantumTeleportationRequest,
@@ -90,7 +89,6 @@ __all__ = [
     "DeutschJozsa",
     "DeutschJozsaRequest",
     "DeutschJozsaResult",
-    "FidelityQuantumKernel",
     "HamiltonianPhaseEstimation",
     "HamiltonianPhaseEstimationRequest",
     "HamiltonianPhaseEstimationResult",
@@ -114,6 +112,7 @@ __all__ = [
     "QBayesianRound",
     "QBayesianStatus",
     "QuantumKernelTrainer",
+    "QuantumKernelTrainerResult",
     "QuantumTeleportation",
     "QuantumTeleportationRequest",
     "QuantumTeleportationResult",

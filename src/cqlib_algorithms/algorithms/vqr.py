@@ -33,9 +33,10 @@ from ..protocols.estimator import (
     _validate_hermitian,
     _validate_positive_shots,
 )
+from ..protocols.scalar_minimizer import ScalarMinimizerResult
 from . import _ml_common as common
-from .amplitude_estimation.problem import _validate_static_unitary_circuit
-from .qsvr import _targets
+from . import _ml_validation as validation
+from ._ml_validation import _targets, _validate_static_unitary_circuit
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,20 +44,18 @@ class _State:
     parameters: Mapping[str, float]
     initial_loss: float
     training_loss: float
-    optimization: common.Optimization
+    optimization: ScalarMinimizerResult
 
 
 class VQR:
     """Learn circuit weights by minimizing mean squared estimator predictions.
 
-    Data, weight and fixed names must be disjoint and exactly cover the static
-    circuit symbols. Each prediction is a Hermitian observable expectation;
-    targets are never normalized or clipped. COBYLA is a lazy SciPy dependency.
-    Its evaluation budget excludes one initial and one final diagnostic call,
-    both included in ``objective_evaluations_``. Finite optimizer termination
-    points remain usable even when ``optimizer_success_`` is false. Failed fits
-    preserve the previous model. Exact execution uses ``shots=None``; a supplied
-    positive shot count is forwarded to the injected Estimator.
+    Input, weight and fixed names partition the circuit symbols. Predictions
+    are Hermitian observable expectations. SciPy COBYLA searches the weights;
+    objective_evaluations_ includes two diagnostic calls and optimizer calls.
+    Exact execution uses shots=None; a positive shot count is forwarded to
+    the injected Estimator. Fit publishes a finite final model and optimizer
+    termination diagnostics.
     """
 
     def __init__(
@@ -73,10 +72,10 @@ class VQR:
         tolerance: float = 1e-6,
         initial_step: float = 1.0,
     ) -> None:
-        self._inputs = common.names(input_parameters, "input_parameters")
-        self._weights = common.names(weight_parameters, "weight_parameters")
-        self._fixed = common.bindings(parameter_bindings, "parameter_bindings")
-        self._circuit = common.template(
+        self._inputs = validation.names(input_parameters, "input_parameters")
+        self._weights = validation.names(weight_parameters, "weight_parameters")
+        self._fixed = validation.bindings(parameter_bindings, "parameter_bindings")
+        self._circuit = validation.template(
             circuit, self._inputs, self._weights, self._fixed
         )
         if not isinstance(observable, (Hamiltonian, PauliString)):
@@ -131,7 +130,7 @@ class VQR:
 
     @property
     def optimizer_success_(self) -> bool:
-        """Return SciPy's termination success flag, not a global guarantee."""
+        """Return SciPy's termination success flag."""
         return self._fitted().optimization.success
 
     @property
@@ -199,16 +198,16 @@ class VQR:
 
         Initial bindings must cover exactly the weights. Singular expressions,
         invalid estimator/optimizer outputs and nonfinite losses raise errors;
-        no partial fitted state is committed. SciPy absence raises ImportError.
+        Successful evaluation commits the fitted state. SciPy absence raises ImportError.
         """
-        data = common.data(X, len(self._inputs), nonempty=True)
+        data = validation.data(X, len(self._inputs), nonempty=True)
         targets = _targets(y, len(data), "y")
-        point = common.initial(initial_point, self._weights)
+        point = validation.initial(initial_point, self._weights)
 
         def objective(candidate: NDArray[np.float64]) -> float:
             return common.mse(
                 self._predict(
-                    data, common.immutable_parameters(self._weights, candidate)
+                    data, validation.immutable_parameters(self._weights, candidate)
                 ),
                 targets,
             )
@@ -217,9 +216,9 @@ class VQR:
         result = common.minimize(
             objective, point, self._max_evaluations, self._tolerance, self._initial_step
         )
-        final_loss = objective(result.point)
+        final_loss = objective(np.array(result.point, dtype=np.float64))
         self._state = _State(
-            common.immutable_parameters(self._weights, result.point),
+            validation.immutable_parameters(self._weights, result.point),
             initial_loss,
             final_loss,
             result,
@@ -229,12 +228,12 @@ class VQR:
     def predict(self, X: ArrayLike) -> NDArray[np.float64]:
         """Return final observable predictions; empty (0,d) causes no execution."""
         state = self._fitted()
-        return self._predict(common.data(X, len(self._inputs)), state.parameters)
+        return self._predict(validation.data(X, len(self._inputs)), state.parameters)
 
     def score(self, X: ArrayLike, y: ArrayLike) -> float:
         """Return R-squared for at least two targets; constant-target scores are 1/0."""
         self._fitted()
-        data = common.data(X, len(self._inputs))
+        data = validation.data(X, len(self._inputs))
         targets = _targets(y, len(data), "y")
         if len(targets) < 2:
             raise ValueError("score requires at least two targets")

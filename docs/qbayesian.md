@@ -1,118 +1,12 @@
 # 量子贝叶斯推断 QBayesian
 
-`QBayesian` 从调用方提供的联合分布制备线路出发，通过振幅放大、末端采样和证据筛选，
-估计查询变量的条件分布。实现位于 `algorithms/qbayesian.py`，从
-`cqlib_algorithms.algorithms` 导入。
+`QBayesian` 根据联合概率分布和已知证据，估计查询变量的条件分布。
+调用方提供联合分布制备线路、变量位置映射及 Sampler，算法通过振幅放大和采样完成推断。
 
-## 数学定义与来源
+## 使用示例
 
-设完全绑定的静态酉线路满足
-
-\[
-|\psi\rangle=A|0\cdots0\rangle=\sum_z a_z|z\rangle,
-\qquad P(z)=|a_z|^2.
-\]
-
-变量名对应线路量子比特的插入位置。证据 `e` 是若干变量二进制取值的**合取**，
-`Pi_e` 投影到所有证据都成立的计算基子空间。对查询变量 `Q`，目标为
-
-\[
-P(Q=q\mid e)=
-\frac{\sum_{z:Q(z)=q,\,e(z)}|a_z|^2}
-     {\sum_{z:e(z)}|a_z|^2}.
-\]
-
-未命名量子比特和未查询变量均被求和消去。输入允许复振幅，联合分布由调用方提供的
-制备线路定义。
-
-证据相位 Oracle 与 Grover 迭代采用
-
-\[
-O_e=I-2\Pi_e,\qquad
-G=(2|\psi\rangle\langle\psi|-I)O_e.
-\]
-
-线路时间顺序为 `A` 后接 `k` 个完整的 `G`。Oracle 用证据位上的 X、多控 Z、X
-构建，反射复用已有 `GroverOperator`，作用于全部制备量子比特。若
-`P(e)=sin(theta)^2`，理想接受概率为 `sin((2k+1)*theta)^2`；非零接受子空间内
-的归一化条件态保持不变，因此可以汇总不同幂次的接受频数。
-这一构造采用 [Low、Yoder 与 Chuang 的量子拒绝采样方法，arXiv:1402.7359v1](https://arxiv.org/abs/1402.7359v1)
-以及 [Brassard 等的振幅放大恒等式，arXiv:quant-ph/0005055v1](https://arxiv.org/abs/quant-ph/0005055v1)。
-放大幂次由 `amplification_powers` 指定，按给定序列逐轮执行。
-
-## 接口与输入约定
-
-```text
-QBayesian(state_preparation, variable_qubits, sampler)
-build_circuit(evidence=None, *, grover_power=0, max_grover_power=1024)
-infer(query, evidence=None, *, target_accepted=256, shots_per_round=256,
-      amplification_powers=(0, 1, 2, 4, 8, 16, 32), max_rounds=128,
-      max_grover_power=1024, max_total_shots=1_000_000,
-      max_grover_queries=10_000_000)
-```
-
-- `state_preparation` 是至少含一个量子比特、完全绑定、静态酉且可逆的 Cqlib `Circuit`。
-  线路可包含 barrier，求逆由 Core 完成。
-- `variable_qubits: Mapping[str, int]` 必须非空，名称为非空字符串，位置唯一且在范围内。
-  位置按原线路 `circuit.qubits` 的插入顺序编号；例如
-  `[Qubit(7), Qubit(2)]` 的位置 0 指向 `Qubit(7)`。
-- `sampler` 必须实现本库公共 `Sampler` 抽象契约。构造时复制线路及变量映射；
-  `state_preparation` 属性返回独立副本，`variable_qubits` 属性为不可变映射。
-- `query` 是非空、名称唯一、全部已知的有限序列。
-  返回元组的第 `i` 位对应 `query[i]`。
-- `evidence` 是已知名称到整数 0/1 或 bool 的映射；`None` 和 `{}` 表示不条件化。
-  查询和证据可以重叠，此时相应查询位在接受记录中固定为证据取值。
-- `build_circuit` 每次返回独立、未测量的线路。空证据使有效 Grover 幂次为 0，直接返回 `A`。
-
-预算参数为正整数，`max_grover_power` 和幂次允许为 0。
-`amplification_powers` 是非空有限 `Sequence`，可包含重复值或全零。
-执行前对整个序列检查以下预算：
-
-\[
-\begin{aligned}
-\operatorname{len}(powers)&\le max\_rounds,\\
-\max(powers)&\le max\_grover\_power,\\
-\operatorname{len}(powers)\,shots\_per\_round&\le max\_total\_shots,\\
-\sum_k effective\_power_k\,shots\_per\_round&\le max\_grover\_queries.
-\end{aligned}
-\]
-
-空证据的有效幂次均为 0，输入幂次仍按 `max_grover_power` 校验。
-预算超限时抛出 `ValueError`。
-
-## 采样与结果
-
-每个实际执行轮次提交 `shots_per_round` shots，测量查询和证据位置的排序并集。
-Sampler 约定中，第 `i` 个请求量子比特对应字符串 `bits[-1-i]`。
-完整原始结果先由公共 `validate_sampler_results` 核验，再按全部证据过滤，最后按查询顺序聚合。
-
-累计接受数首次达到 `target_accepted` 时停止，保留终止轮的全部接受计数；因此接受数可以超过目标。
-序列结束仍未达到目标则返回已有的部分估计。
-
-`QBayesianResult` 是冻结且使用 slots 的 dataclass，映射字段保存为不可变快照：
-
-| 字段或属性 | 含义 |
-| --- | --- |
-| `query`, `evidence` | 查询顺序与规范化为 0/1 的证据 |
-| `counts` | 稀疏 `Mapping[tuple[int, ...], int]` 接受频数，仅保存正计数 |
-| `probabilities` | `counts / accepted`；接受数为 0 时为 `None` |
-| `accepted`, `attempted_shots`, `target_accepted` | 实际接受、实际采样和目标数量 |
-| `rounds` | `QBayesianRound(grover_power, shots, accepted)` 的元组，记录有效幂次 |
-| `status` | `QBayesianStatus.TARGET_REACHED` 或 `BUDGET_EXHAUSTED` |
-| `num_grover_queries` | `sum(round.grover_power * round.shots)` |
-| `num_state_preparation_queries` | `sum((2 * round.grover_power + 1) * round.shots)`，合计 `A` 和 `A†` |
-
-有估计时，未出现的元组代表经验零；接受数为 0 时，`probabilities` 为 `None`。
-条件概率由接受样本的频数归一化得到，轮次记录用于追踪采样量和查询次数。
-
-无效输入和 Sampler 契约错误使用英文 `TypeError`/`ValueError`；后端执行异常原样传播。
-单轮线路由制备线路和指定次数的 Grover 迭代组成，采样结果经证据筛选后汇总为经验条件分布。
-
-## 使用示例：联合分布与证据放大
-
-示例的基态索引采用小端约定：`index = q + 2*e`。原始 `P(e=1)=0.25`，
-`P(q=1 | e=1)=0.8`；一次 Grover 迭代将理想证据接受概率提高到 1。
-有限 shots 的经验后验会波动。
+以下联合概率按 `index = q + 2*e` 排列。查询目标为证据 `e=1` 条件下变量 q 的分布，
+其理论值为 `P(q=1 | e=1)=0.8`。
 
 ```python
 import math
@@ -126,45 +20,58 @@ preparation = ArbitraryStatePreparation(
     [math.sqrt(value) for value in joint_probabilities]
 ).build_circuit("")
 inference = QBayesian(preparation, {"q": 0, "e": 1}, StatevectorSampler())
-amplified = inference.build_circuit({"e": 1}, grover_power=1)
-print("Amplified circuit qubits:", amplified.num_qubits)
 result = inference.infer(
-    ["q"],
-    {"e": 1},
-    target_accepted=128,
-    shots_per_round=128,
-    amplification_powers=(0, 1),
+    ["q"], {"e": 1}, target_accepted=128,
+    shots_per_round=128, amplification_powers=(0, 1),
 )
 print("Posterior:", dict(result.probabilities or {}))
 print("Status:", result.status.value)
 print("Accepted / attempted:", result.accepted, result.attempted_shots)
-print("Grover queries:", result.num_grover_queries)
-assert result.accepted >= 128
-assert result.probabilities is not None
 ```
 
-## 使用示例：采样预算与返回状态
+## 接口与参数
 
-示例制备线路使 `e=0`，查询证据设置为 `e=1`。执行三个 8-shot 轮次后，
-返回 `BUDGET_EXHAUSTED` 状态和 `probabilities=None`。
-
-```python
-from cqlib import Circuit
-
-from cqlib_algorithms.algorithms import QBayesian, QBayesianStatus
-from cqlib_algorithms.operators.sampler import StatevectorSampler
-
-inference = QBayesian(Circuit(2), {"q": 0, "e": 1}, StatevectorSampler())
-result = inference.infer(
-    ["q"],
-    {"e": 1},
-    target_accepted=1,
-    shots_per_round=8,
-    amplification_powers=(0, 1, 2),
-)
-print(result.status.value, result.accepted, result.attempted_shots)
-print("Posterior:", result.probabilities)
-assert result.status is QBayesianStatus.BUDGET_EXHAUSTED
-assert result.accepted == 0 and result.attempted_shots == 24
-assert result.probabilities is None
+```text
+QBayesian(state_preparation, variable_qubits, sampler)
+infer(query, evidence=None, *, target_accepted=256, shots_per_round=256,
+      amplification_powers=(0, 1, 2, 4, 8, 16, 32), max_rounds=128,
+      max_grover_power=1024, max_total_shots=1_000_000,
+      max_grover_queries=10_000_000)
+build_circuit(evidence=None, *, grover_power=0, max_grover_power=1024)
 ```
+
+| 参数 | 含义 |
+| --- | --- |
+| `state_preparation` | 编码联合分布的 Cqlib `Circuit`，要求参数完全绑定、静态酉且可逆 |
+| `variable_qubits` | 变量名到量子比特位置的映射，位置按输入线路的量子比特插入顺序从 0 编号 |
+| `sampler` | 本库 `Sampler` 组件，如 `StatevectorSampler` |
+| `query` | 查询变量名称序列，结果元组按此顺序排列 |
+| `evidence` | 变量名到 0/1 或 bool 的映射；多个条件共同成立，`None` 或 `{}` 表示直接查询联合分布的边缘分布 |
+| `target_accepted` | 目标接受样本数 |
+| `shots_per_round` | 每轮采样次数 |
+| `amplification_powers` | 各轮 Grover 迭代次数，0 表示直接采样制备线路 |
+| `max_rounds`、`max_grover_power` | 轮次数与单轮放大幂次上限 |
+| `max_total_shots`、`max_grover_queries` | 整个采样计划的采样次数与 Grover 查询次数上限 |
+
+变量名称与位置分别唯一，查询和证据均使用映射中已定义的变量。查询与证据可重叠。
+采样前检查整个幂次序列是否符合预算。`build_circuit` 返回指定放大次数的未测量线路。
+
+## 返回结果
+
+`infer` 返回 `QBayesianResult`。条件概率由符合证据的样本频数归一化得到。
+
+| 属性 | 含义 |
+| --- | --- |
+| `probabilities` | 查询结果元组到条件概率的映射；接受数为 0 时为 `None` |
+| `counts` | 各查询结果的接受频数 |
+| `accepted`、`attempted_shots` | 累计接受数与实际采样次数 |
+| `status` | `TARGET_REACHED` 表示达到目标接受数，`BUDGET_EXHAUSTED` 表示已完成给定采样计划 |
+| `rounds` | 各轮的放大次数、采样次数及接受数 |
+| `num_grover_queries`、`num_state_preparation_queries` | Grover 与状态制备线路的查询次数 |
+
+达到目标后返回当前轮的全部接受样本；计划结束时返回已取得的统计结果。
+
+## 参考文献
+
+- [Low、Yoder、Chuang：Quantum Inference on Bayesian Networks](https://arxiv.org/abs/1402.7359v1)。
+- [Brassard 等：Quantum Amplitude Amplification and Estimation](https://arxiv.org/abs/quant-ph/0005055v1)。

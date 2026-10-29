@@ -10,18 +10,22 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+# Modified to expose and verify kernel-training contracts.
+
 """Public component abstract base classes and supporting value types."""
 
 from .ansatz import Ansatz
 from .estimator import Estimator, EstimatorRequest, EstimatorResult
 from .gradient import Gradient, GradientRequest, GradientResult
 from .optimizer import Optimizer, OptimizerRequest, OptimizerResult, OptimizerStatus
+from .quantum_kernel import KernelLoss, QuantumKernel, TrainableQuantumKernel
 from .sampler import (
     Sampler,
     SamplerRequest,
     validate_sampler_result,
     validate_sampler_results,
 )
+from .scalar_minimizer import ScalarMinimizer, ScalarMinimizerResult
 from .state_preparation import StatePreparation
 
 __all__ = [
@@ -32,13 +36,18 @@ __all__ = [
     "Gradient",
     "GradientRequest",
     "GradientResult",
+    "KernelLoss",
     "Optimizer",
     "OptimizerRequest",
     "OptimizerResult",
     "OptimizerStatus",
+    "QuantumKernel",
     "Sampler",
     "SamplerRequest",
+    "ScalarMinimizer",
+    "ScalarMinimizerResult",
     "StatePreparation",
+    "TrainableQuantumKernel",
     "validate_sampler_result",
     "validate_sampler_results",
 ]

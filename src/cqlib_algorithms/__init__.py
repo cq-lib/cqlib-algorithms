@@ -10,6 +10,8 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+# Modified to expose and verify kernel-training contracts.
+
 """Composable quantum algorithm components for Cqlib."""
 
 from importlib.metadata import version
@@ -84,6 +86,9 @@ from .transforms import QFT
 
 __version__ = version("cqlib-algorithms")
 
+from .protocols.quantum_kernel import KernelLoss, QuantumKernel, TrainableQuantumKernel
+from .protocols.scalar_minimizer import ScalarMinimizer, ScalarMinimizerResult
+
 __all__ = [
     "BB84",
     "CHSH",
@@ -118,6 +123,7 @@ __all__ = [
     "IterativePhaseEstimation",
     "IterativePhaseEstimationRequest",
     "IterativePhaseEstimationResult",
+    "KernelLoss",
     "MaximumLikelihoodAmplitudeEstimation",
     "MaximumLikelihoodAmplitudeEstimationRequest",
     "MaximumLikelihoodAmplitudeEstimationResult",
@@ -131,11 +137,14 @@ __all__ = [
     "PhaseEstimationRequest",
     "PhaseEstimationResult",
     "QAOAResult",
+    "QuantumKernel",
     "QuantumTeleportation",
     "QuantumTeleportationRequest",
     "QuantumTeleportationResult",
     "Sampler",
     "SamplerRequest",
+    "ScalarMinimizer",
+    "ScalarMinimizerResult",
     "Simon",
     "SimonRequest",
     "SimonResult",
@@ -146,6 +155,7 @@ __all__ = [
     "SuperdenseCoding",
     "SuperdenseCodingRequest",
     "SuperdenseCodingResult",
+    "TrainableQuantumKernel",
     "VQAResult",
     "VQEResult",
     "__version__",

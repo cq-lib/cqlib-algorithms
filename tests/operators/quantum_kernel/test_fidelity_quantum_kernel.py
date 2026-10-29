@@ -503,18 +503,16 @@ def test_exact_roundoff_clipping_only(value, valid, monkeypatch):
             ry_kernel().evaluate([[0]], [[1]])
 
 
-def test_public_operator_and_compatibility_exports_share_one_implementation():
-    from cqlib_algorithms.algorithms import FidelityQuantumKernel as algorithm_export
-    from cqlib_algorithms.algorithms.quantum_kernel import (
-        FidelityQuantumKernel as legacy_module_export,
-    )
+def test_public_operator_exports_share_one_implementation():
+    import importlib.util
+
+    from cqlib_algorithms import algorithms
     from cqlib_algorithms.operators import FidelityQuantumKernel as operator_export
 
+    assert operator_export is FidelityQuantumKernel
+    assert not hasattr(algorithms, "FidelityQuantumKernel")
     assert (
-        algorithm_export
-        is legacy_module_export
-        is operator_export
-        is FidelityQuantumKernel
+        importlib.util.find_spec("cqlib_algorithms.algorithms.quantum_kernel") is None
     )
     assert FidelityQuantumKernel.__module__ == (
         "cqlib_algorithms.operators.quantum_kernel.fidelity_quantum_kernel"

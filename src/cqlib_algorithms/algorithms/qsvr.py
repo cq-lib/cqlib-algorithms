@@ -21,16 +21,15 @@ Statistics and Computing 14, 199-222 (2004), DOI:10.1023/B:STCO.0000035301.49549
 from __future__ import annotations
 
 import importlib
-import math
 from dataclasses import dataclass
-from numbers import Real
 from typing import Protocol, cast
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
 from ..operators.quantum_kernel import FidelityQuantumKernel
-from ..operators.quantum_kernel._validation import _real_array
+from ._ml_validation import _real_hyperparameter, _targets
+from ._ml_validation import data as validate_data
 
 
 class _SVRSolver(Protocol):
@@ -62,24 +61,6 @@ class _FittedState:
     minimum_eigenvalue: float
 
 
-def _real_hyperparameter(value: float, name: str, *, allow_zero: bool = False) -> float:
-    if isinstance(value, bool) or not isinstance(value, Real):
-        raise TypeError(f"{name} must be a real number")
-    result = float(value)
-    if not math.isfinite(result) or (result < 0.0 if allow_zero else result <= 0.0):
-        raise ValueError(
-            f"{name} must be finite and {'nonnegative' if allow_zero else 'positive'}"
-        )
-    return result
-
-
-def _targets(values: ArrayLike, size: int, name: str) -> NDArray[np.float64]:
-    result = _real_array(values, name, 1)
-    if len(result) != size:
-        raise ValueError(f"{name} length must match the number of samples")
-    return result
-
-
 def _weights(values: ArrayLike | None, size: int) -> NDArray[np.float64] | None:
     if values is None:
         return None
@@ -92,17 +73,13 @@ def _weights(values: ArrayLike | None, size: int) -> NDArray[np.float64] | None:
 class QSVR:
     """Fit epsilon-SVR with a fixed FidelityQuantumKernel and libsvm.
 
-    ``C`` and ``tol`` must be finite positive reals, ``epsilon`` finite and
-    nonnegative, and ``max_iter`` -1 or a positive integer. Positive sample
-    weights scale each observation's C. Scikit-learn is imported lazily by
-    ``fit`` and is available through the ``machine-learning`` extra.
-
-    By default the symmetric training Gram matrix is projected to PSD by
-    clipping eigenvalues at zero. Prediction always uses raw rectangular
-    fidelities; this finite training repair does not define a globally PSD
-    out-of-sample kernel. Disabling repair preserves indefinite shot noise.
-    A failed refit preserves the previous model. Solver convergence warnings
-    propagate and an iteration-limited approximation remains fitted.
+    C and tol are finite positive reals, epsilon is nonnegative, and max_iter
+    is -1 or a positive integer. Positive sample weights scale each sample's C.
+    The machine-learning extra provides the lazily imported scikit-learn.
+    By default, training Gram eigenvalues are clipped to zero. Prediction
+    evaluates rectangular fidelities between query and training rows.
+    Fit publishes the model after the solver completes and retains its
+    termination diagnostics.
     """
 
     __slots__ = (
@@ -218,7 +195,7 @@ class QSVR:
         raise TypeError/ValueError before quantum work. Missing scikit-learn
         raises ImportError with installation guidance.
         """
-        data = self._quantum_kernel._validate_data(X, "X")
+        data = validate_data(X, self._quantum_kernel.num_features)
         if not len(data):
             raise ValueError("fit requires at least one sample")
         targets = _targets(y, len(data), "y")
@@ -272,7 +249,7 @@ class QSVR:
         empty vector without evaluating circuits or calling the solver.
         """
         state = self._fitted()
-        data = self._quantum_kernel._validate_data(X, "X")
+        data = validate_data(X, self._quantum_kernel.num_features)
         if not len(data):
             return np.empty(0, dtype=np.float64)
         matrix = self._quantum_kernel.evaluate(data, state.training_data)
@@ -294,7 +271,7 @@ class QSVR:
         Optional weights must be finite and strictly positive.
         """
         self._fitted()
-        data = self._quantum_kernel._validate_data(X, "X")
+        data = validate_data(X, self._quantum_kernel.num_features)
         targets = _targets(y, len(data), "y")
         if len(targets) < 2:
             raise ValueError("score requires at least two targets")

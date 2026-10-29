@@ -34,6 +34,7 @@ from cqlib.qis.metrics import state_fidelity_pure
 from cqlib.qis.state import Statevector
 from numpy.typing import ArrayLike, NDArray
 
+from ...protocols.quantum_kernel import QuantumKernel
 from ...protocols.sampler import Sampler
 from ..state_fidelity import CircuitFidelityRequest, ComputeUncomputeFidelity
 from ..state_fidelity.compute_uncompute import _validate_static_unitary
@@ -45,7 +46,7 @@ from ._validation import (
 )
 
 
-class FidelityQuantumKernel:
+class FidelityQuantumKernel(QuantumKernel):
     """Evaluate ``K(x,y)=|<phi(x)|phi(y)>|**2`` using a fixed feature circuit.
 
     The nonempty ordered ``input_parameters`` defines data-column bindings.
@@ -61,9 +62,8 @@ class FidelityQuantumKernel:
 
     Identical data rows have analytic fidelity one, including the diagonal,
     even for noisy Samplers. Self-evaluation mirrors the upper triangle.
-    Returned matrices are raw fidelities without PSD correction or data
-    normalization. Invalid configuration/data raises TypeError/ValueError;
-    execution errors propagate. No persistent dataset cache is retained.
+    Returned matrices contain raw fidelities. Invalid configuration/data raises TypeError/ValueError;
+    execution errors propagate. Data-row reuse is scoped to each evaluation.
     """
 
     __slots__ = (

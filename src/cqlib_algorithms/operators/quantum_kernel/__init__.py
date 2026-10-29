@@ -14,6 +14,12 @@
 
 """Reusable quantum kernels built from Cqlib feature circuits."""
 
+from .balanced_kernel_alignment_loss import BalancedKernelAlignmentLoss
 from .fidelity_quantum_kernel import FidelityQuantumKernel
+from .trainable_fidelity_quantum_kernel import TrainableFidelityQuantumKernel
 
-__all__ = ["FidelityQuantumKernel"]
+__all__ = [
+    "BalancedKernelAlignmentLoss",
+    "FidelityQuantumKernel",
+    "TrainableFidelityQuantumKernel",
+]

@@ -10,6 +10,8 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+# Modified to expose and verify kernel-training contracts.
+
 """Smoke checks for the installed distribution."""
 
 import inspect
@@ -214,6 +216,11 @@ from cqlib_algorithms.protocols import (
 from cqlib_algorithms.transforms import QFT as TransformQFT
 
 PUBLIC_COMPONENTS = {
+    "QuantumKernel": cqlib_algorithms.QuantumKernel,
+    "TrainableQuantumKernel": cqlib_algorithms.TrainableQuantumKernel,
+    "KernelLoss": cqlib_algorithms.KernelLoss,
+    "ScalarMinimizer": cqlib_algorithms.ScalarMinimizer,
+    "ScalarMinimizerResult": cqlib_algorithms.ScalarMinimizerResult,
     "AmplitudeEstimationProblem": AmplitudeEstimationProblem,
     "Ansatz": Ansatz,
     "BB84": BB84,

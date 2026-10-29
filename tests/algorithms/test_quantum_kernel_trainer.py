@@ -29,9 +29,11 @@ from cqlib_algorithms.algorithms.pegasos_qsvc import PegasosQSVC
 from cqlib_algorithms.algorithms.qsvr import QSVR
 from cqlib_algorithms.algorithms.quantum_kernel_trainer import (
     QuantumKernelTrainer,
-    _alignment,
 )
 from cqlib_algorithms.operators.quantum_kernel import FidelityQuantumKernel
+from cqlib_algorithms.operators.quantum_kernel.balanced_kernel_alignment_loss import (
+    _alignment,
+)
 from cqlib_algorithms.protocols.sampler import Sampler
 
 

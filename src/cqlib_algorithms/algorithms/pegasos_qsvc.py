@@ -26,9 +26,14 @@ import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
 from ..operators.quantum_kernel import FidelityQuantumKernel
-from ..operators.quantum_kernel._validation import _positive_integer, _real_array
 from . import _ml_common as common
-from .qsvr import _real_hyperparameter, _targets
+from . import _ml_validation as validation
+from ._ml_validation import (
+    _positive_integer,
+    _real_array,
+    _real_hyperparameter,
+    _targets,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -62,15 +67,13 @@ def _norm_squared(
 
 
 class PegasosQSVC:
-    """Train a no-intercept binary SVM using the last projected Pegasos iterate.
+    """Train a binary SVM with projected single-sample Pegasos updates.
 
-    ``regularization`` is lambda in lambda*||w||^2/2 + mean hinge loss.
-    Each step samples one observation with replacement using a local RNG.
-    Negative training Gram eigenvalues are clipped to zero for all training
-    margins, projections and diagnostics. This finite-set repair defines no
-    global PSD extension: prediction always uses raw rectangular fidelities.
-    Numeric labels are sorted; a zero decision maps to the positive class.
-    NumPy alone is required for this classifier's classical training.
+    The objective is lambda*||w||^2/2 + mean hinge loss. Each step samples
+    one observation with a local RNG. Training uses the PSD positive part of
+    the Gram matrix; prediction evaluates rectangular fidelities. Numeric
+    labels are sorted, and a zero decision maps to the positive class.
+    The returned coefficients represent the final iterate with zero bias.
     """
 
     def __init__(
@@ -158,14 +161,14 @@ class PegasosQSVC:
 
     @property
     def n_iter_(self) -> int:
-        """Return the performed update count, without a convergence claim."""
+        """Return the performed update count."""
         self._fitted()
         return self._num_steps
 
     def fit(self, X: ArrayLike, y: ArrayLike) -> PegasosQSVC:
         """Fit finite nonempty X and exactly two numeric classes atomically."""
-        data = common.data(X, self._kernel.num_features, nonempty=True)
-        labels, classes = common.binary_labels(y, len(data))
+        data = validation.data(X, self._kernel.num_features, nonempty=True)
+        labels, classes = validation.binary_labels(y, len(data))
         raw = common.gram(self._kernel.evaluate(data), len(data))
         eigenvalues, eigenvectors = np.linalg.eigh(raw)
         matrix = (eigenvectors * np.maximum(eigenvalues, 0.0)) @ eigenvectors.T
@@ -213,7 +216,7 @@ class PegasosQSVC:
     def decision_function(self, X: ArrayLike) -> NDArray[np.float64]:
         """Return raw rectangular kernel decisions; empty (0,d) performs no work."""
         state = self._fitted()
-        data = common.data(X, self._kernel.num_features)
+        data = validation.data(X, self._kernel.num_features)
         if not len(data):
             return np.empty(0, dtype=np.float64)
         matrix = _real_array(
@@ -242,7 +245,7 @@ class PegasosQSVC:
     def score(self, X: ArrayLike, y: ArrayLike) -> float:
         """Return mean classification accuracy on nonempty known-class labels."""
         state = self._fitted()
-        data = common.data(X, self._kernel.num_features, nonempty=True)
+        data = validation.data(X, self._kernel.num_features, nonempty=True)
         targets = _targets(y, len(data), "y")
         if not np.all(np.isin(targets, state.classes)):
             raise ValueError("score labels must belong to the fitted classes")

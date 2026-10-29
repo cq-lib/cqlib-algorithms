@@ -10,7 +10,7 @@ CHSH 不等式验证、BB84 协议实验、量子隐形传态与超密编码算�
 现亦提供标准、迭代与最大似然三种振幅估计算法，以及标准 QPE、迭代 QPE 和
 Hamiltonian 相位估计算法。
 量子机器学习部分提供量子贝叶斯推断 `QBayesian`、保真度量子核和量子核回归 `QSVR`。
-现亦提供变分量子回归 `VQR`、投影次梯度量子核分类 `PegasosQSVC`，以及监督核目标对齐训练 `QuantumKernelTrainer`。
+现亦提供变分量子回归 `VQR`、投影次梯度量子核分类 `PegasosQSVC`，以及可组合的量子核训练 `QuantumKernelTrainer`。
 
 ## 目录
 
@@ -27,7 +27,9 @@ src/cqlib_algorithms/
 │   ├── sampler.py
 │   ├── estimator.py
 │   ├── gradient.py
-│   └── optimizer.py
+│   ├── optimizer.py
+│   ├── quantum_kernel.py
+│   └── scalar_minimizer.py
 ├── operators/
 │   ├── ansatz/
 │   │   ├── base_ansatz.py
@@ -95,6 +97,8 @@ src/cqlib_algorithms/
 │   │   └── grover_diffusion.py
 │   ├── quantum_kernel/
 │   │   ├── __init__.py
+│   │   ├── trainable_fidelity_quantum_kernel.py
+│   │   ├── balanced_kernel_alignment_loss.py
 │   │   ├── fidelity_quantum_kernel.py
 │   │   └── _validation.py
 │   ├── sampler/
@@ -142,7 +146,6 @@ src/cqlib_algorithms/
     ├── pegasos_qsvc.py
     ├── qbayesian.py
     ├── qsvr.py
-    ├── quantum_kernel.py          # 算子兼容导出
     ├── quantum_kernel_trainer.py
     ├── quantum_teleportation.py
     ├── simon.py
@@ -487,8 +490,8 @@ Bell 基解码，并把末端测量委托公共 `Sampler`。结果保留固定 `
 `PegasosQSVC` 将量子核与 Pegasos 随机次梯度、球投影结合，完成二分类训练和预测。
 接口和示例见 [Pegasos 量子核分类](docs/pegasos_qsvc.md)。
 
-`QuantumKernelTrainer` 根据类别标签优化特征线路参数，输出供 QSVR 或 PegasosQSVC
-使用的量子核。接口和示例见 [量子核训练](docs/quantum_kernel_training.md)。
+`QuantumKernelTrainer` 组合可训练量子核、损失函数和优化器，输出训练后的量子核。
+默认采用类别平衡的核目标对齐与 COBYLA，也支持自定义训练目标与参数搜索。接口和示例见 [量子核训练](docs/quantum_kernel_training.md)。
 
 算法从 `cqlib_algorithms.algorithms` 导入，量子核从 `cqlib_algorithms.operators` 导入。
 经典计算依赖通过 `machine-learning` 可选依赖组提供。
