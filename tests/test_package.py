@@ -26,7 +26,9 @@ from cqlib_algorithms import (
     CHSH,
     QAOA,
     QFT,
+    QSVR,
     VQE,
+    VQR,
     AmplitudeEstimationProblem,
     BB84Basis,
     BB84Request,
@@ -60,12 +62,19 @@ from cqlib_algorithms import (
     MaximumLikelihoodAmplitudeEstimation,
     MaximumLikelihoodAmplitudeEstimationRequest,
     MaximumLikelihoodAmplitudeEstimationResult,
+    PegasosQSVC,
     PhaseEstimation,
     PhaseEstimationCircuit,
     PhaseEstimationProblem,
     PhaseEstimationRequest,
     PhaseEstimationResult,
     QAOAResult,
+    QBayesian,
+    QBayesianResult,
+    QBayesianRound,
+    QBayesianStatus,
+    QuantumKernelTrainer,
+    QuantumKernelTrainerResult,
     QuantumTeleportation,
     QuantumTeleportationRequest,
     QuantumTeleportationResult,
@@ -260,6 +269,11 @@ from cqlib_algorithms.protocols import (
 from cqlib_algorithms.transforms import QFT as TransformQFT
 
 PUBLIC_COMPONENTS = {
+    "QuantumKernel": cqlib_algorithms.QuantumKernel,
+    "TrainableQuantumKernel": cqlib_algorithms.TrainableQuantumKernel,
+    "KernelLoss": cqlib_algorithms.KernelLoss,
+    "ScalarMinimizer": cqlib_algorithms.ScalarMinimizer,
+    "ScalarMinimizerResult": cqlib_algorithms.ScalarMinimizerResult,
     "AmplitudeEstimationProblem": AmplitudeEstimationProblem,
     "Ansatz": Ansatz,
     "BB84": BB84,
@@ -334,6 +348,15 @@ PUBLIC_COMPONENTS = {
     "VibrationalGroundState": VibrationalGroundState,
     "VibrationalGroundStateResult": VibrationalGroundStateResult,
     "VibrationalMeasurements": VibrationalMeasurements,
+    "PegasosQSVC": PegasosQSVC,
+    "QBayesian": QBayesian,
+    "QBayesianResult": QBayesianResult,
+    "QBayesianRound": QBayesianRound,
+    "QBayesianStatus": QBayesianStatus,
+    "QSVR": QSVR,
+    "QuantumKernelTrainer": QuantumKernelTrainer,
+    "QuantumKernelTrainerResult": QuantumKernelTrainerResult,
+    "VQR": VQR,
 }
 
 
@@ -510,3 +533,23 @@ def test_superdense_coding_is_exported_from_public_namespaces():
     assert SuperdenseCoding is AlgorithmSuperdenseCoding
     assert SuperdenseCodingRequest is AlgorithmSuperdenseCodingRequest
     assert SuperdenseCodingResult is AlgorithmSuperdenseCodingResult
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "PegasosQSVC",
+        "QBayesian",
+        "QBayesianResult",
+        "QBayesianRound",
+        "QBayesianStatus",
+        "QSVR",
+        "QuantumKernelTrainer",
+        "QuantumKernelTrainerResult",
+        "VQR",
+    ],
+)
+def test_qml_algorithms_are_exported_from_public_namespaces(name):
+    assert getattr(cqlib_algorithms, name) is getattr(
+        import_module("cqlib_algorithms.algorithms"), name
+    )

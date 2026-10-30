@@ -9,6 +9,9 @@
 [能力清单](docs/capabilities.md)为准；公共类和方法的参数、返回值与异常以源码
 docstring 为准。
 
+量子机器学习提供 QBayesian、QSVR、VQR、PegasosQSVC 和可组合的量子核训练；
+使用方法见[算法用户指南](docs/index.md#算法)。
+
 ## 安装
 
 环境要求以 `pyproject.toml` 为准：Python 3.10 及以上，
@@ -22,6 +25,9 @@ uv pip install --no-deps -e .
 
 Cqlib Core 2.0 beta 尚未正式发布时，应先在同一环境中安装受支持版本；不要通过
 `uv sync` 将未发布依赖替换成其他来源。
+
+量子机器学习中的支持向量回归另使用 `scikit-learn>=1.4,<2`，
+由 `machine-learning` 可选依赖组声明。
 
 ## 快速开始
 

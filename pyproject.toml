@@ -25,6 +25,7 @@ classifiers = [
 
 [project.optional-dependencies]
 chemistry = ["pyscf>=2.6,<3"]
+machine-learning = ["scikit-learn>=1.4,<2"]
 
 [dependency-groups]
 dev = [

@@ -16,6 +16,7 @@ from .ansatz import Ansatz
 from .estimator import Estimator, EstimatorRequest, EstimatorResult
 from .gradient import Gradient, GradientRequest, GradientResult
 from .optimizer import Optimizer, OptimizerRequest, OptimizerResult, OptimizerStatus
+from .quantum_kernel import KernelLoss, QuantumKernel, TrainableQuantumKernel
 from .sampler import (
     Sampler,
     SamplerRequest,
@@ -23,6 +24,7 @@ from .sampler import (
     validate_sampler_result,
     validate_sampler_results,
 )
+from .scalar_minimizer import ScalarMinimizer, ScalarMinimizerResult
 from .state_preparation import StatePreparation
 
 __all__ = [
@@ -33,13 +35,18 @@ __all__ = [
     "Gradient",
     "GradientRequest",
     "GradientResult",
+    "KernelLoss",
     "Optimizer",
     "OptimizerRequest",
     "OptimizerResult",
     "OptimizerStatus",
+    "QuantumKernel",
     "Sampler",
     "SamplerRequest",
+    "ScalarMinimizer",
+    "ScalarMinimizerResult",
     "StatePreparation",
+    "TrainableQuantumKernel",
     "spawn_seeds",
     "validate_sampler_result",
     "validate_sampler_results",
