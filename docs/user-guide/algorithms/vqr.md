@@ -1,20 +1,19 @@
 # 变分量子回归 VQR
 
-`VQR` 使用参数化量子线路进行回归，以指定可观测量的期望值作为预测值，
-通过最小化训练集均方误差优化线路权重。
+`VQR` 使用参数化量子线路构建单输出回归模型。每个样本的预测值为指定可观测量的期望值，
+训练以整批预测与目标之间的均方误差（MSE）为目标。量子执行由 Estimator 提供，
+权重搜索由标量最小化器提供，默认采用 SciPy COBYLA。
 
-训练使用 SciPy，可通过 `cqlib-algorithms[machine-learning]` 安装经典计算依赖。
+## 默认训练
 
-## 使用示例
-
-以下示例采用单量子比特 RY 线路，拟合 `cos(x+0.43)`。
+以下示例通过单量子比特 RY 线路拟合 `cos(x+0.43)`。
 
 ```python
 import numpy as np
 from cqlib import Circuit, Parameter
 from cqlib.qis import PauliString
 
-from cqlib_algorithms.algorithms import VQR
+from cqlib_algorithms import VQR
 from cqlib_algorithms.operators.estimator import StatevectorEstimator
 
 circuit = Circuit(1)
@@ -31,53 +30,77 @@ model = VQR(
 X = np.linspace(-1.4, 1.5, 9)[:, None]
 y = np.cos(X[:, 0] + 0.43)
 model.fit(X, y, initial_point={"theta": -0.7})
-X_test = np.array([[-0.5], [0.2], [1.0]])
 print("Learned weights:", dict(model.optimal_parameters_))
 print("Training MSE:", model.training_loss_)
-print("Predictions:", model.predict(X_test))
+print("Predictions:", model.predict([[-0.5], [0.2], [1.0]]))
 ```
 
-## 接口与参数
+输入数据 `X` 为有限实数二维数组，每列按 `input_parameters` 绑定；目标 `y` 为同样本数的一维向量。
+数据、权重和固定参数名称共同覆盖线路活跃符号，`initial_point` 按名称指定全部权重的初值。
+可观测量的量子比特位置按线路插入顺序解释，Pauli 字符串最右字符对应位置 0。
 
-```text
-VQR(circuit, input_parameters, weight_parameters, observable, estimator, *,
-    parameter_bindings=None, shots=None,
-    max_evaluations=200, tolerance=1e-6, initial_step=1.0)
-fit(X, y, *, initial_point) -> self
-predict(X) -> numpy.ndarray
-score(X, y) -> float
+`shots=None` 使用精确期望值。有限采样计算可传入 `SamplingEstimator(sampler)`，
+并以正整数 `shots` 指定每个样本的采样次数。
+
+## 替换优化器
+
+`optimizer` 接受符合 `ScalarMinimizer` 约定的可调用对象：接收目标函数和一维初始参数数组，
+评估候选参数后返回 `ScalarMinimizerResult`。以下示例在三组权重中选择 MSE 最小的一组。
+
+```python
+import numpy as np
+from cqlib import Circuit, Parameter
+from cqlib.qis import PauliString
+
+from cqlib_algorithms import ScalarMinimizerResult, VQR
+from cqlib_algorithms.operators.estimator import StatevectorEstimator
+
+
+def search(objective, initial_point):
+    points = [initial_point.copy(), np.array([0.43]), np.array([1.2])]
+    values = [objective(point) for point in points]
+    index = int(np.argmin(values))
+    return ScalarMinimizerResult(
+        tuple(float(value) for value in points[index]),
+        values[index],
+        True,
+        0,
+        "Search completed",
+        len(points),
+    )
+
+
+circuit = Circuit(1)
+circuit.ry(0, Parameter("x"))
+circuit.ry(0, Parameter("theta"))
+X = np.array([[-0.8], [0.2], [1.0]])
+y = np.cos(X[:, 0] + 0.43)
+model = VQR(
+    circuit,
+    ["x"],
+    ["theta"],
+    PauliString.from_str("Z"),
+    StatevectorEstimator(),
+    optimizer=search,
+    max_evaluations=3,
+)
+model.fit(X, y, initial_point={"theta": -0.7})
+print("Selected weights:", dict(model.optimal_parameters_))
+print("Training MSE:", model.training_loss_)
 ```
 
-| 参数 | 含义 |
-| --- | --- |
-| `circuit` | 包含数据参数与权重参数的静态酉 Cqlib 线路 |
-| `input_parameters` | 有序数据参数名，与输入数据列一一对应 |
-| `weight_parameters` | 有序可训练权重名 |
-| `observable` | 与线路量子比特数相同的 Hermitian `Hamiltonian` 或 `PauliString` |
-| `estimator` | 期望值计算组件，如 `StatevectorEstimator` 或 `SamplingEstimator` |
-| `parameter_bindings` | 其余线路参数的固定值 |
-| `shots` | 每个样本的采样次数；精确计算时使用默认值 `None` |
-| `max_evaluations` | 优化器目标评估次数上限，至少为权重数量加 2 |
-| `tolerance`、`initial_step` | 正的优化停止尺度与初始搜索步长 |
+`max_evaluations` 限制优化期间实际调用目标函数的次数。默认 COBYLA 至少需要权重数量加 2，
+自定义优化器使用正整数预算。`tolerance` 和 `initial_step` 分别配置默认 COBYLA 的停止尺度和初始搜索尺度。
+初始和最终参数处各有一次独立损失评估，总次数由 `objective_evaluations_` 提供。
 
-三组参数名称互斥，并共同覆盖线路的全部活跃符号。
-`X` 为有限实数二维数组 `(n,d)`，`y` 为长度 n 的一维有限实数向量。
-训练时通过 `initial_point` 按名称提供全部权重的初值。
+## 预测与结果
 
-可观测量的位置按线路量子比特的插入顺序解释，Pauli 字符串最右字符对应位置 0。
-预测值范围由可观测量的谱决定，例如 Z 可观测量对应 [-1,1]。
+`predict(X)` 按输入顺序返回预测向量，`score(X, y)` 计算 R²，评分数据至少含两个样本。
+`optimal_parameters_` 保存选定权重，`initial_loss_` 和 `training_loss_` 提供初始与最终 MSE；
+优化器的终止标记、消息与实际评估次数通过 `optimizer_success_`、`optimizer_message_` 和
+`optimizer_evaluations_` 读取。
 
-## 预测与训练结果
-
-`predict(X)` 返回一维预测数组，`score(X,y)` 返回 R²，评分数据至少包含两个样本。
-使用采样计算时，可传入 `SamplingEstimator(sampler)` 并指定正整数 shots。
-
-| 属性 | 含义 |
-| --- | --- |
-| `optimal_parameters_` | 训练后的权重映射 |
-| `initial_loss_`、`training_loss_` | 初始与最终训练均方误差 |
-| `optimizer_success_`、`optimizer_status_`、`optimizer_message_` | 优化器终止状态 |
-| `optimizer_evaluations_`、`objective_evaluations_` | 优化器评估次数与包含初始、最终诊断的总评估次数 |
+公共参数和异常定义见 `VQR` 的源码 docstring。
 
 ## 参考文献
 

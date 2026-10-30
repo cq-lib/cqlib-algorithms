@@ -10,9 +10,12 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Single-output quantum circuit learning with a true mean-square objective.
+"""Single-output quantum circuit learning with a mean-square objective.
 
-Reference: Mitarai et al., Phys. Rev. A 98, 032309 (2018), arXiv:1803.00745v3.
+References
+----------
+[1] K. Mitarai et al., "Quantum Circuit Learning", Phys. Rev. A 98,
+    032309 (2018), arXiv:1803.00745v3.
 """
 
 from __future__ import annotations
@@ -33,10 +36,15 @@ from ..protocols.estimator import (
     _validate_hermitian,
     _validate_positive_shots,
 )
-from ..protocols.scalar_minimizer import ScalarMinimizerResult
+from ..protocols.scalar_minimizer import ScalarMinimizer, ScalarMinimizerResult
 from . import _ml_common as common
 from . import _ml_validation as validation
-from ._ml_validation import _targets, _validate_static_unitary_circuit
+from ._ml_validation import (
+    _positive_integer,
+    _real_hyperparameter,
+    _targets,
+    _validate_static_unitary_circuit,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,12 +58,27 @@ class _State:
 class VQR:
     """Learn circuit weights by minimizing mean squared estimator predictions.
 
-    Input, weight and fixed names partition the circuit symbols. Predictions
-    are Hermitian observable expectations. SciPy COBYLA searches the weights;
-    objective_evaluations_ includes two diagnostic calls and optimizer calls.
-    Exact execution uses shots=None; a positive shot count is forwarded to
-    the injected Estimator. Fit publishes a finite final model and optimizer
-    termination diagnostics.
+    Each input row produces one Hermitian observable expectation [1]. Qubit
+    positions follow the circuit's insertion order. Fit retains the minimizer's
+    selected point and independently evaluates its training MSE.
+
+    Args:
+        circuit: Static unitary data-and-weight circuit.
+        input_parameters: Ordered names corresponding to input columns.
+        weight_parameters: Ordered nonempty names optimized during training.
+        observable: Hermitian observable with the circuit's qubit count.
+        estimator: Batch expectation estimator.
+        parameter_bindings: Fixed values for remaining circuit symbols.
+        shots: Positive shots per sample, or None for exact expectations.
+        optimizer: Scalar minimizer; None selects SciPy COBYLA.
+        max_evaluations: Positive optimization-call budget. COBYLA requires
+            at least the weight count plus two evaluations.
+        tolerance: Positive final search scale for default COBYLA.
+        initial_step: Positive initial search scale for default COBYLA.
+
+    Raises:
+        TypeError: If configuration types or component interfaces are invalid.
+        ValueError: If symbols, dimensions, or numeric options are invalid.
     """
 
     def __init__(
@@ -68,6 +91,7 @@ class VQR:
         *,
         parameter_bindings: Mapping[str, float] | None = None,
         shots: int | None = None,
+        optimizer: ScalarMinimizer | None = None,
         max_evaluations: int = 200,
         tolerance: float = 1e-6,
         initial_step: float = 1.0,
@@ -89,9 +113,17 @@ class VQR:
         self._observable = observable.copy()
         self._estimator = estimator
         self._shots = shots
-        self._tolerance, self._initial_step = common.configuration(
-            max_evaluations, len(self._weights), tolerance, initial_step
-        )
+        if optimizer is not None and not callable(optimizer):
+            raise TypeError("optimizer must be callable")
+        self._optimizer = optimizer
+        if optimizer is None:
+            self._tolerance, self._initial_step = common.configuration(
+                max_evaluations, len(self._weights), tolerance, initial_step
+            )
+        else:
+            _positive_integer(max_evaluations, "max_evaluations")
+            self._tolerance = _real_hyperparameter(tolerance, "tolerance")
+            self._initial_step = _real_hyperparameter(initial_step, "initial_step")
         self._max_evaluations = max_evaluations
         self._state: _State | None = None
 
@@ -130,7 +162,7 @@ class VQR:
 
     @property
     def optimizer_success_(self) -> bool:
-        """Return SciPy's termination success flag."""
+        """Return the minimizer's termination success flag."""
         return self._fitted().optimization.success
 
     @property
@@ -194,11 +226,20 @@ class VQR:
     def fit(
         self, X: ArrayLike, y: ArrayLike, *, initial_point: Mapping[str, float]
     ) -> VQR:
-        """Fit nonempty finite real X and one-dimensional matching targets.
+        """Fit nonempty samples and publish the selected weights and losses.
 
-        Initial bindings must cover exactly the weights. Singular expressions,
-        invalid estimator/optimizer outputs and nonfinite losses raise errors;
-        Successful evaluation commits the fitted state. SciPy absence raises ImportError.
+        Args:
+            X: Finite real feature matrix with the declared input width.
+            y: Matching one-dimensional real target vector.
+            initial_point: Finite bindings covering all weight names.
+
+        Returns:
+            This model with updated fitted state after final loss evaluation.
+
+        Raises:
+            TypeError: If inputs or component results have invalid types.
+            ValueError: If dimensions, values, or evaluation counts are invalid.
+            ImportError: If default optimization requires an unavailable SciPy.
         """
         data = validation.data(X, len(self._inputs), nonempty=True)
         targets = _targets(y, len(data), "y")
@@ -214,7 +255,12 @@ class VQR:
 
         initial_loss = objective(point)
         result = common.minimize(
-            objective, point, self._max_evaluations, self._tolerance, self._initial_step
+            objective,
+            point,
+            self._max_evaluations,
+            self._tolerance,
+            self._initial_step,
+            self._optimizer,
         )
         final_loss = objective(np.array(result.point, dtype=np.float64))
         self._state = _State(
@@ -226,12 +272,37 @@ class VQR:
         return self
 
     def predict(self, X: ArrayLike) -> NDArray[np.float64]:
-        """Return final observable predictions; empty (0,d) causes no execution."""
+        """Evaluate observable expectations using the fitted weights.
+
+        Args:
+            X: Finite real feature matrix; shape (0,d) returns an empty vector.
+
+        Returns:
+            One prediction for each input row in its original order.
+
+        Raises:
+            TypeError: If data or estimator results have invalid types.
+            ValueError: If the model is unfitted or values or shapes are invalid.
+        """
         state = self._fitted()
         return self._predict(validation.data(X, len(self._inputs)), state.parameters)
 
     def score(self, X: ArrayLike, y: ArrayLike) -> float:
-        """Return R-squared for at least two targets; constant-target scores are 1/0."""
+        """Compute R-squared from at least two samples.
+
+        Args:
+            X: Finite real feature matrix with the declared input width.
+            y: Matching finite one-dimensional targets.
+
+        Returns:
+            R-squared. Constant targets score one for an exact fit and zero
+            otherwise.
+
+        Raises:
+            TypeError: If data or estimator results have invalid types.
+            ValueError: If the model is unfitted, fewer than two targets are
+                supplied, or values or shapes are invalid.
+        """
         self._fitted()
         data = validation.data(X, len(self._inputs))
         targets = _targets(y, len(data), "y")

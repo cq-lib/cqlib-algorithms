@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import math
 from types import SimpleNamespace
 
 import numpy as np
@@ -28,6 +29,7 @@ from cqlib_algorithms.algorithms.vqr import VQR
 from cqlib_algorithms.operators.estimator import SamplingEstimator, StatevectorEstimator
 from cqlib_algorithms.protocols.estimator import Estimator, EstimatorResult
 from cqlib_algorithms.protocols.sampler import Sampler
+from cqlib_algorithms.protocols.scalar_minimizer import ScalarMinimizerResult
 
 
 def model(**kwargs):
@@ -512,3 +514,180 @@ def test_invalid_fixed_expression_rejected_without_domain_probe(field):
             StatevectorEstimator(),
             parameter_bindings={"fixed": 1e308},
         )
+
+
+@pytest.mark.reference
+def test_custom_scalar_optimizer_drives_predictions_and_mse(monkeypatch):
+    observed = []
+    candidates = [-0.4, 0.43, 1.2]
+
+    def search(objective, initial_point):
+        initial_point[:] = 9.0
+        values = [objective(np.array([theta])) for theta in candidates]
+        observed.extend(values)
+        selected = int(np.argmin(values))
+        return ScalarMinimizerResult(
+            (candidates[selected],), values[selected], True, 7, "Search completed", 3
+        )
+
+    original_import = common.importlib.import_module
+
+    def import_module(name, *args, **kwargs):
+        if name == "scipy.optimize":
+            raise AssertionError("The custom search evaluates the scalar objective")
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(common.importlib, "import_module", import_module)
+    X = np.array([[-1.1], [-0.2], [0.6], [1.3]])
+    y = [math.cos(float(row[0]) + 0.43) for row in X]
+    initial = {"theta": -0.7}
+    regressor = model(optimizer=search, max_evaluations=3)
+    assert regressor.fit(X, y, initial_point=initial) is regressor
+    expected = [
+        sum(
+            (math.cos(float(row[0]) + theta) - target) ** 2 for row, target in zip(X, y)
+        )
+        / len(y)
+        for theta in candidates
+    ]
+    np.testing.assert_allclose(observed, expected, atol=1e-14)
+    assert initial == {"theta": -0.7}
+    assert regressor.optimal_parameters_ == {"theta": 0.43}
+    np.testing.assert_allclose(regressor.predict(X), y, atol=1e-14)
+    assert regressor.training_loss_ == pytest.approx(expected[1], abs=1e-28)
+    assert regressor.optimizer_evaluations_ == 3
+    assert regressor.objective_evaluations_ == 5
+    assert regressor.optimizer_status_ == 7
+
+
+def one_point_search(objective, initial_point):
+    value = objective(initial_point)
+    return ScalarMinimizerResult(
+        tuple(float(value) for value in initial_point),
+        value,
+        True,
+        0,
+        "Point evaluated",
+        1,
+    )
+
+
+def test_custom_optimizer_accepts_single_evaluation_budget():
+    regressor = model(optimizer=one_point_search, max_evaluations=1).fit(
+        [[0.0]], [0.5], initial_point={"theta": 0.3}
+    )
+    assert regressor.optimizer_evaluations_ == 1
+    assert regressor.training_loss_ == pytest.approx((math.cos(0.3) - 0.5) ** 2)
+
+
+@pytest.mark.reference
+def test_explicit_none_retains_cobyla_regression():
+    X = np.linspace(-1.2, 1.2, 7)[:, None]
+    y = np.cos(X[:, 0] + 0.43)
+    regressor = model(optimizer=None, max_evaluations=120).fit(
+        X, y, initial_point={"theta": -0.7}
+    )
+    assert regressor.training_loss_ < 1e-10
+    np.testing.assert_allclose(
+        regressor.predict([[-0.8], [0.3]]),
+        np.cos(np.array([-0.8, 0.3]) + 0.43),
+        atol=1e-5,
+    )
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"point": ()},
+        {"point": (0.1, 0.2)},
+        {"point": (np.inf,)},
+        {"point": (np.nan,)},
+        {"value": np.inf},
+        {"value": 1j},
+        {"evaluations": 2},
+        {"evaluations": 0},
+        {"return_object": True},
+        {"skip_call": True},
+    ],
+)
+def test_custom_optimizer_invalid_result_preserves_model(changes):
+    class Search:
+        def __init__(self):
+            self.changes = {}
+
+        def __call__(self, objective, initial_point):
+            update = self.changes
+            value = 0.0 if update.get("skip_call") else objective(initial_point)
+            if update.get("return_object"):
+                return object()
+            fields = {
+                "point": tuple(float(x) for x in initial_point),
+                "value": value,
+                "success": True,
+                "status": 0,
+                "message": "Point evaluated",
+                "evaluations": 1,
+            }
+            fields.update(
+                {key: value for key, value in update.items() if key in fields}
+            )
+            return ScalarMinimizerResult(**fields)
+
+    search = Search()
+    regressor = model(optimizer=search, max_evaluations=1).fit(
+        [[0.0], [0.4]], [0.4, 0.1], initial_point={"theta": 0.2}
+    )
+    previous = regressor.predict([[0.3]])
+    previous_loss = regressor.training_loss_
+    search.changes = changes
+    with pytest.raises((TypeError, ValueError)):
+        regressor.fit([[0.0], [0.4]], [0.4, 0.1], initial_point={"theta": 0.8})
+    assert regressor.optimal_parameters_ == {"theta": 0.2}
+    np.testing.assert_array_equal(regressor.predict([[0.3]]), previous)
+    assert regressor.training_loss_ == previous_loss
+
+
+def test_custom_optimizer_budget_overrun():
+    def search(objective, initial_point):
+        objective(initial_point)
+        objective(initial_point)
+
+    with pytest.raises(ValueError, match="exceeded max_evaluations"):
+        model(optimizer=search, max_evaluations=1).fit(
+            [[0.0]], [0.0], initial_point={"theta": 0.1}
+        )
+
+
+@pytest.mark.parametrize(
+    "keyword,value",
+    [("optimizer", object()), ("max_evaluations", 0), ("max_evaluations", True)],
+)
+def test_custom_optimizer_configuration(keyword, value):
+    arguments = {"optimizer": one_point_search, "max_evaluations": 1}
+    arguments[keyword] = value
+    with pytest.raises((TypeError, ValueError)):
+        model(**arguments)
+
+
+def test_custom_optimizer_final_estimator_failure_preserves_model():
+    estimator = RecordingEstimator()
+    regressor = model(
+        optimizer=one_point_search, max_evaluations=1, estimator=estimator
+    )
+    regressor.fit([[0.0]], [0.0], initial_point={"theta": 0.2})
+    old = regressor.predict([[0.1]])
+    original = estimator.run
+    calls = 0
+
+    def run(requests):
+        nonlocal calls
+        calls += 1
+        if calls == 3:
+            raise RuntimeError("Final evaluation failed")
+        return original(requests)
+
+    estimator.run = run
+    with pytest.raises(RuntimeError, match="Final evaluation"):
+        regressor.fit([[0.0]], [0.0], initial_point={"theta": 0.7})
+    assert regressor.optimal_parameters_ == {"theta": 0.2}
+    np.testing.assert_array_equal(regressor.predict([[0.1]]), old)
