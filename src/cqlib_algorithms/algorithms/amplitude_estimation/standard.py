@@ -38,7 +38,17 @@ from .problem import AmplitudeEstimationProblem, _validate_problem
 
 @dataclass(frozen=True, slots=True)
 class StandardAmplitudeEstimationRequest:
-    """One phase-estimation-based amplitude-estimation request."""
+    """Configure one phase-estimation-based amplitude-estimation run.
+
+    Args:
+        problem: State preparation, Grover iterate, and good-state predicate.
+        num_evaluation_qubits: Width ``m`` of the phase register.
+        shots: Positive number of circuit samples.
+
+    Raises:
+        TypeError: If a field has the wrong type.
+        ValueError: If a numeric value or problem invariant is invalid.
+    """
 
     problem: AmplitudeEstimationProblem
     num_evaluation_qubits: int
@@ -65,6 +75,16 @@ class StandardAmplitudeEstimationResult:
     amplitude bin ``min(y, 2**m-y)``. Selection first aggregates both phase
     representatives into canonical bins; ties select the smallest canonical
     bin. This finite-shot result does not claim a rigorous confidence interval.
+
+    Attributes:
+        estimation: Selected estimate in ``[0, 1]``.
+        confidence_interval: Always ``None`` for this implementation.
+        shots: Samples used for the circuit.
+        num_grover_queries: Grover powers present in one circuit execution.
+        num_oracle_queries: Shot-weighted Grover-query count.
+        grid_point: Selected canonical amplitude bin.
+        evaluation_probabilities: Probability at every raw phase grid point.
+        num_evaluation_qubits: Phase-register width.
     """
 
     estimation: float
@@ -162,6 +182,13 @@ class StandardAmplitudeEstimation:
 
     Reference: G. Brassard, P. Hoyer, M. Mosca, and A. Tapp, *Quantum
     Amplitude Amplification and Estimation*, arXiv:quant-ph/0005055.
+
+    Args:
+        sampler: Sampling implementation used to execute all circuits.
+
+    Raises:
+        TypeError: If the sampler or a request has the wrong type.
+        ValueError: If a request or sampler result violates its contract.
     """
 
     __slots__ = ("_sampler",)
@@ -181,7 +208,15 @@ class StandardAmplitudeEstimation:
         problem: AmplitudeEstimationProblem,
         num_evaluation_qubits: int,
     ) -> Circuit:
-        """Build an unmeasured standard amplitude-estimation circuit."""
+        """Build an unmeasured standard amplitude-estimation circuit.
+
+        Args:
+            problem: Validated amplitude-estimation problem.
+            num_evaluation_qubits: Positive phase-register width.
+
+        Returns:
+            A fresh circuit with phase qubits followed by system qubits.
+        """
         _validate_problem(problem)
         _validate_positive_integer(num_evaluation_qubits, "num_evaluation_qubits")
         component = PhaseEstimationCircuit(
@@ -200,7 +235,14 @@ class StandardAmplitudeEstimation:
         requests: Sequence[StandardAmplitudeEstimationRequest],
         /,
     ) -> list[StandardAmplitudeEstimationResult]:
-        """Execute a validated batch with one Sampler call."""
+        """Execute a request batch with one Sampler call.
+
+        Args:
+            requests: Requests in the desired output order.
+
+        Returns:
+            One result per request in the same order.
+        """
         sampler_requests: list[SamplerRequest] = []
         for request in requests:
             if not isinstance(request, StandardAmplitudeEstimationRequest):

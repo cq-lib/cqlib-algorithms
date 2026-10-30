@@ -12,9 +12,8 @@
 
 """Shared validation for expectation-estimator preparation circuits."""
 
-from cqlib.circuit import CircuitError
-
 from cqlib import Circuit
+from cqlib.circuit import CircuitError
 
 
 def validate_unitary_state_preparation(circuit: Circuit) -> None:

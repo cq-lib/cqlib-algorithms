@@ -32,6 +32,13 @@ class UserCircuitPreparation(StatePreparation):
     parameters, and global phase. Classical or otherwise non-invertible
     operations are rejected because a state-preparation component must be
     composable with inverse-based algorithms.
+
+    Args:
+        circuit: Positive-width, statically invertible circuit to snapshot.
+
+    Raises:
+        TypeError: If ``circuit`` is not a Circuit.
+        ValueError: If it is empty-width, invalid, or non-invertible.
     """
 
     __slots__ = ("_circuit", "_num_parameters")

@@ -72,6 +72,16 @@ class GradientDescent(Optimizer):
     injected :class:`Gradient`.  A request converges when the Euclidean norm
     of its applied update is less than or equal to ``tolerance``.  With
     ``tolerance=None``, only the iteration limit terminates non-empty requests.
+
+    Args:
+        gradient: Gradient component used for objective derivatives.
+        learning_rate: Positive fixed update scale.
+        maxiter: Nonnegative maximum update count.
+        tolerance: Nonnegative step-norm threshold, or ``None``.
+
+    Raises:
+        TypeError: If an option has the wrong type.
+        ValueError: If a numeric option is outside its valid range.
     """
 
     __slots__ = ("_gradient", "_learning_rate", "_maxiter", "_tolerance")

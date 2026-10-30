@@ -14,16 +14,21 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from copy import copy
 from typing import final
 
-from cqlib.device import ExecutionResult
+import numpy as np
+from cqlib import Circuit
+from cqlib.device import ExecutionResult, Outcome
 from cqlib.qis.state import Statevector
 
-from cqlib import Circuit
-
 from ...protocols.sampler import Sampler, SamplerRequest
+
+# Core's ``Statevector.sample`` labels its result this way; the seeded draw
+# below reproduces the same labels so downstream code sees no difference.
+_TASK_ID = "statevector-sample"
+_BACKEND = "statevector"
 
 
 def _validate_static_unitary(circuit: Circuit) -> None:
@@ -53,6 +58,54 @@ def _validate_static_unitary(circuit: Circuit) -> None:
         )
 
 
+def _draw_counts(
+    probabilities: Mapping[Outcome, float],
+    width: int,
+    shots: int,
+    seed: int | None,
+    /,
+) -> dict[str, int]:
+    r"""Draw finite-shot counts from a marginal basis distribution.
+
+    Parameters
+    ----------
+    probabilities
+        Marginal probabilities keyed by measurement outcome, as returned by
+        ``Statevector.probs``. Every value is non-negative and the values sum
+        to one.
+    width
+        Number of measured qubits; the width of every count bitstring.
+    shots
+        Number of samples to draw.
+    seed
+        Seed of the draw, or ``None`` to draw fresh randomness.
+
+    Returns
+    -------
+    dict[str, int]
+        Counts keyed by little-endian bitstring, omitting outcomes that were
+        never drawn.
+    """
+    # Core exposes the marginal distribution as a hash-backed mapping whose
+    # iteration order is not stable across calls.  Canonicalize it before
+    # assigning random draw indices; otherwise an identical seed can map the
+    # same indices to different bitstrings.
+    entries = sorted(
+        probabilities.items(),
+        key=lambda item: item[0].to_bitstring(width),
+    )
+    outcomes = [outcome for outcome, _ in entries]
+    weights = np.array([probability for _, probability in entries], dtype=float)
+    weights /= weights.sum()
+    draws = np.random.default_rng(seed).choice(len(outcomes), size=shots, p=weights)
+    tallies = np.bincount(draws, minlength=len(outcomes))
+    return {
+        outcomes[index].to_bitstring(width): int(count)
+        for index, count in enumerate(tallies)
+        if count
+    }
+
+
 @final
 class StatevectorSampler(Sampler):
     """Sample fully bound, static circuits with Core's statevector simulator.
@@ -60,12 +113,12 @@ class StatevectorSampler(Sampler):
     Each request is validated immediately before use. The source circuit is
     copied and its qubits are mapped by insertion position onto ``0..n-1``.
     State evolution happens before a measurement receipt is created on this
-    private compact circuit. The resulting Core counts are finite-shot
-    frequencies, not exact probabilities or quasi-probabilities. The result
-    retains the original request qubit order and shot count.
-
-    No random seed is offered because the pinned Core ``Statevector.sample``
-    interface does not expose one. Stochastic counts are not reproducible.
+    private compact circuit, and the resulting marginal distribution is
+    aggregated exactly by Core. The counts are then drawn from that
+    distribution with :func:`numpy.random.default_rng` seeded by
+    ``request.seed``, so one request reproduces its counts while distinct
+    requests stay independent. The result retains the original request qubit
+    order and shot count.
 
     Raises:
         TypeError: If a batch member is not a ``SamplerRequest``.
@@ -99,15 +152,18 @@ class StatevectorSampler(Sampler):
             state = Statevector.from_circuit(execution_circuit)
             measured_positions = [positions[qubit] for qubit in request.qubits]
             receipt = execution_circuit.measure_bits(measured_positions)
-            sampled = state.sample(receipt, request.shots)
+            width = len(request.qubits)
+            counts = _draw_counts(
+                state.probs(receipt), width, request.shots, request.seed
+            )
             results.append(
                 ExecutionResult.from_counts(
-                    sampled.task_id,
+                    _TASK_ID,
                     list(request.qubits),
                     request.shots,
-                    len(request.qubits),
-                    sampled.counts,
-                    sampled.backend,
+                    width,
+                    counts,
+                    _BACKEND,
                 )
             )
         return results

@@ -23,7 +23,6 @@ from cqlib.circuit import ClassicalType
 from cqlib.circuit.gates import StandardGate
 from cqlib.qis import Hamiltonian, Pauli, PauliString
 
-from cqlib import Circuit, Parameter
 from cqlib_algorithms.operators.gradient import ParameterShiftGradient
 from cqlib_algorithms.operators.optimizer import Adam
 from cqlib_algorithms.protocols import (

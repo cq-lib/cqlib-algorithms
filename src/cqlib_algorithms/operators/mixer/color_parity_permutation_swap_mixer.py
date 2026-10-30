@@ -39,6 +39,14 @@ class ColorParityPermutationSwapMixer(_BaseMixer):
     Value pairs use a deterministic round-robin edge coloring of the complete
     graph; adjacent cyclic positions use the parity partition. Every local
     four-qubit transition is exact and all applications share one beta.
+
+    Args:
+        num_items: Positive number of values and tour positions.
+        repetitions: Positive number of color/parity schedule repetitions.
+
+    Raises:
+        TypeError: If an argument has the wrong type.
+        ValueError: If the item or repetition count is invalid.
     """
 
     __slots__ = ("_num_items", "_repetitions")

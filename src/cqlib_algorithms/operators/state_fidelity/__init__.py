@@ -17,9 +17,11 @@ from .compute_uncompute import (
     CircuitFidelityResult,
     ComputeUncomputeFidelity,
 )
+from .unitary_overlap import UnitaryOverlap
 
 __all__ = [
     "CircuitFidelityRequest",
     "CircuitFidelityResult",
     "ComputeUncomputeFidelity",
+    "UnitaryOverlap",
 ]

@@ -18,8 +18,46 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from dataclasses import dataclass
 
+import numpy as np
 from cqlib import Circuit, Qubit
 from cqlib.device import ExecutionResult
+
+
+def _validate_seed(seed: int | None) -> None:
+    if seed is None:
+        return
+    if isinstance(seed, bool) or not isinstance(seed, int):
+        raise TypeError("seed must be an integer or None")
+    if seed < 0:
+        raise ValueError("seed must be non-negative")
+
+
+def spawn_seeds(seed: int | None, count: int, /) -> list[int]:
+    """Derive ``count`` independent child seeds from one parent seed.
+
+    A caller that spends one seed across several requests must give each
+    request its own seed. Repeating one seed would make the requests replay
+    the same draw, so their noise would not average out. The children are a
+    pure function of ``seed``, which keeps the parent seed sufficient to
+    reproduce the whole run.
+
+    Args:
+        seed: Parent seed, or ``None`` to derive fresh child seeds.
+        count: Number of child seeds to derive.
+
+    Returns:
+        ``count`` non-negative integer seeds.
+
+    Raises:
+        TypeError: If ``seed`` or ``count`` has the wrong type.
+        ValueError: If ``seed`` or ``count`` is negative.
+    """
+    _validate_seed(seed)
+    if isinstance(count, bool) or not isinstance(count, int):
+        raise TypeError("count must be an integer")
+    if count < 0:
+        raise ValueError("count must be non-negative")
+    return [int(value) for value in np.random.SeedSequence(seed).generate_state(count)]
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,6 +81,10 @@ class SamplerRequest:
         circuit: A valid circuit with no used symbolic parameters.
         qubits: A non-empty, ordered tuple of distinct circuit qubits.
         shots: A positive number of samples. Boolean values are not accepted.
+        seed: Non-negative seed of the count draw, or ``None`` to draw fresh
+            randomness. A sampler that draws counts from a random source must
+            derive that source from this value, so that one request is
+            reproducible.
 
     Raises:
         TypeError: If an argument has the wrong type.
@@ -53,6 +95,7 @@ class SamplerRequest:
     circuit: Circuit
     qubits: tuple[Qubit, ...]
     shots: int
+    seed: int | None = None
 
     __hash__ = None  # type: ignore[assignment]
 
@@ -77,6 +120,7 @@ class SamplerRequest:
             raise TypeError("shots must be an integer")
         if self.shots <= 0:
             raise ValueError("shots must be greater than zero")
+        _validate_seed(self.seed)
 
         self.circuit.validate()
         if self.circuit.used_symbols:
@@ -100,6 +144,12 @@ class Sampler(ABC):
     request sequence produces an empty list. Successful results use the
     request's shot count, and their qubit and result-bit order equals
     ``request.qubits``.
+
+    An implementation whose counts come from a random source must derive that
+    source from :attr:`SamplerRequest.seed`, so that a request with an explicit
+    seed reproduces its counts. An implementation backed by a device that does
+    not accept a seed may ignore it, and must then document that its counts are
+    not reproducible.
     """
 
     __slots__ = ()
@@ -110,7 +160,14 @@ class Sampler(ABC):
         requests: Sequence[SamplerRequest],
         /,
     ) -> list[ExecutionResult]:
-        """Execute a batch and return terminal results in input order."""
+        """Execute a batch and return terminal results in input order.
+
+        Args:
+            requests: Valid sampling requests in output order.
+
+        Returns:
+            One successful terminal result per request.
+        """
         raise NotImplementedError
 
 

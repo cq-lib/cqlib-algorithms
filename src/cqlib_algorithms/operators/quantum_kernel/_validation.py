@@ -10,8 +10,6 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-# Modified to integrate the shared fidelity kernel into the operator layer.
-
 """Private numeric and fully bound circuit validation for quantum kernels."""
 
 from __future__ import annotations
@@ -99,3 +97,28 @@ def _validate_static_unitary_circuit(circuit: Circuit, name: str) -> None:
             atol=_UNITARY_ATOL,
         ):
             raise ValueError(f"{name} contains a non-unitary numeric gate")
+
+
+def _validate_static_unitary(circuit: Circuit, *, label: str) -> None:
+    """Validate static unitary circuit structure."""
+    if circuit.classical_vars or circuit.classical_values:
+        raise ValueError(f"{label} must be a static unitary circuit")
+
+    try:
+        expanded = circuit.decompose()
+    except CircuitError as exc:
+        raise ValueError(
+            f"{label} must be a decomposable static unitary circuit"
+        ) from exc
+
+    for operation in expanded.operations:
+        if (
+            operation.is_classical_data
+            or operation.is_classical_control
+            or operation.is_delay
+            or (operation.is_directive and operation.name != "barrier")
+        ):
+            raise ValueError(
+                f"{label} must contain only static unitary operations "
+                "without measurement, reset, delay, or classical control"
+            )

@@ -26,10 +26,9 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import final
 
+from cqlib import Circuit, Qubit
 from cqlib.circuit import CircuitError
 from cqlib.qis import Pauli, PauliString
-
-from cqlib import Circuit, Qubit
 
 from .pauli_grouping_strategy import PauliGroupingStrategy, snapshot_terms
 
@@ -62,6 +61,10 @@ class MeasurementGroup:
 
     A basis entry is ``I``, ``X``, ``Y`` or ``Z``. ``I`` imposes no basis
     rotation; all physical qubits remain part of the group's sampler request.
+
+    Attributes:
+        term_indices: Original observable positions assigned to the group.
+        basis: Local product-Pauli measurement basis in circuit-qubit order.
     """
 
     term_indices: tuple[int, ...]
@@ -78,6 +81,16 @@ class MeasurementPlan:
     coefficient-aware estimator. ``build_circuit`` returns a fresh, unmeasured
     basis circuit on every call and never exposes or mutates the stored
     preparation. A Sampler owns the terminal measurement operation.
+
+    Args:
+        circuit: Preparation snapshot.
+        terms: Observable terms in original order.
+        groups: QWC groups over original term positions.
+        identity_indices: Identity-only term positions.
+
+    Raises:
+        TypeError: If stored values have invalid types.
+        ValueError: If dimensions, indices, or group bases are inconsistent.
     """
 
     __slots__ = ("_circuit", "_groups", "_identity_indices", "_qubits", "_terms")
@@ -164,6 +177,15 @@ class PauliMeasurementPlanner:
     local grouping; global commuting groups intentionally are not accepted
     because they may require entangled joint readout rather than local basis
     rotations. Empty terms produce an empty plan.
+
+    Args:
+        circuit: Fixed positive-width state-preparation circuit.
+        terms: Ordered Pauli observables with matching width.
+        grouping: ``"none"`` or ``"qwc"``.
+
+    Raises:
+        TypeError: If inputs have invalid types.
+        ValueError: If the circuit, observables, widths, or grouping are invalid.
     """
 
     __slots__ = ("_circuit", "_grouping", "_terms")

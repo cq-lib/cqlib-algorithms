@@ -18,9 +18,9 @@ import math
 
 import numpy as np
 import pytest
+from cqlib import Circuit, Parameter, Qubit
 from cqlib.qis import Hamiltonian, PauliString
 
-from cqlib import Circuit, Parameter, Qubit
 from cqlib_algorithms.protocols import EstimatorRequest
 
 

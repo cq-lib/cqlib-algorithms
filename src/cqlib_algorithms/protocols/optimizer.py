@@ -27,7 +27,9 @@ from .estimator import Estimator, EstimatorRequest
 class OptimizerStatus(Enum):
     """Termination reason for one optimizer request."""
 
+    CONVERGED = "converged"
     STEP_TOLERANCE = "step_tolerance"
+    MAX_EVALUATIONS = "max_evaluations"
     MAX_ITERATIONS = "max_iterations"
     NO_PARAMETERS = "no_parameters"
 
@@ -43,6 +45,10 @@ class OptimizerRequest:
 
     The dataclass is shallowly frozen.  The nested Core circuit and observable
     remain mutable, so optimizers call :meth:`validate` before beginning a run.
+
+    Args:
+        estimator_request: Fully specified expectation-value objective.
+        parameter_names: Ordered subset of bound parameters to optimize.
 
     Raises:
         TypeError: If a field has the wrong type.
@@ -82,6 +88,13 @@ class OptimizerResult:
     ``optimal_parameters`` is the final iterate in ``parameter_names`` order,
     not the best point seen during the run.  ``optimal_value`` is obtained by
     an independent estimator evaluation at that final iterate.
+
+    Attributes:
+        parameter_names: Optimized names in result order.
+        optimal_parameters: Final parameter values in the same order.
+        optimal_value: Objective evaluated at the final point.
+        iterations: Number of applied updates.
+        status: Termination reason.
 
     Raises:
         TypeError: If a field has the wrong type.
@@ -139,13 +152,14 @@ class OptimizerResult:
     def converged(self) -> bool:
         """Whether termination represents convergence rather than exhaustion."""
         return self.status in (
+            OptimizerStatus.CONVERGED,
             OptimizerStatus.STEP_TOLERANCE,
             OptimizerStatus.NO_PARAMETERS,
         )
 
 
 class Optimizer(ABC):
-    """Abstract synchronous batch optimizer for estimator objectives."""
+    """Define synchronous batched minimization of Estimator objectives."""
 
     __slots__ = ()
 
@@ -156,5 +170,13 @@ class Optimizer(ABC):
         requests: Sequence[OptimizerRequest],
         /,
     ) -> list[OptimizerResult]:
-        """Optimize a batch and return results in request order."""
+        """Optimize a batch and return results in request order.
+
+        Args:
+            estimator: Expectation estimator for objective evaluations.
+            requests: Optimization requests in output order.
+
+        Returns:
+            One optimization result per request.
+        """
         raise NotImplementedError

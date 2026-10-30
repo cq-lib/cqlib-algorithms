@@ -19,16 +19,26 @@ from typing import final
 from cqlib.circuit.ansatz import EntanglementTopology
 from cqlib.circuit.gates import StandardGate
 
-from .base_ansatz import BaseAnsatz
+from .base_ansatz import _DelegatingAnsatz
 from .two_local_ansatz import TwoLocalAnsatz
 
 
 @final
-class RealAmplitudesAnsatz(BaseAnsatz):
+class RealAmplitudesAnsatz(_DelegatingAnsatz):
     """Two-local ansatz specialized to RY rotations and CX entanglers.
 
     All generated gate matrices are real. Parameters are ordered by rotation
     layer and qubit.
+
+    Args:
+        num_qubits: Positive circuit width.
+        reps: Nonnegative number of entangling repetitions.
+        entanglement: Core topology, or ``None`` for the default.
+        skip_final_rotation_layer: Whether to omit the final RY layer.
+
+    Raises:
+        TypeError: If an option has the wrong type.
+        ValueError: If width, repetitions, or topology are invalid.
     """
 
     __slots__ = ()

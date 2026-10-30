@@ -10,8 +10,6 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-# Modified to integrate the shared fidelity kernel into the operator layer.
-
 """Pure-state fidelity kernels with exact or compute-uncompute evaluation.
 
 Reference: Havlicek et al., Nature 567, 209-212 (2019),
@@ -37,11 +35,11 @@ from numpy.typing import ArrayLike, NDArray
 from ...protocols.quantum_kernel import QuantumKernel
 from ...protocols.sampler import Sampler
 from ..state_fidelity import CircuitFidelityRequest, ComputeUncomputeFidelity
-from ..state_fidelity.compute_uncompute import _validate_static_unitary
 from ..state_preparation import UserCircuitPreparation
 from ._validation import (
     _positive_integer,
     _real_array,
+    _validate_static_unitary,
     _validate_static_unitary_circuit,
 )
 

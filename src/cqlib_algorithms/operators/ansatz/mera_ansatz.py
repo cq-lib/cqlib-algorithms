@@ -41,6 +41,13 @@ class MERAAnsatz(BaseAnsatz):
     isometry-position blocks, retaining each isometry pair's right qubit for
     the next scale. The shared blocks are unitary circuit elements rather than
     an API for arbitrary non-unitary MERA tensors.
+
+    Args:
+        num_qubits: Power-of-two circuit width of at least two.
+
+    Raises:
+        TypeError: If ``num_qubits`` is not an integer.
+        ValueError: If ``num_qubits`` is less than two or not a power of two.
     """
 
     __slots__ = ("_num_qubits", "_root", "_scales")

@@ -10,8 +10,6 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-# Modified to integrate the shared fidelity kernel into the operator layer.
-
 """Operator subpackage for algorithmic quantum building blocks."""
 
 from . import arithmetic
@@ -20,21 +18,40 @@ from .ansatz import (
     EfficientSU2Ansatz,
     EvolvedOperatorAnsatz,
     ExcitationPreservingAnsatz,
+    FermiHubbardAnsatz,
+    FermionicHoppingAnsatz,
     HamiltonianVariationalAnsatz,
     HardwareEfficientAnsatz,
     MERAAnsatz,
     MPSAnsatz,
     PauliTwoDesignAnsatz,
+    PUCCDAnsatz,
+    PUCCSDAnsatz,
     QAOACostEvolution,
     QAOAMixerEvolution,
     RandomLayersAnsatz,
     RealAmplitudesAnsatz,
     SimplifiedTwoDesignAnsatz,
+    SpinExchangeAnsatz,
     TTNAnsatz,
     TwoLocalAnsatz,
+    TwoQubitUnitaryAnsatz,
+    UCCAnsatz,
+    UCCSDAnsatz,
+    UVCCAnsatz,
+    UVCCSDAnsatz,
 )
 from .arithmetic import QuadraticForm
-from .composite import GroverOperator, HadamardPhaseQuery, PhaseEstimationCircuit
+from .composite import (
+    GroverOperator,
+    HadamardPhaseQuery,
+    HiddenLinearFunctionCircuit,
+    PhaseEstimationCircuit,
+    ProjectorControlledPhase,
+    QuantumSignalProcessing,
+    QuantumSingularValueTransformation,
+    RealValuedQSVT,
+)
 from .estimator import SamplingEstimator, StatevectorEstimator
 from .gradient import (
     FiniteDifferenceGradient,
@@ -47,6 +64,7 @@ from .gradient import (
     StatevectorQFI,
     StatevectorQGT,
 )
+from .information import mutual_information
 from .measurement import (
     CommutingObservableGrouping,
     MeasurementGroup,
@@ -71,15 +89,27 @@ from .mixer import (
     ValueIndependentPermutationSwapMixer,
     ValueSelectivePermutationSwapMixer,
 )
-from .optimizer import Adam, GradientDescent, SPSAOptimizer
+from .optimizer import (
+    Adam,
+    COBYLAOptimizer,
+    GradientDescent,
+    LBFGSBOptimizer,
+    SPSAOptimizer,
+)
 from .oracle import (
     BitFlipOracle,
+    BlockEncoding,
     BooleanFunction,
     BooleanVectorFunction,
+    DickeUnitary,
     GeneralStateReflection,
     GroverDiffusion,
     GroverLong,
     PhaseOracle,
+    SplitCycleShift,
+    UnitaryDilation,
+    UnitaryMatrixOracle,
+    WeightDistributionBlock,
     ZeroStateReflection,
 )
 from .quantum_kernel import FidelityQuantumKernel
@@ -92,6 +122,7 @@ from .state_fidelity import (
     CircuitFidelityRequest,
     CircuitFidelityResult,
     ComputeUncomputeFidelity,
+    UnitaryOverlap,
 )
 from .state_preparation import (
     BRQI,
@@ -100,14 +131,20 @@ from .state_preparation import (
     ArbitraryStatePreparation,
     BasisEncoding,
     BasisStateInitialization,
+    DickeStatePreparation,
     FeatureMapPreparation,
+    FermionicGaussianStatePreparation,
     GHZStatePreparation,
+    HartreeFockStatePreparation,
     ImageAngleEncoding,
     ImageBasisEncoding,
+    LatticeReferenceStatePreparation,
     ProductStatePreparation,
+    SlaterDeterminantStatePreparation,
     SparseAmplitudeEncoding,
     UniformSuperposition,
     UserCircuitPreparation,
+    VSCFStatePreparation,
 )
 
 __all__ = [
@@ -122,8 +159,10 @@ __all__ = [
     "BasisEncoding",
     "BasisStateInitialization",
     "BitFlipOracle",
+    "BlockEncoding",
     "BooleanFunction",
     "BooleanVectorFunction",
+    "COBYLAOptimizer",
     "CircuitFidelityRequest",
     "CircuitFidelityResult",
     "ColorParityPermutationSwapMixer",
@@ -132,10 +171,15 @@ __all__ = [
     "ControlledBitFlipMixer",
     "ControlledNullSwapMixer",
     "ControlledSwapMixer",
+    "DickeStatePreparation",
+    "DickeUnitary",
     "EfficientSU2Ansatz",
     "EvolvedOperatorAnsatz",
     "ExcitationPreservingAnsatz",
     "FeatureMapPreparation",
+    "FermiHubbardAnsatz",
+    "FermionicGaussianStatePreparation",
+    "FermionicHoppingAnsatz",
     "FidelityQuantumKernel",
     "FiniteDifferenceGradient",
     "FullyConnectedMixer",
@@ -148,8 +192,12 @@ __all__ = [
     "HadamardPhaseQuery",
     "HamiltonianVariationalAnsatz",
     "HardwareEfficientAnsatz",
+    "HartreeFockStatePreparation",
+    "HiddenLinearFunctionCircuit",
     "ImageAngleEncoding",
     "ImageBasisEncoding",
+    "LBFGSBOptimizer",
+    "LatticeReferenceStatePreparation",
     "LinCombEstimatorGradient",
     "MERAAnsatz",
     "MPSAnsatz",
@@ -159,6 +207,8 @@ __all__ = [
     "NaturalGradient",
     "NearbyValuesMixer",
     "NullSwapMixer",
+    "PUCCDAnsatz",
+    "PUCCSDAnsatz",
     "ParameterShiftGradient",
     "ParityRingMixer",
     "PartitionedMixer",
@@ -168,19 +218,26 @@ __all__ = [
     "PhaseEstimationCircuit",
     "PhaseOracle",
     "ProductStatePreparation",
+    "ProjectorControlledPhase",
     "QAOACostEvolution",
     "QAOAMixerEvolution",
     "QFIResult",
     "QGTResult",
     "QuadraticForm",
+    "QuantumSignalProcessing",
+    "QuantumSingularValueTransformation",
     "RandomLayersAnsatz",
     "RealAmplitudesAnsatz",
+    "RealValuedQSVT",
     "RingMixer",
     "SPSAGradient",
     "SPSAOptimizer",
     "SamplingEstimator",
     "SimplifiedTwoDesignAnsatz",
+    "SlaterDeterminantStatePreparation",
     "SparseAmplitudeEncoding",
+    "SpinExchangeAnsatz",
+    "SplitCycleShift",
     "StatevectorEstimator",
     "StatevectorQFI",
     "StatevectorQGT",
@@ -190,10 +247,21 @@ __all__ = [
     "TimeSwapMixer",
     "TrainableFidelityQuantumKernel",
     "TwoLocalAnsatz",
+    "TwoQubitUnitaryAnsatz",
+    "UCCAnsatz",
+    "UCCSDAnsatz",
+    "UVCCAnsatz",
+    "UVCCSDAnsatz",
     "UniformSuperposition",
+    "UnitaryDilation",
+    "UnitaryMatrixOracle",
+    "UnitaryOverlap",
     "UserCircuitPreparation",
+    "VSCFStatePreparation",
     "ValueIndependentPermutationSwapMixer",
     "ValueSelectivePermutationSwapMixer",
+    "WeightDistributionBlock",
     "ZeroStateReflection",
     "arithmetic",
+    "mutual_information",
 ]

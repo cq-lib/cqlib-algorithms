@@ -10,8 +10,6 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-# Modified to expose and verify kernel-training contracts.
-
 """Public component abstract base classes and supporting value types."""
 
 from .ansatz import Ansatz
@@ -22,6 +20,7 @@ from .quantum_kernel import KernelLoss, QuantumKernel, TrainableQuantumKernel
 from .sampler import (
     Sampler,
     SamplerRequest,
+    spawn_seeds,
     validate_sampler_result,
     validate_sampler_results,
 )
@@ -48,6 +47,7 @@ __all__ = [
     "ScalarMinimizerResult",
     "StatePreparation",
     "TrainableQuantumKernel",
+    "spawn_seeds",
     "validate_sampler_result",
     "validate_sampler_results",
 ]

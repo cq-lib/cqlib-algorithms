@@ -9,14 +9,14 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
-# Modified to export the five quantum machine learning algorithms.
-
-# Modified to use the shared fidelity quantum-kernel operator.
 
 """Complete quantum algorithms composed from reusable components."""
 
 from .amplitude_estimation import (
     AmplitudeEstimationProblem,
+    FasterAmplitudeEstimation,
+    FasterAmplitudeEstimationRequest,
+    FasterAmplitudeEstimationResult,
     IterativeAmplitudeEstimation,
     IterativeAmplitudeEstimationRequest,
     IterativeAmplitudeEstimationResult,
@@ -35,6 +35,13 @@ from .bernstein_vazirani import (
 )
 from .chsh import CHSH, CHSHRequest, CHSHResult
 from .deutsch_jozsa import DeutschJozsa, DeutschJozsaRequest, DeutschJozsaResult
+from .electronic_structure import (
+    ElectronicGroundState,
+    ElectronicGroundStateResult,
+    ElectronicQEOM,
+    ElectronicQEOMResult,
+)
+from .lattice import LatticeGroundState, LatticeGroundStateResult
 from .pegasos_qsvc import PegasosQSVC
 from .phase_estimation import (
     HamiltonianPhaseEstimation,
@@ -48,12 +55,7 @@ from .phase_estimation import (
     PhaseEstimationRequest,
     PhaseEstimationResult,
 )
-from .qbayesian import (
-    QBayesian,
-    QBayesianResult,
-    QBayesianRound,
-    QBayesianStatus,
-)
+from .qbayesian import QBayesian, QBayesianResult, QBayesianRound, QBayesianStatus
 from .qsvr import QSVR
 from .quantum_kernel_trainer import QuantumKernelTrainer, QuantumKernelTrainerResult
 from .quantum_teleportation import (
@@ -68,6 +70,11 @@ from .superdense_coding import (
     SuperdenseCodingResult,
 )
 from .variational import QAOA, VQE, QAOAResult, VQAResult, VQEResult
+from .vibration import (
+    VibrationalGroundState,
+    VibrationalGroundStateResult,
+    VibrationalMeasurements,
+)
 from .vqr import VQR
 
 __all__ = [
@@ -89,6 +96,13 @@ __all__ = [
     "DeutschJozsa",
     "DeutschJozsaRequest",
     "DeutschJozsaResult",
+    "ElectronicGroundState",
+    "ElectronicGroundStateResult",
+    "ElectronicQEOM",
+    "ElectronicQEOMResult",
+    "FasterAmplitudeEstimation",
+    "FasterAmplitudeEstimationRequest",
+    "FasterAmplitudeEstimationResult",
     "HamiltonianPhaseEstimation",
     "HamiltonianPhaseEstimationRequest",
     "HamiltonianPhaseEstimationResult",
@@ -98,6 +112,8 @@ __all__ = [
     "IterativePhaseEstimation",
     "IterativePhaseEstimationRequest",
     "IterativePhaseEstimationResult",
+    "LatticeGroundState",
+    "LatticeGroundStateResult",
     "MaximumLikelihoodAmplitudeEstimation",
     "MaximumLikelihoodAmplitudeEstimationRequest",
     "MaximumLikelihoodAmplitudeEstimationResult",
@@ -127,4 +143,7 @@ __all__ = [
     "SuperdenseCodingResult",
     "VQAResult",
     "VQEResult",
+    "VibrationalGroundState",
+    "VibrationalGroundStateResult",
+    "VibrationalMeasurements",
 ]

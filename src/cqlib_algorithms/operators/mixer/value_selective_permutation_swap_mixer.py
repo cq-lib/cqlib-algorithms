@@ -37,6 +37,8 @@ class ValueSelectivePermutationSwapMixer(_BaseMixer):
     Local qubits are ordered as ``(u_i, v_j, u_j, v_i)``. The generator is
     the Hermitian four-body transition between the two direct one-hot
     assignments. Its eight Pauli terms commute, so the circuit is exact.
+
+    This component has no construction arguments and exposes one beta parameter.
     """
 
     __slots__ = ()

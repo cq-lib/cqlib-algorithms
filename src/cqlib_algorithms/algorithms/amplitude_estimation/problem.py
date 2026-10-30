@@ -102,6 +102,16 @@ class AmplitudeEstimationProblem:
     phase-rotation semantics associated with ``state_preparation`` and the
     good-state predicate. This object validates circuit mechanics, not that
     semantic relationship.
+
+    Args:
+        state_preparation: Fully bound unitary ``A`` that prepares the state.
+        grover_operator: Fully bound Grover iterate ``Q`` on the same register.
+        objective_qubits: Unique system-register positions used by the predicate.
+        is_good_state: Callable that classifies measured objective bitstrings.
+
+    Raises:
+        TypeError: If a circuit, qubit index, or predicate has the wrong type.
+        ValueError: If the circuits or objective-qubit selection are invalid.
     """
 
     state_preparation: Circuit

@@ -29,9 +29,8 @@ from __future__ import annotations
 import copy
 from collections.abc import Iterable
 
-from cqlib.circuit import CircuitError
-
 from cqlib import Circuit
+from cqlib.circuit import CircuitError
 
 from ..oracle.general_state_reflection import GeneralStateReflection
 from ..oracle.grover_diffusion import GroverDiffusion

@@ -10,17 +10,17 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-# Modified to expose and verify kernel-training contracts.
-
 """Composable quantum algorithm components for Cqlib."""
 
-from importlib.metadata import version
+from importlib.metadata import PackageNotFoundError, version
 
 from .algorithms import (
     BB84,
     CHSH,
     QAOA,
+    QSVR,
     VQE,
+    VQR,
     AmplitudeEstimationProblem,
     BB84Basis,
     BB84Request,
@@ -33,6 +33,13 @@ from .algorithms import (
     DeutschJozsa,
     DeutschJozsaRequest,
     DeutschJozsaResult,
+    ElectronicGroundState,
+    ElectronicGroundStateResult,
+    ElectronicQEOM,
+    ElectronicQEOMResult,
+    FasterAmplitudeEstimation,
+    FasterAmplitudeEstimationRequest,
+    FasterAmplitudeEstimationResult,
     HamiltonianPhaseEstimation,
     HamiltonianPhaseEstimationRequest,
     HamiltonianPhaseEstimationResult,
@@ -42,14 +49,23 @@ from .algorithms import (
     IterativePhaseEstimation,
     IterativePhaseEstimationRequest,
     IterativePhaseEstimationResult,
+    LatticeGroundState,
+    LatticeGroundStateResult,
     MaximumLikelihoodAmplitudeEstimation,
     MaximumLikelihoodAmplitudeEstimationRequest,
     MaximumLikelihoodAmplitudeEstimationResult,
+    PegasosQSVC,
     PhaseEstimation,
     PhaseEstimationProblem,
     PhaseEstimationRequest,
     PhaseEstimationResult,
     QAOAResult,
+    QBayesian,
+    QBayesianResult,
+    QBayesianRound,
+    QBayesianStatus,
+    QuantumKernelTrainer,
+    QuantumKernelTrainerResult,
     QuantumTeleportation,
     QuantumTeleportationRequest,
     QuantumTeleportationResult,
@@ -62,6 +78,9 @@ from .algorithms import (
     SuperdenseCoding,
     SuperdenseCodingRequest,
     SuperdenseCodingResult,
+    VibrationalGroundState,
+    VibrationalGroundStateResult,
+    VibrationalMeasurements,
     VQAResult,
     VQEResult,
 )
@@ -84,7 +103,10 @@ from .protocols import (
 )
 from .transforms import QFT
 
-__version__ = version("cqlib-algorithms")
+try:
+    __version__ = version("cqlib-algorithms")
+except PackageNotFoundError:
+    __version__ = "0.0.0+local"
 
 from .protocols.quantum_kernel import KernelLoss, QuantumKernel, TrainableQuantumKernel
 from .protocols.scalar_minimizer import ScalarMinimizer, ScalarMinimizerResult
@@ -94,7 +116,9 @@ __all__ = [
     "CHSH",
     "QAOA",
     "QFT",
+    "QSVR",
     "VQE",
+    "VQR",
     "AmplitudeEstimationProblem",
     "Ansatz",
     "BB84Basis",
@@ -108,9 +132,16 @@ __all__ = [
     "DeutschJozsa",
     "DeutschJozsaRequest",
     "DeutschJozsaResult",
+    "ElectronicGroundState",
+    "ElectronicGroundStateResult",
+    "ElectronicQEOM",
+    "ElectronicQEOMResult",
     "Estimator",
     "EstimatorRequest",
     "EstimatorResult",
+    "FasterAmplitudeEstimation",
+    "FasterAmplitudeEstimationRequest",
+    "FasterAmplitudeEstimationResult",
     "Gradient",
     "GradientRequest",
     "GradientResult",
@@ -124,6 +155,8 @@ __all__ = [
     "IterativePhaseEstimationRequest",
     "IterativePhaseEstimationResult",
     "KernelLoss",
+    "LatticeGroundState",
+    "LatticeGroundStateResult",
     "MaximumLikelihoodAmplitudeEstimation",
     "MaximumLikelihoodAmplitudeEstimationRequest",
     "MaximumLikelihoodAmplitudeEstimationResult",
@@ -131,13 +164,20 @@ __all__ = [
     "OptimizerRequest",
     "OptimizerResult",
     "OptimizerStatus",
+    "PegasosQSVC",
     "PhaseEstimation",
     "PhaseEstimationCircuit",
     "PhaseEstimationProblem",
     "PhaseEstimationRequest",
     "PhaseEstimationResult",
     "QAOAResult",
+    "QBayesian",
+    "QBayesianResult",
+    "QBayesianRound",
+    "QBayesianStatus",
     "QuantumKernel",
+    "QuantumKernelTrainer",
+    "QuantumKernelTrainerResult",
     "QuantumTeleportation",
     "QuantumTeleportationRequest",
     "QuantumTeleportationResult",
@@ -158,5 +198,8 @@ __all__ = [
     "TrainableQuantumKernel",
     "VQAResult",
     "VQEResult",
+    "VibrationalGroundState",
+    "VibrationalGroundStateResult",
+    "VibrationalMeasurements",
     "__version__",
 ]

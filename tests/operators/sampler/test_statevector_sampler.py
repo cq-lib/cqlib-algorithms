@@ -17,8 +17,8 @@ from __future__ import annotations
 import math
 
 import pytest
-
 from cqlib import Circuit, Parameter, Qubit
+
 from cqlib_algorithms.operators.sampler import StatevectorSampler
 from cqlib_algorithms.protocols.sampler import Sampler, SamplerRequest
 
@@ -69,6 +69,19 @@ def test_partial_measurement_projects_bell_state() -> None:
     assert result.probabilities is not None
     assert math.isclose(sum(result.probabilities.values()), 1.0, abs_tol=1e-12)
     assert len(circuit.operations) == 3
+
+
+def test_explicit_seed_reproduces_statevector_counts() -> None:
+    circuit = Circuit(1)
+    circuit.h(0)
+    request = SamplerRequest(circuit, (Qubit(0),), 128, seed=2026)
+    sampler = StatevectorSampler()
+
+    first = sampler.run([request])[0]
+    repeat = sampler.run([request])[0]
+
+    assert first.counts == repeat.counts
+    assert sum(first.counts.values()) == request.shots
 
 
 def test_single_qubit_marginal_ignores_unmeasured_register() -> None:

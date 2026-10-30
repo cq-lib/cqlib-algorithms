@@ -24,9 +24,8 @@ from __future__ import annotations
 
 import copy
 
-from cqlib.circuit import CircuitError
-
 from cqlib import Circuit
+from cqlib.circuit import CircuitError
 
 from ...protocols.state_preparation import StatePreparation
 from .zero_state_reflection import ZeroStateReflection

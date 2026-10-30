@@ -17,14 +17,24 @@ from .angle_encoding import AngleEncoding
 from .arbitrary_state_preparation import ArbitraryStatePreparation
 from .basis_encoding import BasisEncoding
 from .basis_state_initialization import BasisStateInitialization
+from .dicke_state_preparation import DickeStatePreparation
 from .feature_map_preparation import FeatureMapPreparation
+from .fermionic_gaussian_state_preparation import (
+    FermionicGaussianStatePreparation,
+)
 from .ghz_state_preparation import GHZStatePreparation
+from .hartree_fock_state_preparation import HartreeFockStatePreparation
 from .image_angle_encoding import ImageAngleEncoding
 from .image_basis_encoding import BRQI, ImageBasisEncoding
+from .lattice_reference_state_preparation import LatticeReferenceStatePreparation
 from .product_state_preparation import ProductStatePreparation
+from .slater_determinant_state_preparation import (
+    SlaterDeterminantStatePreparation,
+)
 from .sparse_amplitude_encoding import SparseAmplitudeEncoding
 from .uniform_superposition import UniformSuperposition
 from .user_circuit_preparation import UserCircuitPreparation
+from .vscf_state_preparation import VSCFStatePreparation
 
 __all__ = [
     "BRQI",
@@ -33,12 +43,18 @@ __all__ = [
     "ArbitraryStatePreparation",
     "BasisEncoding",
     "BasisStateInitialization",
+    "DickeStatePreparation",
     "FeatureMapPreparation",
+    "FermionicGaussianStatePreparation",
     "GHZStatePreparation",
+    "HartreeFockStatePreparation",
     "ImageAngleEncoding",
     "ImageBasisEncoding",
+    "LatticeReferenceStatePreparation",
     "ProductStatePreparation",
+    "SlaterDeterminantStatePreparation",
     "SparseAmplitudeEncoding",
     "UniformSuperposition",
     "UserCircuitPreparation",
+    "VSCFStatePreparation",
 ]

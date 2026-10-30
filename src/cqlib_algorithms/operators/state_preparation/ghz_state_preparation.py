@@ -32,7 +32,15 @@ from ._state_synthesis import validate_positive_qubit_count, validate_prefix
 
 @final
 class GHZStatePreparation(StatePreparation):
-    r"""Prepare :math:`(|0\ldots0\rangle+|1\ldots1\rangle)/\sqrt{2}`."""
+    r"""Prepare :math:`(|0\ldots0\rangle+|1\ldots1\rangle)/\sqrt{2}`.
+
+    Args:
+        num_qubits: Positive GHZ register width.
+
+    Raises:
+        TypeError: If ``num_qubits`` is not an integer.
+        ValueError: If ``num_qubits`` is not positive.
+    """
 
     __slots__ = ("_num_qubits",)
 

@@ -15,9 +15,9 @@
 import math
 
 import pytest
+from cqlib import Circuit, Parameter
 from cqlib.qis import PauliString
 
-from cqlib import Circuit, Parameter
 from cqlib_algorithms.operators.gradient import (
     FiniteDifferenceGradient,
     ParameterShiftGradient,

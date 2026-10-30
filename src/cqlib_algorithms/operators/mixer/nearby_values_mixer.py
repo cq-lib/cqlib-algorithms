@@ -47,6 +47,15 @@ class NearbyValuesMixer(_BaseMixer):
     ``1 <= s <= radius``, with indices reduced modulo ``d``. Repeated edges
     retain their multiplicity, as required by the cyclic shift definition.
     Noncommuting sums use the supplied Core evolution strategy.
+
+    Args:
+        num_values: Number of one-hot values.
+        radius: Positive maximum cyclic shift.
+        strategy: Optional Cqlib evolution strategy.
+
+    Raises:
+        TypeError: If an option has the wrong type.
+        ValueError: If the value count, radius, or strategy is invalid.
     """
 
     __slots__ = ("_evolution", "_pairs")

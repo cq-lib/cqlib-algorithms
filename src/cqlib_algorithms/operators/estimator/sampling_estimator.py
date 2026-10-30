@@ -19,13 +19,12 @@ from copy import copy
 from dataclasses import dataclass
 from typing import final
 
+from cqlib import Circuit
 from cqlib.device import ExecutionResult
 from cqlib.qis import Hamiltonian, Pauli, PauliString, Phase
 
-from cqlib import Circuit
-
 from ...protocols.estimator import Estimator, EstimatorRequest, EstimatorResult
-from ...protocols.sampler import Sampler, SamplerRequest
+from ...protocols.sampler import Sampler, SamplerRequest, spawn_seeds
 from ._circuit_validation import validate_unitary_state_preparation
 
 
@@ -169,6 +168,11 @@ class SamplingEstimator(Estimator):
     sample mean. If any active term receives one shot, result variance is
     ``None`` because it cannot be estimated from that sample.
 
+    ``EstimatorRequest.seed`` reaches the sampler through one child seed per
+    active term, so an explicit seed reproduces the whole estimate while the
+    term measurements stay independent. The identity term consumes no
+    randomness.
+
     This component deliberately does not duplicate QWC grouping. The existing
     measurement-planner component owns that optimization; integration requires
     its plan to expose an unmeasured basis circuit compatible with the Sampler
@@ -224,6 +228,10 @@ class SamplingEstimator(Estimator):
                 )
 
             quotient, remainder = divmod(request.shots, len(active))
+            # Each term draws from its own child seed so that the term
+            # measurements stay independent, while one estimator request with
+            # an explicit seed still reproduces the whole batch.
+            term_seeds = spawn_seeds(request.seed, len(active))
             for term_index, term in enumerate(active):
                 term_shots = quotient + (1 if term_index < remainder else 0)
                 rotated = _basis_circuit(bound, term.pauli)
@@ -231,6 +239,7 @@ class SamplingEstimator(Estimator):
                     rotated,
                     tuple(rotated.qubits),
                     term_shots,
+                    term_seeds[term_index],
                 )
                 jobs.append(
                     _SampleJob(

@@ -33,7 +33,16 @@ from ._validation import validate_positive_integer
 
 @final
 class ParityRingMixer(_BaseMixer):
-    """Apply odd, even and optional closing exchange layers in that order."""
+    """Apply odd, even and optional closing exchange layers in that order.
+
+    Args:
+        num_values: Number of one-hot values on the ring.
+        repetitions: Positive number of ordered layer repetitions.
+
+    Raises:
+        TypeError: If an argument has the wrong type.
+        ValueError: If the count or repetition number is invalid.
+    """
 
     __slots__ = ("_num_values", "_repetitions")
 

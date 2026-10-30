@@ -72,7 +72,19 @@ def _chernoff_lmax(epsilon: float, alpha: float, shots: int) -> float:
 
 @dataclass(frozen=True, slots=True)
 class IterativeAmplitudeEstimationRequest:
-    """One adaptive amplitude-estimation request."""
+    """Configure one iterative amplitude-estimation run.
+
+    Args:
+        problem: State preparation, Grover iterate, and good-state predicate.
+        epsilon: Target half-width of the final amplitude interval.
+        alpha: Total failure-probability budget.
+        shots: Maximum samples allocated to an adaptive round.
+        max_rounds: Hard safety limit on adaptive rounds.
+
+    Raises:
+        TypeError: If a field has the wrong type.
+        ValueError: If a probability, shot count, or round limit is invalid.
+    """
 
     problem: AmplitudeEstimationProblem
     epsilon: float
@@ -106,7 +118,18 @@ class IterativeAmplitudeEstimationRequest:
 
 @dataclass(frozen=True, slots=True)
 class IterativeAmplitudeEstimationResult:
-    """Adaptive powers, confidence intervals, and final estimate."""
+    """Store an iterative estimate and its adaptive execution record.
+
+    Attributes:
+        estimation: Midpoint of the final amplitude interval.
+        confidence_interval: Final Chernoff--Hoeffding amplitude interval.
+        shots: Total samples across all rounds.
+        num_grover_queries: Grover powers summed across sampled circuits.
+        num_oracle_queries: Shot-weighted Grover-query count.
+        powers: Grover exponents selected by the adaptive schedule.
+        round_shots: Samples used at each reported round.
+        round_intervals: Amplitude interval after each round.
+    """
 
     estimation: float
     confidence_interval: tuple[float, float]
@@ -319,6 +342,13 @@ class IterativeAmplitudeEstimation:
 
     Reference: D. Grinko, J. Gacon, C. Zoufal, and S. Woerner, *Iterative
     Quantum Amplitude Estimation*, arXiv:1912.05559v3.
+
+    Args:
+        sampler: Sampling implementation used for adaptive experiments.
+
+    Raises:
+        TypeError: If the sampler or a request has the wrong type.
+        ValueError: If validation fails or the target interval is not reached.
     """
 
     __slots__ = ("_sampler",)

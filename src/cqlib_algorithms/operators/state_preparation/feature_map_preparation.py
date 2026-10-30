@@ -46,6 +46,13 @@ class FeatureMapPreparation(StatePreparation):
     Supported inputs are :class:`ZFeatureMap`, :class:`IQPFeatureMap`,
     :class:`ZZFeatureMap`, and :class:`PauliFeatureMap`. Their construction,
     parameters, and feature semantics remain owned by Cqlib Core.
+
+    Args:
+        feature_map: Supported Cqlib feature-map instance to snapshot.
+
+    Raises:
+        TypeError: If the component type is unsupported.
+        ValueError: If the feature map fails validation.
     """
 
     __slots__ = ("_feature_map",)

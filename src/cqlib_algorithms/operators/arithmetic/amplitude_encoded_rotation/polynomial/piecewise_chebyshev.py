@@ -24,8 +24,7 @@ performs the completely classical work of
    every user segment via
    :func:`numpy.polynomial.chebyshev.Chebyshev.interpolate`,
 3. converting every interpolant to monomial (power) basis and
-   multiplying the coefficients by ``2`` (matching Qiskit's convention
-   ``theta_k = 2 * P_d(k)``).
+   multiplying the coefficients by ``2``, so ``theta_k = 2 * P_d(k)``.
 
 Circuit construction is then *entirely delegated* to
 :class:`PiecewisePolynomialPauliRotation` which runs the shared
@@ -33,7 +32,7 @@ comparator-driven incremental accumulator on top of the bit-wise
 multi-controlled rotation expansion.  No quantum gate is synthesised
 directly in this module.
 
-Fixed conventions (matching Qiskit 2.4.1 ``PiecewiseChebyshev``):
+Fixed mathematical conventions:
 
 * **Encoding**: amplitude-like (``theta_k = 2 * P_d(k)``).  Identity
   segments use ``theta = pi`` so that ``sin(pi/2) = 1`` (full
@@ -42,9 +41,9 @@ Fixed conventions (matching Qiskit 2.4.1 ``PiecewiseChebyshev``):
 * **Reference**: ``f_x(x)`` accepts a ``float`` argument in the
   physical domain ``[lo, hi-1]`` of each segment; interpolation is
   performed at the standard **Chebyshev-Gauss** (zeros-of-``T``)
-  nodes *without* integer rounding, matching
-  :func:`numpy.polynomial.chebyshev.Chebyshev.interpolate` and
-  Qiskit.  This guarantees the classical exponential convergence
+  nodes *without* integer rounding, as defined by
+  :func:`numpy.polynomial.chebyshev.Chebyshev.interpolate`. This gives the
+  classical exponential convergence
   rate for analytic targets.  The resulting polynomial ``P_d`` is
   finally evaluated at the integer control-register indices.
 """
@@ -122,7 +121,7 @@ def _complete_breakpoints(
 def _validate_and_normalize_degree(degree: Any) -> int:
     """Validate the Chebyshev degree argument.
 
-    ``None`` is interpreted as the Qiskit default ``degree=1`` (linear).
+    ``None`` selects ``degree=1`` (linear interpolation).
     Negative degrees, non-int types, and ``bool`` are rejected.
     """
 
@@ -232,9 +231,8 @@ def _interpolate_segment(
     ``theta(k) = 2 * P_d(k)`` directly.
 
     Standard Chebyshev-Gauss nodes (zeros of ``T_{n+1}``) are used
-    *without* integer rounding, matching the convention of
-    :func:`numpy.polynomial.chebyshev.Chebyshev.interpolate` and
-    Qiskit's :class:`~qiskit.circuit.library.PiecewiseChebyshev`.
+    *without* integer rounding, following
+    :func:`numpy.polynomial.chebyshev.Chebyshev.interpolate`.
     Samples are taken at the exact (floating-point) abscissae
     ``cos((2i+1)*pi/(2*(d+1)))``, which guarantees the classical
     exponential convergence rate for analytic targets and monotonic
@@ -354,7 +352,7 @@ class PiecewiseChebyshev:
     The user breakpoint list is *completed* before being forwarded to
     :class:`PiecewisePolynomialPauliRotation`: a leading ``0`` is
     prepended if necessary, and a trailing ``2**n`` is appended if
-    necessary.  Completion matches Qiskit's convention.
+    necessary, so the completed partition covers the full input domain.
 
     Local wire layout is produced entirely by the delegated
     :class:`PiecewisePolynomialPauliRotation` instance, i.e.
@@ -375,7 +373,7 @@ class PiecewiseChebyshev:
         endpoints.  ``bool`` values are explicitly rejected.
     degree : int | None, optional
         Shared Chebyshev interpolant degree.  ``None`` defaults to
-        ``1`` (linear interpolant, matching Qiskit).  Must be a
+        ``1`` (linear interpolant). Must be a
         non-negative :class:`int` (``bool`` rejected).
     breakpoints : list[int] | None, optional
         User breakpoint list (unsigned state indices, strictly

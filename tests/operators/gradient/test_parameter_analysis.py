@@ -17,10 +17,10 @@ from __future__ import annotations
 import math
 
 import pytest
+from cqlib import Circuit, Parameter, Qubit
 from cqlib.circuit import FrozenCircuit
 from cqlib.circuit.gates import CircuitGate, StandardGate
 
-from cqlib import Circuit, Parameter, Qubit
 from cqlib_algorithms.operators.gradient._parameter_analysis import (
     analyze_symbol,
     local_shift_plan,

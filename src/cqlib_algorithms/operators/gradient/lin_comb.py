@@ -27,11 +27,10 @@ from collections.abc import Sequence
 from typing import Literal, TypeAlias, TypeVar, final
 
 import numpy as np
+from cqlib import Qubit
 from cqlib.circuit import Circuit, Parameter, ValueOperation
 from cqlib.circuit.gates import StandardGate
 from cqlib.qis import Hamiltonian, Pauli, PauliString
-
-from cqlib import Qubit
 
 from ...protocols.estimator import Estimator, EstimatorRequest
 from ...protocols.gradient import (

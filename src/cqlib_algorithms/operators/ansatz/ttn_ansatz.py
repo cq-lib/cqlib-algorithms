@@ -38,6 +38,13 @@ class TTNAnsatz(BaseAnsatz):
     each pair is retained, and an unmatched final qubit is carried forward.
     All physical qubits remain in the circuit; retention only defines later
     connectivity.
+
+    Args:
+        num_qubits: Circuit width of at least two.
+
+    Raises:
+        TypeError: If ``num_qubits`` is not an integer.
+        ValueError: If ``num_qubits`` is less than two.
     """
 
     __slots__ = ("_levels", "_num_qubits", "_root")

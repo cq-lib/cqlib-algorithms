@@ -58,7 +58,7 @@ _VALID_MODES: frozenset[str] = frozenset({"amplitude", "angle"})
 
 
 def _validate_mode(mode: str) -> Literal["amplitude", "angle"]:
-    """Validate ``mode`` and return a lower-cased enum-style string.
+    """Validate ``mode`` and return a lower-cased enum-compatible string.
 
     Parameters
     ----------

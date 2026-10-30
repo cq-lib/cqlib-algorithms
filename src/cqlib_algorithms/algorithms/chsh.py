@@ -101,6 +101,17 @@ class CHSHRequest:
     The request is shallowly frozen. A caller-owned preparation circuit must
     not be modified during the request lifetime, and :class:`CHSH` revalidates
     it immediately before execution.
+
+    Args:
+        state_preparation: Fixed two-qubit preparation, or ``None`` for Bell state.
+        alice_angles: Alice's two XZ-plane measurement angles.
+        bob_angles: Bob's two XZ-plane measurement angles.
+        shots: Samples per correlator, or ``None`` for exact estimation.
+        tolerance: Numerical margin used for the classical-bound comparison.
+
+    Raises:
+        TypeError: If a field has the wrong type.
+        ValueError: If circuit, angles, shots, or tolerance are invalid.
     """
 
     state_preparation: Circuit | None = None
@@ -186,6 +197,11 @@ class CHSHResult:
     retained because finite-shot, mitigated, or user-supplied estimators can
     produce them. ``tolerance`` is only a numerical comparison margin; it is
     not a statistical confidence interval.
+
+    Attributes:
+        correlators: ``(E00, E01, E10, E11)``.
+        variances: Estimator variances in the same order.
+        tolerance: Numerical bound-comparison margin.
     """
 
     CLASSICAL_BOUND: ClassVar[float] = 2.0
@@ -298,6 +314,13 @@ class CHSH:
     are submitted in ``E00, E01, E10, E11`` order in one flattened estimator
     batch. This class evaluates a witness; it does not model detector or
     locality loopholes, perform mitigation, or claim statistical significance.
+
+    Args:
+        estimator: Expectation estimator used for the four correlators.
+
+    Raises:
+        TypeError: If the estimator or a request has the wrong type.
+        ValueError: If circuit or estimator-result validation fails.
     """
 
     __slots__ = ("_estimator",)

@@ -37,6 +37,13 @@ class ProductStatePreparation(StatePreparation):
     Item ``q`` of ``qubit_states`` configures qubit ``q``. Every item must
     contain exactly two finite amplitudes and have unit norm within 1e-12.
     Accepted roundoff is corrected before the copied configuration is stored.
+
+    Args:
+        qubit_states: Nonempty sequence of normalized ``(a_q, b_q)`` pairs.
+
+    Raises:
+        TypeError: If the nested input is not numeric sequence data.
+        ValueError: If a pair, amplitude, or norm is invalid.
     """
 
     __slots__ = ("_qubit_states",)

@@ -48,6 +48,14 @@ class ImageBasisEncoding(StatePreparation):
 
     The implementation follows the published BRQI definition and synthesizes
     the state by explicitly enumerating every pixel and bit-plane address.
+
+    Args:
+        image_shape: Power-of-two ``(height, width)`` dimensions.
+        channels: Exactly one row-major channel of 8-bit grayscale integers.
+
+    Raises:
+        TypeError: If shapes or pixels have invalid types.
+        ValueError: If dimensions, channel count, length, or values are invalid.
     """
 
     __slots__ = ("_channels", "_image_shape")

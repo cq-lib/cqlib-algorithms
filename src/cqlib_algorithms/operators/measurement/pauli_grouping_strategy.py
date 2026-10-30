@@ -58,6 +58,13 @@ class PauliGroupingStrategy:
     stable order. Scalar phases do not affect basis compatibility. Empty input
     yields an empty tuple; mixed widths and non-Pauli values are rejected.
     This algebraic strategy does not allocate circuits or interpret weights.
+
+    Args:
+        mode: ``"none"`` or qubit-wise commuting ``"qwc"`` grouping.
+
+    Raises:
+        TypeError: If ``mode`` or an input term has the wrong type.
+        ValueError: If the mode is unsupported or term widths differ.
     """
 
     __slots__ = ("_mode",)
