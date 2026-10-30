@@ -66,7 +66,7 @@ from .superdense_coding import (
     SuperdenseCodingRequest,
     SuperdenseCodingResult,
 )
-from .time_evolution import PVQD, PVQDResult
+from .time_evolution import PVQD, PVQDResult, VarQITE, VarQITEResult
 from .variational import (
     QAOA,
     VQD,
@@ -158,6 +158,8 @@ __all__ = [
     "VQAResult",
     "VQDResult",
     "VQEResult",
+    "VarQITE",
+    "VarQITEResult",
     "VibrationalGroundState",
     "VibrationalGroundStateResult",
     "VibrationalMeasurements",

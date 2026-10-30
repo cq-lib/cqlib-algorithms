@@ -10,8 +10,9 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Variational algorithms for real-time quantum dynamics."""
+"""Variational algorithms for real- and imaginary-time quantum dynamics."""
 
 from .pvqd import PVQD, PVQDResult
+from .var_qite import VarQITE, VarQITEResult
 
-__all__ = ["PVQD", "PVQDResult"]
+__all__ = ["PVQD", "PVQDResult", "VarQITE", "VarQITEResult"]
