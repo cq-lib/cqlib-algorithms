@@ -60,6 +60,19 @@ class Adam(Optimizer):
     First- and second-moment vectors are independent for every request and
     reset at the beginning of each :meth:`run`.  Active requests share one
     gradient batch per iteration but stop independently by step norm.
+
+    Args:
+        gradient: Gradient component used for objective derivatives.
+        learning_rate: Positive base update scale.
+        beta1: First-moment decay in ``[0, 1)``.
+        beta2: Second-moment decay in ``[0, 1)``.
+        epsilon: Positive denominator stabilizer.
+        maxiter: Nonnegative maximum update count.
+        tolerance: Nonnegative step-norm threshold, or ``None``.
+
+    Raises:
+        TypeError: If an option has the wrong type.
+        ValueError: If a numeric option is outside its valid range.
     """
 
     __slots__ = (

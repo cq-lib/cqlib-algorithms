@@ -17,10 +17,10 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+from cqlib import Circuit, Parameter
 from cqlib.circuit.gates import StandardGate
 from cqlib.qis import PauliString
 
-from cqlib import Circuit, Parameter
 from cqlib_algorithms.operators.gradient import (
     NaturalGradient,
     ParameterShiftGradient,

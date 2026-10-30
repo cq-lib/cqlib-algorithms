@@ -18,9 +18,12 @@ import copy
 import math
 from collections.abc import Sequence
 
+from cqlib.circuit import Circuit, CircuitError
 from cqlib.circuit.ansatz import EntanglementTopology
 from cqlib.circuit.gates import StandardGate
 from cqlib.qis import Hamiltonian
+
+from ...protocols.state_preparation import StatePreparation
 
 _ROTATION_GATES = (StandardGate.RX, StandardGate.RY, StandardGate.RZ)
 _ENTANGLEMENT_GATES = (StandardGate.CX, StandardGate.CY, StandardGate.CZ)
@@ -93,6 +96,43 @@ def validate_prefix(prefix: str) -> None:
     """Validate a circuit-parameter prefix."""
     if not isinstance(prefix, str):
         raise TypeError("prefix must be a string")
+
+
+def snapshot_fixed_initial_state(
+    initial_state: StatePreparation | None,
+    *,
+    num_qubits: int,
+    prefix: str,
+) -> Circuit | None:
+    """Validate and snapshot an optional zero-parameter preparation."""
+    if initial_state is None:
+        return None
+    if not isinstance(initial_state, StatePreparation):
+        raise TypeError("initial_state must be a StatePreparation or None")
+    initial_state.validate()
+    if initial_state.num_parameters() != 0:
+        raise ValueError("initial_state must have zero logical parameters")
+    if initial_state.num_qubits() != num_qubits:
+        raise ValueError("initial_state and ansatz must have the same width")
+
+    built = initial_state.build_circuit(prefix)
+    if not isinstance(built, Circuit):
+        raise TypeError("initial_state must build a Circuit")
+    built.validate()
+    if built.num_qubits != num_qubits:
+        raise ValueError("initial_state circuit has an inconsistent width")
+    if built.used_symbols:
+        raise ValueError("initial_state circuit must not contain active symbols")
+    snapshot = Circuit(num_qubits)
+    snapshot.compose(built, snapshot.qubits)
+    snapshot.validate()
+    try:
+        snapshot.inverse()
+    except CircuitError as error:
+        raise ValueError(
+            "initial_state circuit must contain only statically invertible operations"
+        ) from error
+    return snapshot
 
 
 def validate_boolean(value: bool, name: str) -> None:

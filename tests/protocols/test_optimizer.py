@@ -16,9 +16,9 @@ from dataclasses import FrozenInstanceError
 
 import numpy as np
 import pytest
+from cqlib import Circuit, Parameter
 from cqlib.qis import PauliString
 
-from cqlib import Circuit, Parameter
 from cqlib_algorithms.protocols import (
     EstimatorRequest,
     Optimizer,
@@ -100,8 +100,10 @@ def test_result_normalizes_real_values_and_is_frozen() -> None:
 @pytest.mark.parametrize(
     ("status", "converged"),
     [
+        (OptimizerStatus.CONVERGED, True),
         (OptimizerStatus.STEP_TOLERANCE, True),
         (OptimizerStatus.NO_PARAMETERS, True),
+        (OptimizerStatus.MAX_EVALUATIONS, False),
         (OptimizerStatus.MAX_ITERATIONS, False),
     ],
 )

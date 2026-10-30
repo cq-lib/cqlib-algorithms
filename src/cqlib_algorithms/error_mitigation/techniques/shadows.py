@@ -50,11 +50,11 @@ reusable executor for chaining.
 
 References
 ----------
-.. [1] H.-Y. Huang, R. Kueng, and J. Preskill, "Predicting many properties of
-   a quantum system from very few measurements," Nature Physics 16,
-   1050-1057, 2020. arXiv:2002.08953.
-.. [2] S. Chen, W. Yu, P. Zeng, and S. T. Flammia, "Robust shadow estimation,"
-   Quantum 5, 509, 2021. arXiv:2011.09636.
+[1] H.-Y. Huang, R. Kueng, and J. Preskill, "Predicting many properties of a quantum
+    system from very few measurements," Nature Physics 16, 1050-1057, 2020.
+    arXiv:2002.08953.
+[2] S. Chen, W. Yu, P. Zeng, and S. T. Flammia, "Robust shadow estimation," Quantum 5,
+    509, 2021. arXiv:2011.09636.
 """
 
 from __future__ import annotations
@@ -115,39 +115,30 @@ def snapshot_expectation(
     :math:`1`, so an unsupported observable (the identity) yields exactly
     :math:`1`, the trace of the reconstructed state.
 
-    Parameters
-    ----------
-    outcomes
-        Per-shot read-out bits; entry ``s`` is one bit per qubit with index
-        ``i`` holding qubit ``i``. Bits must be ``0`` or ``1``.
-    bases
-        Per-shot measurement axes aligned with ``outcomes``; entry ``s`` holds
-        one label per qubit drawn from ``"X"``, ``"Y"``, or ``"Z"``.
-    observable
-        Pauli string whose expectation is estimated. Its global phase is
-        included in the result.
-    readout_fidelities
-        Per-qubit read-out fidelities :math:`\lambda_i \in (0, 1]`, or ``None``
-        for the standard estimator. Fidelities are plain floats; no noise
-        model is involved. With every :math:`\lambda_i = 1` the result equals
-        the standard shadow estimator exactly.
+    Args:
+        outcomes: Per-shot read-out bits; entry ``s`` is one bit per qubit with index
+            ``i`` holding qubit ``i``. Bits must be ``0`` or ``1``.
+        bases: Per-shot measurement axes aligned with ``outcomes``; entry ``s`` holds
+            one label per qubit drawn from ``"X"``, ``"Y"``, or ``"Z"``.
+        observable: Pauli string whose expectation is estimated. Its global phase is
+            included in the result.
+        readout_fidelities: Per-qubit read-out fidelities :math:`\lambda_i \in (0, 1]`, or ``None``
+            for the standard estimator. Fidelities are plain floats; no noise
+            model is involved. With every :math:`\lambda_i = 1` the result equals
+            the standard shadow estimator exactly.
 
-    Returns
-    -------
-    float
+    Returns:
         The snapshot estimate of the observable's expectation value.
 
-    Raises
-    ------
-    TypeError
-        If ``observable`` is not a :class:`cqlib.qis.PauliString`, if
-        ``outcomes`` or ``bases`` is not a sequence of per-shot sequences, if a
-        bit is not an integer, or if a fidelity is not a real number.
-    ValueError
-        If ``outcomes`` and ``bases`` differ in shot count or qubit width, if
-        no shot was recorded, if a bit is not ``0`` or ``1``, if an axis label
-        is not ``"X"``, ``"Y"``, or ``"Z"``, or if a fidelity is not finite
-        or non-positive.
+    Raises:
+        TypeError: If ``observable`` is not a :class:`cqlib.qis.PauliString`, if
+            ``outcomes`` or ``bases`` is not a sequence of per-shot sequences, if a
+            bit is not an integer, or if a fidelity is not a real number.
+        ValueError: If ``outcomes`` and ``bases`` differ in shot count or qubit width, if
+            no shot was recorded, if a bit is not ``0`` or ``1``, if an axis label
+            is not ``"X"``, ``"Y"``, or ``"Z"``, or if a fidelity is not finite
+            or non-positive.
+
     """
     if not isinstance(observable, PauliString):
         raise TypeError("observable must be a cqlib.qis.PauliString")
@@ -181,34 +172,24 @@ def execute_with_shadows(
     protocol converges to the same value as the direct
     :math:`Z`-basis mean of the shots.
 
-    Parameters
-    ----------
-    circuit
-        Circuit whose expectation value is estimated.
-    executor
-        Execution backend supplying the sampling surface.
-    observable
-        Observable to estimate, any Hamiltonian or Pauli string. A bare Pauli
-        string is wrapped to share the Hamiltonian code path, and every term is
-        estimated from the same shadow set.
-    num_total_measurements_shadow
-        Number of independent shadows :math:`N`, at least one.
-    seed
-        Seed of the random basis draw and the shadow measurements, or ``None``
-        for fresh randomness.
+    Args:
+        circuit: Circuit whose expectation value is estimated.
+        executor: Execution backend supplying the sampling surface.
+        observable: Observable to estimate, any Hamiltonian or Pauli string. A bare Pauli
+            string is wrapped to share the Hamiltonian code path, and every term is
+            estimated from the same shadow set.
+        num_total_measurements_shadow: Number of independent shadows :math:`N`, at least one.
+        seed: Seed of the random basis draw and the shadow measurements, or ``None``
+            for fresh randomness.
 
-    Returns
-    -------
-    float
+    Returns:
         The shadow estimate of the observable's expectation value.
 
-    Raises
-    ------
-    TypeError
-        If ``num_total_measurements_shadow`` is not an integer or ``seed`` is
-        neither an integer nor ``None``.
-    ValueError
-        If ``num_total_measurements_shadow`` is below one.
+    Raises:
+        TypeError: If ``num_total_measurements_shadow`` is not an integer or ``seed`` is
+            neither an integer nor ``None``.
+        ValueError: If ``num_total_measurements_shadow`` is below one.
+
     """
     wrapped = shadows_executor(
         executor,
@@ -237,29 +218,21 @@ def shadows_executor(
     random-basis draw and the snapshot average replace the expectation surface
     while leaving sampling untouched.
 
-    Parameters
-    ----------
-    executor
-        Execution backend to wrap.
-    num_total_measurements_shadow
-        Number of independent shadows :math:`N` bound to every request, at
-        least one.
-    seed
-        Seed of the random basis draw and the shadow measurements, or ``None``
-        to defer to the request's own seed.
+    Args:
+        executor: Execution backend to wrap.
+        num_total_measurements_shadow: Number of independent shadows
+            :math:`N` bound to every request, at least one.
+        seed: Seed of the random basis draw and the shadow measurements, or ``None``
+            to defer to the request's own seed.
 
-    Returns
-    -------
-    QemExecutor
+    Returns:
         Executor whose expectation surface applies classical shadows.
 
-    Raises
-    ------
-    TypeError
-        If ``num_total_measurements_shadow`` is not an integer or ``seed`` is
-        neither an integer nor ``None``.
-    ValueError
-        If ``num_total_measurements_shadow`` is below one.
+    Raises:
+        TypeError: If ``num_total_measurements_shadow`` is not an integer or ``seed`` is
+            neither an integer nor ``None``.
+        ValueError: If ``num_total_measurements_shadow`` is below one.
+
     """
     _validate_shadow_count(num_total_measurements_shadow)
     _validate_seed(seed)
@@ -278,15 +251,12 @@ def shadows_executor(
 class _ShadowsEstimator(Estimator):
     r"""Expectation surface that draws random bases and averages snapshots.
 
-    Parameters
-    ----------
-    executor
-        Execution backend supplying the sampling surface.
-    num_shots
-        Number of independent shadows drawn for every request.
-    seed
-        Seed of the random basis draw and the shadow measurements, or ``None``
-        to defer to the request's own seed.
+    Args:
+        executor: Execution backend supplying the sampling surface.
+        num_shots: Number of independent shadows drawn for every request.
+        seed: Seed of the random basis draw and the shadow measurements, or ``None``
+            to defer to the request's own seed.
+
     """
 
     __slots__ = ("_executor", "_num_shots", "_seed")
@@ -343,20 +313,15 @@ class _ShadowsEstimator(Estimator):
     ) -> tuple[list[list[int]], list[list[str]]]:
         r"""Sample the rotated circuits and expand counts into per-shot records.
 
-        Parameters
-        ----------
-        circuit
-            State-preparation circuit shared by every shadow.
-        assignments
-            Integer axis codes of shape ``(num_shots, num_qubits)``.
-        seed
-            Seed of the sampled shadows, or ``None`` for fresh randomness.
+        Args:
+            circuit: State-preparation circuit shared by every shadow.
+            assignments: Integer axis codes of shape ``(num_shots, num_qubits)``.
+            seed: Seed of the sampled shadows, or ``None`` for fresh randomness.
 
-        Returns
-        -------
-        tuple[list[list[int]], list[list[str]]]
+        Returns:
             Per-shot read-out bits and matching per-shot basis labels, aligned
-            in shot order.
+                in shot order.
+
         """
         num_qubits = assignments.shape[1]
 
@@ -415,19 +380,15 @@ def _rotate_into_basis(
 ) -> Circuit:
     r"""Return ``circuit`` extended by the rotations of one measurement basis.
 
-    Parameters
-    ----------
-    circuit
-        State-preparation circuit.
-    axes
-        One integer axis code per qubit: ``0`` for :math:`X`, ``1`` for
-        :math:`Y`, and ``2`` for :math:`Z`.
+    Args:
+        circuit: State-preparation circuit.
+        axes: One integer axis code per qubit: ``0`` for :math:`X`, ``1`` for
+            :math:`Y`, and ``2`` for :math:`Z`.
 
-    Returns
-    -------
-    Circuit
+    Returns:
         A rebuilt circuit that keeps the source global phase with the axis
-        rotations appended.
+            rotations appended.
+
     """
     rotations: list[ValueOperation] = []
     for qubit, axis in zip(circuit.qubits, axes):
@@ -450,25 +411,6 @@ def _snapshot_average(
     readout_fidelities: Sequence[float] | None,
 ) -> float:
     r"""Return the phase-free shot-averaged snapshot estimator.
-
-    Parameters
-    ----------
-    outcomes
-        Per-shot read-out bits, index ``i`` holding qubit ``i``.
-    bases
-        Per-shot measurement axes aligned with ``outcomes``.
-    observable
-        Pauli string whose snapshot average is evaluated; its global phase is
-        not applied.
-    readout_fidelities
-        Per-qubit read-out fidelities, or ``None`` for the standard estimator.
-
-    Returns
-    -------
-    float
-        The average
-        :math:`\frac{1}{N}\sum_s \prod_{i \in \operatorname{supp}(O)}
-        \frac{3}{\lambda_i}\langle b_i | O_i | b_i \rangle`.
     """
     targets: list[tuple[int, str]] = []
     scale = 1.0
@@ -501,7 +443,7 @@ def _validate_shadow_records(
     bases: Sequence[Sequence[str]],
     num_qubits: int,
 ) -> None:
-    r"""Reject shot records that cannot be averaged into a snapshot."""
+    r"""Validate classical-shadow shot records."""
     if isinstance(outcomes, (str, bytes)) or not isinstance(outcomes, Sequence):
         raise TypeError("outcomes must be a sequence of per-shot bit sequences")
     if isinstance(bases, (str, bytes)) or not isinstance(bases, Sequence):
@@ -535,7 +477,7 @@ def _validate_readout_fidelities(
     readout_fidelities: Sequence[float] | None,
     num_qubits: int,
 ) -> None:
-    r"""Reject fidelity lists that cannot calibrate a snapshot."""
+    r"""Validate readout-fidelity values."""
     if readout_fidelities is None:
         return
     if isinstance(readout_fidelities, (str, bytes)) or not isinstance(
@@ -554,7 +496,7 @@ def _validate_readout_fidelities(
 
 
 def _validate_shadow_count(num_total_measurements_shadow: int) -> None:
-    r"""Reject a shadow count that cannot produce one snapshot."""
+    r"""Validate a positive classical-shadow count."""
     if isinstance(num_total_measurements_shadow, bool) or not isinstance(
         num_total_measurements_shadow, int
     ):
@@ -564,8 +506,10 @@ def _validate_shadow_count(num_total_measurements_shadow: int) -> None:
 
 
 def _validate_seed(seed: int | None) -> None:
-    r"""Reject a seed that cannot initialise the random generator."""
+    r"""Validate an optional random seed."""
     if seed is None:
         return
     if isinstance(seed, bool) or not isinstance(seed, int):
         raise TypeError("seed must be an integer or None")
+    if seed < 0:
+        raise ValueError("seed must be non-negative")

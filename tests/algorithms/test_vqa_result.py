@@ -16,8 +16,8 @@ import math
 from dataclasses import FrozenInstanceError, replace
 
 import pytest
-
 from cqlib import Circuit, Parameter
+
 from cqlib_algorithms import QAOAResult, VQAResult, VQEResult
 from cqlib_algorithms.protocols import OptimizerResult, OptimizerStatus
 

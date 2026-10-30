@@ -31,6 +31,11 @@ The mechanism is device-agnostic: the perturbed angles are rebound onto the
 same standard gates, so the scaled circuit is executable as-is. Non-parametric
 gates, directives, and the measurement tail are copied through untouched;
 measurements are stripped first and re-appended last.
+
+References
+----------
+[1] K. Temme, S. Bravyi, and J. M. Gambetta, "Error mitigation for short-depth quantum
+    circuits," Physical Review Letters 119, 180509, 2017. arXiv:1612.02058.
 """
 
 from __future__ import annotations
@@ -60,41 +65,25 @@ def scale_parameters(
     order from a single seeded generator, so the result is a deterministic
     function of ``seed``.
 
-    Parameters
-    ----------
-    circuit
-        Circuit to scale. Measurements are stripped and re-appended.
-    scale_factor
-        Noise scale factor :math:`\lambda \ge 1`. ``1`` injects no noise.
-    base_variance
-        Base parameter variance :math:`\sigma^2 \ge 0` assumed for every
-        gate, i.e. the variance the gate sees at :math:`\lambda = 2`.
-    seed
-        Seed for the Gaussian draw sequence.
+    Args:
+        circuit: Circuit to scale. Measurements are stripped and re-appended.
+        scale_factor: Noise scale factor :math:`\lambda \ge 1`. ``1`` injects no noise.
+        base_variance: Base parameter variance :math:`\sigma^2 \ge 0` assumed for every
+            gate, i.e. the variance the gate sees at :math:`\lambda = 2`.
+        seed: Seed for the Gaussian draw sequence.
 
-    Returns
-    -------
-    Circuit
+    Returns:
         Circuit with rescaled parameters, carrying the source global phase.
 
-    Raises
-    ------
-    ValueError
-        If ``scale_factor < 1`` or ``base_variance < 0``, if the body holds a
-        parametric operation that is not a standard gate (nothing to rebind),
-        or if a parameter is symbolic and therefore has no numeric value to
-        perturb.
+    Raises:
+        ValueError: If ``scale_factor < 1`` or ``base_variance < 0``, if the body holds a
+            parametric operation that is not a standard gate (nothing to rebind),
+            or if a parameter is symbolic and therefore has no numeric value to
+            perturb.
 
-    Notes
-    -----
-    ``base_variance`` and ``seed`` are required keyword-only arguments so both
-    the assumed noise level and the random stream are always explicit.
-
-    References
-    ----------
-    .. [1] K. Temme, S. Bravyi, and J. M. Gambetta,
-       "Error mitigation for short-depth quantum circuits,"
-       Physical Review Letters 119, 180509, 2017. arXiv:1612.02058.
+    Note:
+        ``base_variance`` and ``seed`` are required keyword-only arguments so both
+        the assumed noise level and the random stream are always explicit.
     """
     scale = _normalize_scale_factor(scale_factor)
     if base_variance < 0.0:
@@ -117,11 +106,10 @@ def _perturb_operation(
 ) -> ValueOperation:
     r"""Shift each parameter of ``operation`` by one Gaussian draw.
 
-    Raises
-    ------
-    ValueError
-        If the operation carries parameters but is not a standard gate, or if
-        any of its parameters is a non-constant symbolic expression.
+    Raises:
+        ValueError: If the operation carries parameters but is not a standard gate, or if
+            any of its parameters is a non-constant symbolic expression.
+
     """
     # Operations without parameters pass through untouched; a parametric
     # operation is rebound onto a fresh standard gate built from its own name,
@@ -146,10 +134,9 @@ def _perturb_operation(
 def _parameter_to_float(value: float | Parameter, /) -> float:
     r"""Return the numeric value of a constant gate parameter.
 
-    Raises
-    ------
-    ValueError
-        If ``value`` is a symbolic expression with free symbols.
+    Raises:
+        ValueError: If ``value`` is a symbolic expression with free symbols.
+
     """
     if isinstance(value, Parameter):
         if not value.is_constant():

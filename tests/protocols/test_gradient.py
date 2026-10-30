@@ -18,9 +18,9 @@ import inspect
 from collections.abc import Sequence
 
 import pytest
+from cqlib import Circuit, Parameter
 from cqlib.qis import PauliString
 
-from cqlib import Circuit, Parameter
 from cqlib_algorithms.protocols.estimator import (
     Estimator,
     EstimatorRequest,

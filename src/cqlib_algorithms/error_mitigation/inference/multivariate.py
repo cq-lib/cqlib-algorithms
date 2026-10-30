@@ -34,6 +34,11 @@ The weights depend only on the scale points, so they are computed here once
 and reused for every expectation value. The graded monomial basis and the
 determinant-ratio construction follow Russo and Mari (arXiv:2402.04000),
 Section II B.
+
+References
+----------
+[1] A. Russo and A. Mari, "Quantum error mitigation by layerwise Richardson
+    extrapolation," Physical Review A 110, 062420, 2024. arXiv:2402.04000.
 """
 
 from __future__ import annotations
@@ -56,42 +61,29 @@ def multivariate_richardson_coefficients(
     total degree at most :math:`d` has exactly
     :math:`\binom{L + d}{d}` terms and the sample matrix must be square.
 
-    Parameters
-    ----------
-    scale_points
-        One noise scale vector per measurement, each of length :math:`L`
-        (the number of independently scaled layers). All vectors must have
-        the same length, and their count :math:`N` must equal the size of a
-        graded monomial basis over :math:`L` variables, that is
-        :math:`N = \binom{L + d}{d}` for some degree :math:`d \ge 1`. Every
-        vector contributes one expectation value, which keeps the weight
-        system square.
+    Args:
+        scale_points: One noise scale vector per measurement, each of length :math:`L`
+            (the number of independently scaled layers). All vectors must have
+            the same length, and their count :math:`N` must equal the size of a
+            graded monomial basis over :math:`L` variables, that is
+            :math:`N = \binom{L + d}{d}` for some degree :math:`d \ge 1`. Every
+            vector contributes one expectation value, which keeps the weight
+            system square.
 
-    Returns
-    -------
-    list[float]
+    Returns:
         One weight per scale point, in the order the points were given.
-        Multiplying the measured expectation values by these weights and
-        summing cancels the noise to order :math:`d`.
+            Multiplying the measured expectation values by these weights and
+            summing cancels the noise to order :math:`d`.
 
-    Raises
-    ------
-    ValueError
-        If ``scale_points`` is not a rectangular 2-D collection, if the
-        number of points matches no graded monomial basis, if the sample
-        matrix is singular (degenerate or repeated scale points), or if its
-        determinant is not finite.
+    Raises:
+        ValueError: If ``scale_points`` is not a rectangular 2-D collection, if the
+            number of points matches no graded monomial basis, if the sample
+            matrix is singular (degenerate or repeated scale points), or if its
+            determinant is not finite.
 
-    Notes
-    -----
-    Scaling every layer by the same factor reduces the weights to the
-    univariate Richardson coefficients.
-
-    References
-    ----------
-    .. [1] A. Russo and A. Mari,
-       "Quantum error mitigation by layerwise Richardson extrapolation,"
-       Physical Review A 110, 062420, 2024. arXiv:2402.04000.
+    Note:
+        Scaling every layer by the same factor reduces the weights to the
+        univariate Richardson coefficients.
     """
     points = np.asarray(scale_points, dtype=float)
     if points.ndim != 2:

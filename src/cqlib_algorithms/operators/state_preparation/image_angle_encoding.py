@@ -40,6 +40,15 @@ class ImageAngleEncoding(StatePreparation):
     are linearly mapped from ``value_range`` to the inclusive angle range
     ``[0, pi]``. This direct-product representation uses one qubit and one
     local rotation for each scalar.
+
+    Args:
+        image_shape: Positive ``(height, width)`` image dimensions.
+        channels: Nonempty channel-major, row-major finite scalar data.
+        value_range: Strictly increasing finite input range.
+
+    Raises:
+        TypeError: If shapes or values have invalid types.
+        ValueError: If dimensions, channel lengths, values, or range are invalid.
     """
 
     __slots__ = ("_channels", "_image_shape", "_value_range")

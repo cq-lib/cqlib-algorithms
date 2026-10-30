@@ -19,9 +19,8 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 import numpy as np
-from cqlib.device import ExecutionResult
-
 from cqlib import Circuit, Qubit
+from cqlib.device import ExecutionResult
 
 
 def _validate_seed(seed: int | None) -> None:
@@ -29,6 +28,8 @@ def _validate_seed(seed: int | None) -> None:
         return
     if isinstance(seed, bool) or not isinstance(seed, int):
         raise TypeError("seed must be an integer or None")
+    if seed < 0:
+        raise ValueError("seed must be non-negative")
 
 
 def spawn_seeds(seed: int | None, count: int, /) -> list[int]:
@@ -46,7 +47,16 @@ def spawn_seeds(seed: int | None, count: int, /) -> list[int]:
 
     Returns:
         ``count`` non-negative integer seeds.
+
+    Raises:
+        TypeError: If ``seed`` or ``count`` has the wrong type.
+        ValueError: If ``seed`` or ``count`` is negative.
     """
+    _validate_seed(seed)
+    if isinstance(count, bool) or not isinstance(count, int):
+        raise TypeError("count must be an integer")
+    if count < 0:
+        raise ValueError("count must be non-negative")
     return [int(value) for value in np.random.SeedSequence(seed).generate_state(count)]
 
 
@@ -71,9 +81,10 @@ class SamplerRequest:
         circuit: A valid circuit with no used symbolic parameters.
         qubits: A non-empty, ordered tuple of distinct circuit qubits.
         shots: A positive number of samples. Boolean values are not accepted.
-        seed: Seed of the count draw, or ``None`` to draw fresh randomness. A
-            sampler that draws counts from a random source must derive that
-            source from this value, so that one request is reproducible.
+        seed: Non-negative seed of the count draw, or ``None`` to draw fresh
+            randomness. A sampler that draws counts from a random source must
+            derive that source from this value, so that one request is
+            reproducible.
 
     Raises:
         TypeError: If an argument has the wrong type.
@@ -149,7 +160,14 @@ class Sampler(ABC):
         requests: Sequence[SamplerRequest],
         /,
     ) -> list[ExecutionResult]:
-        """Execute a batch and return terminal results in input order."""
+        """Execute a batch and return terminal results in input order.
+
+        Args:
+            requests: Valid sampling requests in output order.
+
+        Returns:
+            One successful terminal result per request.
+        """
         raise NotImplementedError
 
 

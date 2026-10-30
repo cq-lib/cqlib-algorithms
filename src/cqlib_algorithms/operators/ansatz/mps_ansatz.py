@@ -30,6 +30,13 @@ class MPSAnsatz(BaseAnsatz):
     Each edge ``(q, q + 1)`` uses two independent ``RY`` parameters followed
     by ``CX(q, q + 1)``. The class exposes an MPS-inspired circuit topology;
     it does not import arbitrary classical MPS tensors or bond dimensions.
+
+    Args:
+        num_qubits: Circuit width of at least two.
+
+    Raises:
+        TypeError: If ``num_qubits`` is not an integer.
+        ValueError: If ``num_qubits`` is less than two.
     """
 
     __slots__ = ("_edges", "_num_qubits")

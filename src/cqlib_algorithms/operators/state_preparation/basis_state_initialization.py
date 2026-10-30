@@ -29,6 +29,14 @@ class BasisStateInitialization(StatePreparation):
 
     Bit ``q`` of ``basis_index`` is placed on qubit ``q``. Thus qubit zero is
     the least-significant basis-index bit.
+
+    Args:
+        num_qubits: Positive register width.
+        basis_index: Integer in ``[0, 2**num_qubits)``.
+
+    Raises:
+        TypeError: If an argument is not an integer.
+        ValueError: If the width or index is out of range.
     """
 
     __slots__ = ("_basis_index", "_encoding", "_num_qubits")

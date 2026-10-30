@@ -32,6 +32,14 @@ class PhaseEstimationProblem:
     samples the corresponding eigenphases according to their squared overlap.
     Iterative QPE instead requires preparation of one eigenstate because its
     classically fed-forward rounds execute as separate circuits.
+
+    Args:
+        unitary: Fully bound static unitary whose eigenphase is estimated.
+        state_preparation: Fully bound circuit preparing the system state.
+
+    Raises:
+        TypeError: If an input is not a Circuit.
+        ValueError: If the circuits are invalid, parameterized, or incompatible.
     """
 
     unitary: Circuit

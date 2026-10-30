@@ -41,6 +41,13 @@ class ValueIndependentPermutationSwapMixer(_BaseMixer):
     one-hot feasible subspace, so their product equals the simultaneous
     value-independent evolution on that subspace. No equality is claimed on
     invalid bitstrings outside the encoded subspace.
+
+    Args:
+        num_values: Positive number of direct one-hot values per position.
+
+    Raises:
+        TypeError: If ``num_values`` is not an integer.
+        ValueError: If ``num_values`` is not positive.
     """
 
     __slots__ = ("_num_values",)

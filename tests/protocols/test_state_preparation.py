@@ -18,11 +18,11 @@ import inspect
 from collections.abc import Callable
 
 import pytest
+from cqlib import Circuit, Parameter
 from cqlib.circuit.ansatz import PauliFeatureMap, ZFeatureMap
 from cqlib.circuit.gates import StandardGate
 from cqlib.qis import PauliString
 
-from cqlib import Circuit, Parameter
 from cqlib_algorithms.operators.state_preparation import (
     AngleEncoding,
     BasisEncoding,

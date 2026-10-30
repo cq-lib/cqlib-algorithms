@@ -52,7 +52,18 @@ def _validate_shots(value: object, name: str = "shots") -> int:
 
 @dataclass(frozen=True, slots=True)
 class PhaseEstimationRequest:
-    """One standard quantum phase-estimation request."""
+    """Configure one standard quantum phase-estimation run.
+
+    Args:
+        problem: Unitary and state preparation to evaluate.
+        num_evaluation_qubits: Width ``m`` of the phase register.
+        shots: Positive number of circuit samples.
+        approximation_degree: Small-angle inverse-QFT layers to omit.
+
+    Raises:
+        TypeError: If a field has the wrong type.
+        ValueError: If a numeric setting or problem invariant is invalid.
+    """
 
     problem: PhaseEstimationProblem
     num_evaluation_qubits: int
@@ -87,6 +98,15 @@ class PhaseEstimationResult:
     ``phase_probabilities`` is sparse: it contains the observed integer grid
     points only. Grid point ``y`` represents normalized phase ``y / 2**m``.
     Equal-frequency modes select the smallest grid point.
+
+    Attributes:
+        phase: Selected normalized phase in ``[0, 1)``.
+        grid_point: Selected integer phase-grid point.
+        phase_probabilities: Observed sparse grid distribution.
+        shots: Samples used for the circuit.
+        num_evaluation_qubits: Phase-register width.
+        num_unitary_applications: Controlled-unitary powers in one circuit.
+        num_unitary_queries: Shot-weighted unitary-query count.
     """
 
     phase: float
@@ -170,7 +190,20 @@ class PhaseEstimationResult:
 
 @final
 class PhaseEstimation:
-    """Estimate eigenphases with controlled unitary powers and inverse QFT."""
+    """Estimate eigenphases with controlled unitary powers and inverse QFT.
+
+    If ``U|psi> = exp(2*pi*i*phi)|psi>``, an ``m``-qubit phase register
+    resolves ``phi`` on the grid ``y / 2**m``. Superposed eigenstates produce
+    the corresponding mixture of phase outcomes. Dense controlled matrices
+    impose exponential classical memory cost.
+
+    Args:
+        sampler: Sampling implementation used to execute phase circuits.
+
+    Raises:
+        TypeError: If the sampler or a request has the wrong type.
+        ValueError: If validation or sampler-result checks fail.
+    """
 
     __slots__ = ("_sampler",)
 

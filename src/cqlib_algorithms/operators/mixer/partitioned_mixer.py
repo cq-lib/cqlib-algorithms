@@ -35,7 +35,12 @@ from ._validation import validate_positive_integer
 
 @dataclass(frozen=True, slots=True)
 class MixerApplication:
-    """Place one local mixer on an ordered tuple of global qubits."""
+    """Place one local mixer on an ordered tuple of global qubits.
+
+    Attributes:
+        mixer: Local one-parameter Ansatz.
+        qubits: Unique global qubit indices in local-input order.
+    """
 
     mixer: Ansatz
     qubits: tuple[int, ...]
@@ -67,6 +72,14 @@ class PartitionedMixer(_BaseMixer):
     Applications are executed in input order. Each local mixer must expose
     exactly one parameter and must follow the ``{prefix}_beta`` naming
     convention. Applications may overlap because order is part of the mixer.
+
+    Args:
+        num_qubits: Positive global circuit width.
+        parts: Ordered local mixer applications.
+
+    Raises:
+        TypeError: If the width or applications have invalid types.
+        ValueError: If indices, local widths, or parameter contracts are invalid.
     """
 
     __slots__ = ("_parts",)

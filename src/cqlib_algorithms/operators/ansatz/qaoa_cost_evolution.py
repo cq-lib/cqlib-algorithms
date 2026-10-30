@@ -29,17 +29,25 @@ from cqlib.circuit.ansatz import EvolutionStrategy, PauliEvolutionAnsatz
 from cqlib.qis import Hamiltonian
 
 from ._validation import copy_hermitian_hamiltonian
-from .base_ansatz import BaseAnsatz
+from .base_ansatz import _DelegatingAnsatz
 
 
 @final
-class QAOACostEvolution(BaseAnsatz):
+class QAOACostEvolution(_DelegatingAnsatz):
     """Build one QAOA cost layer ``exp(-i gamma H_C)``.
 
     The Hamiltonian and optional evolution strategy are copied at
     construction, so later changes to caller-owned inputs do not affect this
     component. Core selects exact evolution for commuting terms and otherwise
     uses the configured product-formula strategy.
+
+    Args:
+        cost_operator: Finite Hermitian cost Hamiltonian to snapshot.
+        strategy: Optional Cqlib evolution strategy for noncommuting terms.
+
+    Raises:
+        TypeError: If an argument has the wrong type.
+        ValueError: If the Hamiltonian or strategy is invalid.
     """
 
     __slots__ = ()

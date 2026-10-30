@@ -43,6 +43,19 @@ class RandomLayersAnsatz(BaseAnsatz):
     once at construction and then frozen, so repeated circuit builds and
     parameter evaluations are deterministic for one component instance. A
     layer therefore contains at most twice as many gates as rotation slots.
+
+    Args:
+        num_qubits: Positive circuit width.
+        reps: Positive number of random layers.
+        rotations_per_layer: Rotation slots per layer, or ``None`` for width.
+        entanglement_ratio: Probability of adding an entangler before a slot.
+        rotation_gates: Nonempty supported rotation-gate sequence.
+        entanglement_gate: Supported two-qubit entangling gate.
+        seed: Optional random seed or ``None`` for nondeterministic sampling.
+
+    Raises:
+        TypeError: If an option has the wrong type.
+        ValueError: If counts, probability, or gate choices are invalid.
     """
 
     __slots__ = (

@@ -122,6 +122,15 @@ class QuantumTeleportationRequest:
     ``state_preparation`` must be a fixed one-qubit unitary circuit. The
     request is shallowly frozen, so its mutable Core circuit must not be
     changed during execution; the algorithm revalidates it before use.
+
+    Args:
+        state_preparation: Fixed one-qubit unitary preparing the input state.
+        shots: Positive number of protocol trials.
+        fidelity_tolerance: Numerical success margin below unit fidelity.
+
+    Raises:
+        TypeError: If a field has the wrong type.
+        ValueError: If the circuit, shots, or tolerance are invalid.
     """
 
     state_preparation: Circuit
@@ -149,6 +158,11 @@ class QuantumTeleportationResult:
 
     Every measurement is ``(phase_bit, bit_flip_bit)``. Counts and
     probabilities use the fixed order ``00, 01, 10, 11`` in that bit order.
+
+    Attributes:
+        measurements: Bell outcomes for individual trials.
+        fidelities: Restored-state fidelity for each trial.
+        fidelity_tolerance: Numerical success margin used by result properties.
     """
 
     measurements: tuple[tuple[int, int], ...]
@@ -226,6 +240,10 @@ class QuantumTeleportation:
     Circuit positions are input ``Q=0``, Alice's entangled qubit ``A=1``,
     and Bob's qubit ``B=2``. Each shot performs real Core measurements of Q
     and A, then applies X and Z corrections to B from those classical bits.
+
+    Raises:
+        TypeError: If a request has the wrong type.
+        ValueError: If circuit validation or state reconstruction fails.
     """
 
     def build_premeasurement_circuit(self, state_preparation: Circuit) -> Circuit:

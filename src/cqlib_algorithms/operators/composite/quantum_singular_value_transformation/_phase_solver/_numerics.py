@@ -45,7 +45,8 @@ _GRADIENT_STEP = 1e-7
 _MAX_RESTARTS = 8
 
 
-def _validate_positive_scalar(value: float, *, name: str) -> float:
+def _normalize_positive_scalar(value: float, *, name: str) -> float:
+    r"""Validate and return a positive finite scalar in normalized form."""
     if isinstance(value, bool) or not isinstance(value, float | int):
         raise TypeError(f"{name} must be a real finite scalar")
     scalar = float(value)
@@ -56,12 +57,12 @@ def _validate_positive_scalar(value: float, *, name: str) -> float:
     return scalar
 
 
-def _validate_positive_integer(value: int, *, name: str) -> int:
+def _validate_positive_integer(value: int, *, name: str) -> None:
+    r"""Validate a positive integer."""
     if isinstance(value, bool) or not isinstance(value, int):
         raise TypeError(f"{name} must be an integer")
     if value <= 0:
         raise ValueError(f"{name} must be greater than zero")
-    return value
 
 
 def _chebyshev_nodes(count: int) -> np.ndarray:
@@ -138,17 +139,9 @@ def _loss(
 ) -> float:
     r"""Return the mean-squared fitting error on the Chebyshev-node grid.
 
-    Parameters
-    ----------
-    full_phases
-        The *expanded* QSP phase sequence (length ``degree + 1``).  Each
-        solver is responsible for expanding its free parameter vector into
-        this full sequence before calling ``_loss``.
-    real_only
-        When ``True`` the fitted quantity is ``Re(P(x))`` only (Corollary 10
-        real-polynomial mode); the complex residual collapses to its real part.
-        When ``False`` the full complex ``(0, 0)`` entry is fitted
-        (Corollary 8 complex-polynomial mode).
+    ``full_phases`` is the expanded phase sequence. ``real_only`` fits
+    ``Re(P(x))`` for the real-polynomial mode; otherwise the full complex
+    ``(0, 0)`` response is fitted to ``targets`` at ``nodes``.
     """
     predictions = np.asarray(
         [_qsp_response(float(node), full_phases) for node in nodes],
@@ -234,15 +227,8 @@ def _run_bfgs(
     tolerance -- a stationary but non-converged point, a stalled line search, or
     an exhausted iteration budget -- the solve is restarted from a uniformly
     random point.  After ``_MAX_RESTARTS`` extra attempts a ``RuntimeError`` is
-    raised.
-
-    Parameters
-    ----------
-    loss_fn
-        Callable mapping the free parameter vector to the scalar loss.
-    wrap
-        Callable mapping the converged free parameter vector to the final
-        (full, wrapped) phase sequence.
+    raised. ``loss_fn`` maps the free phase vector to the scalar loss, and
+    ``wrap`` expands the converged vector into the final phase sequence.
     """
     generator = np.random.default_rng()
     for attempt in range(_MAX_RESTARTS + 1):

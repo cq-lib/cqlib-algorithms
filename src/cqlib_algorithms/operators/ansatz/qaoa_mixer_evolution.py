@@ -29,7 +29,7 @@ from cqlib.circuit.ansatz import EvolutionInfo, EvolutionStrategy, PauliEvolutio
 from cqlib.qis import Hamiltonian, Pauli, PauliString
 
 from ._validation import copy_hermitian_hamiltonian, validate_positive_qubit_count
-from .base_ansatz import BaseAnsatz
+from .base_ansatz import _DelegatingAnsatz
 
 
 def _x_mixer(num_qubits: int) -> Hamiltonian:
@@ -42,12 +42,21 @@ def _x_mixer(num_qubits: int) -> Hamiltonian:
 
 
 @final
-class QAOAMixerEvolution(BaseAnsatz):
+class QAOAMixerEvolution(_DelegatingAnsatz):
     """Build one QAOA mixer layer ``exp(-i beta H_M)``.
 
     By default, ``H_M`` is the transverse-field mixer ``sum_i X_i``. A custom
     Hermitian Pauli Hamiltonian may be supplied, provided its width matches
     ``num_qubits``. Caller-owned Hamiltonians and strategies are copied.
+
+    Args:
+        num_qubits: Positive mixer width.
+        mixer_operator: Custom Hermitian Hamiltonian, or ``None`` for transverse X.
+        strategy: Optional Cqlib evolution strategy for noncommuting terms.
+
+    Raises:
+        TypeError: If an argument has the wrong type.
+        ValueError: If width, Hamiltonian, or strategy is invalid.
     """
 
     __slots__ = ()

@@ -76,6 +76,22 @@ class QAOA:
     minimizes -H_C while preserving the original cost evolution. The
     injected optimizer owns the update rule and any gradient implementation.
     Subclasses may override build_circuit to construct related variants.
+
+    Args:
+        estimator: Component used to evaluate the cost expectation.
+        optimizer: Classical optimizer for layer parameters.
+        reps: Positive number of alternating cost/mixer layers.
+        mixer: One-parameter circuit mixer, mutually exclusive with
+            ``mixer_operator``.
+        mixer_operator: Hermitian Hamiltonian mixer, or ``None`` for transverse X.
+        initial_state: Fixed preparation, or ``None`` for uniform superposition.
+        cost_strategy: Optional Cqlib evolution strategy for the cost operator.
+        mixer_strategy: Optional evolution strategy for a Hamiltonian mixer.
+        prefix: Non-empty prefix for QAOA parameters.
+
+    Raises:
+        TypeError: If a dependency or option has the wrong type.
+        ValueError: If widths, repetitions, mixer choices, or parameters are invalid.
     """
 
     __slots__ = (

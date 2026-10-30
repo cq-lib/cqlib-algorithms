@@ -39,6 +39,10 @@ class GradientRequest:
     Revalidation detects invalid mutations but cannot detect every semantically
     different mutation that remains valid.
 
+    Args:
+        estimator_request: Fully specified expectation-value objective.
+        parameter_names: Ordered subset of bound parameters to differentiate.
+
     Raises:
         TypeError: If an argument has the wrong type.
         ValueError: If parameter names are duplicated or unbound, or if the
@@ -82,6 +86,10 @@ class GradientRequest:
 @dataclass(frozen=True, slots=True)
 class GradientResult:
     """Finite gradient values paired with their parameter names.
+
+    Attributes:
+        parameter_names: Differentiated names in result order.
+        values: Derivatives in the same order.
 
     Raises:
         TypeError: If fields are not tuples or contain values of the wrong type.
@@ -135,5 +143,13 @@ class Gradient(ABC):
         requests: Sequence[GradientRequest],
         /,
     ) -> list[GradientResult]:
-        """Differentiate a batch of estimator expectation objectives."""
+        """Differentiate a batch of estimator expectation objectives.
+
+        Args:
+            estimator: Expectation estimator for shifted objectives.
+            requests: Gradient requests in output order.
+
+        Returns:
+            One gradient result per request.
+        """
         raise NotImplementedError

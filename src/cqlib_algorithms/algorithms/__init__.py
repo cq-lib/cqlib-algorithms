@@ -14,6 +14,9 @@
 
 from .amplitude_estimation import (
     AmplitudeEstimationProblem,
+    FasterAmplitudeEstimation,
+    FasterAmplitudeEstimationRequest,
+    FasterAmplitudeEstimationResult,
     IterativeAmplitudeEstimation,
     IterativeAmplitudeEstimationRequest,
     IterativeAmplitudeEstimationResult,
@@ -32,6 +35,13 @@ from .bernstein_vazirani import (
 )
 from .chsh import CHSH, CHSHRequest, CHSHResult
 from .deutsch_jozsa import DeutschJozsa, DeutschJozsaRequest, DeutschJozsaResult
+from .electronic_structure import (
+    ElectronicGroundState,
+    ElectronicGroundStateResult,
+    ElectronicQEOM,
+    ElectronicQEOMResult,
+)
+from .lattice import LatticeGroundState, LatticeGroundStateResult
 from .phase_estimation import (
     HamiltonianPhaseEstimation,
     HamiltonianPhaseEstimationRequest,
@@ -56,6 +66,11 @@ from .superdense_coding import (
     SuperdenseCodingResult,
 )
 from .variational import QAOA, VQE, QAOAResult, VQAResult, VQEResult
+from .vibration import (
+    VibrationalGroundState,
+    VibrationalGroundStateResult,
+    VibrationalMeasurements,
+)
 
 __all__ = [
     "BB84",
@@ -74,6 +89,13 @@ __all__ = [
     "DeutschJozsa",
     "DeutschJozsaRequest",
     "DeutschJozsaResult",
+    "ElectronicGroundState",
+    "ElectronicGroundStateResult",
+    "ElectronicQEOM",
+    "ElectronicQEOMResult",
+    "FasterAmplitudeEstimation",
+    "FasterAmplitudeEstimationRequest",
+    "FasterAmplitudeEstimationResult",
     "HamiltonianPhaseEstimation",
     "HamiltonianPhaseEstimationRequest",
     "HamiltonianPhaseEstimationResult",
@@ -83,6 +105,8 @@ __all__ = [
     "IterativePhaseEstimation",
     "IterativePhaseEstimationRequest",
     "IterativePhaseEstimationResult",
+    "LatticeGroundState",
+    "LatticeGroundStateResult",
     "MaximumLikelihoodAmplitudeEstimation",
     "MaximumLikelihoodAmplitudeEstimationRequest",
     "MaximumLikelihoodAmplitudeEstimationResult",
@@ -105,4 +129,7 @@ __all__ = [
     "SuperdenseCodingResult",
     "VQAResult",
     "VQEResult",
+    "VibrationalGroundState",
+    "VibrationalGroundStateResult",
+    "VibrationalMeasurements",
 ]

@@ -39,7 +39,15 @@ from ._state_synthesis import (
 
 @final
 class AmplitudeEncoding(StatePreparation):
-    r"""Normalize and encode dense data as :math:`\sum_i x_i|i\rangle`."""
+    r"""Normalize and encode dense data as :math:`\sum_i x_i|i\rangle`.
+
+    Args:
+        features: Finite complex vector with power-of-two length of at least two.
+
+    Raises:
+        TypeError: If ``features`` is not a numeric sequence.
+        ValueError: If its length or norm is invalid.
+    """
 
     __slots__ = ("_features",)
 

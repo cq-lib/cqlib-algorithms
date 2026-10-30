@@ -47,6 +47,16 @@ class VQE:
     the circuit returned by ``ansatz.build_circuit(prefix)``. Active symbol
     order comes from ``Circuit.used_symbols``; logical ansatz parameter slots
     that are absent from a degenerate circuit are not invented.
+
+    Args:
+        estimator: Component used to evaluate the objective.
+        ansatz: Parameterized state-preparation component.
+        optimizer: Classical optimizer for active parameters.
+        prefix: Non-empty parameter-name prefix passed to the ansatz.
+
+    Raises:
+        TypeError: If a dependency or input has the wrong type.
+        ValueError: If the prefix, operator, circuit, or initial point is invalid.
     """
 
     __slots__ = ("_ansatz", "_estimator", "_optimizer", "_prefix")

@@ -10,7 +10,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-r"""Long-style phase-matched diffusion operator construction.
+r"""Long phase-matched diffusion operator construction.
 
 This module implements the phase-matched diffusion operator used in the
 Long variant of Grover search.  For a real phase ``phi`` and the uniform
@@ -59,9 +59,8 @@ import math
 from numbers import Real
 
 import numpy as np
-from cqlib.circuit.gates import StandardGate
-
 from cqlib import Circuit
+from cqlib.circuit.gates import StandardGate
 
 
 class GroverLong:

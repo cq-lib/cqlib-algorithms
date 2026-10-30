@@ -38,6 +38,10 @@ class CommutingObservableGrouping:
     This component supplies only the algebraic partition; it must not be used
     to infer local measurement circuits from its groups. Empty input yields
     no groups. Mixed widths and non-Pauli values are rejected.
+
+    Raises:
+        TypeError: If input terms are not PauliString values.
+        ValueError: If term widths differ.
     """
 
     __slots__ = ()

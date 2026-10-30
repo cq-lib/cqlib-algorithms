@@ -49,28 +49,20 @@ def make_cqlib_estimator(
     count cqlib passes in is always ignored in favour of ``shots``. Every call
     inherits the executor's caching and request validation behaviour.
 
-    Parameters
-    ----------
-    executor
-        Executor supplying the expectation-value backend.
-    observable
-        Observable fixed for the lifetime of the returned callback, or ``None``
-        to forward the observable cqlib supplies on each call.
-    shots
-        Shot count attached to every request, or ``None`` for exact
-        evaluation.
-    seed
-        Seed attached to every request, or ``None`` for fresh randomness.
+    Args:
+        executor: Executor supplying the expectation-value backend.
+        observable: Observable fixed for the lifetime of the returned callback, or ``None``
+            to forward the observable cqlib supplies on each call.
+        shots: Shot count attached to every request, or ``None`` for exact
+            evaluation.
+        seed: Seed attached to every request, or ``None`` for fresh randomness.
 
-    Returns
-    -------
-    CqlibEstimator
+    Returns:
         Callback ``(circuit, hamiltonian, shots) -> (mean, variance)``.
 
-    Raises
-    ------
-    ValueError
-        If no observable is bound and cqlib calls the callback without one.
+    Raises:
+        ValueError: If no observable is bound and cqlib calls the callback without one.
+
     """
 
     def callback(
@@ -101,22 +93,16 @@ def pair_to_result(pair: tuple[float, float]) -> EstimatorResult:
     branch, which is what makes technique chaining and variance propagation
     well defined.
 
-    Parameters
-    ----------
-    pair
-        cqlib callback output: mean followed by variance.
+    Args:
+        pair: cqlib callback output: mean followed by variance.
 
-    Returns
-    -------
-    EstimatorResult
+    Returns:
         The same information as a frozen library result value.
 
-    Raises
-    ------
-    TypeError
-        If a member of ``pair`` is not a real number.
-    ValueError
-        If a member of ``pair`` is non-finite or the variance is negative.
+    Raises:
+        TypeError: If a member of ``pair`` is not a real number.
+        ValueError: If a member of ``pair`` is non-finite or the variance is negative.
+
     """
     mean, variance = pair
     return EstimatorResult(expectation=mean, variance=variance)

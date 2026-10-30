@@ -34,9 +34,18 @@ from .nearby_values_mixer import NearbyValuesMixer
 
 @final
 class FullyConnectedMixer(_BaseMixer):
-    """Specialize nearby-values mixing to every nonzero cyclic shift."""
+    """Mix all pairs of one-hot values through cyclic exchange terms.
 
-    __slots__ = ()
+    Args:
+        num_values: Number of one-hot values.
+        strategy: Optional Cqlib evolution strategy.
+
+    Raises:
+        TypeError: If an option has the wrong type.
+        ValueError: If the value count or strategy is invalid.
+    """
+
+    __slots__ = ("_inner",)
 
     def __init__(
         self,

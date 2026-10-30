@@ -47,6 +47,15 @@ class IterativePhaseEstimationRequest:
 
     ``shots_per_iteration`` samples every extracted bit before a majority
     decision. A tie deterministically selects zero.
+
+    Args:
+        problem: Unitary and promised eigenstate preparation.
+        num_iterations: Number of phase bits to extract.
+        shots_per_iteration: Samples used for each bit decision.
+
+    Raises:
+        TypeError: If a field has the wrong type.
+        ValueError: If a count or problem invariant is invalid.
     """
 
     problem: PhaseEstimationProblem
@@ -67,7 +76,17 @@ class IterativePhaseEstimationRequest:
 
 @dataclass(frozen=True, slots=True)
 class IterativePhaseEstimationResult:
-    """Bitwise iterative phase estimate and per-bit one probabilities."""
+    """Store a bitwise phase estimate and per-round statistics.
+
+    Attributes:
+        phase: Estimated normalized phase.
+        bitstring: Extracted phase bits, most significant first.
+        one_probabilities: Observed one probability for each reported bit.
+        shots_per_iteration: Samples used for every bit decision.
+        num_iterations: Number of extracted bits.
+        num_unitary_applications: Controlled powers across one pass.
+        num_unitary_queries: Shot-weighted unitary-query count.
+    """
 
     phase: float
     bitstring: str
@@ -156,6 +175,13 @@ class IterativePhaseEstimation:
     implied by already extracted lower-significance bits, and measures after a
     Hadamard. This static-circuit implementation performs the classical
     feed-forward between Sampler calls.
+
+    Args:
+        sampler: Sampling implementation used in each adaptive round.
+
+    Raises:
+        TypeError: If the sampler or a request has the wrong type.
+        ValueError: If validation or sampler-result checks fail.
     """
 
     __slots__ = ("_sampler",)

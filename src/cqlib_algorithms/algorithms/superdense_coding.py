@@ -71,6 +71,14 @@ class SuperdenseCodingRequest:
     ``X**bit_flip_bit Z**phase_bit`` in operator notation; because circuit
     operations are appended in time order, the phase operation is appended
     before the bit-flip operation.
+
+    Args:
+        message: Two bits ``(bit_flip_bit, phase_bit)``.
+        shots: Positive number of decoding samples.
+
+    Raises:
+        TypeError: If a field has the wrong type.
+        ValueError: If the message or shot count is invalid.
     """
 
     message: tuple[int, int]
@@ -93,6 +101,11 @@ class SuperdenseCodingResult:
     pair is ``(bit_flip_bit, phase_bit)``. A unique empirical mode is exposed
     as ``decoded_message``; a tie returns ``None`` without inventing a
     decoder decision.
+
+    Attributes:
+        sent_message: Encoded two-bit message.
+        decoded_counts: Counts in public order ``00, 01, 10, 11``.
+        shots: Total decoding samples.
     """
 
     sent_message: tuple[int, int]
@@ -165,6 +178,13 @@ class SuperdenseCoding:
     Reference: Bennett and Wiesner, *Communication via one- and two-particle
     operators on Einstein-Podolsky-Rosen states*, Phys. Rev. Lett. 69,
     2881 (1992).
+
+    Args:
+        sampler: Sampling implementation used for Bell-basis decoding.
+
+    Raises:
+        TypeError: If the sampler or a request has the wrong type.
+        ValueError: If message, circuit, or sampler-result validation fails.
     """
 
     __slots__ = ("_sampler",)

@@ -10,7 +10,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Deterministic simplified two-design-style variational ansatz.
+"""Deterministic simplified two-design variational ansatz.
 
 References
 ----------
@@ -35,9 +35,17 @@ class SimplifiedTwoDesignAnsatz(BaseAnsatz):
 
     The circuit starts with one RY on every qubit. Each repetition then
     visits even edges followed by odd edges; every edge contributes CZ and
-    one new RY parameter on each endpoint. This is a deterministic
-    two-design-style architecture, not a claim that finite instances form an
-    exact unitary two-design.
+    one new RY parameter on each endpoint. The deterministic architecture is
+    motivated by simplified two-design constructions; finite instances are
+    not claimed to form exact unitary two-designs.
+
+    Args:
+        num_qubits: Positive circuit width.
+        reps: Nonnegative brickwork repetition count.
+
+    Raises:
+        TypeError: If an argument has the wrong type.
+        ValueError: If width or repetitions are invalid.
     """
 
     __slots__ = ("_num_qubits", "_reps")

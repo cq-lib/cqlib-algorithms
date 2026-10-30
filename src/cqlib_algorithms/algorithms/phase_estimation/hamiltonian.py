@@ -87,6 +87,20 @@ class HamiltonianPhaseEstimationRequest:
     ``bound`` is an upper bound on the absolute eigenvalues. If omitted, the
     sum of absolute Pauli coefficients is used. Non-commuting terms use the
     selected Core product formula and ``trotter_steps``.
+
+    Args:
+        hamiltonian: Finite Hermitian Pauli Hamiltonian.
+        state_preparation: Fully bound state-preparation circuit.
+        num_evaluation_qubits: Width of the QPE phase register.
+        shots: Positive number of circuit samples.
+        bound: Positive spectral bound, or ``None`` to use a coefficient bound.
+        trotter_steps: Positive product-formula step count.
+        trotter_mode: Cqlib product formula, or ``None`` for second order.
+        approximation_degree: Small-angle inverse-QFT layers to omit.
+
+    Raises:
+        TypeError: If a field has the wrong type.
+        ValueError: If dimensions, bounds, or numeric settings are invalid.
     """
 
     hamiltonian: Hamiltonian
@@ -153,7 +167,15 @@ class HamiltonianPhaseEstimationRequest:
 
 @dataclass(frozen=True, slots=True)
 class HamiltonianPhaseEstimationResult:
-    """Hamiltonian eigenvalue distribution recovered from QPE phases."""
+    """Store an eigenvalue estimate recovered from a QPE phase distribution.
+
+    Attributes:
+        eigenvalue: Selected signed eigenvalue estimate.
+        eigenvalue_probabilities: Mapped empirical eigenvalue distribution.
+        bound: Spectral bound used for scaling.
+        scale: Evolution scale ``pi / bound``.
+        phase_result: Underlying standard-QPE result.
+    """
 
     eigenvalue: float
     eigenvalue_probabilities: Mapping[float, float]
@@ -219,6 +241,13 @@ class HamiltonianPhaseEstimation:
     ``1/2``; callers that may occupy an endpoint should provide a strictly
     larger bound. For non-commuting Pauli terms the returned distribution is
     that of the selected product-formula approximation.
+
+    Args:
+        sampler: Sampling implementation used by the internal QPE algorithm.
+
+    Raises:
+        TypeError: If the sampler or a request has the wrong type.
+        ValueError: If Hamiltonian, evolution, or QPE validation fails.
     """
 
     __slots__ = ("_phase_estimation",)

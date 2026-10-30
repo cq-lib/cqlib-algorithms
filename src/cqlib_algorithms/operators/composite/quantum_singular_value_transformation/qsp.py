@@ -60,24 +60,18 @@ class QuantumSignalProcessing:
     This class intentionally covers the single-qubit signal-processing core
     only. It does not build a block-encoding or qubitization iterate.
 
-    Parameters
-    ----------
-    phases
-        Full QSP phase sequence ``(phi_0, ..., phi_d)``.
-    signal_value
-        Real signal value ``x`` in ``[-1, 1]``. Exactly one of
-        ``signal_value`` and ``signal_angle`` must be provided.
-    signal_angle
-        Real angle ``theta`` satisfying ``x = cos(theta)``. Exactly one of
-        ``signal_value`` and ``signal_angle`` must be provided.
+    Args:
+        phases: Full QSP phase sequence ``(phi_0, ..., phi_d)``.
+        signal_value: Real signal value ``x`` in ``[-1, 1]``. Exactly one of
+            ``signal_value`` and ``signal_angle`` must be provided.
+        signal_angle: Real angle ``theta`` satisfying ``x = cos(theta)``. Exactly one of
+            ``signal_value`` and ``signal_angle`` must be provided.
 
-    Raises
-    ------
-    TypeError
-        If the phase sequence or signal arguments have invalid types.
-    ValueError
-        If the phase sequence is empty, if the signal specification is
-        ambiguous, or if ``signal_value`` lies outside ``[-1, 1]``.
+    Raises:
+        TypeError: If the phase sequence or signal arguments have invalid types.
+        ValueError: If the phase sequence is empty, if the signal specification is
+            ambiguous, or if ``signal_value`` lies outside ``[-1, 1]``.
+
     """
 
     __slots__ = ("_phases", "_signal_angle", "_signal_value")
@@ -138,30 +132,20 @@ class QuantumSignalProcessing:
     ) -> np.ndarray:
         r"""Return QSP phases for a real Chebyshev polynomial.
 
-        Parameters
-        ----------
-        coefficients
-            Chebyshev-basis coefficients in ascending order.
-        tolerance
-            Target mean-squared fitting loss on the Chebyshev-node grid.
-        max_iterations
-            Maximum number of internal BFGS iterations.
-        gradient_tolerance
-            Infinity-norm gradient stopping tolerance.
+        Args:
+            coefficients: Chebyshev-basis coefficients in ascending order.
+            tolerance: Target mean-squared fitting loss on the Chebyshev-node grid.
+            max_iterations: Maximum number of internal BFGS iterations.
+            gradient_tolerance: Infinity-norm gradient stopping tolerance.
 
-        Returns
-        -------
-        numpy.ndarray
+        Returns:
             Full symmetric phase sequence.
 
-        Raises
-        ------
-        TypeError
-            If the coefficient sequence or solver controls have invalid types.
-        ValueError
-            If the polynomial violates the standard real-QSP constraints.
-        RuntimeError
-            If the internal solver does not converge.
+        Raises:
+            TypeError: If the coefficient sequence or solver controls have invalid types.
+            ValueError: If the polynomial violates the standard real-QSP constraints.
+            RuntimeError: If the internal solver does not converge.
+
         """
         return solve_qsp_phases(
             coefficients,
@@ -187,26 +171,18 @@ class QuantumSignalProcessing:
         ``P(x) = \sum_k c_k T_k(x)`` and the returned operator realises the
         real polynomial ``P`` on the single-qubit signal register.
 
-        Parameters
-        ----------
-        coefficients
-            Chebyshev-basis coefficients ``(c_0, c_1, ..., c_d)`` in ascending
-            order.
-        signal_value
-            Real signal value ``x`` in ``[-1, 1]``.
-        signal_angle
-            Real signal angle ``theta`` satisfying ``x = cos(theta)``.
-        tolerance
-            Target mean-squared fitting loss on the Chebyshev-node grid.
-        max_iterations
-            Maximum number of internal BFGS iterations.
-        gradient_tolerance
-            Infinity-norm gradient stopping tolerance.
+        Args:
+            coefficients: Chebyshev-basis coefficients ``(c_0, c_1, ..., c_d)`` in ascending
+                order.
+            signal_value: Real signal value ``x`` in ``[-1, 1]``.
+            signal_angle: Real signal angle ``theta`` satisfying ``x = cos(theta)``.
+            tolerance: Target mean-squared fitting loss on the Chebyshev-node grid.
+            max_iterations: Maximum number of internal BFGS iterations.
+            gradient_tolerance: Infinity-norm gradient stopping tolerance.
 
-        Returns
-        -------
-        QuantumSignalProcessing
+        Returns:
             Configured QSP operator with solved phases and bound signal.
+
         """
         return cls(
             cls.solve_phases(
@@ -236,26 +212,18 @@ class QuantumSignalProcessing:
         ``P(x) = a_0 + a_1 x + ... + a_d x^d``.  The coefficients are first
         converted to the Chebyshev basis before solving.
 
-        Parameters
-        ----------
-        coefficients
-            Power-basis coefficients ``(a_0, a_1, ..., a_d)`` in ascending
-            order.
-        signal_value
-            Real signal value ``x`` in ``[-1, 1]``.
-        signal_angle
-            Real signal angle ``theta`` satisfying ``x = cos(theta)``.
-        tolerance
-            Target mean-squared fitting loss on the Chebyshev-node grid.
-        max_iterations
-            Maximum number of internal BFGS iterations.
-        gradient_tolerance
-            Infinity-norm gradient stopping tolerance.
+        Args:
+            coefficients: Power-basis coefficients ``(a_0, a_1, ..., a_d)`` in ascending
+                order.
+            signal_value: Real signal value ``x`` in ``[-1, 1]``.
+            signal_angle: Real signal angle ``theta`` satisfying ``x = cos(theta)``.
+            tolerance: Target mean-squared fitting loss on the Chebyshev-node grid.
+            max_iterations: Maximum number of internal BFGS iterations.
+            gradient_tolerance: Infinity-norm gradient stopping tolerance.
 
-        Returns
-        -------
-        QuantumSignalProcessing
+        Returns:
             Configured QSP operator with solved phases and bound signal.
+
         """
         return cls.from_chebyshev_coefficients(
             polynomial_to_chebyshev(coefficients),
@@ -281,32 +249,22 @@ class QuantumSignalProcessing:
         ``P in C[x]`` (Corollary 8).  All ``degree + 1`` phases are free
         real parameters; no symmetry constraint is imposed.
 
-        Parameters
-        ----------
-        coefficients
-            Chebyshev-basis coefficients ``(c_0, c_1, ..., c_d)`` in ascending
-            order.  Coefficients may be complex.
-        tolerance
-            Target mean-squared fitting loss on the Chebyshev-node grid.
-        max_iterations
-            Maximum number of internal BFGS iterations.
-        gradient_tolerance
-            Infinity-norm gradient stopping tolerance.
+        Args:
+            coefficients: Chebyshev-basis coefficients ``(c_0, c_1, ..., c_d)`` in ascending
+                order.  Coefficients may be complex.
+            tolerance: Target mean-squared fitting loss on the Chebyshev-node grid.
+            max_iterations: Maximum number of internal BFGS iterations.
+            gradient_tolerance: Infinity-norm gradient stopping tolerance.
 
-        Returns
-        -------
-        numpy.ndarray
+        Returns:
             Full (non-symmetric) phase sequence of length ``degree + 1``.
 
-        Raises
-        ------
-        TypeError
-            If the coefficient sequence or solver controls have invalid types.
-        ValueError
-            If the polynomial violates the QSP parity or boundedness
-            constraints.
-        RuntimeError
-            If the internal solver does not converge.
+        Raises:
+            TypeError: If the coefficient sequence or solver controls have invalid types.
+            ValueError: If the polynomial violates the QSP parity or boundedness
+                constraints.
+            RuntimeError: If the internal solver does not converge.
+
         """
         return solve_complex_qsp_phases(
             coefficients,
@@ -333,26 +291,18 @@ class QuantumSignalProcessing:
         full complex polynomial ``P`` on the single-qubit signal register
         (Corollary 8).
 
-        Parameters
-        ----------
-        coefficients
-            Chebyshev-basis coefficients ``(c_0, c_1, ..., c_d)`` in ascending
-            order.  May be complex.
-        signal_value
-            Real signal value ``x`` in ``[-1, 1]``.
-        signal_angle
-            Real angle ``theta`` satisfying ``x = cos(theta)``.
-        tolerance
-            Target mean-squared fitting loss on the Chebyshev-node grid.
-        max_iterations
-            Maximum number of internal BFGS iterations.
-        gradient_tolerance
-            Infinity-norm gradient stopping tolerance.
+        Args:
+            coefficients: Chebyshev-basis coefficients ``(c_0, c_1, ..., c_d)`` in ascending
+                order.  May be complex.
+            signal_value: Real signal value ``x`` in ``[-1, 1]``.
+            signal_angle: Real angle ``theta`` satisfying ``x = cos(theta)``.
+            tolerance: Target mean-squared fitting loss on the Chebyshev-node grid.
+            max_iterations: Maximum number of internal BFGS iterations.
+            gradient_tolerance: Infinity-norm gradient stopping tolerance.
 
-        Returns
-        -------
-        QuantumSignalProcessing
+        Returns:
             Configured QSP operator with solved phases and bound signal.
+
         """
         return cls(
             cls.solve_complex_phases(
@@ -382,26 +332,18 @@ class QuantumSignalProcessing:
         ``P(x) = a_0 + a_1 x + ... + a_d x^d``.  The coefficients are first
         converted to the Chebyshev basis before solving.
 
-        Parameters
-        ----------
-        coefficients
-            Power-basis coefficients ``(a_0, a_1, ..., a_d)`` in ascending
-            order.  May be complex.
-        signal_value
-            Real signal value ``x`` in ``[-1, 1]``.
-        signal_angle
-            Real angle ``theta`` satisfying ``x = cos(theta)``.
-        tolerance
-            Target mean-squared fitting loss on the Chebyshev-node grid.
-        max_iterations
-            Maximum number of internal BFGS iterations.
-        gradient_tolerance
-            Infinity-norm gradient stopping tolerance.
+        Args:
+            coefficients: Power-basis coefficients ``(a_0, a_1, ..., a_d)`` in ascending
+                order.  May be complex.
+            signal_value: Real signal value ``x`` in ``[-1, 1]``.
+            signal_angle: Real angle ``theta`` satisfying ``x = cos(theta)``.
+            tolerance: Target mean-squared fitting loss on the Chebyshev-node grid.
+            max_iterations: Maximum number of internal BFGS iterations.
+            gradient_tolerance: Infinity-norm gradient stopping tolerance.
 
-        Returns
-        -------
-        QuantumSignalProcessing
+        Returns:
             Configured QSP operator with solved phases and bound signal.
+
         """
         return cls.from_complex_chebyshev_coefficients(
             polynomial_to_chebyshev(coefficients),
@@ -414,6 +356,7 @@ class QuantumSignalProcessing:
 
 
 def _normalize_phases(phases: Sequence[float] | np.ndarray) -> tuple[float, ...]:
+    r"""Validate and return a QSP phase sequence in normalized form."""
     if isinstance(phases, np.ndarray):
         flattened = phases.reshape(-1).tolist()
     elif isinstance(phases, Sequence) and not isinstance(phases, (str, bytes)):

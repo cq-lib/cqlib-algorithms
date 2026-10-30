@@ -21,8 +21,8 @@ import numpy as np
 import numpy.typing as npt
 
 
-def validate_atol(value: float) -> float:
-    """Return a validated non-negative absolute tolerance."""
+def normalize_atol(value: float) -> float:
+    """Validate and return an absolute tolerance in normalized form."""
 
     if isinstance(value, bool) or not isinstance(value, Real):
         raise TypeError("atol must be a real finite scalar")

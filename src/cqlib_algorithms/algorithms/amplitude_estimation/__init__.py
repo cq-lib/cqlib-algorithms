@@ -12,6 +12,11 @@
 
 """Amplitude-estimation algorithms and their shared problem definition."""
 
+from .faster import (
+    FasterAmplitudeEstimation,
+    FasterAmplitudeEstimationRequest,
+    FasterAmplitudeEstimationResult,
+)
 from .iterative import (
     IterativeAmplitudeEstimation,
     IterativeAmplitudeEstimationRequest,
@@ -31,6 +36,9 @@ from .standard import (
 
 __all__ = [
     "AmplitudeEstimationProblem",
+    "FasterAmplitudeEstimation",
+    "FasterAmplitudeEstimationRequest",
+    "FasterAmplitudeEstimationResult",
     "IterativeAmplitudeEstimation",
     "IterativeAmplitudeEstimationRequest",
     "IterativeAmplitudeEstimationResult",

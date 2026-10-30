@@ -33,9 +33,18 @@ from .nearby_values_mixer import NearbyValuesMixer
 
 @final
 class RingMixer(_BaseMixer):
-    """Specialize :class:`NearbyValuesMixer` to cyclic radius one."""
+    """Mix nearest neighbors on a cyclic one-hot value ring.
 
-    __slots__ = ()
+    Args:
+        num_values: Number of one-hot values.
+        strategy: Optional Cqlib evolution strategy.
+
+    Raises:
+        TypeError: If an option has the wrong type.
+        ValueError: If the value count or strategy is invalid.
+    """
+
+    __slots__ = ("_inner",)
 
     def __init__(
         self,

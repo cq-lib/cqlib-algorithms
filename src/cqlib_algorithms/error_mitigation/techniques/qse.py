@@ -50,13 +50,12 @@ the technique can be chained on top of another one.
 
 References
 ----------
-.. [1] J. R. McClean, M. E. Kimchi-Schwartz, J. Carter, and W. A. de Jong,
-   "Hybrid quantum-classical hierarchy for mitigation of decoherence and
-   determination of excited states," Physical Review A 95, 042308, 2017.
-   arXiv:1603.05681.
-.. [2] J. R. McClean, Z. Jiang, N. C. Rubin, R. Babbush, and H. Neven,
-   "Decoding quantum errors with subspace expansions," Nature
-   Communications 11, 636, 2020. arXiv:1903.05786.
+[1] J. R. McClean, M. E. Kimchi-Schwartz, J. Carter, and W. A. de Jong, "Hybrid
+    quantum-classical hierarchy for mitigation of decoherence and determination of
+    excited states," Physical Review A 95, 042308, 2017. arXiv:1603.05681.
+[2] J. R. McClean, Z. Jiang, N. C. Rubin, R. Babbush, and H. Neven, "Decoding quantum
+    errors with subspace expansions," Nature Communications 11, 636, 2020.
+    arXiv:1903.05786.
 """
 
 from __future__ import annotations
@@ -100,36 +99,26 @@ def generalized_eigenvalue(
     symmetric shift is applied first whenever its smallest eigenvalue is not
     positive, and a warning is emitted.
 
-    Parameters
-    ----------
-    hamiltonian
-        Square Hermitian matrix :math:`H` of shape ``(d, d)``.
-    overlap
-        Square Hermitian matrix :math:`S` of shape ``(d, d)``, expected to be
-        positive definite.
-    regularization
-        Positive shift that raises a non-positive :math:`S` above zero before
-        whitening. Ignored when :math:`S` is already positive definite.
+    Args:
+        hamiltonian: Square Hermitian matrix :math:`H` of shape ``(d, d)``.
+        overlap: Square Hermitian matrix :math:`S` of shape ``(d, d)``, expected to be
+            positive definite.
+        regularization: Positive shift that raises a non-positive :math:`S` above zero before
+            whitening. Ignored when :math:`S` is already positive definite.
 
-    Returns
-    -------
-    float
+    Returns:
         The smallest generalized eigenvalue, the corrected energy.
 
-    Raises
-    ------
-    TypeError
-        If ``hamiltonian`` or ``overlap`` is not a NumPy array, or if
-        ``regularization`` is not a real number.
-    ValueError
-        If a matrix is not square, the two shapes differ, or
-        ``regularization`` is not finite or non-positive.
+    Raises:
+        TypeError: If ``hamiltonian`` or ``overlap`` is not a NumPy array, or if
+            ``regularization`` is not a real number.
+        ValueError: If a matrix is not square, the two shapes differ, or
+            ``regularization`` is not finite or non-positive.
 
-    Warns
-    -----
-    ConvergenceWarning
-        If the smallest eigenvalue of ``overlap`` is not positive, in which
-        case a symmetric shift of ``regularization`` is applied.
+    Warns:
+        ConvergenceWarning: If the smallest eigenvalue of ``overlap`` is not positive, in which
+            case a symmetric shift of ``regularization`` is applied.
+
     """
     matrix_h = _as_square_matrix(hamiltonian, "hamiltonian")
     matrix_s = _as_square_matrix(overlap, "overlap")
@@ -170,49 +159,35 @@ def execute_with_qse(
     :math:`(v^\dagger O_S v)/(v^\dagger S v)` of ``observable`` in the ground
     vector of the generalized problem built from ``code_hamiltonian``.
 
-    Parameters
-    ----------
-    circuit
-        Fully bound circuit preparing the noisy state :math:`|\psi\rangle`.
-        Any trailing measurements are stripped before evaluation.
-    executor
-        Execution backend supplying the estimator and sampler surfaces.
-    observable
-        Observable to estimate, a Hermitian Hamiltonian or Pauli string acting
-        on exactly the circuit's qubits.
-    check_operators
-        Non-empty Pauli strings whose subset products span the subspace. They
-        must act on exactly the circuit's qubits.
-    code_hamiltonian
-        Hermitian Hamiltonian defining the projected energy functional, acting
-        on exactly the circuit's qubits.
-    shots
-        Shot count for the sampled overlap matrix, or ``None`` to evaluate the
-        overlaps exactly on the estimator surface.
-    seed
-        Seed of the sampled overlap matrix, or ``None`` for fresh randomness.
-        Every Pauli overlap in one run derives its draw from this value, so the
-        run is reproducible.
+    Args:
+        circuit: Fully bound circuit preparing the noisy state :math:`|\psi\rangle`.
+            Any trailing measurements are stripped before evaluation.
+        executor: Execution backend supplying the estimator and sampler surfaces.
+        observable: Observable to estimate, a Hermitian Hamiltonian or Pauli string acting
+            on exactly the circuit's qubits.
+        check_operators: Non-empty Pauli strings whose subset products span the subspace. They
+            must act on exactly the circuit's qubits.
+        code_hamiltonian: Hermitian Hamiltonian defining the projected energy functional, acting
+            on exactly the circuit's qubits.
+        shots: Shot count for the sampled overlap matrix, or ``None`` to evaluate the
+            overlaps exactly on the estimator surface.
+        seed: Seed of the sampled overlap matrix, or ``None`` for fresh randomness.
+            Every Pauli overlap in one run derives its draw from this value, so the
+            run is reproducible.
 
-    Returns
-    -------
-    float
+    Returns:
         The mitigated expectation value of ``observable``.
 
-    Raises
-    ------
-    TypeError
-        If an argument has the wrong type.
-    ValueError
-        If ``check_operators`` is empty, if ``code_hamiltonian`` or a check
-        operator acts on a different width than the circuit, or if ``shots`` is
-        not positive.
+    Raises:
+        TypeError: If an argument has the wrong type.
+        ValueError: If ``check_operators`` is empty, if ``code_hamiltonian`` or a check
+            operator acts on a different width than the circuit, or if ``shots`` is
+            not positive.
 
-    Warns
-    -----
-    ConvergenceWarning
-        If the sampled overlap matrix is not positive definite, in which case
-        it is shifted before the generalized problem is solved.
+    Warns:
+        ConvergenceWarning: If the sampled overlap matrix is not positive definite, in which case
+            it is shifted before the generalized problem is solved.
+
     """
     wrapped = qse_executor(
         executor,
@@ -242,34 +217,24 @@ def qse_executor(
     defined by ``check_operators`` and ``code_hamiltonian``; its sampling
     surface is the one supplying the overlap measurements.
 
-    Parameters
-    ----------
-    executor
-        Execution backend to wrap.
-    check_operators
-        Non-empty Pauli strings whose subset products span the subspace.
-    code_hamiltonian
-        Hermitian Hamiltonian defining the projected energy functional.
-    shots
-        Shot count for the sampled overlap matrix, or ``None`` to evaluate the
-        overlaps exactly on the estimator surface.
-    seed
-        Seed of the sampled overlap matrix, or ``None`` to defer to the
-        request's own seed.
+    Args:
+        executor: Execution backend to wrap.
+        check_operators: Non-empty Pauli strings whose subset products span the subspace.
+        code_hamiltonian: Hermitian Hamiltonian defining the projected energy functional.
+        shots: Shot count for the sampled overlap matrix, or ``None`` to evaluate the
+            overlaps exactly on the estimator surface.
+        seed: Seed of the sampled overlap matrix, or ``None`` to defer to the
+            request's own seed.
 
-    Returns
-    -------
-    QemExecutor
+    Returns:
         Executor whose expectation surface applies subspace expansion.
 
-    Raises
-    ------
-    TypeError
-        If ``check_operators`` is not a sequence of Pauli strings, if
-        ``code_hamiltonian`` is not a Hamiltonian, or if ``shots`` or ``seed``
-        has the wrong type.
-    ValueError
-        If ``check_operators`` is empty or ``shots`` is not positive.
+    Raises:
+        TypeError: If ``check_operators`` is not a sequence of Pauli strings, if
+            ``code_hamiltonian`` is not a Hamiltonian, or if ``shots`` or ``seed``
+            has the wrong type.
+        ValueError: If ``check_operators`` is empty or ``shots`` is not positive.
+
     """
     _validate_check_operators(check_operators)
     _validate_code_hamiltonian(code_hamiltonian)
@@ -294,20 +259,15 @@ def qse_executor(
 class _QseEstimator(Estimator):
     r"""Expectation surface that projects onto a check-operator subspace.
 
-    Parameters
-    ----------
-    executor
-        Execution backend supplying both measurement surfaces.
-    check_operators
-        Non-empty Pauli strings defining the subspace basis.
-    code_hamiltonian
-        Hermitian Hamiltonian defining the projected energy functional.
-    shots
-        Shot count for the sampled overlap matrix, or ``None`` for an exact
-        overlap on the estimator surface.
-    seed
-        Seed of the sampled overlap matrix, or ``None`` to defer to the
-        request's own seed.
+    Args:
+        executor: Execution backend supplying both measurement surfaces.
+        check_operators: Non-empty Pauli strings defining the subspace basis.
+        code_hamiltonian: Hermitian Hamiltonian defining the projected energy functional.
+        shots: Shot count for the sampled overlap matrix, or ``None`` for an exact
+            overlap on the estimator surface.
+        seed: Seed of the sampled overlap matrix, or ``None`` to defer to the
+            request's own seed.
+
     """
 
     __slots__ = (
@@ -508,12 +468,11 @@ def _smallest_generalized_eigenpair(
     whitening :math:`S = L L^\dagger` before :meth:`numpy.linalg.eigh` extracts
     the lowest eigenpair of :math:`L^{-1} H L^{-\dagger}`.
 
-    Returns
-    -------
-    tuple[float, numpy.ndarray, numpy.ndarray]
+    Returns:
         The smallest eigenvalue, the matching eigenvector in the original
-        coordinates, and the overlap matrix actually used, which is the shifted
-        one when regularization was triggered.
+            coordinates, and the overlap matrix actually used, which is the shifted
+            one when regularization was triggered.
+
     """
     symmetric_h = 0.5 * (hamiltonian + hamiltonian.conj().T)
     symmetric_s = 0.5 * (overlap + overlap.conj().T)
@@ -606,19 +565,15 @@ def _rotate_into_basis(circuit: Circuit, pauli: PauliString) -> Circuit:
 def _pauli_seed(seed: int | None, pauli: PauliString) -> int | None:
     r"""Return the child seed one sampled Pauli draws from.
 
-    Parameters
-    ----------
-    seed
-        Run seed, or ``None`` for fresh randomness.
-    pauli
-        Pauli whose expectation is sampled.
+    Args:
+        seed: Run seed, or ``None`` for fresh randomness.
+        pauli: Pauli whose expectation is sampled.
 
-    Returns
-    -------
-    int | None
+    Returns:
         A seed that depends only on ``seed`` and ``pauli``, so distinct
-        overlaps draw independently while one run seed still reproduces the
-        whole overlap matrix; ``None`` when ``seed`` is ``None``.
+            overlaps draw independently while one run seed still reproduces the
+            whole overlap matrix; ``None`` when ``seed`` is ``None``.
+
     """
     if seed is None:
         return None
@@ -643,7 +598,7 @@ def _as_square_matrix(value: np.ndarray, name: str) -> np.ndarray:
 
 
 def _validate_regularization(regularization: float) -> None:
-    r"""Reject a regularization that cannot shift a matrix above zero."""
+    r"""Validate the subspace regularization."""
     if isinstance(regularization, bool) or not isinstance(
         regularization, (int, float, np.floating)
     ):
@@ -653,7 +608,7 @@ def _validate_regularization(regularization: float) -> None:
 
 
 def _validate_check_operators(check_operators: Sequence[PauliString]) -> None:
-    r"""Reject an empty or non-Pauli check-operator sequence."""
+    r"""Validate the check-operator sequence."""
     if isinstance(check_operators, (str, bytes)) or not isinstance(
         check_operators, Sequence
     ):
@@ -666,13 +621,13 @@ def _validate_check_operators(check_operators: Sequence[PauliString]) -> None:
 
 
 def _validate_code_hamiltonian(code_hamiltonian: Hamiltonian) -> None:
-    r"""Reject a code Hamiltonian of the wrong type."""
+    r"""Validate a code Hamiltonian."""
     if not isinstance(code_hamiltonian, Hamiltonian):
         raise TypeError("code_hamiltonian must be a cqlib.qis.Hamiltonian")
 
 
 def _validate_shots(shots: int | None) -> None:
-    r"""Reject a shot count that cannot sample one circuit."""
+    r"""Validate a positive shot count."""
     if shots is None:
         return
     if isinstance(shots, bool) or not isinstance(shots, int):
@@ -682,11 +637,13 @@ def _validate_shots(shots: int | None) -> None:
 
 
 def _validate_seed(seed: int | None) -> None:
-    r"""Reject a seed that cannot initialise a random generator."""
+    r"""Validate an optional random seed."""
     if seed is None:
         return
     if isinstance(seed, bool) or not isinstance(seed, int):
         raise TypeError("seed must be an integer or None")
+    if seed < 0:
+        raise ValueError("seed must be non-negative")
 
 
 def _validate_widths(
@@ -695,7 +652,7 @@ def _validate_widths(
     code_hamiltonian: Hamiltonian,
     check_operators: tuple[PauliString, ...],
 ) -> None:
-    r"""Reject operators whose width does not match the circuit."""
+    r"""Validate circuit and operator widths."""
     num_qubits = circuit.num_qubits
     if code_hamiltonian.num_qubits != num_qubits:
         raise ValueError(

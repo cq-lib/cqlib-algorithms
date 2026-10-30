@@ -39,6 +39,14 @@ class ControlledBitFlipMixer(_BaseMixer):
     the target is local qubit ``num_controls``. ``None`` selects the all-zero
     state used by the NOR predicate; an explicit integer selects an extension
     to any computational control state.
+
+    Args:
+        num_controls: Positive number of control qubits.
+        control_state: Selected little-endian control value, or all-zero by default.
+
+    Raises:
+        TypeError: If an argument has the wrong type.
+        ValueError: If the width or control state is invalid.
     """
 
     __slots__ = ("_control_state", "_num_controls")

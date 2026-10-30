@@ -19,15 +19,25 @@ from typing import final
 from cqlib.circuit.ansatz import EntanglementTopology
 from cqlib.circuit.gates import StandardGate
 
-from .base_ansatz import BaseAnsatz
+from .base_ansatz import _DelegatingAnsatz
 from .two_local_ansatz import TwoLocalAnsatz
 
 
 @final
-class EfficientSU2Ansatz(BaseAnsatz):
+class EfficientSU2Ansatz(_DelegatingAnsatz):
     """Two-local ansatz specialized to RY/RZ rotations and CX entanglers.
 
     Parameters are ordered by rotation layer, qubit, then RY followed by RZ.
+
+    Args:
+        num_qubits: Positive circuit width.
+        reps: Nonnegative number of entangling repetitions.
+        entanglement: Core topology, or ``None`` for the default.
+        skip_final_rotation_layer: Whether to omit the final SU(2) layer.
+
+    Raises:
+        TypeError: If an option has the wrong type.
+        ValueError: If width, repetitions, or topology are invalid.
     """
 
     __slots__ = ()

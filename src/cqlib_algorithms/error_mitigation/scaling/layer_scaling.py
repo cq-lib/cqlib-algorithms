@@ -25,6 +25,11 @@ layers that share a scale factor form one block, and each block is folded the
 same way :func:`~cqlib_algorithms.error_mitigation.scaling.fold_global` folds a
 whole circuit, so a block realises both the integer and the fractional part of
 its factor.
+
+References
+----------
+[1] A. Russo and A. Mari, "Quantum error mitigation by layerwise Richardson
+    extrapolation," Physical Review A 110, 062420, 2024. arXiv:2402.04000.
 """
 
 from __future__ import annotations
@@ -61,32 +66,19 @@ def fold_layers(
     :math:`\lambda` to within :math:`2k / G_b`. Layers absent from ``scales``
     are copied through unfolded.
 
-    Parameters
-    ----------
-    circuit
-        Circuit to scale. Measurements are stripped and re-appended.
-    scales
-        Map from operation index to that layer's scale factor. Indices index
-        the gate body: ``circuit.operations`` with measurements removed, as
-        inspected before any folding.
+    Args:
+        circuit: Circuit to scale. Measurements are stripped and re-appended.
+        scales: Map from operation index to that layer's scale factor. Indices index
+            the gate body: ``circuit.operations`` with measurements removed, as
+            inspected before any folding.
 
-    Returns
-    -------
-    Circuit
+    Returns:
         Folded circuit carrying the source global phase.
 
-    Raises
-    ------
-    ValueError
-        If any scale factor is below ``1``, any index is negative or beyond
-        the gate-body operation list, or the body contains an operation that
-        cannot be inverted.
-
-    References
-    ----------
-    .. [1] A. Russo and A. Mari,
-       "Quantum error mitigation by layerwise Richardson extrapolation,"
-       Physical Review A 110, 062420, 2024. arXiv:2402.04000.
+    Raises:
+        ValueError: If any scale factor is below ``1``, any index is negative or beyond
+            the gate-body operation list, or the body contains an operation that
+            cannot be inverted.
     """
     # Measurements are stripped before the body is grouped, so the indices and
     # the body they address are the same length; indexing the raw operation
@@ -108,7 +100,7 @@ def _validate_layer_indices(
     num_operations: int,
     /,
 ) -> None:
-    r"""Reject a layer index outside the ``num_operations`` gate body."""
+    r"""Validate circuit-layer indices."""
     for index in scales:
         if index < 0 or index >= num_operations:
             raise ValueError(

@@ -43,21 +43,16 @@ def allclose_up_to_global_phase(
     the two operators are then compared entrywise against
     :math:`\varphi`-rotated ``second``.
 
-    Parameters
-    ----------
-    first
-        Operator to compare, as a complex array.
-    second
-        Operator to compare against, as a complex array of the same shape.
-    atol
-        Absolute tolerance of the entrywise comparison.
+    Args:
+        first: Operator to compare, as a complex array.
+        second: Operator to compare against, as a complex array of the same shape.
+        atol: Absolute tolerance of the entrywise comparison.
 
-    Returns
-    -------
-    bool
+    Returns:
         ``True`` when a global phase exists that makes the two operators
-        equal to within ``atol``, ``False`` otherwise, including when the
-        shapes differ.
+            equal to within ``atol``, ``False`` otherwise, including when the
+            shapes differ.
+
     """
     left = np.asarray(first, dtype=np.complex128)
     right = np.asarray(second, dtype=np.complex128)

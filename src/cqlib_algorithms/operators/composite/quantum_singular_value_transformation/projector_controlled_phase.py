@@ -37,21 +37,15 @@ class ProjectorControlledPhase:
     so the phase rotation multiplies the all-zero ancilla subspace by
     ``exp(i phase)`` and the orthogonal complement by ``exp(-i phase)``.
 
-    Parameters
-    ----------
-    num_system_qubits
-        Number of system qubits.
-    num_ancilla_qubits
-        Number of ancilla qubits defining the standard projector.
-    phase
-        Real phase angle in radians.
+    Args:
+        num_system_qubits: Number of system qubits.
+        num_ancilla_qubits: Number of ancilla qubits defining the standard projector.
+        phase: Real phase angle in radians.
 
-    Raises
-    ------
-    TypeError
-        If any argument has an invalid type.
-    ValueError
-        If any qubit count is negative or the total width is zero.
+    Raises:
+        TypeError: If any argument has an invalid type.
+        ValueError: If any qubit count is negative or the total width is zero.
+
     """
 
     __slots__ = ("_num_ancilla_qubits", "_num_system_qubits", "_phase")
@@ -67,17 +61,19 @@ class ProjectorControlledPhase:
         *,
         phase: float,
     ) -> None:
-        self._num_system_qubits = _validate_non_negative_integer(
+        _validate_non_negative_integer(
             num_system_qubits,
             name="num_system_qubits",
         )
-        self._num_ancilla_qubits = _validate_non_negative_integer(
+        _validate_non_negative_integer(
             num_ancilla_qubits,
             name="num_ancilla_qubits",
         )
-        if self._num_system_qubits + self._num_ancilla_qubits <= 0:
+        if num_system_qubits + num_ancilla_qubits <= 0:
             raise ValueError("total qubit count must be greater than zero")
-        self._phase = _validate_real_phase(phase)
+        self._num_system_qubits = num_system_qubits
+        self._num_ancilla_qubits = num_ancilla_qubits
+        self._phase = _normalize_real_phase(phase)
 
     @property
     def phase(self) -> float:
@@ -153,15 +149,16 @@ class ProjectorControlledPhase:
         return circuit
 
 
-def _validate_non_negative_integer(value: int, *, name: str) -> int:
+def _validate_non_negative_integer(value: int, *, name: str) -> None:
+    r"""Validate a non-negative integer."""
     if isinstance(value, bool) or not isinstance(value, int):
         raise TypeError(f"{name} must be an integer")
     if value < 0:
         raise ValueError(f"{name} must be greater than or equal to zero")
-    return value
 
 
-def _validate_real_phase(value: float) -> float:
+def _normalize_real_phase(value: float) -> float:
+    r"""Validate and return a finite real phase in normalized form."""
     if isinstance(value, bool) or not isinstance(value, Real):
         raise TypeError("phase must be a real finite scalar")
     scalar = float(value)

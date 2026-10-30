@@ -28,12 +28,12 @@ from numbers import Real
 from types import MappingProxyType
 from typing import final
 
+from cqlib import Circuit
 from cqlib.circuit import CircuitError
 from cqlib.device import ExecutionResult
 
-from cqlib import Circuit
-
 from ...protocols.sampler import Sampler, SamplerRequest
+from ._circuit_validation import validate_static_unitary
 
 
 def _immutable_bindings(bindings: Mapping[str, float]) -> Mapping[str, float]:
@@ -79,31 +79,6 @@ def _validate_exact_bindings(
     )
 
 
-def _validate_static_unitary(circuit: Circuit, *, label: str) -> None:
-    """Reject dynamic, non-unitary, delayed, and non-decomposable circuits."""
-    if circuit.classical_vars or circuit.classical_values:
-        raise ValueError(f"{label} must be a static unitary circuit")
-
-    try:
-        expanded = circuit.decompose()
-    except CircuitError as exc:
-        raise ValueError(
-            f"{label} must be a decomposable static unitary circuit"
-        ) from exc
-
-    for operation in expanded.operations:
-        if (
-            operation.is_classical_data
-            or operation.is_classical_control
-            or operation.is_delay
-            or (operation.is_directive and operation.name != "barrier")
-        ):
-            raise ValueError(
-                f"{label} must contain only static unitary operations "
-                "without measurement, reset, delay, or classical control"
-            )
-
-
 def _bound_circuit_and_inverse(
     circuit: Circuit,
     bindings: Mapping[str, float],
@@ -111,10 +86,10 @@ def _bound_circuit_and_inverse(
     label: str,
 ) -> tuple[Circuit, Circuit]:
     """Bind, validate, and invert a circuit without mutating the source."""
-    _validate_static_unitary(circuit, label=label)
+    validate_static_unitary(circuit, label=label)
     bound = circuit.assign_parameters(dict(bindings))
     bound.validate()
-    _validate_static_unitary(bound, label=label)
+    validate_static_unitary(bound, label=label)
     try:
         inverse = bound.inverse()
     except CircuitError as exc:
@@ -225,6 +200,10 @@ class CircuitFidelityResult:
     ``fidelity`` is the estimated all-zero probability and lies in ``[0, 1]``.
     ``variance`` is the statistical variance of that probability estimator,
     not a quantum-state variance. It is ``None`` for a one-shot estimate.
+
+    Attributes:
+        fidelity: Estimated squared state overlap in ``[0, 1]``.
+        variance: Statistical variance of the estimator, when available.
     """
 
     fidelity: float

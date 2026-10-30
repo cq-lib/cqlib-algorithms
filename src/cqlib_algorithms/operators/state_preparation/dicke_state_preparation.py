@@ -20,11 +20,11 @@ subproblem with the unary-to-Dicke unitary ``U_{n,k}``.
 
 References
 ----------
-.. [1] Bärtschi, A., and Eidenbenz, S. (2019). Deterministic Preparation of
-       Dicke States. In *Fundamentals of Computation Theory (FCT 2019)*,
-       LNCS 11651, pp. 126-139. Springer.
-.. [2] Bärtschi, A., and Eidenbenz, S. (2022). Deterministic Preparation of
-       Dicke States. *Quantum Information Processing*, 21, 282.
+[1] Bärtschi, A., and Eidenbenz, S. (2019). Deterministic Preparation of Dicke States.
+    In *Fundamentals of Computation Theory (FCT 2019)*, LNCS 11651, pp. 126-139.
+    Springer.
+[2] Bärtschi, A., and Eidenbenz, S. (2022). Deterministic Preparation of Dicke States.
+    *Quantum Information Processing*, 21, 282.
 """
 
 from __future__ import annotations
@@ -74,14 +74,6 @@ class DickeStatePreparation(StatePreparation):
         TypeError: If either argument is not an integer or is a Boolean.
         ValueError: If ``num_qubits`` is not positive or if ``weight`` falls
             outside ``0 <= weight <= num_qubits``.
-
-    References
-    ----------
-    .. [1] Bärtschi, A., and Eidenbenz, S. (2019). Deterministic Preparation
-           of Dicke States. In *Fundamentals of Computation Theory (FCT 2019)*,
-           LNCS 11651, pp. 126-139. Springer.
-    .. [2] Bärtschi, A., and Eidenbenz, S. (2022). Deterministic Preparation
-           of Dicke States. *Quantum Information Processing*, 21, 282.
     """
 
     __slots__ = ("_num_qubits", "_weight")

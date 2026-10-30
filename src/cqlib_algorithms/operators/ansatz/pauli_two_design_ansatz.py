@@ -39,7 +39,7 @@ _PAULI_ROTATIONS = (StandardGate.RX, StandardGate.RY, StandardGate.RZ)
 
 @final
 class PauliTwoDesignAnsatz(BaseAnsatz):
-    """Build a random-axis Pauli two-design-style variational circuit.
+    """Build a random-axis Pauli variational circuit motivated by two-designs.
 
     Construction begins with ``RY(pi / 4)`` on every qubit. It then applies
     ``reps + 1`` parameterized rotation layers whose independently sampled
@@ -51,6 +51,15 @@ class PauliTwoDesignAnsatz(BaseAnsatz):
     Equal non-``None`` seeds produce equal axes across instances. The exact
     seeded sequence is local to this implementation and is not promised to
     match another framework's random-number generator.
+
+    Args:
+        num_qubits: Positive circuit width.
+        reps: Nonnegative brickwork repetition count.
+        seed: Optional seed for deterministic axis sampling.
+
+    Raises:
+        TypeError: If width, repetitions, or seed has the wrong type.
+        ValueError: If width or repetitions are invalid.
     """
 
     __slots__ = ("_num_qubits", "_reps", "_rotation_axes")

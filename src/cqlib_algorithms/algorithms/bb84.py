@@ -35,7 +35,7 @@ from ..protocols.sampler import Sampler, SamplerRequest, validate_sampler_result
 
 
 class BB84Basis(Enum):
-    """The two conjugate bases used by BB84."""
+    """Identify the computational (Z) and diagonal (X) BB84 bases."""
 
     Z = "Z"
     X = "X"
@@ -146,6 +146,18 @@ class BB84Request:
     supplied basis and resend the state represented by the actual outcome;
     ``None`` leaves that signal untouched. It is not a model of a general
     attack.
+
+    Args:
+        alice_bits: Alice's prepared bits in transmission order.
+        alice_bases: Alice's basis for each signal.
+        bob_bases: Bob's measurement basis for each signal.
+        max_qber: Accepted sampled quantum bit-error rate.
+        parameter_estimation_indices: Sifted positions disclosed for testing.
+        intercept_resend_bases: Optional Eve basis per signal.
+
+    Raises:
+        TypeError: If a field has the wrong type.
+        ValueError: If lengths, indices, bits, bases, or QBER are invalid.
     """
 
     alice_bits: tuple[int, ...]
@@ -232,6 +244,13 @@ class BB84Result:
     The remaining bits are only *candidate raw-key material*. The result does
     not claim secrecy and does not perform authentication, information
     reconciliation, privacy amplification, or finite-key security analysis.
+
+    Attributes:
+        sifted_indices: Positions where Alice and Bob used the same basis.
+        parameter_estimation_indices: Disclosed positions used for QBER.
+        alice_sifted_bits: Alice's bits at sifted positions.
+        bob_sifted_bits: Bob's bits at sifted positions.
+        max_qber: Acceptance threshold copied from the request.
     """
 
     sifted_indices: tuple[int, ...]
@@ -381,6 +400,13 @@ class BB84:
     References: Bennett and Brassard, *Quantum cryptography: Public key
     distribution and coin tossing* (1984); Tomamichel et al., *Tight finite-key
     analysis for quantum cryptography*, Nature Communications 3, 634 (2012).
+
+    Args:
+        sampler: Sampling implementation used for signal measurements.
+
+    Raises:
+        TypeError: If the sampler or a request has the wrong type.
+        ValueError: If protocol inputs or sampler results are inconsistent.
     """
 
     __slots__ = ("_sampler",)

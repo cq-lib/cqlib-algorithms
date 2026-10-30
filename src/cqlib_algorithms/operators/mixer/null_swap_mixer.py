@@ -45,6 +45,15 @@ class NullSwapMixer(_BaseMixer):
     The full Hamiltonian is ``sum_(a != null) (|null><a| + |a><null|)``.
     Its terms do not commute when more than two values are present, so the
     supplied evolution strategy controls the corresponding approximation.
+
+    Args:
+        num_values: Number of one-hot values.
+        null_value: Distinguished value exchanged with every other value.
+        strategy: Optional Cqlib evolution strategy.
+
+    Raises:
+        TypeError: If an option has the wrong type.
+        ValueError: If the count, null index, or strategy is invalid.
     """
 
     __slots__ = ("_evolution", "_pairs")

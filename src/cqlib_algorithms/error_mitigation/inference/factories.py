@@ -29,6 +29,20 @@ Every model is fitted with NumPy only. The polynomial route uses the normal
 equations :math:`(V^\top V) c = V^\top y` on a Vandermonde matrix; the
 exponential route is linearised in the log domain, see :class:`ExpFactory`
 for the consequences of that choice.
+
+References
+----------
+[1] L. F. Richardson and J. A. Gaunt, "The deferred approach to the limit. Part I.
+    Single lattice. Part II. Interpenetrating lattices," Philosophical Transactions of
+    the Royal Society A 226, 299-361, 1927. doi:10.1098/rsta.1927.0008.
+[2] K. Temme, S. Bravyi, and J. M. Gambetta, "Error mitigation for short-depth quantum
+    circuits," Physical Review Letters 119, 180509, 2017. arXiv:1612.02058.
+[3] A. Kandala, K. Temme, A. D. Corcoles, A. Mezzacapo, J. M. Chow, and J. M. Gambetta,
+    "Error mitigation extends the computational reach of a noisy quantum processor,"
+    Nature 567, 491-495, 2019. arXiv:1805.04492.
+[4] T. Giurgica-Tiron, Y. Hindy, R. LaRose, A. Mari, and W. J. Zeng, "Digital zero noise
+    extrapolation for quantum error mitigation," IEEE International Conference on
+    Quantum Computing and Engineering (QCE), pp. 306-316, 2020. arXiv:2005.10921.
 """
 
 from __future__ import annotations
@@ -142,15 +156,11 @@ class RichardsonFactory(_BatchedFactory):
     :math:`\sum \gamma = 1` and :math:`\sum \gamma \lambda = \sum
     \gamma \lambda^2 = 0`.
 
-    References
-    ----------
-    .. [1] L. F. Richardson and J. A. Gaunt,
-       "The deferred approach to the limit. Part I. Single lattice. Part II.
-       Interpenetrating lattices," Philosophical Transactions of the Royal
-       Society A 226, 299-361, 1927. doi:10.1098/rsta.1927.0008.
-    .. [2] K. Temme, S. Bravyi, and J. M. Gambetta,
-       "Error mitigation for short-depth quantum circuits,"
-       Physical Review Letters 119, 180509, 2017. arXiv:1612.02058.
+    Args:
+        scale_factors: At least two noise scale factors for the fixed grid.
+
+    Raises:
+        ValueError: If fewer than two scale factors are provided.
     """
 
     def _fit(self, values: Sequence[float]) -> float:
@@ -171,12 +181,13 @@ class PolyFactory(_BatchedFactory):
     :class:`RichardsonFactory` avoids the fit entirely by using closed-form
     weights when an exact interpolant is wanted.
 
-    References
-    ----------
-    .. [1] A. Kandala, K. Temme, A. D. Corcoles, A. Mezzacapo, J. M. Chow,
-       and J. M. Gambetta,
-       "Error mitigation extends the computational reach of a noisy quantum
-       processor," Nature 567, 491-495, 2019. arXiv:1805.04492.
+    Args:
+        scale_factors: At least two noise scale factors for the fixed grid.
+        degree: Non-negative polynomial degree smaller than the grid size.
+
+    Raises:
+        ValueError: If the grid has fewer than two points or ``degree`` is out
+            of range.
     """
 
     def __init__(self, scale_factors: Sequence[float], /, *, degree: int) -> None:
@@ -204,11 +215,11 @@ class PolyFactory(_BatchedFactory):
 class LinearFactory(PolyFactory):
     r"""Linear extrapolation, i.e. a polynomial fit of degree one.
 
-    References
-    ----------
-    .. [1] K. Temme, S. Bravyi, and J. M. Gambetta,
-       "Error mitigation for short-depth quantum circuits,"
-       Physical Review Letters 119, 180509, 2017. arXiv:1612.02058.
+    Args:
+        scale_factors: At least two noise scale factors for the fixed grid.
+
+    Raises:
+        ValueError: If fewer than two scale factors are provided.
     """
 
     def __init__(self, scale_factors: Sequence[float], /) -> None:
@@ -225,38 +236,21 @@ class ExpFactory(_BatchedFactory):
     :math:`\ln|y - a_0| = \ln|a_1| - c\lambda`, a straight line fitted by the
     same polynomial routine used everywhere else.
 
-    Parameters
-    ----------
-    scale_factors
-        Noise scale factors at which expectation values are measured.
-    asymptote
-        Infinite-noise limit :math:`a_0`. When ``None`` it is estimated from
-        the last three points, which must then be equally spaced.
+    Args:
+        scale_factors: Noise scale factors at which expectation values are measured.
+        asymptote: Infinite-noise limit :math:`a_0`. When ``None`` it is estimated from
+            the last three points, which must then be equally spaced.
 
-    Raises
-    ------
-    ExtrapolationError
-        If the residuals :math:`y - a_0` change sign, if their magnitudes
-        are not monotonically decaying, or if the fitted decay rate is not
-        positive.
+    Raises:
+        ExtrapolationError: If the residuals :math:`y - a_0` change sign, if their magnitudes
+            are not monotonically decaying, or if the fitted decay rate is not
+            positive.
 
-    Notes
-    -----
-    The log-linearised route yields a legal but different extrapolated value
-    from a nonlinear three-parameter fit of the same ansatz, so numerical
-    anchors for exponential extrapolation must be calibrated against this
-    route.
-
-    References
-    ----------
-    .. [1] A. Kandala, K. Temme, A. D. Corcoles, A. Mezzacapo, J. M. Chow,
-       and J. M. Gambetta,
-       "Error mitigation extends the computational reach of a noisy quantum
-       processor," Nature 567, 491-495, 2019. arXiv:1805.04492.
-    .. [2] T. Giurgica-Tiron, Y. Hindy, R. LaRose, A. Mari, and W. J. Zeng,
-       "Digital zero noise extrapolation for quantum error mitigation,"
-       IEEE International Conference on Quantum Computing and Engineering
-       (QCE), pp. 306-316, 2020. arXiv:2005.10921.
+    Note:
+        The log-linearised route yields a legal but different extrapolated value
+        from a nonlinear three-parameter fit of the same ansatz, so numerical
+        anchors for exponential extrapolation must be calibrated against this
+        route.
     """
 
     def __init__(
@@ -292,29 +286,15 @@ class PolyExpFactory(_BatchedFactory):
     before taking logarithms, ``asymptote`` is required: without it the fit
     would need the nonlinear optimisation this branch avoids.
 
-    Parameters
-    ----------
-    scale_factors
-        Noise scale factors at which expectation values are measured.
-    degree
-        Degree of the exponent polynomial :math:`z`.
-    asymptote
-        Infinite-noise limit :math:`a_0`, which must be supplied.
+    Args:
+        scale_factors: Noise scale factors at which expectation values are measured.
+        degree: Degree of the exponent polynomial :math:`z`.
+        asymptote: Infinite-noise limit :math:`a_0`, which must be supplied.
 
-    Raises
-    ------
-    ValueError
-        If ``asymptote`` is ``None`` or ``degree`` is not in
-        ``[0, len(scale_factors) - 1]``.
-    ExtrapolationError
-        If the residuals :math:`y - a_0` change sign.
-
-    References
-    ----------
-    .. [1] A. Kandala, K. Temme, A. D. Corcoles, A. Mezzacapo, J. M. Chow,
-       and J. M. Gambetta,
-       "Error mitigation extends the computational reach of a noisy quantum
-       processor," Nature 567, 491-495, 2019. arXiv:1805.04492.
+    Raises:
+        ValueError: If ``asymptote`` is ``None`` or ``degree`` is not in
+            ``[0, len(scale_factors) - 1]``.
+        ExtrapolationError: If the residuals :math:`y - a_0` change sign.
     """
 
     def __init__(
@@ -376,38 +356,19 @@ class AdaExpFactory(Factory):
     proposal below the last sampled point saturates the spacing rather than
     revisiting an already measured region.
 
-    Parameters
-    ----------
-    steps
-        Total number of expectation values to collect. At least 3 are
-        needed, or 4 when ``asymptote`` is ``None``.
-    scale_factor
-        The second scale factor; the first is always ``1``.
-    asymptote
-        Infinite-noise limit :math:`a_0`. When ``None`` it is estimated once
-        from the equally spaced seed triplet and then held fixed, since the
-        adaptive points are deliberately not equally spaced.
-    max_scale_factor
-        Upper bound on any adaptively chosen scale factor.
+    Args:
+        steps: Total number of expectation values to collect. At least 3 are
+            needed, or 4 when ``asymptote`` is ``None``.
+        scale_factor: The second scale factor; the first is always ``1``.
+        asymptote: Infinite-noise limit :math:`a_0`. When ``None`` it is estimated once
+            from the equally spaced seed triplet and then held fixed, since the
+            adaptive points are deliberately not equally spaced.
+        max_scale_factor: Upper bound on any adaptively chosen scale factor.
 
-    Raises
-    ------
-    ValueError
-        If ``steps`` is too small, or ``scale_factor`` / ``max_scale_factor``
-        is not strictly greater than one.
-    ExtrapolationError
-        If the accumulated data cannot be fitted by :class:`ExpFactory`.
-
-    References
-    ----------
-    .. [1] A. Kandala, K. Temme, A. D. Corcoles, A. Mezzacapo, J. M. Chow,
-       and J. M. Gambetta,
-       "Error mitigation extends the computational reach of a noisy quantum
-       processor," Nature 567, 491-495, 2019. arXiv:1805.04492.
-    .. [2] T. Giurgica-Tiron, Y. Hindy, R. LaRose, A. Mari, and W. J. Zeng,
-       "Digital zero noise extrapolation for quantum error mitigation,"
-       IEEE International Conference on Quantum Computing and Engineering
-       (QCE), pp. 306-316, 2020. arXiv:2005.10921.
+    Raises:
+        ValueError: If ``steps`` is too small, or ``scale_factor`` / ``max_scale_factor``
+            is not strictly greater than one.
+        ExtrapolationError: If the accumulated data cannot be fitted by :class:`ExpFactory`.
     """
 
     _SHIFT_FACTOR = _SHIFT_FACTOR
@@ -500,11 +461,10 @@ class AdaExpFactory(Factory):
         not equally spaced, hence the estimate is cached on first use rather
         than recomputed from the running points.
 
-        Raises
-        ------
-        ExtrapolationError
-            If ``asymptote`` was not given and fewer than three seed points
-            have been collected.
+        Raises:
+            ExtrapolationError: If ``asymptote`` was not given and fewer than three seed points
+                have been collected.
+
         """
         if self._asymptote is not None:
             return self._asymptote
@@ -548,10 +508,9 @@ def _fit_polynomial(
     Returns the coefficients in ascending power order, so entry ``0`` is the
     fit evaluated at zero noise.
 
-    Raises
-    ------
-    ExtrapolationError
-        If the normal equations are singular or yield a non-finite solution.
+    Raises:
+        ExtrapolationError: If the normal equations are singular or yield a non-finite solution.
+
     """
     factors = np.asarray(scale_factors, dtype=float)
     measured = np.asarray(values, dtype=float)
@@ -583,11 +542,10 @@ def _estimate_asymptote(
     any :math:`y(\lambda) = a_0 + a_1 e^{-c\lambda}`. Equally spaced input is
     therefore required, since the closed form does not generalise.
 
-    Raises
-    ------
-    ExtrapolationError
-        If the last three scale factors are not equally spaced, or the
-        points are collinear and so cannot pin down an asymptote.
+    Raises:
+        ExtrapolationError: If the last three scale factors are not equally spaced, or the
+            points are collinear and so cannot pin down an asymptote.
+
     """
     factors = np.asarray(scale_factors, dtype=float)
     measured = np.asarray(values, dtype=float)
@@ -611,11 +569,10 @@ def _estimate_asymptote(
 def _residual_sign(residuals: np.ndarray, /) -> float:
     r"""Return ``+1`` or ``-1`` for a residual vector of a single sign.
 
-    Raises
-    ------
-    ExtrapolationError
-        If the residuals change sign, in which case no single exponential can
-        describe the deviation from the asymptote.
+    Raises:
+        ExtrapolationError: If the residuals change sign, in which case no single exponential can
+            describe the deviation from the asymptote.
+
     """
     if np.all(residuals > 0.0):
         return 1.0
@@ -640,11 +597,10 @@ def _fit_exponential(
     two parameters come from a straight-line fit of
     :math:`\ln|y - a_0|` against :math:`\lambda`.
 
-    Raises
-    ------
-    ExtrapolationError
-        If the residuals change sign, their magnitudes grow with the scale
-        factor, or the fitted decay rate is not positive.
+    Raises:
+        ExtrapolationError: If the residuals change sign, their magnitudes grow with the scale
+            factor, or the fitted decay rate is not positive.
+
     """
     factors = np.asarray(scale_factors, dtype=float)
     measured = np.asarray(values, dtype=float)

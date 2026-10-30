@@ -39,6 +39,13 @@ from cqlib_algorithms import (
     DeutschJozsa,
     DeutschJozsaRequest,
     DeutschJozsaResult,
+    ElectronicGroundState,
+    ElectronicGroundStateResult,
+    ElectronicQEOM,
+    ElectronicQEOMResult,
+    FasterAmplitudeEstimation,
+    FasterAmplitudeEstimationRequest,
+    FasterAmplitudeEstimationResult,
     HamiltonianPhaseEstimation,
     HamiltonianPhaseEstimationRequest,
     HamiltonianPhaseEstimationResult,
@@ -48,6 +55,8 @@ from cqlib_algorithms import (
     IterativePhaseEstimation,
     IterativePhaseEstimationRequest,
     IterativePhaseEstimationResult,
+    LatticeGroundState,
+    LatticeGroundStateResult,
     MaximumLikelihoodAmplitudeEstimation,
     MaximumLikelihoodAmplitudeEstimationRequest,
     MaximumLikelihoodAmplitudeEstimationResult,
@@ -69,6 +78,9 @@ from cqlib_algorithms import (
     SuperdenseCoding,
     SuperdenseCodingRequest,
     SuperdenseCodingResult,
+    VibrationalGroundState,
+    VibrationalGroundStateResult,
+    VibrationalMeasurements,
     VQAResult,
     VQEResult,
 )
@@ -103,6 +115,25 @@ from cqlib_algorithms.algorithms import (
     DeutschJozsaResult as AlgorithmDeutschJozsaResult,
 )
 from cqlib_algorithms.algorithms import (
+    ElectronicGroundState as AlgorithmElectronicGroundState,
+)
+from cqlib_algorithms.algorithms import (
+    ElectronicGroundStateResult as AlgorithmElectronicGroundStateResult,
+)
+from cqlib_algorithms.algorithms import ElectronicQEOM as AlgorithmElectronicQEOM
+from cqlib_algorithms.algorithms import (
+    ElectronicQEOMResult as AlgorithmElectronicQEOMResult,
+)
+from cqlib_algorithms.algorithms import (
+    FasterAmplitudeEstimation as AlgorithmFasterAmplitudeEstimation,
+)
+from cqlib_algorithms.algorithms import (
+    FasterAmplitudeEstimationRequest as AlgorithmFasterAmplitudeEstimationRequest,
+)
+from cqlib_algorithms.algorithms import (
+    FasterAmplitudeEstimationResult as AlgorithmFasterAmplitudeEstimationResult,
+)
+from cqlib_algorithms.algorithms import (
     HamiltonianPhaseEstimation as AlgorithmHamiltonianPhaseEstimation,
 )
 from cqlib_algorithms.algorithms import (
@@ -128,6 +159,12 @@ from cqlib_algorithms.algorithms import (
 )
 from cqlib_algorithms.algorithms import (
     IterativePhaseEstimationResult as AlgorithmIterativePhaseEstimationResult,
+)
+from cqlib_algorithms.algorithms import (
+    LatticeGroundState as AlgorithmLatticeGroundState,
+)
+from cqlib_algorithms.algorithms import (
+    LatticeGroundStateResult as AlgorithmLatticeGroundStateResult,
 )
 from cqlib_algorithms.algorithms import (
     MaximumLikelihoodAmplitudeEstimation as AlgorithmMaximumLikelihoodAmplitudeEstimation,
@@ -179,6 +216,15 @@ from cqlib_algorithms.algorithms import (
 from cqlib_algorithms.algorithms import (
     SuperdenseCodingResult as AlgorithmSuperdenseCodingResult,
 )
+from cqlib_algorithms.algorithms import (
+    VibrationalGroundState as AlgorithmVibrationalGroundState,
+)
+from cqlib_algorithms.algorithms import (
+    VibrationalGroundStateResult as AlgorithmVibrationalGroundStateResult,
+)
+from cqlib_algorithms.algorithms import (
+    VibrationalMeasurements as AlgorithmVibrationalMeasurements,
+)
 from cqlib_algorithms.algorithms import VQAResult as AlgorithmVQAResult
 from cqlib_algorithms.algorithms import VQEResult as AlgorithmVQEResult
 from cqlib_algorithms.algorithms.variational import QAOA as VariationalQAOA
@@ -229,6 +275,13 @@ PUBLIC_COMPONENTS = {
     "DeutschJozsa": DeutschJozsa,
     "DeutschJozsaRequest": DeutschJozsaRequest,
     "DeutschJozsaResult": DeutschJozsaResult,
+    "ElectronicGroundState": ElectronicGroundState,
+    "ElectronicGroundStateResult": ElectronicGroundStateResult,
+    "ElectronicQEOM": ElectronicQEOM,
+    "ElectronicQEOMResult": ElectronicQEOMResult,
+    "FasterAmplitudeEstimation": FasterAmplitudeEstimation,
+    "FasterAmplitudeEstimationRequest": FasterAmplitudeEstimationRequest,
+    "FasterAmplitudeEstimationResult": FasterAmplitudeEstimationResult,
     "HamiltonianPhaseEstimation": HamiltonianPhaseEstimation,
     "HamiltonianPhaseEstimationRequest": HamiltonianPhaseEstimationRequest,
     "HamiltonianPhaseEstimationResult": HamiltonianPhaseEstimationResult,
@@ -238,6 +291,8 @@ PUBLIC_COMPONENTS = {
     "IterativePhaseEstimation": IterativePhaseEstimation,
     "IterativePhaseEstimationRequest": IterativePhaseEstimationRequest,
     "IterativePhaseEstimationResult": IterativePhaseEstimationResult,
+    "LatticeGroundState": LatticeGroundState,
+    "LatticeGroundStateResult": LatticeGroundStateResult,
     "MaximumLikelihoodAmplitudeEstimation": MaximumLikelihoodAmplitudeEstimation,
     "MaximumLikelihoodAmplitudeEstimationRequest": MaximumLikelihoodAmplitudeEstimationRequest,
     "MaximumLikelihoodAmplitudeEstimationResult": MaximumLikelihoodAmplitudeEstimationResult,
@@ -276,6 +331,9 @@ PUBLIC_COMPONENTS = {
     "VQE": VQE,
     "VQEResult": VQEResult,
     "VQAResult": VQAResult,
+    "VibrationalGroundState": VibrationalGroundState,
+    "VibrationalGroundStateResult": VibrationalGroundStateResult,
+    "VibrationalMeasurements": VibrationalMeasurements,
 }
 
 
@@ -352,8 +410,29 @@ def test_vqe_is_exported_from_public_namespaces():
     assert VQAResult is AlgorithmVQAResult is VariationalVQAResult
 
 
+def test_electronic_ground_state_is_exported_from_public_namespaces():
+    assert ElectronicGroundState is AlgorithmElectronicGroundState
+    assert ElectronicGroundStateResult is AlgorithmElectronicGroundStateResult
+    assert ElectronicQEOM is AlgorithmElectronicQEOM
+    assert ElectronicQEOMResult is AlgorithmElectronicQEOMResult
+
+
+def test_lattice_ground_state_is_exported_from_public_namespaces():
+    assert LatticeGroundState is AlgorithmLatticeGroundState
+    assert LatticeGroundStateResult is AlgorithmLatticeGroundStateResult
+
+
+def test_vibrational_ground_state_is_exported_from_public_namespaces():
+    assert VibrationalGroundState is AlgorithmVibrationalGroundState
+    assert VibrationalGroundStateResult is AlgorithmVibrationalGroundStateResult
+    assert VibrationalMeasurements is AlgorithmVibrationalMeasurements
+
+
 def test_amplitude_estimation_is_exported_from_public_namespaces():
     assert AmplitudeEstimationProblem is AlgorithmAmplitudeEstimationProblem
+    assert FasterAmplitudeEstimation is AlgorithmFasterAmplitudeEstimation
+    assert FasterAmplitudeEstimationRequest is AlgorithmFasterAmplitudeEstimationRequest
+    assert FasterAmplitudeEstimationResult is AlgorithmFasterAmplitudeEstimationResult
     assert StandardAmplitudeEstimation is AlgorithmStandardAmplitudeEstimation
     assert (
         StandardAmplitudeEstimationRequest
@@ -388,12 +467,6 @@ def test_amplitude_estimation_is_exported_from_public_namespaces():
 def test_qaoa_is_exported_from_public_namespaces():
     assert QAOA is AlgorithmQAOA is VariationalQAOA
     assert QAOAResult is AlgorithmQAOAResult is VariationalQAOAResult
-
-
-def test_quantum_teleportation_is_exported_from_public_namespaces():
-    assert QuantumTeleportation is AlgorithmQuantumTeleportation
-    assert QuantumTeleportationRequest is AlgorithmQuantumTeleportationRequest
-    assert QuantumTeleportationResult is AlgorithmQuantumTeleportationResult
 
 
 def test_quantum_teleportation_is_exported_from_public_namespaces():

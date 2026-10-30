@@ -14,8 +14,8 @@ r"""Exact one-ancilla block encoding through unitary dilation.
 
 References
 ----------
-Halmos, P. R. (1950). Normal dilations and extensions of operators.
-Summa Brasiliensis Mathematicae, 2, 125-134.
+[1] Halmos, P. R. (1950). Normal dilations and extensions of operators. Summa
+    Brasiliensis Mathematicae, 2, 125-134.
 """
 
 from __future__ import annotations
@@ -51,29 +51,22 @@ class UnitaryDilation(BlockEncoding):
     Under the local qubit layout ``[system..., ancilla]`` the most-significant
     qubit is the ancilla, so the top-left block of ``U`` equals ``A / alpha``.
 
-    Parameters
-    ----------
-    matrix
-        Explicit square matrix to encode. The dimension must be a power of two.
-    alpha
-        Optional positive subnormalization factor. When omitted, the spectral
-        norm of ``matrix`` is used, except that the zero matrix falls back to
-        ``1.0`` so that the standard ``(alpha, a, epsilon)`` tuple remains
-        well-defined.
-    atol
-        Non-negative absolute tolerance used for numerical validation.
-    validate
-        Whether to validate the synthesized dilation circuit through the
-        internal unitary-oracle reconstruction check.
+    Args:
+        matrix: Explicit square matrix to encode. The dimension must be a power of two.
+        alpha: Optional positive subnormalization factor. When omitted, the spectral
+            norm of ``matrix`` is used, except that the zero matrix falls back to
+            ``1.0`` so that the standard ``(alpha, a, epsilon)`` tuple remains
+            well-defined.
+        atol: Non-negative absolute tolerance used for numerical validation.
+        validate: Whether to validate the synthesized dilation circuit through the
+            internal unitary-oracle reconstruction check.
 
-    Raises
-    ------
-    TypeError
-        If ``matrix`` is not a NumPy array, or if numeric arguments have
-        invalid types.
-    ValueError
-        If ``matrix`` is not a finite square power-of-two matrix, or if the
-        supplied ``alpha`` is smaller than the spectral norm of ``matrix``.
+    Raises:
+        TypeError: If ``matrix`` is not a NumPy array, or if numeric arguments have
+            invalid types.
+        ValueError: If ``matrix`` is not a finite square power-of-two matrix, or if the
+            supplied ``alpha`` is smaller than the spectral norm of ``matrix``.
+
     """
 
     __slots__ = (
@@ -100,8 +93,8 @@ class UnitaryDilation(BlockEncoding):
         atol: float = 1e-10,
         validate: bool = True,
     ) -> None:
-        normalized_matrix = _validate_input_matrix(matrix)
-        tolerance = _validate_tolerance(atol)
+        normalized_matrix = _normalize_input_matrix(matrix)
+        tolerance = _normalize_tolerance(atol)
         if not isinstance(validate, bool):
             raise TypeError("validate must be a bool")
 
@@ -182,9 +175,10 @@ class UnitaryDilation(BlockEncoding):
         return copy.copy(self._circuit)
 
 
-def _validate_input_matrix(
+def _normalize_input_matrix(
     matrix: npt.NDArray[np.complex128],
 ) -> npt.NDArray[np.complex128]:
+    r"""Validate and return the input matrix in normalized complex form."""
     if not isinstance(matrix, np.ndarray):
         raise TypeError("matrix must be a numpy.ndarray")
 
@@ -207,7 +201,8 @@ def _validate_input_matrix(
     return normalized
 
 
-def _validate_tolerance(value: float) -> float:
+def _normalize_tolerance(value: float) -> float:
+    r"""Validate and return a non-negative tolerance in normalized form."""
     if isinstance(value, bool) or not isinstance(value, Real):
         raise TypeError("atol must be a real finite scalar")
     scalar = float(value)

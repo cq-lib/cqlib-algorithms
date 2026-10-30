@@ -19,10 +19,10 @@ from collections.abc import Sequence
 
 import numpy as np
 import pytest
+from cqlib import Circuit, Parameter
 from cqlib.circuit.ansatz import EvolutionStrategy
 from cqlib.qis import Hamiltonian, Pauli, PauliString
 
-from cqlib import Circuit, Parameter
 from cqlib_algorithms.algorithms import QAOA, QAOAResult, VQAResult, VQEResult
 from cqlib_algorithms.operators.estimator import StatevectorEstimator
 from cqlib_algorithms.operators.gradient import ParameterShiftGradient

@@ -25,7 +25,7 @@ into ``2**n`` single-qubit rotations and ``2**n`` CX gates.  Concrete
 families include the base axis gates (:class:`UCRX`, :class:`UCRY`,
 :class:`UCRZ`) and two higher-level function tables:
 
-* :class:`ExactReciprocal` — HHL-style eigenvalue inversion encoded as
+* :class:`ExactReciprocal` — HHL reciprocal-eigenvalue inversion encoded as
   ``2 * arcsin(s * 2**n / k)``.
 * :class:`ArbitraryFunction` — a user-supplied real-valued per-control
   table ``f(k)`` that is encoded either as amplitudes (``arcsin``) or

@@ -19,9 +19,9 @@ from collections.abc import Mapping, Sequence
 
 import numpy as np
 import pytest
+from cqlib import Circuit, Parameter
 from cqlib.qis import Hamiltonian, PauliString
 
-from cqlib import Circuit, Parameter
 from cqlib_algorithms.algorithms import VQE, VQEResult
 from cqlib_algorithms.operators.ansatz import RealAmplitudesAnsatz
 from cqlib_algorithms.operators.estimator import StatevectorEstimator

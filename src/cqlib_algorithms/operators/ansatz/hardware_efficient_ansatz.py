@@ -26,17 +26,28 @@ from typing import final
 from cqlib.circuit.ansatz import EntanglementTopology
 from cqlib.circuit.gates import StandardGate
 
-from .base_ansatz import BaseAnsatz
+from .base_ansatz import _DelegatingAnsatz
 from .two_local_ansatz import TwoLocalAnsatz
 
 
 @final
-class HardwareEfficientAnsatz(BaseAnsatz):
+class HardwareEfficientAnsatz(_DelegatingAnsatz):
     """A digital hardware-efficient ansatz with RZ-RX-RZ Euler blocks.
 
     This class freezes one useful hardware-efficient architecture; it is not a
     universal definition of hardware-efficient ansatze. Parameters are ordered
     by rotation layer, qubit, then RZ, RX, RZ position.
+
+    Args:
+        num_qubits: Positive circuit width.
+        reps: Nonnegative number of entangling repetitions.
+        entanglement: Core topology, or ``None`` for the default.
+        entanglement_gate: Supported two-qubit hardware gate.
+        skip_final_rotation_layer: Whether to omit the final Euler layer.
+
+    Raises:
+        TypeError: If an option has the wrong type.
+        ValueError: If width, repetitions, gate, or topology are invalid.
     """
 
     __slots__ = ()

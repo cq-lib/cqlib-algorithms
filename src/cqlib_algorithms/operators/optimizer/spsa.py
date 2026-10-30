@@ -78,6 +78,20 @@ class SPSAOptimizer(Optimizer):
     perturbation scales are ``a/(A+k+1)^alpha`` and ``c/(k+1)^gamma``.
     One Rademacher vector supplies the simultaneous two-sided gradient
     estimate.  The random stream advances across :meth:`run` calls.
+
+    Args:
+        learning_rate: Positive numerator ``a`` of the update schedule.
+        perturbation: Positive numerator ``c`` of the perturbation schedule.
+        alpha: Positive learning-rate decay exponent.
+        gamma: Positive perturbation decay exponent.
+        stability_constant: Nonnegative schedule offset ``A``.
+        maxiter: Nonnegative maximum update count.
+        tolerance: Nonnegative step-norm threshold, or ``None``.
+        seed: Optional seed or NumPy generator.
+
+    Raises:
+        TypeError: If an option has the wrong type.
+        ValueError: If a numeric option is outside its valid range.
     """
 
     __slots__ = (

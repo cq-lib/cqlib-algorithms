@@ -33,6 +33,12 @@ contiguous chunks independently, and :func:`fold_gates_at_random` folds a
 random subset of the gates. Measurements are removed before folding and
 re-appended afterwards, since the :math:`U^\dagger U` pattern is unitary only
 on the gate body.
+
+References
+----------
+[1] T. Giurgica-Tiron, Y. Hindy, R. LaRose, A. Mari, and W. J. Zeng, "Digital zero noise
+    extrapolation for quantum error mitigation," IEEE International Conference on
+    Quantum Computing and Engineering (QCE), pp. 306-316, 2020. arXiv:2005.10921.
 """
 
 from __future__ import annotations
@@ -62,30 +68,16 @@ def fold_global(circuit: Circuit, scale_factor: float, /) -> Circuit:
     independent, which is what makes the extrapolation in
     :mod:`cqlib_algorithms.error_mitigation.inference` well defined.
 
-    Parameters
-    ----------
-    circuit
-        Circuit to scale. Measurements are stripped and re-appended.
-    scale_factor
-        Noise scale factor :math:`\lambda \ge 1`. ``1`` folds nothing.
+    Args:
+        circuit: Circuit to scale. Measurements are stripped and re-appended.
+        scale_factor: Noise scale factor :math:`\lambda \ge 1`. ``1`` folds nothing.
 
-    Returns
-    -------
-    Circuit
+    Returns:
         Folded circuit carrying the source global phase.
 
-    Raises
-    ------
-    ValueError
-        If ``scale_factor < 1``, or if the body contains an operation that
-        cannot be inverted (reset, classical data, classical control).
-
-    References
-    ----------
-    .. [1] T. Giurgica-Tiron, Y. Hindy, R. LaRose, A. Mari, and W. J. Zeng,
-       "Digital zero noise extrapolation for quantum error mitigation,"
-       IEEE International Conference on Quantum Computing and Engineering
-       (QCE), pp. 306-316, 2020. arXiv:2005.10921.
+    Raises:
+        ValueError: If ``scale_factor < 1``, or if the body contains an operation that
+            cannot be inverted (reset, classical data, classical control).
     """
     scale = _normalize_scale_factor(scale_factor)
     body, measured = strip_measurements(circuit)
@@ -108,32 +100,17 @@ def fold_gates_at_random(
     :math:`\mathrm{round}(f G / 2)` randomly chosen gates one extra time. The
     result is a deterministic function of ``seed``.
 
-    Parameters
-    ----------
-    circuit
-        Circuit to scale. Measurements are stripped and re-appended.
-    scale_factor
-        Noise scale factor :math:`\lambda \ge 1`.
-    seed
-        Seed for the gate-selection shuffle.
+    Args:
+        circuit: Circuit to scale. Measurements are stripped and re-appended.
+        scale_factor: Noise scale factor :math:`\lambda \ge 1`.
+        seed: Seed for the gate-selection shuffle.
 
-    Returns
-    -------
-    Circuit
+    Returns:
         Folded circuit carrying the source global phase.
 
-    Raises
-    ------
-    ValueError
-        If ``scale_factor < 1``, or if the body contains an operation that
-        cannot be inverted (reset, classical data, classical control).
-
-    References
-    ----------
-    .. [1] T. Giurgica-Tiron, Y. Hindy, R. LaRose, A. Mari, and W. J. Zeng,
-       "Digital zero noise extrapolation for quantum error mitigation,"
-       IEEE International Conference on Quantum Computing and Engineering
-       (QCE), pp. 306-316, 2020. arXiv:2005.10921.
+    Raises:
+        ValueError: If ``scale_factor < 1``, or if the body contains an operation that
+            cannot be inverted (reset, classical data, classical control).
     """
     scale = _normalize_scale_factor(scale_factor)
     body, measured = strip_measurements(circuit)
@@ -161,34 +138,19 @@ def fold_local(
     scaled, so gates in noise-free regions of the device stay unfolded. The
     split is deterministic, unlike :func:`fold_gates_at_random`.
 
-    Parameters
-    ----------
-    circuit
-        Circuit to scale. Measurements are stripped and re-appended.
-    scale_factor
-        Noise scale factor :math:`\lambda \ge 1`, applied to every chunk.
-    num_chunks
-        Number of contiguous chunks, ``>= 1``. Chunks are as even as
-        possible; a chunk may be empty when ``num_chunks`` exceeds the gate
-        count.
+    Args:
+        circuit: Circuit to scale. Measurements are stripped and re-appended.
+        scale_factor: Noise scale factor :math:`\lambda \ge 1`, applied to every chunk.
+        num_chunks: Number of contiguous chunks, ``>= 1``. Chunks are as even as
+            possible; a chunk may be empty when ``num_chunks`` exceeds the gate
+            count.
 
-    Returns
-    -------
-    Circuit
+    Returns:
         Folded circuit carrying the source global phase.
 
-    Raises
-    ------
-    ValueError
-        If ``num_chunks < 1``, if ``scale_factor < 1``, or if the body
-        contains an operation that cannot be inverted.
-
-    References
-    ----------
-    .. [1] T. Giurgica-Tiron, Y. Hindy, R. LaRose, A. Mari, and W. J. Zeng,
-       "Digital zero noise extrapolation for quantum error mitigation,"
-       IEEE International Conference on Quantum Computing and Engineering
-       (QCE), pp. 306-316, 2020. arXiv:2005.10921.
+    Raises:
+        ValueError: If ``num_chunks < 1``, if ``scale_factor < 1``, or if the body
+            contains an operation that cannot be inverted.
     """
     if num_chunks < 1:
         raise ValueError(f"num_chunks must be >= 1 but was {num_chunks!r}.")
@@ -204,6 +166,7 @@ def fold_local(
 
 
 def _normalize_scale_factor(scale_factor: float, /) -> float:
+    r"""Validate and return a scale factor in normalized form."""
     value = float(scale_factor)
     if value < 1.0:
         raise ValueError(
@@ -260,7 +223,7 @@ def _fold_integer_blocks(body: Circuit, num_folds: int, /) -> Circuit:
     r"""Apply the :math:`U (U^\dagger U)^{n}` pattern to every gate.
     """
     folded = ZNEMitigation(body, [num_folds]).fold_circuits()[0]
-    
+
     # The folded circuit is rebuilt from the bare qubit list, so the global
     # phase has to be carried over again on the returned circuit.
     folded.set_global_phase(body.global_phase)
@@ -356,11 +319,10 @@ def _apply_fold_mask(
 def _inverse_operation(operation: ValueOperation, /) -> ValueOperation:
     r"""Return the inverse of one gate-body operation.
 
-    Raises
-    ------
-    ValueError
-        If the operation is not invertible, i.e. it measures, resets, or
-        carries classical data or classical control.
+    Raises:
+        ValueError: If the operation is not invertible, i.e. it measures, resets, or
+            carries classical data or classical control.
+
     """
     # Standard gates invert through their own handle, and directives and delays
     # are self-inverse. The handle stored in the instruction carries no
@@ -386,7 +348,7 @@ def _inverse_operation(operation: ValueOperation, /) -> ValueOperation:
             )
     if operation.is_delay:
         return operation
-    
+
     # Multi-controlled gates, custom unitaries, and circuit
     # gates expose no such handle on the Python binding, so they invert
     # through their matrix.
