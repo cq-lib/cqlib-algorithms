@@ -14,5 +14,13 @@
 
 from .pvqd import PVQD, PVQDResult
 from .var_qite import VarQITE, VarQITEResult
+from .var_qrte import VarQRTE, VarQRTEResult
 
-__all__ = ["PVQD", "PVQDResult", "VarQITE", "VarQITEResult"]
+__all__ = [
+    "PVQD",
+    "PVQDResult",
+    "VarQITE",
+    "VarQITEResult",
+    "VarQRTE",
+    "VarQRTEResult",
+]

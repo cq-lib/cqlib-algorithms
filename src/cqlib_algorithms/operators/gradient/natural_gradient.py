@@ -30,6 +30,7 @@ import numpy as np
 
 from ...protocols.estimator import Estimator
 from ...protocols.gradient import GradientRequest, GradientResult
+from ._linear_system import solve_metric_system
 from .parameter_shift import ParameterShiftGradient
 from .qgt import StatevectorQGT
 
@@ -100,11 +101,7 @@ class NaturalGradient:
             qgt_result = qgt.compute(request)
             metric = qgt_result.metric
             values = np.asarray(gradient.values, dtype=np.float64)
-            if self._regularization == 0.0:
-                direction = np.linalg.lstsq(metric, values, rcond=None)[0]
-            else:
-                system = metric + self._regularization * np.eye(len(values))
-                direction = np.linalg.solve(system, values)
+            direction = solve_metric_system(metric, values, self._regularization)
             results.append(
                 GradientResult(
                     request.parameter_names, tuple(float(v) for v in direction)

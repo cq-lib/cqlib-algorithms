@@ -21,6 +21,7 @@ docstring 为准；本目录负责说明当前能力、使用方法和开发规�
 - [QAOA](user-guide/algorithms/qaoa.md)
 - [PVQD 实时演化](user-guide/algorithms/pvqd.md)
 - [VarQITE 虚时演化](user-guide/algorithms/var-qite.md)
+- [VarQRTE 实时演化](user-guide/algorithms/var-qrte.md)
 - [Grover 搜索](user-guide/algorithms/grover.md)
 - [Deutsch–Jozsa](user-guide/algorithms/deutsch-jozsa.md)
 - [Bernstein–Vazirani](user-guide/algorithms/bernstein-vazirani.md)

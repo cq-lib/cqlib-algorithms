@@ -249,6 +249,80 @@ def _suffix_circuits(
     return suffixes
 
 
+def _statevector_derivatives(
+    request: GradientRequest,
+) -> tuple[np.ndarray, tuple[np.ndarray, ...]]:
+    """Return the bound state and derivative states in request order."""
+    request.validate()
+    estimator_request = request.estimator_request
+    circuit = estimator_request.circuit
+    names = request.parameter_names
+    validate_circuit(circuit)
+    occurrences = {name: analyze_symbol(circuit, name) for name in names}
+
+    bound = circuit.assign_parameters(dict(estimator_request.parameter_bindings))
+    num_qubits = bound.num_qubits
+    dimension = 1 << num_qubits
+    psi = np.asarray(Statevector.from_circuit(bound).data, dtype=np.complex128)
+    derivative_states = {
+        name: np.zeros(dimension, dtype=np.complex128) for name in names
+    }
+
+    stream = _expanded_stream(bound)
+    suffixes = _suffix_circuits(list(bound.qubits), stream)
+    by_slot: dict[tuple[int, int], list[tuple[str, Occurrence]]] = {}
+    for name in names:
+        for occurrence in occurrences[name]:
+            if occurrence.zero:
+                continue
+            by_slot.setdefault((occurrence.op_index, occurrence.slot), []).append(
+                (name, occurrence)
+            )
+
+    current = Statevector.from_state(
+        num_qubits, [1.0 + 0.0j] + [0.0 + 0.0j] * (dimension - 1)
+    )
+    for position, (operation, source, slot) in enumerate(stream):
+        one_step = Circuit(list(bound.qubits))
+        one_step.append(operation)
+        current.apply_circuit(one_step)
+
+        entries = by_slot.get((source, slot), ())
+        for name, occurrence in entries:
+            generated = apply_generator(
+                occurrence.generator,
+                occurrence.qubits,
+                current.data,
+            )
+            generated = generated * (-1j * occurrence.coefficient)
+            # ``from_state`` requires a normalized vector, while generator
+            # images generally are not. Undo this scale after suffix evolution.
+            norm = float(np.linalg.norm(generated))
+            if norm == 0.0:
+                continue
+            evolved = Statevector.from_state(num_qubits, (generated / norm).tolist())
+            evolved.apply_circuit(suffixes[position + 1])
+            derivative_states[name] += evolved.data * norm
+
+    return psi, tuple(derivative_states[name] for name in names)
+
+
+def _projected_tensor(
+    state: np.ndarray,
+    derivative_states: Sequence[np.ndarray],
+) -> np.ndarray:
+    """Return the phase-invariant QGT for ordered derivative states."""
+    count = len(derivative_states)
+    tensor = np.zeros((count, count), dtype=np.complex128)
+    for row, first in enumerate(derivative_states):
+        for column, second in enumerate(derivative_states):
+            overlap = np.vdot(first, second)
+            bra = np.vdot(first, state)
+            ket = np.vdot(state, second)
+            tensor[row, column] = overlap - bra * ket
+    return tensor
+
+
 @final
 class StatevectorQGT:
     """Exact quantum geometric tensor via generator insertion.
@@ -285,76 +359,13 @@ class StatevectorQGT:
             raise TypeError("request must be a GradientRequest")
         request.validate()
 
-        estimator_request = request.estimator_request
-        circuit = estimator_request.circuit
         names = request.parameter_names
-        validate_circuit(circuit)
         if not names:
+            validate_circuit(request.estimator_request.circuit)
             empty = np.zeros((0, 0), dtype=np.complex128)
             return QGTResult((), empty, empty.real)
-        occurrences = {name: analyze_symbol(circuit, name) for name in names}
-
-        bound = circuit.assign_parameters(dict(estimator_request.parameter_bindings))
-        num_qubits = bound.num_qubits
-        dimension = 1 << num_qubits
-
-        psi = Statevector.from_circuit(bound).data
-        derivative_states = {
-            name: np.zeros(dimension, dtype=np.complex128) for name in names
-        }
-
-        stream = _expanded_stream(bound)
-        suffixes = _suffix_circuits(list(bound.qubits), stream)
-        by_slot: dict[tuple[int, int], list[tuple[str, Occurrence]]] = {}
-        for name in names:
-            for occurrence in occurrences[name]:
-                if occurrence.zero:
-                    continue
-                by_slot.setdefault((occurrence.op_index, occurrence.slot), []).append(
-                    (name, occurrence)
-                )
-
-        current = Statevector.from_state(
-            num_qubits, [1.0 + 0.0j] + [0.0 + 0.0j] * (dimension - 1)
-        )
-        for position, (operation, source, slot) in enumerate(stream):
-            one_step = Circuit(list(bound.qubits))
-            one_step.append(operation)
-            current.apply_circuit(one_step)
-
-            entries = by_slot.get((source, slot), ())
-            if not entries:
-                continue
-            for name, occurrence in entries:
-                generated = apply_generator(
-                    occurrence.generator,
-                    occurrence.qubits,
-                    current.data,
-                )
-                generated = generated * (-1j * occurrence.coefficient)
-                # ``from_state`` requires a normalized vector, while
-                # generator images generally are not.  Normalize for
-                # construction and undo the scale after the unitary
-                # suffix evolution, which preserves the norm.
-                norm = float(np.linalg.norm(generated))
-                if norm == 0.0:
-                    continue
-                evolved = Statevector.from_state(
-                    num_qubits, (generated / norm).tolist()
-                )
-                evolved.apply_circuit(suffixes[position + 1])
-                derivative_states[name] += evolved.data * norm
-
-        count = len(names)
-        tensor = np.zeros((count, count), dtype=np.complex128)
-        for row, first in enumerate(names):
-            d_first = derivative_states[first]
-            for column, second in enumerate(names):
-                d_second = derivative_states[second]
-                overlap = np.vdot(d_first, d_second)
-                bra = np.vdot(d_first, psi)
-                ket = np.vdot(psi, d_second)
-                tensor[row, column] = overlap - bra * ket
+        psi, derivative_states = _statevector_derivatives(request)
+        tensor = _projected_tensor(psi, derivative_states)
 
         return QGTResult(
             tuple(names), tensor, np.real(tensor).astype(np.float64, copy=False)

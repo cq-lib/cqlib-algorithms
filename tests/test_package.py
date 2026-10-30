@@ -92,6 +92,8 @@ from cqlib_algorithms import (
     SuperdenseCodingResult,
     VarQITE,
     VarQITEResult,
+    VarQRTE,
+    VarQRTEResult,
     VibrationalGroundState,
     VibrationalGroundStateResult,
     VibrationalMeasurements,
@@ -253,6 +255,8 @@ from cqlib_algorithms.algorithms import (
 )
 from cqlib_algorithms.algorithms import VarQITE as AlgorithmVarQITE
 from cqlib_algorithms.algorithms import VarQITEResult as AlgorithmVarQITEResult
+from cqlib_algorithms.algorithms import VarQRTE as AlgorithmVarQRTE
+from cqlib_algorithms.algorithms import VarQRTEResult as AlgorithmVarQRTEResult
 from cqlib_algorithms.algorithms import (
     VibrationalGroundState as AlgorithmVibrationalGroundState,
 )
@@ -274,6 +278,12 @@ from cqlib_algorithms.algorithms.time_evolution import (
 )
 from cqlib_algorithms.algorithms.time_evolution import (
     VarQITEResult as TimeEvolutionVarQITEResult,
+)
+from cqlib_algorithms.algorithms.time_evolution import (
+    VarQRTE as TimeEvolutionVarQRTE,
+)
+from cqlib_algorithms.algorithms.time_evolution import (
+    VarQRTEResult as TimeEvolutionVarQRTEResult,
 )
 from cqlib_algorithms.algorithms.variational import QAOA as VariationalQAOA
 from cqlib_algorithms.algorithms.variational import VQD as VariationalVQD
@@ -418,6 +428,8 @@ PUBLIC_COMPONENTS = {
     "VQEResult": VQEResult,
     "VarQITE": VarQITE,
     "VarQITEResult": VarQITEResult,
+    "VarQRTE": VarQRTE,
+    "VarQRTEResult": VarQRTEResult,
     "VibrationalGroundState": VibrationalGroundState,
     "VibrationalGroundStateResult": VibrationalGroundStateResult,
     "VibrationalMeasurements": VibrationalMeasurements,
@@ -503,6 +515,11 @@ def test_vqe_is_exported_from_public_namespaces():
 def test_var_qite_is_exported_from_public_namespaces():
     assert VarQITE is AlgorithmVarQITE is TimeEvolutionVarQITE
     assert VarQITEResult is AlgorithmVarQITEResult is TimeEvolutionVarQITEResult
+
+
+def test_var_qrte_is_exported_from_public_namespaces():
+    assert VarQRTE is AlgorithmVarQRTE is TimeEvolutionVarQRTE
+    assert VarQRTEResult is AlgorithmVarQRTEResult is TimeEvolutionVarQRTEResult
 
 
 def test_adaptive_and_sampling_vqe_are_exported_from_public_namespaces():
