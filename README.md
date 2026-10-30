@@ -10,6 +10,7 @@
 docstring 为准。
 
 量子机器学习提供 QBayesian、QSVR、VQR、PegasosQSVC 和可组合的量子核训练；
+电子结构链同时提供 VQE/qEOM 与基于 determinant 样本的 SQD 选定子空间工作流。
 使用方法见[算法用户指南](docs/index.md#算法)。
 
 ## 安装

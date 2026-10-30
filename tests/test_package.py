@@ -28,6 +28,7 @@ from cqlib_algorithms import (
     QAOA,
     QFT,
     QSVR,
+    SQD,
     VQD,
     VQE,
     VQR,
@@ -93,6 +94,11 @@ from cqlib_algorithms import (
     Simon,
     SimonRequest,
     SimonResult,
+    SQDCallback,
+    SQDIteration,
+    SQDResult,
+    SQDSubspaceResult,
+    SQDSubspaceSolver,
     StandardAmplitudeEstimation,
     StandardAmplitudeEstimationRequest,
     StandardAmplitudeEstimationResult,
@@ -109,11 +115,14 @@ from cqlib_algorithms import (
     VQAResult,
     VQDResult,
     VQEResult,
+    recover_sqd_configurations,
+    solve_sqd_subspace,
 )
 from cqlib_algorithms.algorithms import BB84 as AlgorithmBB84
 from cqlib_algorithms.algorithms import CHSH as AlgorithmCHSH
 from cqlib_algorithms.algorithms import PVQD as AlgorithmPVQD
 from cqlib_algorithms.algorithms import QAOA as AlgorithmQAOA
+from cqlib_algorithms.algorithms import SQD as AlgorithmSQD
 from cqlib_algorithms.algorithms import VQD as AlgorithmVQD
 from cqlib_algorithms.algorithms import VQE as AlgorithmVQE
 from cqlib_algorithms.algorithms import AdaptVQE as AlgorithmAdaptVQE
@@ -244,6 +253,13 @@ from cqlib_algorithms.algorithms import (
 from cqlib_algorithms.algorithms import Simon as AlgorithmSimon
 from cqlib_algorithms.algorithms import SimonRequest as AlgorithmSimonRequest
 from cqlib_algorithms.algorithms import SimonResult as AlgorithmSimonResult
+from cqlib_algorithms.algorithms import SQDCallback as AlgorithmSQDCallback
+from cqlib_algorithms.algorithms import SQDIteration as AlgorithmSQDIteration
+from cqlib_algorithms.algorithms import SQDResult as AlgorithmSQDResult
+from cqlib_algorithms.algorithms import (
+    SQDSubspaceResult as AlgorithmSQDSubspaceResult,
+)
+from cqlib_algorithms.algorithms import SQDSubspaceSolver as AlgorithmSQDSubspaceSolver
 from cqlib_algorithms.algorithms import (
     StandardAmplitudeEstimation as AlgorithmStandardAmplitudeEstimation,
 )
@@ -278,6 +294,12 @@ from cqlib_algorithms.algorithms import (
 from cqlib_algorithms.algorithms import VQAResult as AlgorithmVQAResult
 from cqlib_algorithms.algorithms import VQDResult as AlgorithmVQDResult
 from cqlib_algorithms.algorithms import VQEResult as AlgorithmVQEResult
+from cqlib_algorithms.algorithms import (
+    recover_sqd_configurations as algorithm_recover_sqd_configurations,
+)
+from cqlib_algorithms.algorithms import (
+    solve_sqd_subspace as algorithm_solve_sqd_subspace,
+)
 from cqlib_algorithms.algorithms.time_evolution import PVQD as TimeEvolutionPVQD
 from cqlib_algorithms.algorithms.time_evolution import (
     PVQDResult as TimeEvolutionPVQDResult,
@@ -411,6 +433,14 @@ PUBLIC_COMPONENTS = {
     "PVQDResult": PVQDResult,
     "QAOA": QAOA,
     "QAOAResult": QAOAResult,
+    "SQD": SQD,
+    "SQDCallback": SQDCallback,
+    "SQDIteration": SQDIteration,
+    "SQDResult": SQDResult,
+    "SQDSubspaceResult": SQDSubspaceResult,
+    "SQDSubspaceSolver": SQDSubspaceSolver,
+    "recover_sqd_configurations": recover_sqd_configurations,
+    "solve_sqd_subspace": solve_sqd_subspace,
     "PhaseEstimation": PhaseEstimation,
     "PhaseEstimationCircuit": PhaseEstimationCircuit,
     "PhaseEstimationProblem": PhaseEstimationProblem,
@@ -574,6 +604,17 @@ def test_electronic_ground_state_is_exported_from_public_namespaces():
     assert ElectronicGroundStateResult is AlgorithmElectronicGroundStateResult
     assert ElectronicQEOM is AlgorithmElectronicQEOM
     assert ElectronicQEOMResult is AlgorithmElectronicQEOMResult
+
+
+def test_sqd_is_exported_from_public_namespaces():
+    assert SQD is AlgorithmSQD
+    assert SQDCallback is AlgorithmSQDCallback
+    assert SQDIteration is AlgorithmSQDIteration
+    assert SQDResult is AlgorithmSQDResult
+    assert SQDSubspaceResult is AlgorithmSQDSubspaceResult
+    assert SQDSubspaceSolver is AlgorithmSQDSubspaceSolver
+    assert recover_sqd_configurations is algorithm_recover_sqd_configurations
+    assert solve_sqd_subspace is algorithm_solve_sqd_subspace
 
 
 def test_lattice_ground_state_is_exported_from_public_namespaces():

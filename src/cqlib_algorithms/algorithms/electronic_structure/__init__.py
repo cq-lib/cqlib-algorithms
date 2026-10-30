@@ -15,10 +15,28 @@
 from .electronic_ground_state import ElectronicGroundState
 from .electronic_qeom import ElectronicQEOM
 from .results import ElectronicGroundStateResult, ElectronicQEOMResult
+from .sample_based_quantum_diagonalization import (
+    SQD,
+    SQDCallback,
+    SQDIteration,
+    SQDResult,
+    SQDSubspaceResult,
+    SQDSubspaceSolver,
+    recover_sqd_configurations,
+    solve_sqd_subspace,
+)
 
 __all__ = [
+    "SQD",
     "ElectronicGroundState",
     "ElectronicGroundStateResult",
     "ElectronicQEOM",
     "ElectronicQEOMResult",
+    "SQDCallback",
+    "SQDIteration",
+    "SQDResult",
+    "SQDSubspaceResult",
+    "SQDSubspaceSolver",
+    "recover_sqd_configurations",
+    "solve_sqd_subspace",
 ]

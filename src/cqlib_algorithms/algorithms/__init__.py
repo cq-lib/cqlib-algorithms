@@ -36,10 +36,18 @@ from .bernstein_vazirani import (
 from .chsh import CHSH, CHSHRequest, CHSHResult
 from .deutsch_jozsa import DeutschJozsa, DeutschJozsaRequest, DeutschJozsaResult
 from .electronic_structure import (
+    SQD,
     ElectronicGroundState,
     ElectronicGroundStateResult,
     ElectronicQEOM,
     ElectronicQEOMResult,
+    SQDCallback,
+    SQDIteration,
+    SQDResult,
+    SQDSubspaceResult,
+    SQDSubspaceSolver,
+    recover_sqd_configurations,
+    solve_sqd_subspace,
 )
 from .grover import Grover, GroverRequest, GroverResult
 from .lattice import LatticeGroundState, LatticeGroundStateResult
@@ -106,6 +114,7 @@ __all__ = [
     "PVQD",
     "QAOA",
     "QSVR",
+    "SQD",
     "VQD",
     "VQE",
     "VQR",
@@ -164,6 +173,11 @@ __all__ = [
     "QuantumTeleportation",
     "QuantumTeleportationRequest",
     "QuantumTeleportationResult",
+    "SQDCallback",
+    "SQDIteration",
+    "SQDResult",
+    "SQDSubspaceResult",
+    "SQDSubspaceSolver",
     "SamplingVQE",
     "SamplingVQEMeasurement",
     "SamplingVQEResult",
@@ -186,4 +200,6 @@ __all__ = [
     "VibrationalGroundState",
     "VibrationalGroundStateResult",
     "VibrationalMeasurements",
+    "recover_sqd_configurations",
+    "solve_sqd_subspace",
 ]
