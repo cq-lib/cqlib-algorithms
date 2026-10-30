@@ -112,6 +112,11 @@ from .oracle import (
     WeightDistributionBlock,
     ZeroStateReflection,
 )
+from .quantum_kernel import FidelityQuantumKernel
+from .quantum_kernel.balanced_kernel_alignment_loss import BalancedKernelAlignmentLoss
+from .quantum_kernel.trainable_fidelity_quantum_kernel import (
+    TrainableFidelityQuantumKernel,
+)
 from .sampler import BackendSampler, StatevectorSampler
 from .state_fidelity import (
     CircuitFidelityRequest,
@@ -149,6 +154,7 @@ __all__ = [
     "AngleEncoding",
     "ArbitraryStatePreparation",
     "BackendSampler",
+    "BalancedKernelAlignmentLoss",
     "BaseAnsatz",
     "BasisEncoding",
     "BasisStateInitialization",
@@ -174,6 +180,7 @@ __all__ = [
     "FermiHubbardAnsatz",
     "FermionicGaussianStatePreparation",
     "FermionicHoppingAnsatz",
+    "FidelityQuantumKernel",
     "FiniteDifferenceGradient",
     "FullyConnectedMixer",
     "GHZStatePreparation",
@@ -238,6 +245,7 @@ __all__ = [
     "TTNAnsatz",
     "TimeColorMixer",
     "TimeSwapMixer",
+    "TrainableFidelityQuantumKernel",
     "TwoLocalAnsatz",
     "TwoQubitUnitaryAnsatz",
     "UCCAnsatz",

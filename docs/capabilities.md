@@ -13,6 +13,9 @@
 | `StateFidelity` | 批量估计量子态保真度 |
 | `Gradient` | 批量计算 Estimator 目标的梯度 |
 | `Optimizer` | 批量优化经典参数 |
+| `QuantumKernel`、`TrainableQuantumKernel` | 固定核求值与可训练核参数绑定 |
+| `KernelLoss` | 从核矩阵和目标向量计算标量损失 |
+| `ScalarMinimizer`、`ScalarMinimizerResult` | 经典标量目标搜索及结果 |
 
 ## 组件
 
@@ -29,6 +32,7 @@
 | 量子信息 | 纯态或混态任意量子比特二分下的精确量子互信息 |
 | 保真度与重叠 | `U2† U1` 酉重叠线路、基于 compute–uncompute 的线路纯态保真度 |
 | 误差缓解 | CDR、DDD、DEB、LRE、PEA、PEC、Pauli twirling、QSE、读出缓解、classical shadows、T-REx、Virtual Distillation 和 ZNE |
+| 量子核 | `FidelityQuantumKernel`、`TrainableFidelityQuantumKernel`、`BalancedKernelAlignmentLoss` |
 | 线路变换 | 可配置近似阶和输出 SWAP 的 `QFT` |
 
 ## 科研计算链
@@ -50,6 +54,7 @@
 | 搜索 | Grover 搜索 |
 | 变分算法 | VQE、VQD、ADAPT-VQE、Sampling VQE、QAOA、PVQD 实时演化、VarQITE 虚时演化、VarQRTE 实时演化、电子结构基态与 qEOM、晶格基态、振动基态 |
 | Oracle 算法 | Deutsch–Jozsa、Bernstein–Vazirani、Simon |
+| 量子机器学习 | QBayesian、QSVR、VQR、PegasosQSVC、QuantumKernelTrainer |
 | 量子信息与协议 | CHSH、BB84 协议实验、量子隐形传态、超密编码 |
 
 未在本页列出的规划项不视为当前能力。当前实现仍可能受模拟规模、显式真值表或稠密

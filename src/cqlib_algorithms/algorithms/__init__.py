@@ -43,6 +43,7 @@ from .electronic_structure import (
 )
 from .grover import Grover, GroverRequest, GroverResult
 from .lattice import LatticeGroundState, LatticeGroundStateResult
+from .pegasos_qsvc import PegasosQSVC
 from .phase_estimation import (
     HamiltonianPhaseEstimation,
     HamiltonianPhaseEstimationRequest,
@@ -55,6 +56,9 @@ from .phase_estimation import (
     PhaseEstimationRequest,
     PhaseEstimationResult,
 )
+from .qbayesian import QBayesian, QBayesianResult, QBayesianRound, QBayesianStatus
+from .qsvr import QSVR
+from .quantum_kernel_trainer import QuantumKernelTrainer, QuantumKernelTrainerResult
 from .quantum_teleportation import (
     QuantumTeleportation,
     QuantumTeleportationRequest,
@@ -94,14 +98,17 @@ from .vibration import (
     VibrationalGroundStateResult,
     VibrationalMeasurements,
 )
+from .vqr import VQR
 
 __all__ = [
     "BB84",
     "CHSH",
     "PVQD",
     "QAOA",
+    "QSVR",
     "VQD",
     "VQE",
+    "VQR",
     "AdaptVQE",
     "AdaptVQEResult",
     "AdaptVQETermination",
@@ -142,11 +149,18 @@ __all__ = [
     "MaximumLikelihoodAmplitudeEstimationRequest",
     "MaximumLikelihoodAmplitudeEstimationResult",
     "PVQDResult",
+    "PegasosQSVC",
     "PhaseEstimation",
     "PhaseEstimationProblem",
     "PhaseEstimationRequest",
     "PhaseEstimationResult",
     "QAOAResult",
+    "QBayesian",
+    "QBayesianResult",
+    "QBayesianRound",
+    "QBayesianStatus",
+    "QuantumKernelTrainer",
+    "QuantumKernelTrainerResult",
     "QuantumTeleportation",
     "QuantumTeleportationRequest",
     "QuantumTeleportationResult",

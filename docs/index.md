@@ -31,6 +31,12 @@ docstring 为准；本目录负责说明当前能力、使用方法和开发规�
 - [量子隐形传态](user-guide/algorithms/quantum-teleportation.md)
 - [超密编码](user-guide/algorithms/superdense-coding.md)
 
+- [QBayesian 量子贝叶斯推断](user-guide/algorithms/qbayesian.md)
+- [QSVR 量子核回归](user-guide/algorithms/qsvr.md)
+- [VQR 变分量子回归](user-guide/algorithms/vqr.md)
+- [PegasosQSVC 量子核分类](user-guide/algorithms/pegasos_qsvc.md)
+- [量子核训练](user-guide/algorithms/quantum_kernel_training.md)
+
 ### 组件
 
 - [状态制备与数据编码](user-guide/components/state-preparation.md)
