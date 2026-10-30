@@ -354,7 +354,13 @@ class LinCombEstimatorGradient(Gradient):
                                 )
                             test_circuit.append(operation)
                         evaluations.append(
-                            EstimatorRequest(test_circuit, extended, {}, base.shots)
+                            EstimatorRequest(
+                                test_circuit,
+                                extended,
+                                {},
+                                base.shots,
+                                base.seed,
+                            )
                         )
                         owners.append(
                             (

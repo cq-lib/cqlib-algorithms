@@ -23,6 +23,7 @@ from .sampler import (
     validate_sampler_result,
     validate_sampler_results,
 )
+from .state_fidelity import StateFidelity
 from .state_preparation import StatePreparation
 
 __all__ = [
@@ -39,6 +40,7 @@ __all__ = [
     "OptimizerStatus",
     "Sampler",
     "SamplerRequest",
+    "StateFidelity",
     "StatePreparation",
     "spawn_seeds",
     "validate_sampler_result",

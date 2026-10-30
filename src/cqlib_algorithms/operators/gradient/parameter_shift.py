@@ -188,6 +188,7 @@ class ParameterShiftGradient(Gradient):
                         base.observable,
                         {},
                         base.shots,
+                        base.seed,
                     )
                 )
                 owners.append((plan_index, shift_index))

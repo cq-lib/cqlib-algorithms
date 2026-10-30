@@ -115,7 +115,13 @@ def _estimator_request(
     bindings: dict[str, float],
 ) -> EstimatorRequest:
     base = request.estimator_request
-    return EstimatorRequest(base.circuit, base.observable, bindings, base.shots)
+    return EstimatorRequest(
+        base.circuit,
+        base.observable,
+        bindings,
+        base.shots,
+        base.seed,
+    )
 
 
 def _evaluate(

@@ -19,6 +19,7 @@ from .algorithms import (
     CHSH,
     PVQD,
     QAOA,
+    VQD,
     VQE,
     AdaptVQE,
     AdaptVQEResult,
@@ -84,6 +85,7 @@ from .algorithms import (
     VibrationalGroundStateResult,
     VibrationalMeasurements,
     VQAResult,
+    VQDResult,
     VQEResult,
 )
 from .operators import PhaseEstimationCircuit
@@ -101,6 +103,7 @@ from .protocols import (
     OptimizerStatus,
     Sampler,
     SamplerRequest,
+    StateFidelity,
     StatePreparation,
 )
 from .transforms import QFT
@@ -116,6 +119,7 @@ __all__ = [
     "PVQD",
     "QAOA",
     "QFT",
+    "VQD",
     "VQE",
     "AdaptVQE",
     "AdaptVQEResult",
@@ -188,11 +192,13 @@ __all__ = [
     "StandardAmplitudeEstimation",
     "StandardAmplitudeEstimationRequest",
     "StandardAmplitudeEstimationResult",
+    "StateFidelity",
     "StatePreparation",
     "SuperdenseCoding",
     "SuperdenseCodingRequest",
     "SuperdenseCodingResult",
     "VQAResult",
+    "VQDResult",
     "VQEResult",
     "VibrationalGroundState",
     "VibrationalGroundStateResult",

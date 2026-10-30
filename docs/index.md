@@ -15,6 +15,7 @@ docstring 为准；本目录负责说明当前能力、使用方法和开发规�
 - [振幅估计](user-guide/algorithms/amplitude-estimation.md)
 - [相位估计](user-guide/algorithms/phase-estimation.md)
 - [VQE](user-guide/algorithms/vqe.md)
+- [VQD](user-guide/algorithms/vqd.md)
 - [ADAPT-VQE](user-guide/algorithms/adapt-vqe.md)
 - [Sampling VQE](user-guide/algorithms/sampling-vqe.md)
 - [QAOA](user-guide/algorithms/qaoa.md)

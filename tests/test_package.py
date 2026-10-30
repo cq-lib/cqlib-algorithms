@@ -27,6 +27,7 @@ from cqlib_algorithms import (
     PVQD,
     QAOA,
     QFT,
+    VQD,
     VQE,
     AdaptVQE,
     AdaptVQEResult,
@@ -93,12 +94,14 @@ from cqlib_algorithms import (
     VibrationalGroundStateResult,
     VibrationalMeasurements,
     VQAResult,
+    VQDResult,
     VQEResult,
 )
 from cqlib_algorithms.algorithms import BB84 as AlgorithmBB84
 from cqlib_algorithms.algorithms import CHSH as AlgorithmCHSH
 from cqlib_algorithms.algorithms import PVQD as AlgorithmPVQD
 from cqlib_algorithms.algorithms import QAOA as AlgorithmQAOA
+from cqlib_algorithms.algorithms import VQD as AlgorithmVQD
 from cqlib_algorithms.algorithms import VQE as AlgorithmVQE
 from cqlib_algorithms.algorithms import AdaptVQE as AlgorithmAdaptVQE
 from cqlib_algorithms.algorithms import (
@@ -256,12 +259,14 @@ from cqlib_algorithms.algorithms import (
     VibrationalMeasurements as AlgorithmVibrationalMeasurements,
 )
 from cqlib_algorithms.algorithms import VQAResult as AlgorithmVQAResult
+from cqlib_algorithms.algorithms import VQDResult as AlgorithmVQDResult
 from cqlib_algorithms.algorithms import VQEResult as AlgorithmVQEResult
 from cqlib_algorithms.algorithms.time_evolution import PVQD as TimeEvolutionPVQD
 from cqlib_algorithms.algorithms.time_evolution import (
     PVQDResult as TimeEvolutionPVQDResult,
 )
 from cqlib_algorithms.algorithms.variational import QAOA as VariationalQAOA
+from cqlib_algorithms.algorithms.variational import VQD as VariationalVQD
 from cqlib_algorithms.algorithms.variational import VQE as VariationalVQE
 from cqlib_algorithms.algorithms.variational import (
     AdaptVQE as VariationalAdaptVQE,
@@ -288,6 +293,9 @@ from cqlib_algorithms.algorithms.variational import (
     VQAResult as VariationalVQAResult,
 )
 from cqlib_algorithms.algorithms.variational import (
+    VQDResult as VariationalVQDResult,
+)
+from cqlib_algorithms.algorithms.variational import (
     VQEResult as VariationalVQEResult,
 )
 from cqlib_algorithms.operators import (
@@ -307,6 +315,7 @@ from cqlib_algorithms.protocols import (
     OptimizerStatus,
     Sampler,
     SamplerRequest,
+    StateFidelity,
     StatePreparation,
 )
 from cqlib_algorithms.transforms import QFT as TransformQFT
@@ -384,6 +393,7 @@ PUBLIC_COMPONENTS = {
     "Simon": Simon,
     "SimonRequest": SimonRequest,
     "SimonResult": SimonResult,
+    "StateFidelity": StateFidelity,
     "StatePreparation": StatePreparation,
     "SuperdenseCoding": SuperdenseCoding,
     "SuperdenseCodingRequest": SuperdenseCodingRequest,
@@ -391,9 +401,11 @@ PUBLIC_COMPONENTS = {
     "StandardAmplitudeEstimation": StandardAmplitudeEstimation,
     "StandardAmplitudeEstimationRequest": StandardAmplitudeEstimationRequest,
     "StandardAmplitudeEstimationResult": StandardAmplitudeEstimationResult,
+    "VQAResult": VQAResult,
+    "VQD": VQD,
+    "VQDResult": VQDResult,
     "VQE": VQE,
     "VQEResult": VQEResult,
-    "VQAResult": VQAResult,
     "VibrationalGroundState": VibrationalGroundState,
     "VibrationalGroundStateResult": VibrationalGroundStateResult,
     "VibrationalMeasurements": VibrationalMeasurements,
@@ -442,6 +454,7 @@ def test_component_contracts_are_abstract_base_classes():
         Gradient,
         Optimizer,
         Sampler,
+        StateFidelity,
         StatePreparation,
     ):
         assert inspect.isabstract(component)
@@ -492,6 +505,11 @@ def test_adaptive_and_sampling_vqe_are_exported_from_public_namespaces():
     assert (
         SamplingVQEResult is AlgorithmSamplingVQEResult is VariationalSamplingVQEResult
     )
+
+
+def test_vqd_is_exported_from_public_namespaces():
+    assert VQD is AlgorithmVQD is VariationalVQD
+    assert VQDResult is AlgorithmVQDResult is VariationalVQDResult
 
 
 def test_electronic_ground_state_is_exported_from_public_namespaces():

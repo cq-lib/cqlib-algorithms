@@ -104,6 +104,8 @@ def test_request_is_shallow_frozen_slotted_and_copies_bindings() -> None:
         ({"shots": True}, TypeError, "shots"),
         ({"shots": 1.5}, TypeError, "shots"),
         ({"shots": 0}, ValueError, "greater than zero"),
+        ({"seed": True}, TypeError, "seed"),
+        ({"seed": -1}, ValueError, "seed"),
     ],
 )
 def test_request_rejects_invalid_nominal_fields(
@@ -119,6 +121,16 @@ def test_request_rejects_invalid_nominal_fields(
     arguments.update(kwargs)
     with pytest.raises(error, match=message):
         CircuitFidelityRequest(**arguments)  # type: ignore[arg-type]
+
+
+def test_request_seed_is_forwarded_to_the_sampler() -> None:
+    sampler = ScriptedSampler([{"0": 2}])
+
+    ComputeUncomputeFidelity(sampler).run(
+        [CircuitFidelityRequest(Circuit(1), Circuit(1), 2, seed=37)]
+    )
+
+    assert sampler.calls[0][0].seed == 37
 
 
 def test_request_rejects_zero_or_different_circuit_widths() -> None:

@@ -33,6 +33,7 @@ from cqlib.circuit import CircuitError
 from cqlib.device import ExecutionResult
 
 from ...protocols.sampler import Sampler, SamplerRequest
+from ...protocols.state_fidelity import StateFidelity
 from ._circuit_validation import validate_static_unitary
 
 
@@ -120,6 +121,7 @@ class CircuitFidelityRequest:
         shots: Positive number of compute-uncompute samples.
         parameter_bindings_a: Exact finite bindings for ``circuit_a``.
         parameter_bindings_b: Exact finite bindings for ``circuit_b``.
+        seed: Non-negative sampler seed, or ``None`` for fresh randomness.
 
     Raises:
         TypeError: If an argument has the wrong type.
@@ -132,6 +134,7 @@ class CircuitFidelityRequest:
     shots: int
     parameter_bindings_a: Mapping[str, float] = field(default_factory=dict)
     parameter_bindings_b: Mapping[str, float] = field(default_factory=dict)
+    seed: int | None = None
 
     __hash__ = None  # type: ignore[assignment]
 
@@ -162,6 +165,11 @@ class CircuitFidelityRequest:
             raise TypeError("shots must be an integer")
         if self.shots <= 0:
             raise ValueError("shots must be greater than zero")
+        if self.seed is not None:
+            if isinstance(self.seed, bool) or not isinstance(self.seed, int):
+                raise TypeError("seed must be an integer or None")
+            if self.seed < 0:
+                raise ValueError("seed must be non-negative")
 
         self.circuit_a.validate()
         self.circuit_b.validate()
@@ -260,7 +268,9 @@ def _validate_sample_result(
 
 
 @final
-class ComputeUncomputeFidelity:
+class ComputeUncomputeFidelity(
+    StateFidelity[CircuitFidelityRequest, CircuitFidelityResult]
+):
     """Estimate pure-state fidelity with an injected batch Sampler.
 
     For circuits ``U_A`` and ``U_B``, the submitted circuit applies ``U_B``
@@ -308,7 +318,12 @@ class ComputeUncomputeFidelity:
             compact.compose(bound_b, positions)
             compact.compose(inverse_a, positions)
             sampler_requests.append(
-                SamplerRequest(compact, tuple(compact.qubits), request.shots)
+                SamplerRequest(
+                    compact,
+                    tuple(compact.qubits),
+                    request.shots,
+                    request.seed,
+                )
             )
 
         if not sampler_requests:
