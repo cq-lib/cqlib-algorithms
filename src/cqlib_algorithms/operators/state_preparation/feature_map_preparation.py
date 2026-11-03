@@ -25,8 +25,8 @@ from cqlib.circuit.ansatz import (
     ZZFeatureMap,
 )
 
+from ..._utils.parameters import validate_parameter_prefix
 from ...protocols.state_preparation import StatePreparation
-from ._state_synthesis import validate_prefix
 
 _CoreFeatureMap: TypeAlias = (
     ZFeatureMap | IQPFeatureMap | ZZFeatureMap | PauliFeatureMap
@@ -72,7 +72,7 @@ class FeatureMapPreparation(StatePreparation):
 
     def build_circuit(self, prefix: str) -> Circuit:
         """Return a new circuit delegated to the Core feature map."""
-        validate_prefix(prefix)
+        validate_parameter_prefix(prefix)
         return self._feature_map.build_circuit(prefix)
 
     def num_parameters(self) -> int:

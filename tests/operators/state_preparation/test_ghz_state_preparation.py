@@ -41,5 +41,5 @@ def test_prepares_ghz_state_with_cx_chain(num_qubits: int) -> None:
 
 
 def test_rejects_zero_qubits() -> None:
-    with pytest.raises(ValueError, match="at least 1"):
+    with pytest.raises(ValueError, match="greater than zero"):
         GHZStatePreparation(0)

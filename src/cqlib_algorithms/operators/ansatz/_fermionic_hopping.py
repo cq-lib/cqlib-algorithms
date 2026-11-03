@@ -23,11 +23,11 @@ from cqlib.circuit import Circuit
 from cqlib.circuit.ansatz import EvolutionStrategy, PauliEvolutionAnsatz
 from cqlib.qis import FermionicLadder, FermionicOp, Hamiltonian, JordanWignerMapper
 
-from ._validation import (
-    copy_hermitian_hamiltonian,
-    validate_hermitian_hamiltonian,
-    validate_positive_qubit_count,
+from ..._utils.hamiltonian import (
+    snapshot_nonzero_hermitian_hamiltonian,
+    validate_nonzero_hermitian_hamiltonian,
 )
+from ..._utils.numeric import validate_positive_qubit_count
 
 
 def snapshot_hopping(value: complex) -> complex:
@@ -126,7 +126,7 @@ class _HoppingEvolution:
             complex(abs(frozen_hopping)),
         )
         mapped = JordanWignerMapper().map_operator(real_operator)
-        operator = copy_hermitian_hamiltonian(mapped, name="mapped hopping")
+        operator = snapshot_nonzero_hermitian_hamiltonian(mapped, name="mapped hopping")
         if not operator.all_terms_commute():
             raise ValueError("mapped real hopping terms must commute")
         return cls(
@@ -154,7 +154,7 @@ class _HoppingEvolution:
         if self.source_mode == self.target_mode:
             raise ValueError("source_mode and target_mode must be distinct")
         snapshot_hopping(self.hopping)
-        validate_hermitian_hamiltonian(self.operator, name="mapped hopping")
+        validate_nonzero_hermitian_hamiltonian(self.operator, name="mapped hopping")
         if not self.operator.all_terms_commute():
             raise ValueError("mapped real hopping terms must commute")
 

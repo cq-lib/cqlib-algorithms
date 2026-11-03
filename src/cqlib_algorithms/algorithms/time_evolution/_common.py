@@ -14,33 +14,15 @@
 
 from __future__ import annotations
 
-import math
 from collections.abc import Mapping, Sequence
-from numbers import Real
 from types import MappingProxyType
 
 from cqlib import Circuit
 from cqlib.qis import Hamiltonian, PauliString
 
+from ..._utils.numeric import normalize_finite_real
 from ...protocols import Estimator, EstimatorRequest, EstimatorResult
-
-
-def _normalize_finite_real(value: float, name: str) -> float:
-    """Validate and return a finite real value in normalized form."""
-    if isinstance(value, bool) or not isinstance(value, Real):
-        raise TypeError(f"{name} must be a real number")
-    normalized = float(value)
-    if not math.isfinite(normalized):
-        raise ValueError(f"{name} must be finite")
-    return normalized
-
-
-def _normalize_positive_real(value: float, name: str) -> float:
-    """Validate and return a finite positive real value in normalized form."""
-    normalized = _normalize_finite_real(value, name)
-    if normalized <= 0.0:
-        raise ValueError(f"{name} must be positive")
-    return normalized
+from ...protocols.estimator import require_estimator_results
 
 
 def _validate_positive_integer(value: int, name: str) -> None:
@@ -107,7 +89,7 @@ def _snapshot_parameters(parameters: Mapping[str, float]) -> Mapping[str, float]
     for name, value in parameters.items():
         if not isinstance(name, str):
             raise TypeError("parameter names must be strings")
-        snapshot[name] = _normalize_finite_real(value, "parameter value")
+        snapshot[name] = normalize_finite_real(value, "parameter value")
     return MappingProxyType(snapshot)
 
 
@@ -136,13 +118,11 @@ def _evaluate_trajectory(
             )
             seed_index += 1
 
-    results = estimator.run(requests)
-    if not isinstance(results, list):
-        raise TypeError("estimator must return a list of EstimatorResult values")
-    if len(results) != len(requests):
-        raise ValueError("estimator must return one result per trajectory request")
-    if any(not isinstance(result, EstimatorResult) for result in results):
-        raise TypeError("estimator must return EstimatorResult values")
+    results = require_estimator_results(
+        estimator.run(requests),
+        requests,
+        count_error="estimator must return one result per trajectory request",
+    )
 
     energies: list[EstimatorResult] = []
     histories: dict[str, list[EstimatorResult]] = {name: [] for name in names}

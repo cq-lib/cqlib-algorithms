@@ -32,17 +32,10 @@ from __future__ import annotations
 
 import math
 
+from cqlib import Circuit
 from cqlib.circuit.gates import StandardGate
 
-from cqlib import Circuit
-
-
-def _validate_positive_int(value: int, *, name: str) -> None:
-    r"""Validate one positive integer parameter."""
-    if isinstance(value, bool) or not isinstance(value, int):
-        raise TypeError(f"{name} must be an integer")
-    if value <= 0:
-        raise ValueError(f"{name} must be greater than zero")
+from ..._utils.numeric import validate_positive_integer
 
 
 def _binomial(n: int, k: int) -> int:
@@ -50,20 +43,6 @@ def _binomial(n: int, k: int) -> int:
     if k < 0 or k > n:
         return 0
     return math.comb(n, k)
-
-
-def _unary_index(num_qubits: int, ones: int) -> int:
-    r"""Return the basis index of ``|0^(n-ones) 1^ones>`` in paper order."""
-    if ones == 0:
-        return 0
-    return ((1 << ones) - 1) << (num_qubits - ones)
-
-
-def _one_hot_index(num_qubits: int, location: int) -> int:
-    r"""Return the basis index of ``|0^(k-l) 1 0^(l-1)>`` in paper order."""
-    if location < 1 or location > num_qubits:
-        raise ValueError("location must satisfy 1 <= location <= num_qubits")
-    return 1 << (num_qubits - location)
 
 
 class WeightDistributionBlockControlledAddition:
@@ -109,9 +88,9 @@ class WeightDistributionBlockControlledAddition:
     @staticmethod
     def validate(n: int, m: int, k: int) -> None:
         r"""Validate the controlled-addition parameters."""
-        _validate_positive_int(n, name="n")
-        _validate_positive_int(m, name="m")
-        _validate_positive_int(k, name="k")
+        validate_positive_integer(n, name="n")
+        validate_positive_integer(m, name="m")
+        validate_positive_integer(k, name="k")
         if m >= n:
             raise ValueError("m must be less than n")
         if k > n:
@@ -220,7 +199,7 @@ class WeightDistributionBlockUnarySubtraction:
     @staticmethod
     def validate(k: int) -> None:
         r"""Validate the unary register width."""
-        _validate_positive_int(k, name="k")
+        validate_positive_integer(k, name="k")
 
     @property
     def k(self) -> int:
@@ -306,9 +285,9 @@ class WeightDistributionBlock:
     @staticmethod
     def validate(n: int, m: int, k: int) -> None:
         r"""Validate the Weight Distribution Block parameters."""
-        _validate_positive_int(n, name="n")
-        _validate_positive_int(m, name="m")
-        _validate_positive_int(k, name="k")
+        validate_positive_integer(n, name="n")
+        validate_positive_integer(m, name="m")
+        validate_positive_integer(k, name="k")
         if m >= n:
             raise ValueError("m must be less than n")
         if k > m:
@@ -347,8 +326,9 @@ class WeightDistributionBlock:
             self._right_active_positions(),
         )
         circuit.compose(
-            WeightDistributionBlockControlledAddition(self.n, self.m, self.k)
-            .build_circuit(),
+            WeightDistributionBlockControlledAddition(
+                self.n, self.m, self.k
+            ).build_circuit(),
             self._active_positions(),
         )
         circuit.compose(

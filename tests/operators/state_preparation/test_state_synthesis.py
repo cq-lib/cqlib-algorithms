@@ -15,11 +15,13 @@
 from cqlib.circuit import Circuit
 from cqlib.circuit.gates import StandardGate
 
+from cqlib_algorithms._utils.numeric import validate_positive_qubit_count
+from cqlib_algorithms._utils.parameters import (
+    validate_parameter_prefix as validate_prefix,
+)
 from cqlib_algorithms.operators.state_preparation._state_synthesis import (
     _append_uniformly_controlled_rotation,
     validate_normalized_vector,
-    validate_positive_qubit_count,
-    validate_prefix,
     validate_sparse_entries,
 )
 

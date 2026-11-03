@@ -20,8 +20,8 @@ from typing import final
 from cqlib.circuit import Circuit
 from cqlib.circuit.ansatz import PauliEvolutionAnsatz, TwoLocal
 
+from ..._utils.parameters import validate_parameter_prefix
 from ...protocols.ansatz import Ansatz
-from ._validation import validate_prefix
 
 _InnerAnsatz = Ansatz | TwoLocal | PauliEvolutionAnsatz
 
@@ -45,7 +45,7 @@ class BaseAnsatz(Ansatz):
     @final
     def build_circuit(self, prefix: str) -> Circuit:
         """Build and validate an independent circuit."""
-        validate_prefix(prefix)
+        validate_parameter_prefix(prefix)
         self.validate()
         circuit = self._build_circuit(prefix)
         circuit.validate()

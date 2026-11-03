@@ -14,8 +14,6 @@
 
 from __future__ import annotations
 
-import math
-import numbers
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from typing import Literal, cast
@@ -23,6 +21,10 @@ from typing import Literal, cast
 import numpy as np
 from numpy.typing import NDArray
 
+from .._numeric import (
+    normalize_finite_complex,
+    normalize_vibrational_atol,
+)
 from .modal_space import ModalSpace
 
 VibrationalLadderKind = Literal["+", "-"]
@@ -35,32 +37,6 @@ def _validate_non_negative_index(value: int, *, name: str) -> None:
         raise TypeError(f"{name} must be an int")
     if value < 0:
         raise ValueError(f"{name} must be non-negative")
-
-
-def _normalize_coefficient(
-    coefficient: VibrationalCoefficient,
-    *,
-    name: str,
-) -> complex:
-    """Validate and return a finite complex coefficient."""
-    if isinstance(coefficient, (bool, np.bool_)) or not isinstance(
-        coefficient, numbers.Complex
-    ):
-        raise TypeError(f"{name} must be a complex number")
-    converted = complex(coefficient)
-    if not math.isfinite(converted.real) or not math.isfinite(converted.imag):
-        raise ValueError(f"{name} must be finite")
-    return converted
-
-
-def _normalize_atol(atol: float) -> float:
-    """Validate and return a finite non-negative tolerance."""
-    if isinstance(atol, (bool, np.bool_)) or not isinstance(atol, numbers.Real):
-        raise TypeError("atol must be a real number")
-    converted = float(atol)
-    if not math.isfinite(converted) or converted < 0.0:
-        raise ValueError("atol must be finite and non-negative")
-    return converted
 
 
 @dataclass(frozen=True, slots=True, order=True)
@@ -144,7 +120,7 @@ def _copy_terms(
             modal_space=modal_space,
             position=position,
         )
-        coefficient = _normalize_coefficient(
+        coefficient = normalize_finite_complex(
             entry[1],
             name=f"terms[{position}][1]",
         )
@@ -225,7 +201,7 @@ class VibrationalOp:
         operator. Construction already merges exact duplicate terms; ``atol``
         optionally removes numerical residuals.
         """
-        threshold = _normalize_atol(atol)
+        threshold = normalize_vibrational_atol(atol)
         return VibrationalOp.from_terms(
             self.modal_space,
             (
@@ -237,7 +213,7 @@ class VibrationalOp:
 
     def scaled(self, factor: VibrationalCoefficient) -> VibrationalOp:
         """Return this operator multiplied by a finite scalar."""
-        converted = _normalize_coefficient(factor, name="factor")
+        converted = normalize_finite_complex(factor, name="factor")
         return VibrationalOp.from_terms(
             self.modal_space,
             ((term, converted * coefficient) for term, coefficient in self.terms),
@@ -286,7 +262,7 @@ class VibrationalOp:
             return False
         if self.modal_space != other.modal_space:
             return False
-        threshold = _normalize_atol(atol)
+        threshold = normalize_vibrational_atol(atol)
         left = dict(self.terms)
         right = dict(other.terms)
         return all(
@@ -304,7 +280,7 @@ class VibrationalOp:
             return False
         if self.modal_space != other.modal_space:
             return False
-        threshold = _normalize_atol(atol)
+        threshold = normalize_vibrational_atol(atol)
         if self.coefficient_equiv(other, atol=threshold):
             return True
 
@@ -326,7 +302,7 @@ class VibrationalOp:
         Comparing only stored ladder words would not be an operator-level
         Hermiticity test because distinct words can represent the same matrix.
         """
-        threshold = _normalize_atol(atol)
+        threshold = normalize_vibrational_atol(atol)
         # The import is local to keep the sparse representation independent of
         # the concrete mapper during module initialization.
         from .one_hot_vibrational_mapping import OneHotVibrationalMapper

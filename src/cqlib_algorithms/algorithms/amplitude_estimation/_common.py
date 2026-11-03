@@ -15,27 +15,32 @@
 from __future__ import annotations
 
 import copy
+import math
+from numbers import Real
 
 from cqlib import Circuit
 from cqlib.device import ExecutionResult
 
+from ..._utils.numeric import validate_nonnegative_integer
 from .problem import AmplitudeEstimationProblem, _validate_problem
 
 
-def _validate_positive_integer(value: object, name: str) -> int:
-    if isinstance(value, bool) or not isinstance(value, int):
-        raise TypeError(f"{name} must be an integer")
-    if value <= 0:
-        raise ValueError(f"{name} must be greater than zero")
-    return value
-
-
-def _validate_nonnegative_integer(value: object, name: str) -> int:
-    if isinstance(value, bool) or not isinstance(value, int):
-        raise TypeError(f"{name} must be an integer")
-    if value < 0:
-        raise ValueError(f"{name} must be non-negative")
-    return value
+def _normalize_open_probability(
+    value: object,
+    name: str,
+    *,
+    upper: float = 1.0,
+) -> float:
+    """Validate and return a finite probability in ``(0, upper)``."""
+    if isinstance(value, bool) or not isinstance(value, Real):
+        raise TypeError(f"{name} must be a real number")
+    converted = float(value)
+    if not math.isfinite(converted):
+        raise ValueError(f"{name} must be finite")
+    if not 0.0 < converted < upper:
+        upper_label = "1" if upper == 1.0 else str(upper)
+        raise ValueError(f"{name} must lie in (0, {upper_label})")
+    return converted
 
 
 def _build_grover_power_circuit(
@@ -44,7 +49,7 @@ def _build_grover_power_circuit(
 ) -> Circuit:
     """Build ``Q**power A`` without modifying either problem circuit."""
     _validate_problem(problem)
-    _validate_nonnegative_integer(power, "power")
+    validate_nonnegative_integer(power, name="power")
     circuit = Circuit(problem.num_qubits)
     circuit.compose(copy.deepcopy(problem.state_preparation), circuit.qubits)
     for _ in range(power):

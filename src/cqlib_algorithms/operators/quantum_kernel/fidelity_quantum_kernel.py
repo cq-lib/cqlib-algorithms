@@ -32,16 +32,15 @@ from cqlib.qis.metrics import state_fidelity_pure
 from cqlib.qis.state import Statevector
 from numpy.typing import ArrayLike, NDArray
 
+from ..._utils.circuit import (
+    validate_bound_static_unitary_circuit,
+    validate_static_unitary_structure,
+)
+from ..._utils.numeric import copy_finite_real_array, validate_positive_integer
 from ...protocols.quantum_kernel import QuantumKernel
 from ...protocols.sampler import Sampler
 from ..state_fidelity import CircuitFidelityRequest, ComputeUncomputeFidelity
 from ..state_preparation import UserCircuitPreparation
-from ._validation import (
-    _positive_integer,
-    _real_array,
-    _validate_static_unitary,
-    _validate_static_unitary_circuit,
-)
 
 
 class FidelityQuantumKernel(QuantumKernel):
@@ -124,12 +123,12 @@ class FidelityQuantumKernel(QuantumKernel):
         if sampler is not None and not isinstance(sampler, Sampler):
             raise TypeError("sampler must be a Sampler instance")
         if shots is not None:
-            _positive_integer(shots, "shots")
-        _positive_integer(max_statevector_qubits, "max_statevector_qubits")
-        _positive_integer(max_statevector_bytes, "max_statevector_bytes")
+            validate_positive_integer(shots, "shots")
+        validate_positive_integer(max_statevector_qubits, "max_statevector_qubits")
+        validate_positive_integer(max_statevector_bytes, "max_statevector_bytes")
         # Validate structure without selecting a point in the input domain.
         partial = normalized.assign_parameters(fixed)
-        _validate_static_unitary(partial, label="feature_map")
+        validate_static_unitary_structure(partial, label="feature_map")
         partial.inverse()
         constants = Circuit(partial.num_qubits)
         if not partial.global_phase.symbols:
@@ -147,7 +146,9 @@ class FidelityQuantumKernel(QuantumKernel):
                 for value in operation.params
             ):
                 constants.append(operation)
-        _validate_static_unitary_circuit(constants, "feature_map constant operations")
+        validate_bound_static_unitary_circuit(
+            constants, "feature_map constant operations"
+        )
         self._feature_map = copy.deepcopy(normalized)
         self._input_parameters = names
         self._parameter_bindings = MappingProxyType(fixed)
@@ -176,8 +177,8 @@ class FidelityQuantumKernel(QuantumKernel):
         """Return the required number of data columns."""
         return len(self._input_parameters)
 
-    def _validate_data(self, values: ArrayLike, name: str) -> NDArray[np.float64]:
-        data = _real_array(values, name, 2)
+    def _copy_data(self, values: ArrayLike, name: str) -> NDArray[np.float64]:
+        data = copy_finite_real_array(values, name, 2)
         if data.shape[1] != self.num_features:
             raise ValueError(f"{name} feature width must match input_parameters")
         return data
@@ -188,7 +189,7 @@ class FidelityQuantumKernel(QuantumKernel):
             **dict(zip(self._input_parameters, row)),
         }
         bound = self._feature_map.assign_parameters(bindings)
-        _validate_static_unitary_circuit(bound, "bound feature_map")
+        validate_bound_static_unitary_circuit(bound, "bound feature_map")
         bound.inverse()
         return bound
 
@@ -200,8 +201,8 @@ class FidelityQuantumKernel(QuantumKernel):
         and incorrectly shaped data are rejected. Resource limits are checked
         before exact simulation, and allocation failures become ValueError.
         """
-        x = self._validate_data(X, "X")
-        y = x if Y is None else self._validate_data(Y, "Y")
+        x = self._copy_data(X, "X")
+        y = x if Y is None else self._copy_data(Y, "Y")
         rows, columns = len(x), len(y)
         if rows and columns > sys.maxsize // 8 // rows:
             raise ValueError(

@@ -35,6 +35,7 @@ import numpy as np
 from cqlib import Circuit
 from cqlib.qis import Hamiltonian, PauliString
 
+from ..._utils.numeric import normalize_finite_real, normalize_positive_real
 from ...operators.gradient import NaturalGradient
 from ...protocols import (
     Ansatz,
@@ -47,8 +48,6 @@ from ...protocols import (
 from ...protocols.sampler import spawn_seeds
 from ._common import (
     _evaluate_trajectory,
-    _normalize_finite_real,
-    _normalize_positive_real,
     _snapshot_auxiliary_operators,
     _snapshot_hamiltonian,
     _snapshot_parameters,
@@ -87,7 +86,7 @@ class VarQITEResult:
     def __post_init__(self) -> None:
         if not isinstance(self.times, tuple):
             raise TypeError("times must be a tuple")
-        times = tuple(_normalize_finite_real(value, "time") for value in self.times)
+        times = tuple(normalize_finite_real(value, "time") for value in self.times)
         if len(times) < 2:
             raise ValueError(
                 "times must contain the initial and at least one final time"
@@ -283,7 +282,7 @@ class VarQITE:
             ValueError: If dimensions, bindings, values, circuit structure, or
                 component responses violate the evolution contract.
         """
-        total_time = _normalize_positive_real(time, "time")
+        total_time = normalize_positive_real(time, "time")
         _validate_positive_integer(num_timesteps, "num_timesteps")
         snapshot = _snapshot_hamiltonian(hamiltonian, name="hamiltonian")
 

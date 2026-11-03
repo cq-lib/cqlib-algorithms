@@ -24,8 +24,8 @@ from cqlib_algorithms.protocols.estimator import (
     EstimatorResult,
 )
 
+from ..._utils.circuit import validate_unitary_state_preparation
 from .._statevector_observable import hermitian_expectation
-from ._circuit_validation import validate_unitary_state_preparation
 
 
 class StatevectorEstimator(Estimator):

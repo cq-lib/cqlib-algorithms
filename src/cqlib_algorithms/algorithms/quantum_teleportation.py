@@ -31,9 +31,8 @@ from cqlib import Circuit
 from cqlib.qis import metrics
 from cqlib.qis.state import DensityMatrix, Statevector
 
-from ..operators.estimator._circuit_validation import (
-    validate_unitary_state_preparation,
-)
+from .._utils.circuit import validate_unitary_state_preparation
+from .._utils.numeric import validate_positive_integer
 from ..operators.state_preparation import (
     GHZStatePreparation,
     UserCircuitPreparation,
@@ -41,13 +40,6 @@ from ..operators.state_preparation import (
 
 _NUMERICAL_TOLERANCE = 1e-12
 _BELL_OUTCOMES = ((0, 0), (0, 1), (1, 0), (1, 1))
-
-
-def _validate_shots(shots: int) -> None:
-    if type(shots) is not int:
-        raise TypeError("shots must be an integer")
-    if shots < 1:
-        raise ValueError("shots must be greater than zero")
 
 
 def _validate_fidelity_tolerance(tolerance: float) -> None:
@@ -141,14 +133,14 @@ class QuantumTeleportationRequest:
 
     def __post_init__(self) -> None:
         _snapshot_state_preparation(self.state_preparation)
-        _validate_shots(self.shots)
+        validate_positive_integer(self.shots, "shots")
         _validate_fidelity_tolerance(self.fidelity_tolerance)
         object.__setattr__(self, "fidelity_tolerance", float(self.fidelity_tolerance))
 
     def validate(self) -> None:
         """Revalidate this request, including its mutable Core circuit."""
         _snapshot_state_preparation(self.state_preparation)
-        _validate_shots(self.shots)
+        validate_positive_integer(self.shots, "shots")
         _validate_fidelity_tolerance(self.fidelity_tolerance)
 
 
@@ -277,7 +269,7 @@ class QuantumTeleportation:
                     "requests must contain QuantumTeleportationRequest instances"
                 )
             input_circuit = _snapshot_state_preparation(request.state_preparation)
-            _validate_shots(request.shots)
+            validate_positive_integer(request.shots, "shots")
             _validate_fidelity_tolerance(request.fidelity_tolerance)
             target_state = Statevector.from_circuit(input_circuit)
             premeasurement = Statevector.from_circuit(

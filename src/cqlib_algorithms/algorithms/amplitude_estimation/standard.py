@@ -30,9 +30,9 @@ from typing import final
 
 from cqlib import Circuit
 
+from ..._utils.numeric import normalize_positive_integer
 from ...operators.composite import PhaseEstimationCircuit
-from ...protocols.sampler import Sampler, SamplerRequest, validate_sampler_results
-from ._common import _validate_positive_integer
+from ...protocols.sampler import Sampler, SamplerRequest, require_sampler_results
 from .problem import AmplitudeEstimationProblem, _validate_problem
 
 
@@ -62,8 +62,8 @@ class StandardAmplitudeEstimationRequest:
     def validate(self) -> None:
         """Revalidate the shallowly frozen request before execution."""
         _validate_problem(self.problem)
-        _validate_positive_integer(self.num_evaluation_qubits, "num_evaluation_qubits")
-        _validate_positive_integer(self.shots, "shots")
+        normalize_positive_integer(self.num_evaluation_qubits, "num_evaluation_qubits")
+        normalize_positive_integer(self.shots, "shots")
 
 
 @dataclass(frozen=True, slots=True)
@@ -105,8 +105,8 @@ class StandardAmplitudeEstimationResult:
             raise ValueError("estimation must lie in [0, 1]")
         if self.confidence_interval is not None:
             raise ValueError("standard amplitude estimation has no confidence interval")
-        _validate_positive_integer(self.shots, "shots")
-        _validate_positive_integer(self.num_evaluation_qubits, "num_evaluation_qubits")
+        normalize_positive_integer(self.shots, "shots")
+        normalize_positive_integer(self.num_evaluation_qubits, "num_evaluation_qubits")
         dimension = 1 << self.num_evaluation_qubits
         if (
             isinstance(self.grid_point, bool)
@@ -218,7 +218,7 @@ class StandardAmplitudeEstimation:
             A fresh circuit with phase qubits followed by system qubits.
         """
         _validate_problem(problem)
-        _validate_positive_integer(num_evaluation_qubits, "num_evaluation_qubits")
+        normalize_positive_integer(num_evaluation_qubits, "num_evaluation_qubits")
         component = PhaseEstimationCircuit(
             problem.grover_operator,
             num_evaluation_qubits,
@@ -261,7 +261,7 @@ class StandardAmplitudeEstimation:
         if not sampler_requests:
             return []
 
-        sampled = validate_sampler_results(
+        sampled = require_sampler_results(
             self._sampler.run(sampler_requests), sampler_requests
         )
         results: list[StandardAmplitudeEstimationResult] = []

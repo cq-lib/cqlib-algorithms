@@ -38,6 +38,7 @@ from numbers import Real
 import numpy as np
 from numpy.polynomial.chebyshev import chebval
 
+from ....._utils.numeric import validate_positive_integer
 from ._numerics import (
     _BOUND_TOLERANCE,
     _COEFFICIENT_TOLERANCE,
@@ -46,7 +47,6 @@ from ._numerics import (
     _normalize_positive_scalar,
     _run_bfgs,
     _symmetric_phases,
-    _validate_positive_integer,
     _wrap_phases,
 )
 
@@ -86,7 +86,7 @@ def solve_qsp_phases(
         gradient_tolerance,
         name="gradient_tolerance",
     )
-    _validate_positive_integer(
+    validate_positive_integer(
         max_iterations,
         name="max_iterations",
     )

@@ -28,6 +28,7 @@ from cqlib.circuit import Circuit
 from cqlib.circuit.ansatz import EvolutionStrategy
 from cqlib.qis import Hamiltonian
 
+from ..._utils.numeric import validate_positive_integer
 from ..ansatz import QAOAMixerEvolution
 from ._base import _BaseMixer
 from ._exchange import (
@@ -35,7 +36,7 @@ from ._exchange import (
     append_exchange_product_formula,
     validate_exchange_evolution,
 )
-from ._validation import snapshot_strategy, validate_positive_integer
+from ._validation import snapshot_strategy
 
 
 @final

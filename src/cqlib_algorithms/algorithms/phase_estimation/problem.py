@@ -18,9 +18,9 @@ from dataclasses import dataclass
 
 from cqlib import Circuit
 
-from ...operators.composite.phase_estimation_circuit import (
-    _snapshot_static_unitary_circuit,
-    _validate_static_unitary_circuit,
+from ..._utils.phase_estimation import (
+    snapshot_static_unitary_circuit,
+    validate_static_unitary_circuit,
 )
 
 
@@ -48,8 +48,8 @@ class PhaseEstimationProblem:
     __hash__ = None  # type: ignore[assignment]
 
     def __post_init__(self) -> None:
-        unitary = _snapshot_static_unitary_circuit(self.unitary, "unitary")
-        state_preparation = _snapshot_static_unitary_circuit(
+        unitary = snapshot_static_unitary_circuit(self.unitary, "unitary")
+        state_preparation = snapshot_static_unitary_circuit(
             self.state_preparation,
             "state_preparation",
         )
@@ -67,8 +67,8 @@ class PhaseEstimationProblem:
 
     def validate(self) -> None:
         """Revalidate the shallowly frozen problem before execution."""
-        _validate_static_unitary_circuit(self.unitary, "unitary")
-        _validate_static_unitary_circuit(
+        validate_static_unitary_circuit(self.unitary, "unitary")
+        validate_static_unitary_circuit(
             self.state_preparation,
             "state_preparation",
         )
@@ -78,11 +78,10 @@ class PhaseEstimationProblem:
             )
 
 
-def _validate_problem(problem: object) -> PhaseEstimationProblem:
+def _validate_problem(problem: object) -> None:
     if not isinstance(problem, PhaseEstimationProblem):
         raise TypeError("problem must be a PhaseEstimationProblem")
     problem.validate()
-    return problem
 
 
 __all__ = ["PhaseEstimationProblem"]

@@ -26,6 +26,7 @@ from cqlib_algorithms import protocols
 from cqlib_algorithms.protocols.sampler import (
     Sampler,
     SamplerRequest,
+    require_sampler_results,
     spawn_seeds,
     validate_sampler_result,
     validate_sampler_results,
@@ -201,7 +202,9 @@ def test_sampler_uses_nominal_runtime_membership():
 
 def test_result_validators_are_exported_from_protocol_namespace():
     assert protocols.validate_sampler_result is validate_sampler_result
+    assert protocols.require_sampler_results is require_sampler_results
     assert protocols.validate_sampler_results is validate_sampler_results
+    assert validate_sampler_results is require_sampler_results
 
 
 def test_public_result_validators_accept_and_preserve_a_valid_batch():
@@ -209,18 +212,18 @@ def test_public_result_validators_accept_and_preserve_a_valid_batch():
     results = _FakeSampler().run(requests)
 
     validate_sampler_result(results[0], requests[0])
-    assert validate_sampler_results(results, requests) is results
+    assert require_sampler_results(results, requests) is results
 
 
 def test_batch_validator_rejects_invalid_container_size_and_entry_type():
     request = _sample_request()
 
     with pytest.raises(TypeError, match="sampler must return a list"):
-        validate_sampler_results(tuple(_FakeSampler().run([request])), [request])
+        require_sampler_results(tuple(_FakeSampler().run([request])), [request])
     with pytest.raises(ValueError, match="one result per request"):
-        validate_sampler_results([], [request])
+        require_sampler_results([], [request])
     with pytest.raises(TypeError, match="cqlib.device.ExecutionResult"):
-        validate_sampler_results([{"00": 4}], [request])
+        require_sampler_results([{"00": 4}], [request])
 
 
 def test_result_validator_rejects_wrong_request_type():

@@ -25,30 +25,19 @@ import math
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from fractions import Fraction
-from numbers import Real
 from typing import final
 
-from ...protocols.sampler import Sampler, SamplerRequest, validate_sampler_results
+from ..._utils.numeric import normalize_positive_integer
+from ...protocols.sampler import Sampler, SamplerRequest, require_sampler_results
 from ._common import (
     _build_grover_power_circuit,
     _count_good_outcomes,
-    _validate_positive_integer,
+    _normalize_open_probability,
 )
 from .problem import AmplitudeEstimationProblem, _validate_problem
 
 _MIN_BINARY64_EPSILON = math.pi * math.ulp(0.25)
 _MAX_BINARY64_CHERNOFF_SHOTS = (1 << 53) - 1
-
-
-def _validate_open_probability(value: object, name: str, *, upper: float) -> float:
-    if isinstance(value, bool) or not isinstance(value, Real):
-        raise TypeError(f"{name} must be a real number")
-    converted = float(value)
-    if not math.isfinite(converted):
-        raise ValueError(f"{name} must be finite")
-    if not 0.0 < converted < upper:
-        raise ValueError(f"{name} must lie in (0, {upper})")
-    return converted
 
 
 def _theoretical_rounds(epsilon: float) -> int:
@@ -100,16 +89,16 @@ class IterativeAmplitudeEstimationRequest:
     def validate(self) -> None:
         """Revalidate the shallowly frozen request before execution."""
         _validate_problem(self.problem)
-        epsilon = _validate_open_probability(
+        epsilon = _normalize_open_probability(
             self.epsilon, "epsilon", upper=math.pi / 8.0
         )
         if epsilon < _MIN_BINARY64_EPSILON:
             raise ValueError(
                 "epsilon must be at least pi * ulp(0.25) for binary64 geometry"
             )
-        alpha = _validate_open_probability(self.alpha, "alpha", upper=1.0)
-        _validate_positive_integer(self.shots, "shots")
-        _validate_positive_integer(self.max_rounds, "max_rounds")
+        alpha = _normalize_open_probability(self.alpha, "alpha", upper=1.0)
+        normalize_positive_integer(self.shots, "shots")
+        normalize_positive_integer(self.max_rounds, "max_rounds")
         rounds = _theoretical_rounds(epsilon)
         if self.max_rounds < rounds:
             raise ValueError("max_rounds must be at least ceil(log2(pi/(8*epsilon)))")
@@ -405,7 +394,7 @@ class IterativeAmplitudeEstimation:
                 sampler_requests.append(SamplerRequest(circuit, measured, round_shots))
                 choices.append((state, power, upper_half_circle, round_shots))
 
-            sampled = validate_sampler_results(
+            sampled = require_sampler_results(
                 self._sampler.run(sampler_requests), sampler_requests
             )
             for (state, power, upper_half_circle, round_shots), sample in zip(

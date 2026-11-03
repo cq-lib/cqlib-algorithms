@@ -15,7 +15,6 @@
 from __future__ import annotations
 
 import math
-import numbers
 from collections.abc import Sequence
 from dataclasses import dataclass
 
@@ -23,19 +22,10 @@ import numpy as np
 from cqlib.qis import Hamiltonian
 from numpy.typing import NDArray
 
+from .._numeric import normalize_vibrational_atol
 from ..many_body import ModalSpace, OneHotVibrationalMapper, VibrationalOp
 from .energy_model import VibrationalEnergy
 from .observables import OccupiedModals, OneHotLeakage
-
-
-def _normalize_atol(atol: float) -> float:
-    """Validate and return a finite non-negative tolerance."""
-    if isinstance(atol, (bool, np.bool_)) or not isinstance(atol, numbers.Real):
-        raise TypeError("atol must be a real number")
-    converted = float(atol)
-    if not math.isfinite(converted) or converted < 0.0:
-        raise ValueError("atol must be finite and non-negative")
-    return converted
 
 
 @dataclass(frozen=True, slots=True)
@@ -110,7 +100,7 @@ class VibrationalSystem:
         atol: float = 1e-12,
     ) -> bool:
         """Return whether a normalized qubit state lies in the one-hot sector."""
-        threshold = _normalize_atol(atol)
+        threshold = normalize_vibrational_atol(atol)
         array = np.asarray(statevector, dtype=np.complex128)
         if array.ndim != 1 or array.shape != (1 << self.num_qubits,):
             raise ValueError("statevector shape must be (2**num_qubits,)")

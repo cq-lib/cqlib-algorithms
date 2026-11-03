@@ -28,7 +28,11 @@ from ...extension.chemistry.electronic import (
 )
 from ...operators.ansatz.uccsd_ansatz import UCCSDAnsatz
 from ...protocols.ansatz import Ansatz
-from ...protocols.estimator import Estimator, EstimatorRequest, EstimatorResult
+from ...protocols.estimator import (
+    Estimator,
+    EstimatorRequest,
+    require_estimator_results,
+)
 from ...protocols.optimizer import Optimizer
 from ..variational.vqe import VQE
 from .results import ElectronicGroundStateResult
@@ -178,15 +182,7 @@ class ElectronicGroundState:
             )
             for _, factory in factories
         ]
-        estimates = self._estimator.run(requests)
-        if not isinstance(estimates, list):
-            raise TypeError("estimator must return a list of EstimatorResult values")
-        if len(estimates) != len(requests):
-            raise ValueError(
-                "estimator must return one result per auxiliary-observable request"
-            )
-        if any(not isinstance(result, EstimatorResult) for result in estimates):
-            raise TypeError("estimator must return EstimatorResult values")
+        estimates = require_estimator_results(self._estimator.run(requests), requests)
         auxiliary = {
             name: result for (name, _), result in zip(factories, estimates, strict=True)
         }

@@ -19,6 +19,7 @@ from typing import final
 from cqlib.circuit import Circuit
 from numpy.typing import ArrayLike
 
+from ..._utils.parameters import validate_parameter_prefix
 from ...protocols.state_preparation import StatePreparation
 from ._slater_decomposition import (
     _AdjacentGivens,
@@ -27,7 +28,6 @@ from ._slater_decomposition import (
     snapshot_orbital_coefficients,
     validate_orbital_coefficients,
 )
-from ._state_synthesis import validate_prefix
 from .basis_state_initialization import BasisStateInitialization
 
 
@@ -85,7 +85,7 @@ class SlaterDeterminantStatePreparation(StatePreparation):
 
     def build_circuit(self, prefix: str) -> Circuit:
         """Return an independent adjacent-mode Slater preparation circuit."""
-        validate_prefix(prefix)
+        validate_parameter_prefix(prefix)
         self.validate()
         circuit = self._basis_preparation.build_circuit(prefix)
         for rotation in self._rotations:

@@ -35,10 +35,11 @@ from cqlib_algorithms.operators.state_fidelity import (
 from cqlib_algorithms.operators.state_fidelity.compute_uncompute import (
     ComputeUncomputeFidelity as ModuleComputeUncomputeFidelity,
 )
-from cqlib_algorithms.operators.state_fidelity.compute_uncompute import (
-    _validate_sample_result,
+from cqlib_algorithms.protocols.sampler import (
+    Sampler,
+    SamplerRequest,
+    validate_sampler_result,
 )
-from cqlib_algorithms.protocols.sampler import Sampler, SamplerRequest
 
 
 class ScriptedSampler(Sampler):
@@ -507,7 +508,7 @@ def test_sample_result_validator_rejects_malformed_counts(
     )
 
     with pytest.raises(ValueError, match=message):
-        _validate_sample_result(malformed, request)  # type: ignore[arg-type]
+        validate_sampler_result(malformed, request)  # type: ignore[arg-type]
 
 
 class InvalidSampler(Sampler):
@@ -527,6 +528,15 @@ class InvalidSampler(Sampler):
             return [object()]  # type: ignore[list-item]
 
         request = requests[0]
+        if self.mode == "tuple":
+            result = ExecutionResult.from_counts(
+                "tuple",
+                list(request.qubits),
+                request.shots,
+                len(request.qubits),
+                {"0": request.shots},
+            )
+            return (result,)  # type: ignore[return-value]
         if self.mode == "queued":
             return [
                 ExecutionResult(
@@ -592,6 +602,7 @@ class InvalidSampler(Sampler):
     ("mode", "error", "message"),
     [
         ("missing", ValueError, "one result"),
+        ("tuple", TypeError, "return a list"),
         ("wrong_type", TypeError, "ExecutionResult"),
         ("queued", ValueError, "successful terminal"),
         ("failed", ValueError, "successful terminal"),

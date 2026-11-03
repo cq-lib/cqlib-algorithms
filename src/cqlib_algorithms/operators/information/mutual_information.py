@@ -30,7 +30,7 @@ from cqlib.qis import metrics
 from cqlib.qis.state import DensityMatrix, Statevector
 
 
-def _validate_base(base: float) -> float:
+def _normalize_base(base: float) -> float:
     if isinstance(base, bool) or not isinstance(base, Real):
         raise TypeError("base must be a real number")
     normalized = float(base)
@@ -41,7 +41,7 @@ def _validate_base(base: float) -> float:
     return normalized
 
 
-def _validate_partition(
+def _normalize_partition(
     subsystem_a: Sequence[int],
     num_qubits: int,
 ) -> tuple[int, ...]:
@@ -104,8 +104,8 @@ def mutual_information(
     if density_matrix.num_qubits < 2:
         raise ValueError("state must contain at least two qubits")
 
-    normalized_base = _validate_base(base)
-    partition_a = _validate_partition(subsystem_a, density_matrix.num_qubits)
+    normalized_base = _normalize_base(base)
+    partition_a = _normalize_partition(subsystem_a, density_matrix.num_qubits)
     selected = set(partition_a)
     partition_b = tuple(
         index for index in range(density_matrix.num_qubits) if index not in selected

@@ -32,7 +32,7 @@ from ..operators.oracle import (
     BooleanFunction,
     BooleanVectorFunction,
 )
-from ..protocols.sampler import Sampler, SamplerRequest, validate_sampler_results
+from ..protocols.sampler import Sampler, SamplerRequest, require_sampler_results
 
 
 @dataclass(frozen=True, slots=True)
@@ -244,7 +244,7 @@ class BernsteinVazirani:
         if not sampler_requests:
             return []
 
-        sample_results = validate_sampler_results(
+        sample_results = require_sampler_results(
             self._sampler.run(sampler_requests), sampler_requests
         )
 

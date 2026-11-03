@@ -31,6 +31,8 @@ from typing import TypeAlias
 from cqlib.circuit import Circuit
 from cqlib.circuit.gates import StandardGate
 
+from ..._utils.numeric import validate_positive_qubit_count
+
 ComplexVector: TypeAlias = tuple[complex, ...]
 SparseEntry: TypeAlias = tuple[int, complex]
 
@@ -48,20 +50,6 @@ def _stable_norm(values: Iterable[complex]) -> float:
     for value in values:
         norm = math.hypot(norm, abs(value))
     return norm
-
-
-def validate_positive_qubit_count(num_qubits: int) -> None:
-    """Validate a strictly positive qubit count."""
-    if type(num_qubits) is not int:
-        raise TypeError("num_qubits must be an int")
-    if num_qubits < 1:
-        raise ValueError("num_qubits must be at least 1")
-
-
-def validate_prefix(prefix: str) -> None:
-    """Validate a component parameter-name prefix."""
-    if not isinstance(prefix, str):
-        raise TypeError("prefix must be a str")
 
 
 def copy_complex_vector(values: Sequence[complex], *, name: str) -> ComplexVector:

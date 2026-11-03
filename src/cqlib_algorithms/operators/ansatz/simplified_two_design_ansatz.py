@@ -25,7 +25,7 @@ from typing import final
 
 from cqlib.circuit import Circuit, Parameter
 
-from ._validation import validate_positive_qubit_count, validate_repetitions
+from ..._utils.numeric import validate_positive_qubit_count, validate_repetitions
 from .base_ansatz import BaseAnsatz
 
 

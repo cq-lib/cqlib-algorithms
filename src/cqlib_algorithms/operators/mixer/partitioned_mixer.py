@@ -28,9 +28,9 @@ from typing import final
 
 from cqlib.circuit import Circuit
 
+from ..._utils.numeric import validate_positive_integer
 from ...protocols.ansatz import Ansatz
 from ._base import _BaseMixer
-from ._validation import validate_positive_integer
 
 
 @dataclass(frozen=True, slots=True)

@@ -57,14 +57,6 @@ def _normalize_positive_scalar(value: float, *, name: str) -> float:
     return scalar
 
 
-def _validate_positive_integer(value: int, *, name: str) -> None:
-    r"""Validate a positive integer."""
-    if isinstance(value, bool) or not isinstance(value, int):
-        raise TypeError(f"{name} must be an integer")
-    if value <= 0:
-        raise ValueError(f"{name} must be greater than zero")
-
-
 def _chebyshev_nodes(count: int) -> np.ndarray:
     r"""Return the first-kind Chebyshev nodes on ``(0, 1]`` for training."""
     indices = np.arange(1, count + 1, dtype=np.float64)
@@ -199,9 +191,7 @@ def _bfgs_update(
     outer_ys = np.outer(curvature, displacement)
     outer_ss = np.outer(displacement, displacement)
     updated: np.ndarray = np.asarray(
-        (identity - rho * outer_sy)
-        @ inverse_hessian
-        @ (identity - rho * outer_ys)
+        (identity - rho * outer_sy) @ inverse_hessian @ (identity - rho * outer_ys)
         + rho * outer_ss,
         dtype=np.float64,
     )
@@ -230,7 +220,10 @@ def _run_bfgs(
     raised. ``loss_fn`` maps the free phase vector to the scalar loss, and
     ``wrap`` expands the converged vector into the final phase sequence.
     """
-    generator = np.random.default_rng()
+    # Keep restart points reproducible.  This makes identical synthesis
+    # requests follow the same numerical path without mutating NumPy's global
+    # random state.
+    generator = np.random.default_rng(0)
     for attempt in range(_MAX_RESTARTS + 1):
         if attempt == 0:
             current = np.zeros(num_free_phases, dtype=np.float64)

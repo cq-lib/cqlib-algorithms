@@ -32,7 +32,12 @@ from cqlib.qis import Hamiltonian, PauliString
 
 from ...operators.state_fidelity import CircuitFidelityRequest, CircuitFidelityResult
 from ...protocols.ansatz import Ansatz
-from ...protocols.estimator import Estimator, EstimatorRequest, EstimatorResult
+from ...protocols.estimator import (
+    Estimator,
+    EstimatorRequest,
+    EstimatorResult,
+    require_estimator_results,
+)
 from ...protocols.optimizer import Optimizer, OptimizerRequest, OptimizerResult
 from ...protocols.sampler import spawn_seeds
 from ...protocols.state_fidelity import StateFidelity
@@ -173,22 +178,6 @@ class VQDResult:
         )
 
 
-def _snapshot_result_batch(
-    results: object,
-    expected: int,
-    *,
-    source: str,
-) -> list[EstimatorResult]:
-    """Validate and return a defensive Estimator result snapshot."""
-    if not isinstance(results, list):
-        raise TypeError(f"{source} must return a list of EstimatorResult values")
-    if len(results) != expected:
-        raise ValueError(f"{source} must return one result per request")
-    if any(not isinstance(result, EstimatorResult) for result in results):
-        raise TypeError(f"{source} must return EstimatorResult values")
-    return list(results)
-
-
 class _DeflatedEstimator(Estimator):
     """Add overlap penalties to one width-preserving estimator objective.
 
@@ -252,10 +241,8 @@ class _DeflatedEstimator(Estimator):
                 "the ansatz circuit width"
             )
 
-        energy_results = _snapshot_result_batch(
-            self._estimator.run(request_list),
-            len(request_list),
-            source="estimator",
+        energy_results = list(
+            require_estimator_results(self._estimator.run(request_list), request_list)
         )
         fidelity_requests: list[CircuitFidelityRequest] = []
         if self._references:
@@ -635,20 +622,15 @@ class VQD:
                     "optimizer result did not fully bind the ansatz circuit"
                 )
 
-            energy = _snapshot_result_batch(
-                self._estimator.run(
-                    [
-                        EstimatorRequest(
-                            circuit,
-                            operator,
-                            parameters,
-                            shots,
-                            energy_seeds[level],
-                        )
-                    ]
-                ),
-                1,
-                source="estimator",
+            energy_request = EstimatorRequest(
+                circuit,
+                operator,
+                parameters,
+                shots,
+                energy_seeds[level],
+            )
+            energy = require_estimator_results(
+                self._estimator.run([energy_request]), [energy_request]
             )[0]
             eigenvalues.append(energy.expectation)
             optimal_values.append(optimizer_result.optimal_value)
@@ -674,10 +656,10 @@ class VQD:
                         )
                     )
                     seed_position += 1
-            flat_auxiliary = _snapshot_result_batch(
-                self._estimator.run(auxiliary_requests),
-                len(auxiliary_requests),
-                source="estimator",
+            flat_auxiliary = list(
+                require_estimator_results(
+                    self._estimator.run(auxiliary_requests), auxiliary_requests
+                )
             )
             width = len(auxiliaries)
             auxiliary_results = tuple(

@@ -26,7 +26,6 @@ import math
 from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import Enum
-from numbers import Real
 from typing import final
 
 import numpy as np
@@ -34,13 +33,18 @@ from cqlib import Circuit
 from cqlib.circuit.ansatz import EvolutionStrategy
 from cqlib.qis import Hamiltonian, PauliString
 
-from ...operators.ansatz import EvolvedOperatorAnsatz
-from ...operators.ansatz._validation import (
-    copy_hermitian_hamiltonian,
-    snapshot_fixed_initial_state,
+from ..._utils.hamiltonian import (
+    snapshot_nonzero_hermitian_hamiltonian,
 )
+from ..._utils.numeric import (
+    normalize_finite_real,
+    normalize_nonnegative_real,
+    normalize_positive_real,
+)
+from ..._utils.state_preparation import snapshot_fixed_initial_state
+from ...operators.ansatz import EvolvedOperatorAnsatz
 from ...protocols import Ansatz, Estimator, EstimatorRequest, Optimizer
-from ...protocols.estimator import EstimatorResult
+from ...protocols.estimator import EstimatorResult, require_estimator_results
 from ...protocols.sampler import spawn_seeds
 from ...protocols.state_preparation import StatePreparation
 from .result import VQAResult
@@ -105,13 +109,13 @@ class AdaptVQEResult(VQAResult):
         if not isinstance(self.eigenvalue_history, tuple):
             raise TypeError("eigenvalue_history must be a tuple")
         norms = tuple(
-            _normalize_nonnegative_real(value, "gradient norm")
+            normalize_nonnegative_real(value, "gradient norm")
             for value in self.gradient_norms
         )
         if not norms:
             raise ValueError("gradient_norms must not be empty")
         energies = tuple(
-            _normalize_finite_real(value, "eigenvalue history entry")
+            normalize_finite_real(value, "eigenvalue history entry")
             for value in self.eigenvalue_history
         )
         if len(energies) != len(self.selected_operator_indices) + 1:
@@ -123,7 +127,7 @@ class AdaptVQEResult(VQAResult):
             raise ValueError("final eigenvalue history entry must match optimal_value")
         object.__setattr__(self, "gradient_norms", norms)
         object.__setattr__(self, "eigenvalue_history", energies)
-        final_max_gradient = _normalize_nonnegative_real(
+        final_max_gradient = normalize_nonnegative_real(
             self.final_max_gradient, "final_max_gradient"
         )
         if final_max_gradient > norms[-1]:
@@ -138,32 +142,6 @@ class AdaptVQEResult(VQAResult):
         return len(self.selected_operator_indices)
 
 
-def _normalize_finite_real(value: float, name: str) -> float:
-    """Validate and return a finite real value."""
-    if isinstance(value, bool) or not isinstance(value, Real):
-        raise TypeError(f"{name} must be a real number")
-    normalized = float(value)
-    if not math.isfinite(normalized):
-        raise ValueError(f"{name} must be finite")
-    return normalized
-
-
-def _normalize_nonnegative_real(value: float, name: str) -> float:
-    """Validate and return a finite non-negative real value."""
-    normalized = _normalize_finite_real(value, name)
-    if normalized < 0.0:
-        raise ValueError(f"{name} must be non-negative")
-    return normalized
-
-
-def _normalize_positive_real(value: float, name: str) -> float:
-    """Validate and return a finite positive real value."""
-    normalized = _normalize_finite_real(value, name)
-    if normalized <= 0.0:
-        raise ValueError(f"{name} must be positive")
-    return normalized
-
-
 def _snapshot_operator(
     operator: Hamiltonian | PauliString,
     *,
@@ -174,7 +152,7 @@ def _snapshot_operator(
         operator = Hamiltonian.from_pauli(operator.copy())
     if not isinstance(operator, Hamiltonian):
         raise TypeError(f"{name} must be a Hamiltonian or PauliString")
-    return copy_hermitian_hamiltonian(operator, name=name)
+    return snapshot_nonzero_hermitian_hamiltonian(operator, name=name)
 
 
 def _snapshot_pool(
@@ -397,13 +375,13 @@ class AdaptVQE:
         self._optimizer = optimizer
         self._operator_pool = pool
         self._initial_circuit = initial_circuit
-        self._gradient_threshold = _normalize_positive_real(
+        self._gradient_threshold = normalize_positive_real(
             gradient_threshold, "gradient_threshold"
         )
         self._eigenvalue_threshold = (
             None
             if eigenvalue_threshold is None
-            else _normalize_nonnegative_real(
+            else normalize_nonnegative_real(
                 eigenvalue_threshold, "eigenvalue_threshold"
             )
         )
@@ -442,18 +420,9 @@ class AdaptVQE:
                 continue
             pending.append((index, EstimatorRequest(circuit, observable, {}, shots)))
         if pending:
-            results = estimator.run([request for _, request in pending])
-            if not isinstance(results, list):
-                raise TypeError(
-                    "estimator must return a list of EstimatorResult values"
-                )
-            if len(results) != len(pending):
-                raise ValueError(
-                    "estimator must return one result per gradient request"
-                )
+            requests = [request for _, request in pending]
+            results = require_estimator_results(estimator.run(requests), requests)
             for (index, _), result in zip(pending, results, strict=True):
-                if not isinstance(result, EstimatorResult):
-                    raise TypeError("estimator must return EstimatorResult values")
                 values[index] = result.expectation
         return tuple(values)
 

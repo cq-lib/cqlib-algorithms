@@ -28,7 +28,10 @@ from cqlib.circuit import Circuit
 from cqlib.circuit.ansatz import EvolutionInfo, EvolutionStrategy, PauliEvolutionAnsatz
 from cqlib.qis import Hamiltonian, Pauli, PauliString
 
-from ._validation import copy_hermitian_hamiltonian, validate_positive_qubit_count
+from ..._utils.hamiltonian import (
+    snapshot_nonzero_hermitian_hamiltonian,
+)
+from ..._utils.numeric import validate_positive_qubit_count
 from .base_ansatz import _DelegatingAnsatz
 
 
@@ -78,7 +81,7 @@ class QAOAMixerEvolution(_DelegatingAnsatz):
             raise ValueError("mixer_operator must act on num_qubits qubits")
 
         mixer = _x_mixer(num_qubits) if mixer_operator is None else mixer_operator
-        mixer_snapshot = copy_hermitian_hamiltonian(
+        mixer_snapshot = snapshot_nonzero_hermitian_hamiltonian(
             mixer,
             name="mixer_operator",
         )

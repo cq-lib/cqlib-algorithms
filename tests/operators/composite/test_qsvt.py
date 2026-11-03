@@ -19,10 +19,10 @@ import math
 
 import numpy as np
 import pytest
-from numpy.polynomial.chebyshev import chebfit, chebval
-
 from cqlib import Circuit, Qubit
 from cqlib.compile import CompilerTransformError
+from numpy.polynomial.chebyshev import chebfit, chebval
+
 from cqlib_algorithms.operators.composite import (
     ProjectorControlledPhase,
     QuantumSignalProcessing,
@@ -349,7 +349,9 @@ def _qsvt_reference(
     block_encoding: BlockEncoding,
     phases: tuple[float, ...],
 ) -> np.ndarray:
-    unitary = np.asarray(block_encoding.build_circuit().to_matrix(), dtype=np.complex128)
+    unitary = np.asarray(
+        block_encoding.build_circuit().to_matrix(), dtype=np.complex128
+    )
     return _assemble_qsvt_matrix_from_unitary(
         unitary,
         num_system_qubits=block_encoding.system_qubits,
@@ -543,7 +545,7 @@ def test_projector_controlled_phase_rejects_invalid_inputs() -> None:
         ProjectorControlledPhase(True, 1, phase=0.1)  # type: ignore[arg-type]
     with pytest.raises(TypeError, match="num_ancilla_qubits must be an integer"):
         ProjectorControlledPhase(1, 1.5, phase=0.1)  # type: ignore[arg-type]
-    with pytest.raises(ValueError, match="greater than or equal to zero"):
+    with pytest.raises(ValueError, match="non-negative"):
         ProjectorControlledPhase(1, -1, phase=0.1)
     with pytest.raises(ValueError, match="total qubit count must be greater than zero"):
         ProjectorControlledPhase(0, 0, phase=0.1)
@@ -719,7 +721,9 @@ def test_qsvt_degree_zero_constant_random_matrix_projects_to_scaled_identity(
 def test_qsvt_degree_one_scalar_matches_qsp_response() -> None:
     scalar = 0.4
     coefficients = [0.0, 1.0]
-    encoding = UnitaryDilation(np.array([[scalar]], dtype=np.complex128), validate=False)
+    encoding = UnitaryDilation(
+        np.array([[scalar]], dtype=np.complex128), validate=False
+    )
     qsp_phases = QuantumSignalProcessing.solve_phases(
         coefficients,
         tolerance=1e-12,
@@ -737,7 +741,9 @@ def test_qsvt_degree_one_scalar_matches_qsp_response() -> None:
         rows=1,
         columns=1,
     )
-    qsp_top_left = np.asarray(qsp.build_circuit().to_matrix(), dtype=np.complex128)[0, 0]
+    qsp_top_left = np.asarray(qsp.build_circuit().to_matrix(), dtype=np.complex128)[
+        0, 0
+    ]
 
     np.testing.assert_allclose(
         projected[0, 0],
@@ -773,7 +779,9 @@ def test_qsvt_degree_one_scalar_with_explicit_alpha_matches_qsp_response() -> No
         rows=1,
         columns=1,
     )
-    qsp_top_left = np.asarray(qsp.build_circuit().to_matrix(), dtype=np.complex128)[0, 0]
+    qsp_top_left = np.asarray(qsp.build_circuit().to_matrix(), dtype=np.complex128)[
+        0, 0
+    ]
 
     np.testing.assert_allclose(
         projected[0, 0],
@@ -786,7 +794,9 @@ def test_qsvt_degree_one_scalar_with_explicit_alpha_matches_qsp_response() -> No
 def test_qsvt_degree_two_scalar_matches_qsp_response() -> None:
     scalar = 0.4
     coefficients = [0.0, 0.0, 1.0]
-    encoding = UnitaryDilation(np.array([[scalar]], dtype=np.complex128), validate=False)
+    encoding = UnitaryDilation(
+        np.array([[scalar]], dtype=np.complex128), validate=False
+    )
     qsp_phases = QuantumSignalProcessing.solve_phases(
         coefficients,
         tolerance=1e-12,
@@ -804,7 +814,9 @@ def test_qsvt_degree_two_scalar_matches_qsp_response() -> None:
         rows=1,
         columns=1,
     )
-    qsp_top_left = np.asarray(qsp.build_circuit().to_matrix(), dtype=np.complex128)[0, 0]
+    qsp_top_left = np.asarray(qsp.build_circuit().to_matrix(), dtype=np.complex128)[
+        0, 0
+    ]
 
     np.testing.assert_allclose(
         projected[0, 0],
@@ -859,7 +871,9 @@ def test_qsvt_high_degree_diagonal_matrix_matches_singular_vector_action() -> No
     )
 
 
-def test_qsvt_exact_dilation_matrix_matches_circuit_composition_for_high_degree_case() -> None:
+def test_qsvt_exact_dilation_matrix_matches_circuit_composition_for_high_degree_case() -> (
+    None
+):
     matrix = _random_square_matrix(8, seed=2024)
     spectral_norm = float(np.linalg.svd(matrix, compute_uv=False)[0])
     alpha = 2.0 * spectral_norm
@@ -1033,7 +1047,9 @@ def test_qsvt_check_block_encoding_uses_explicit_functionality() -> None:
         operator.check_block_encoding(expected_matrix=np.eye(2, dtype=np.complex128))
 
 
-def test_qsvt_check_block_encoding_requires_explicit_matrix_for_generic_encoding() -> None:
+def test_qsvt_check_block_encoding_requires_explicit_matrix_for_generic_encoding() -> (
+    None
+):
     operator = QuantumSingularValueTransformation(
         _IdentityStandardBlockEncoding(),
         [0.1, 0.2],
@@ -1092,7 +1108,9 @@ def test_qsvt_rejects_non_standard_block_encodings_and_invalid_inputs() -> None:
         )  # type: ignore[list-item]
 
 
-def test_qsvt_check_block_encoding_rejects_invalid_expected_matrix_and_tolerance() -> None:
+def test_qsvt_check_block_encoding_rejects_invalid_expected_matrix_and_tolerance() -> (
+    None
+):
     operator = QuantumSingularValueTransformation(
         _IdentityStandardBlockEncoding(),
         [0.1],
@@ -1337,6 +1355,15 @@ def test_qsvt_complex_backend_matches_random_feasible_target(
         synthesis=synthesis,
         atol=_QSVT_COMPLEX_BACKEND_ATOL[synthesis],
     )
+
+
+def test_qsvt_bfgs_restart_path_is_reproducible() -> None:
+    coefficients = _random_feasible_target(7, seed=0)
+
+    first = QuantumSignalProcessing.solve_complex_phases(coefficients)
+    second = QuantumSignalProcessing.solve_complex_phases(coefficients)
+
+    np.testing.assert_array_equal(first, second)
 
 
 def _degenerate_spectrum_encoding(

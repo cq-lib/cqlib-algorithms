@@ -19,8 +19,8 @@ from typing import final
 
 from cqlib.circuit import Circuit, CircuitError
 
+from ..._utils.parameters import validate_parameter_prefix
 from ...protocols.state_preparation import StatePreparation
-from ._state_synthesis import validate_prefix
 
 
 @final
@@ -69,7 +69,7 @@ class UserCircuitPreparation(StatePreparation):
 
     def build_circuit(self, prefix: str) -> Circuit:
         """Return an independent snapshot copy; ``prefix`` does not rename it."""
-        validate_prefix(prefix)
+        validate_parameter_prefix(prefix)
         return copy.copy(self._circuit)
 
     def num_parameters(self) -> int:

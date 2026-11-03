@@ -20,13 +20,12 @@ from typing import final
 from cqlib.circuit.ansatz import EntanglementTopology, TwoLocal
 from cqlib.circuit.gates import StandardGate
 
+from ..._utils.numeric import validate_positive_qubit_count, validate_repetitions
 from ._validation import (
     resolve_entanglement,
     snapshot_rotation_gates,
     validate_boolean,
     validate_entanglement_gate,
-    validate_positive_qubit_count,
-    validate_repetitions,
 )
 from .base_ansatz import _DelegatingAnsatz
 

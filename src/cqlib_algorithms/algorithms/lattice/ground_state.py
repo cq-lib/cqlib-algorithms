@@ -21,6 +21,7 @@ from typing import final
 from cqlib.circuit import Circuit
 from cqlib.qis import Hamiltonian
 
+from ..._utils.numeric import validate_repetitions
 from ...extension.lattice import (
     DoubleOccupation,
     FermiHubbardModel,
@@ -42,7 +43,12 @@ from ...extension.lattice import (
 from ...extension.many_body import SpinAxis
 from ...operators.ansatz import FermiHubbardAnsatz, SpinExchangeAnsatz
 from ...protocols.ansatz import Ansatz
-from ...protocols.estimator import Estimator, EstimatorRequest, EstimatorResult
+from ...protocols.estimator import (
+    Estimator,
+    EstimatorRequest,
+    EstimatorResult,
+    require_estimator_results,
+)
 from ...protocols.optimizer import Optimizer
 from ..variational import VQE
 from .results import (
@@ -51,14 +57,6 @@ from .results import (
     SpinCorrelationMeasurement,
     SpinLatticeMeasurements,
 )
-
-
-def _validate_repetitions(reps: int) -> None:
-    """Validate a non-negative repetition count."""
-    if type(reps) is not int:
-        raise TypeError("reps must be an int")
-    if reps < 0:
-        raise ValueError("reps must be non-negative")
 
 
 def _has_nontrivial_sector(system: LatticeSystem) -> bool:
@@ -127,23 +125,6 @@ def _default_ansatz(
     if not isinstance(configuration, SpinLatticeConfiguration):
         raise TypeError("a spin model requires a SpinLatticeConfiguration")
     return SpinExchangeAnsatz(system, configuration, reps=reps)
-
-
-def _normalize_estimates(
-    estimates: object,
-    *,
-    expected: int,
-) -> list[EstimatorResult]:
-    """Validate and return estimator results in their original order."""
-    if not isinstance(estimates, list):
-        raise TypeError("estimator must return a list of EstimatorResult values")
-    if len(estimates) != expected:
-        raise ValueError(
-            "estimator must return one result per auxiliary-observable request"
-        )
-    if any(not isinstance(result, EstimatorResult) for result in estimates):
-        raise TypeError("estimator must return EstimatorResult values")
-    return estimates
 
 
 def _fermionic_requests(
@@ -350,7 +331,7 @@ class LatticeGroundState:
         """
         if not isinstance(system, LatticeSystem):
             raise TypeError("system must be a LatticeSystem")
-        _validate_repetitions(reps)
+        validate_repetitions(reps)
         if ansatz is None:
             selected_ansatz = _default_ansatz(
                 system,
@@ -395,9 +376,8 @@ class LatticeGroundState:
                 vqe_result.optimal_circuit,
                 shots,
             )
-            estimates = _normalize_estimates(
-                self._estimator.run(requests),
-                expected=len(requests),
+            estimates = require_estimator_results(
+                self._estimator.run(requests), requests
             )
             measurements = _fermionic_measurements(
                 system,
@@ -410,9 +390,8 @@ class LatticeGroundState:
                 vqe_result.optimal_circuit,
                 shots,
             )
-            estimates = _normalize_estimates(
-                self._estimator.run(requests),
-                expected=len(requests),
+            estimates = require_estimator_results(
+                self._estimator.run(requests), requests
             )
             measurements = _spin_measurements(
                 system,

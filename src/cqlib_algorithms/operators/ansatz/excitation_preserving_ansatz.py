@@ -21,11 +21,11 @@ from cqlib.circuit import Circuit, Parameter
 from cqlib.circuit.ansatz import EntanglementTopology
 from cqlib.circuit.gates import StandardGate
 
-from ._validation import (
-    validate_boolean,
+from ..._utils.numeric import (
     validate_positive_qubit_count,
     validate_repetitions,
 )
+from ._validation import validate_boolean
 from .base_ansatz import BaseAnsatz
 
 _ExcitationMode = Literal["iswap", "fsim"]

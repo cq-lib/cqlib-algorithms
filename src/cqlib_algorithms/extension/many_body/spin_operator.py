@@ -26,6 +26,8 @@ from typing import Literal, TypeAlias, cast
 import numpy as np
 from numpy.typing import NDArray
 
+from .._numeric import normalize_finite_complex
+
 SpinAxis: TypeAlias = Literal["X", "Y", "Z"]
 SpinFactor: TypeAlias = tuple[SpinAxis, int]
 SpinTerm: TypeAlias = tuple[SpinFactor, ...]
@@ -55,16 +57,6 @@ def _normalize_spin(spin: Fraction | float) -> Fraction:
     if value <= 0 or value.denominator not in (1, 2):
         raise ValueError("spin must be a positive integer or half-integer")
     return value
-
-
-def _normalize_coefficient(value: SpinCoefficient, *, name: str) -> complex:
-    """Validate and return a finite complex coefficient."""
-    if isinstance(value, (bool, np.bool_)) or not isinstance(value, numbers.Complex):
-        raise TypeError(f"{name} must be a real or complex number")
-    result = complex(value)
-    if not math.isfinite(result.real) or not math.isfinite(result.imag):
-        raise ValueError(f"{name} must be finite")
-    return result
 
 
 def _canonicalize_term(
@@ -130,7 +122,7 @@ def _copy_terms(
             num_spins=num_spins,
             position=position,
         )
-        coefficient = _normalize_coefficient(
+        coefficient = normalize_finite_complex(
             entry[1],
             name=f"terms[{position}][1]",
         )
@@ -264,7 +256,7 @@ class SpinOp:
 
     def scaled(self, factor: SpinCoefficient) -> SpinOp:
         """Return this operator multiplied by a finite scalar."""
-        factor = _normalize_coefficient(factor, name="factor")
+        factor = normalize_finite_complex(factor, name="factor")
         return SpinOp.from_terms(
             self.num_spins,
             ((term, factor * coefficient) for term, coefficient in self.terms),

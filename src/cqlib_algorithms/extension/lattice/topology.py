@@ -26,6 +26,8 @@ from typing import TypeAlias
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
+from .._numeric import normalize_finite_complex
+
 WeightedEdge: TypeAlias = tuple[int, int, complex]
 
 _HERMITIAN_ATOL = 1e-12
@@ -56,19 +58,9 @@ def _normalize_node_index(value: int, *, name: str, num_nodes: int) -> int:
     return value
 
 
-def _normalize_finite_complex(value: complex, *, name: str) -> complex:
-    """Validate and return a finite complex value."""
-    if isinstance(value, (bool, np.bool_)) or not isinstance(value, numbers.Complex):
-        raise TypeError(f"{name} must be a real or complex number")
-    result = complex(value)
-    if not math.isfinite(result.real) or not math.isfinite(result.imag):
-        raise ValueError(f"{name} must be finite")
-    return result
-
-
 def _normalize_real_weight(value: complex, *, name: str) -> complex:
     """Validate and return a finite real weight as a complex value."""
-    result = _normalize_finite_complex(value, name=name)
+    result = normalize_finite_complex(value, name=name)
     if result.imag != 0.0:
         raise ValueError(f"{name} must be real")
     return complex(result.real)
@@ -103,7 +95,7 @@ def _copy_weighted_edges(
             name=f"weighted_edges[{position}][1]",
             num_nodes=num_nodes,
         )
-        weight = _normalize_finite_complex(
+        weight = normalize_finite_complex(
             edge[2],
             name=f"weighted_edges[{position}][2]",
         )
@@ -238,7 +230,7 @@ class Lattice:
         onsite_potential: complex,
     ) -> Lattice:
         """Return the same connectivity with uniform physical parameters."""
-        interaction = _normalize_finite_complex(interaction, name="interaction")
+        interaction = normalize_finite_complex(interaction, name="interaction")
         onsite_potential = _normalize_real_weight(
             onsite_potential,
             name="onsite_potential",
@@ -269,7 +261,7 @@ def _normalize_edge_parameters(
     dimension: int,
 ) -> tuple[complex, ...]:
     if isinstance(value, numbers.Complex) and not isinstance(value, (bool, np.bool_)):
-        parameter = _normalize_finite_complex(complex(value), name="edge_parameter")
+        parameter = normalize_finite_complex(complex(value), name="edge_parameter")
         return (parameter,) * dimension
     if isinstance(value, (str, bytes)) or not isinstance(value, Sequence):
         raise TypeError("edge_parameter must be a number or a sequence of numbers")
@@ -277,7 +269,7 @@ def _normalize_edge_parameters(
     if len(copied) != dimension:
         raise ValueError("edge_parameter length must match the lattice dimension")
     return tuple(
-        _normalize_finite_complex(parameter, name=f"edge_parameter[{axis}]")
+        normalize_finite_complex(parameter, name=f"edge_parameter[{axis}]")
         for axis, parameter in enumerate(copied)
     )
 

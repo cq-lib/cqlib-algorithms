@@ -27,6 +27,7 @@ from typing import final
 
 from cqlib.circuit import Circuit
 
+from ..._utils.numeric import validate_positive_integer
 from ._base import _BaseMixer
 from ._exchange import (
     absolute_register_offsets,
@@ -37,7 +38,6 @@ from ._exchange import (
 from ._validation import (
     resolve_horizon,
     snapshot_processing_times,
-    validate_positive_integer,
 )
 
 

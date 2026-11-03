@@ -24,7 +24,6 @@ from __future__ import annotations
 import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from numbers import Real
 from types import MappingProxyType
 from typing import final
 
@@ -32,7 +31,10 @@ import numpy as np
 from cqlib.device import ExecutionResult
 from cqlib.qis import Hamiltonian, PauliString
 
-from ...operators.ansatz._validation import copy_hermitian_hamiltonian
+from ..._utils.hamiltonian import (
+    snapshot_nonzero_hermitian_hamiltonian,
+)
+from ..._utils.numeric import normalize_finite_real
 from ...protocols import (
     Ansatz,
     Estimator,
@@ -44,7 +46,7 @@ from ...protocols import (
     Sampler,
     SamplerRequest,
 )
-from ...protocols.sampler import spawn_seeds, validate_sampler_results
+from ...protocols.sampler import require_sampler_results, spawn_seeds
 from .result import VQAResult
 
 
@@ -73,8 +75,8 @@ class SamplingVQEMeasurement:
             raise TypeError("bitstring must be a string")
         if not self.bitstring or any(bit not in "01" for bit in self.bitstring):
             raise ValueError("bitstring must be a non-empty binary string")
-        object.__setattr__(self, "value", _finite_real(self.value, "value"))
-        probability = _finite_real(self.probability, "probability")
+        object.__setattr__(self, "value", normalize_finite_real(self.value, "value"))
+        probability = normalize_finite_real(self.probability, "probability")
         if probability <= 0.0 or probability > 1.0:
             raise ValueError("probability must be in (0, 1]")
         object.__setattr__(self, "probability", probability)
@@ -128,7 +130,7 @@ class SamplingVQEResult(VQAResult):
                 raise TypeError("distribution keys must be strings")
             if len(bitstring) != width or any(bit not in "01" for bit in bitstring):
                 raise ValueError("distribution keys must match the circuit width")
-            numeric = _finite_real(probability, "distribution probability")
+            numeric = normalize_finite_real(probability, "distribution probability")
             if numeric <= 0.0 or numeric > 1.0:
                 raise ValueError("distribution probabilities must be in (0, 1]")
             if not math.isclose(
@@ -149,7 +151,7 @@ class SamplingVQEResult(VQAResult):
         object.__setattr__(
             self,
             "final_sample_value",
-            _finite_real(self.final_sample_value, "final_sample_value"),
+            normalize_finite_real(self.final_sample_value, "final_sample_value"),
         )
         if not isinstance(self.best_measurement, SamplingVQEMeasurement):
             raise TypeError("best_measurement must be a SamplingVQEMeasurement")
@@ -180,16 +182,6 @@ class _SampleSummary:
     best: SamplingVQEMeasurement
 
 
-def _finite_real(value: float, name: str) -> float:
-    """Validate and return one finite real value."""
-    if isinstance(value, bool) or not isinstance(value, Real):
-        raise TypeError(f"{name} must be a real number")
-    numeric = float(value)
-    if not math.isfinite(numeric):
-        raise ValueError(f"{name} must be finite")
-    return numeric
-
-
 def _diagonal_terms(
     operator: Hamiltonian | PauliString,
 ) -> tuple[Hamiltonian, tuple[_DiagonalTerm, ...]]:
@@ -198,7 +190,7 @@ def _diagonal_terms(
         operator = Hamiltonian.from_pauli(operator.copy())
     if not isinstance(operator, Hamiltonian):
         raise TypeError("operator must be a Hamiltonian or PauliString")
-    snapshot = copy_hermitian_hamiltonian(operator, name="operator")
+    snapshot = snapshot_nonzero_hermitian_hamiltonian(operator, name="operator")
     if snapshot.num_qubits <= 0:
         raise ValueError("operator must act on at least one qubit")
     terms: list[_DiagonalTerm] = []
@@ -324,7 +316,7 @@ class _JointSamplingEstimator(Estimator):
                 )
             )
             term_batches.append(terms)
-        results = validate_sampler_results(
+        results = require_sampler_results(
             self._sampler.run(sampler_requests), sampler_requests
         )
         summaries = [
@@ -451,7 +443,7 @@ class SamplingVQE:
             shots,
             final_seed,
         )
-        final_result = validate_sampler_results(
+        final_result = require_sampler_results(
             self._sampler.run([final_request]), [final_request]
         )[0]
         summary = _summarize_counts(final_result, terms)

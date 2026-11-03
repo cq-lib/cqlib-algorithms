@@ -34,41 +34,23 @@ from numpy.typing import NDArray
 from scipy.sparse import coo_matrix, csr_matrix  # type: ignore[import-untyped]
 from scipy.sparse.linalg import eigsh  # type: ignore[import-untyped]
 
-from ...extension.chemistry.electronic import ElectronicEnergy, ElectronicSystem
-from ...operators.estimator._circuit_validation import (
-    validate_unitary_state_preparation,
+from ..._utils.circuit import validate_unitary_state_preparation
+from ..._utils.numeric import (
+    normalize_nonnegative_real,
+    validate_positive_integer,
 )
+from ...extension.chemistry.electronic import ElectronicEnergy, ElectronicSystem
 from ...protocols.sampler import (
     Sampler,
     SamplerRequest,
+    require_sampler_results,
     spawn_seeds,
-    validate_sampler_results,
 )
 
 _FLIP_EPSILON = 0.01
 _HERMITIAN_TOLERANCE = 1e-11
 _NORMALIZATION_TOLERANCE = 1e-10
 _DENSE_SOLVER_CUTOFF = 64
-
-
-def _validate_strict_positive_integer(value: int, name: str) -> None:
-    """Validate a strictly positive built-in integer."""
-    if isinstance(value, bool) or not isinstance(value, int):
-        raise TypeError(f"{name} must be an integer")
-    if value <= 0:
-        raise ValueError(f"{name} must be greater than zero")
-
-
-def _normalize_nonnegative_real(value: float, name: str) -> float:
-    """Return a finite non-negative floating-point value."""
-    if isinstance(value, bool) or not isinstance(value, Real):
-        raise TypeError(f"{name} must be a real number")
-    normalized = float(value)
-    if not math.isfinite(normalized):
-        raise ValueError(f"{name} must be finite")
-    if normalized < 0.0:
-        raise ValueError(f"{name} must be non-negative")
-    return normalized
 
 
 def _normalize_optional_nonnegative_real(
@@ -78,7 +60,7 @@ def _normalize_optional_nonnegative_real(
     """Return a normalized optional non-negative real value."""
     if value is None:
         return None
-    return _normalize_nonnegative_real(value, name)
+    return normalize_nonnegative_real(value, name)
 
 
 def _normalize_occupancies(
@@ -179,7 +161,7 @@ class SQDSubspaceResult:
             raise ValueError("energy must be finite")
         object.__setattr__(self, "energy", energy)
 
-        _validate_strict_positive_integer(
+        validate_positive_integer(
             self.num_spin_orbitals,
             "num_spin_orbitals",
         )
@@ -287,7 +269,7 @@ class SQDIteration:
             normalized.append(occupancy)
         object.__setattr__(self, "orbital_occupancies", tuple(normalized))
 
-        _validate_strict_positive_integer(
+        validate_positive_integer(
             self.num_recovered_configurations,
             "num_recovered_configurations",
         )
@@ -370,7 +352,7 @@ class SQDResult:
             raise ValueError("orbital_occupancies must match the final iteration")
         if not isinstance(self.converged, bool):
             raise TypeError("converged must be a bool")
-        _validate_strict_positive_integer(self.shots, "shots")
+        validate_positive_integer(self.shots, "shots")
         if isinstance(self.valid_raw_shots, bool) or not isinstance(
             self.valid_raw_shots, int
         ):
@@ -515,14 +497,14 @@ def _normalize_run_options(
     float | None,
 ]:
     """Validate and normalize options shared by both SQD entry points."""
-    _validate_strict_positive_integer(samples_per_batch, "samples_per_batch")
-    _validate_strict_positive_integer(num_batches, "num_batches")
-    _validate_strict_positive_integer(max_iterations, "max_iterations")
-    normalized_energy_tolerance = _normalize_nonnegative_real(
+    validate_positive_integer(samples_per_batch, "samples_per_batch")
+    validate_positive_integer(num_batches, "num_batches")
+    validate_positive_integer(max_iterations, "max_iterations")
+    normalized_energy_tolerance = normalize_nonnegative_real(
         energy_tolerance,
         "energy_tolerance",
     )
-    normalized_occupancy_tolerance = _normalize_nonnegative_real(
+    normalized_occupancy_tolerance = normalize_nonnegative_real(
         occupancy_tolerance,
         "occupancy_tolerance",
     )
@@ -1219,7 +1201,7 @@ class SQD:
             raise TypeError("state_preparation must be a cqlib.Circuit")
         if self._sampler is None:
             raise ValueError("compute requires an SQD sampler")
-        _validate_strict_positive_integer(shots, "shots")
+        validate_positive_integer(shots, "shots")
         (
             energy_tolerance,
             occupancy_tolerance,
@@ -1256,7 +1238,7 @@ class SQD:
             shots,
             sampler_seed,
         )
-        results = validate_sampler_results(self._sampler.run([request]), [request])
+        results = require_sampler_results(self._sampler.run([request]), [request])
         raw_distribution, raw_counts, observed_shots = _normalize_counts_distribution(
             results[0].counts,
             num_bits=system.num_spin_orbitals,

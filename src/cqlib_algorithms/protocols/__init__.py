@@ -13,13 +13,19 @@
 """Public component abstract base classes and supporting value types."""
 
 from .ansatz import Ansatz
-from .estimator import Estimator, EstimatorRequest, EstimatorResult
+from .estimator import (
+    Estimator,
+    EstimatorRequest,
+    EstimatorResult,
+    require_estimator_results,
+)
 from .gradient import Gradient, GradientRequest, GradientResult
 from .optimizer import Optimizer, OptimizerRequest, OptimizerResult, OptimizerStatus
 from .quantum_kernel import KernelLoss, QuantumKernel, TrainableQuantumKernel
 from .sampler import (
     Sampler,
     SamplerRequest,
+    require_sampler_results,
     spawn_seeds,
     validate_sampler_result,
     validate_sampler_results,
@@ -49,6 +55,8 @@ __all__ = [
     "StateFidelity",
     "StatePreparation",
     "TrainableQuantumKernel",
+    "require_estimator_results",
+    "require_sampler_results",
     "spawn_seeds",
     "validate_sampler_result",
     "validate_sampler_results",

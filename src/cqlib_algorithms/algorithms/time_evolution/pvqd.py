@@ -26,7 +26,6 @@ import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from itertools import pairwise
-from numbers import Real
 from types import MappingProxyType
 from typing import final
 
@@ -36,47 +35,29 @@ from cqlib.circuit.ansatz import EvolutionStrategy
 from cqlib.device import ExecutionResult
 from cqlib.qis import Hamiltonian, PauliString
 
+from ..._utils.hamiltonian import (
+    snapshot_nonzero_hermitian_hamiltonian,
+)
+from ..._utils.numeric import normalize_finite_real, normalize_positive_real
 from ...operators.ansatz import EvolvedOperatorAnsatz
-from ...operators.ansatz._validation import copy_hermitian_hamiltonian
 from ...operators.state_fidelity import (
     CircuitFidelityRequest,
     CircuitFidelityResult,
     ComputeUncomputeFidelity,
 )
 from ...protocols import Ansatz, Estimator, EstimatorRequest, EstimatorResult, Optimizer
+from ...protocols.estimator import require_estimator_results
 from ...protocols.optimizer import OptimizerRequest, OptimizerResult
 from ...protocols.sampler import (
     Sampler,
     SamplerRequest,
+    require_sampler_results,
     spawn_seeds,
-    validate_sampler_results,
 )
-
-
-def _normalize_finite_real(value: float, name: str) -> float:
-    """Validate and return a finite real value."""
-    if isinstance(value, bool) or not isinstance(value, Real):
-        raise TypeError(f"{name} must be a real number")
-    normalized = float(value)
-    if not math.isfinite(normalized):
-        raise ValueError(f"{name} must be finite")
-    return normalized
-
-
-def _normalize_positive_real(value: float, name: str) -> float:
-    """Validate and return a finite positive real value."""
-    normalized = _normalize_finite_real(value, name)
-    if normalized <= 0.0:
-        raise ValueError(f"{name} must be positive")
-    return normalized
-
-
-def _validate_positive_integer(value: int, name: str) -> None:
-    """Validate a positive integer."""
-    if isinstance(value, bool) or not isinstance(value, int):
-        raise TypeError(f"{name} must be an integer")
-    if value <= 0:
-        raise ValueError(f"{name} must be positive")
+from ._common import (
+    _snapshot_parameters,
+    _validate_positive_integer,
+)
 
 
 def _validate_optional_positive_integer(value: int | None, name: str) -> None:
@@ -98,7 +79,7 @@ def _snapshot_hamiltonian(
         raise TypeError(f"{name} must be a Hamiltonian or PauliString")
     if operator.num_qubits <= 0:
         raise ValueError(f"{name} must act on at least one qubit")
-    return copy_hermitian_hamiltonian(operator, name=name)
+    return snapshot_nonzero_hermitian_hamiltonian(operator, name=name)
 
 
 def _snapshot_auxiliary_operators(
@@ -125,18 +106,6 @@ def _snapshot_auxiliary_operators(
             raise ValueError("auxiliary operators must match the evolution width")
         snapshots[name] = snapshot
     return MappingProxyType(snapshots)
-
-
-def _immutable_parameters(parameters: Mapping[str, float]) -> Mapping[str, float]:
-    """Validate and return one immutable parameter mapping."""
-    if not isinstance(parameters, Mapping):
-        raise TypeError("parameter history entries must be mappings")
-    snapshot: dict[str, float] = {}
-    for name, value in parameters.items():
-        if not isinstance(name, str):
-            raise TypeError("parameter names must be strings")
-        snapshot[name] = _normalize_finite_real(value, "parameter value")
-    return MappingProxyType(snapshot)
 
 
 @dataclass(frozen=True, slots=True, repr=False)
@@ -173,7 +142,7 @@ class PVQDResult:
     def __post_init__(self) -> None:
         if not isinstance(self.times, tuple):
             raise TypeError("times must be a tuple")
-        times = tuple(_normalize_finite_real(value, "time") for value in self.times)
+        times = tuple(normalize_finite_real(value, "time") for value in self.times)
         if len(times) < 2:
             raise ValueError(
                 "times must contain the initial and at least one final time"
@@ -186,7 +155,7 @@ class PVQDResult:
 
         if not isinstance(self.parameters, tuple):
             raise TypeError("parameters must be a tuple")
-        parameters = tuple(_immutable_parameters(entry) for entry in self.parameters)
+        parameters = tuple(_snapshot_parameters(entry) for entry in self.parameters)
         if len(parameters) != len(times):
             raise ValueError("parameters must contain one entry per time")
         names = tuple(parameters[0])
@@ -197,7 +166,7 @@ class PVQDResult:
         if not isinstance(self.fidelities, tuple):
             raise TypeError("fidelities must be a tuple")
         fidelities = tuple(
-            _normalize_finite_real(value, "fidelity") for value in self.fidelities
+            normalize_finite_real(value, "fidelity") for value in self.fidelities
         )
         if len(fidelities) != len(times) - 1:
             raise ValueError("fidelities must contain one entry per time step")
@@ -304,7 +273,7 @@ class _SeededSampler(Sampler):
                     int(self._rng.integers(0, 2**32, dtype=np.uint64)),
                 )
             )
-        return validate_sampler_results(self._sampler.run(seeded), seeded)
+        return require_sampler_results(self._sampler.run(seeded), seeded)
 
 
 @final
@@ -435,13 +404,11 @@ def _evaluate_observables(
                 EstimatorRequest(circuit, observable, {}, shots, seeds[seed_index])
             )
             seed_index += 1
-    results = estimator.run(requests)
-    if not isinstance(results, list):
-        raise TypeError("estimator must return a list of EstimatorResult values")
-    if len(results) != len(requests):
-        raise ValueError("estimator must return one result per observable request")
-    if any(not isinstance(result, EstimatorResult) for result in results):
-        raise TypeError("estimator must return EstimatorResult values")
+    results = require_estimator_results(
+        estimator.run(requests),
+        requests,
+        count_error="estimator must return one result per observable request",
+    )
 
     histories: dict[str, list[EstimatorResult]] = {name: [] for name in names}
     for index, result in enumerate(results):
@@ -584,7 +551,7 @@ class PVQD:
             ValueError: If dimensions, bindings, values, or component responses
                 violate the evolution contract.
         """
-        total_time = _normalize_positive_real(time, "time")
+        total_time = normalize_positive_real(time, "time")
         _validate_positive_integer(num_timesteps, "num_timesteps")
         _validate_positive_integer(fidelity_shots, "fidelity_shots")
         _validate_optional_positive_integer(observable_shots, "observable_shots")

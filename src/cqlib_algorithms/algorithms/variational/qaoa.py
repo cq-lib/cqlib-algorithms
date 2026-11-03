@@ -29,8 +29,10 @@ from cqlib import Circuit
 from cqlib.circuit.ansatz import EvolutionStrategy
 from cqlib.qis import Hamiltonian
 
+from ..._utils.hamiltonian import (
+    snapshot_nonzero_hermitian_hamiltonian,
+)
 from ...operators.ansatz import QAOACostEvolution, QAOAMixerEvolution
-from ...operators.ansatz._validation import copy_hermitian_hamiltonian
 from ...operators.state_preparation import UniformSuperposition
 from ...protocols.ansatz import Ansatz
 from ...protocols.estimator import Estimator, EstimatorRequest
@@ -54,7 +56,9 @@ def _copy_cost_operator(cost_operator: Hamiltonian) -> Hamiltonian:
     if cost_operator.num_qubits <= 0:
         raise ValueError("cost_operator must act on at least one qubit")
 
-    snapshot = copy_hermitian_hamiltonian(cost_operator, name="cost_operator")
+    snapshot = snapshot_nonzero_hermitian_hamiltonian(
+        cost_operator, name="cost_operator"
+    )
     if any(pauli.x_mask != 0 for pauli, _ in snapshot.terms):
         raise ValueError("cost_operator must be diagonal in the computational basis")
     return snapshot
@@ -158,7 +162,9 @@ class QAOA:
         self._mixer_operator = (
             None
             if mixer_operator is None
-            else copy_hermitian_hamiltonian(mixer_operator, name="mixer_operator")
+            else snapshot_nonzero_hermitian_hamiltonian(
+                mixer_operator, name="mixer_operator"
+            )
         )
         self._initial_state = initial_state
         self._cost_strategy = (

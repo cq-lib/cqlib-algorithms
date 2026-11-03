@@ -22,6 +22,7 @@ from typing import cast
 
 import numpy as np
 
+from .._numeric import normalize_finite_complex
 from ..many_body import (
     ModalSpace,
     VibrationalCoefficient,
@@ -68,22 +69,6 @@ class ModalTransition:
 
 ModalIntegralTerm = tuple[ModalTransition, ...]
 ModalIntegralEntry = tuple[ModalIntegralTerm, complex]
-
-
-def _normalize_coefficient(
-    coefficient: VibrationalCoefficient,
-    *,
-    name: str,
-) -> complex:
-    """Validate and return a finite complex coefficient."""
-    if isinstance(coefficient, (bool, np.bool_)) or not isinstance(
-        coefficient, numbers.Complex
-    ):
-        raise TypeError(f"{name} must be a complex number")
-    converted = complex(coefficient)
-    if not math.isfinite(converted.real) or not math.isfinite(converted.imag):
-        raise ValueError(f"{name} must be finite")
-    return converted
 
 
 def _normalize_constant(constant: float) -> float:
@@ -145,7 +130,7 @@ def _copy_terms(
         if len(entry) != 2:
             raise ValueError(f"terms[{position}] must contain exactly two items")
         term = _canonicalize_term(modal_space, entry[0], position=position)
-        coefficient = _normalize_coefficient(
+        coefficient = normalize_finite_complex(
             entry[1],
             name=f"terms[{position}][1]",
         )

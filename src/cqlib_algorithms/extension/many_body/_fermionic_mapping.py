@@ -21,7 +21,7 @@ from cqlib.qis import (
     JordanWignerMapper,
 )
 
-from ._mapping_validation import snapshot_real_hamiltonian
+from ..._utils.hamiltonian import snapshot_real_hamiltonian
 
 
 def map_fermionic_operator(

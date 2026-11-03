@@ -31,7 +31,7 @@ from numbers import Real
 from cqlib import Circuit
 
 from ..operators.state_preparation import BasisStateInitialization
-from ..protocols.sampler import Sampler, SamplerRequest, validate_sampler_results
+from ..protocols.sampler import Sampler, SamplerRequest, require_sampler_results
 
 
 class BB84Basis(Enum):
@@ -461,7 +461,7 @@ class BB84:
 
         eve_bits: dict[tuple[int, int], int] = {}
         if eve_sampler_requests:
-            eve_results = validate_sampler_results(
+            eve_results = require_sampler_results(
                 self._sampler.run(eve_sampler_requests), eve_sampler_requests
             )
             for location, result in zip(eve_locations, eve_results):
@@ -488,7 +488,7 @@ class BB84:
                 bob_sampler_requests.append(_sample_request(circuit))
             result_slices.append((start, len(bob_sampler_requests)))
 
-        bob_results = validate_sampler_results(
+        bob_results = require_sampler_results(
             self._sampler.run(bob_sampler_requests), bob_sampler_requests
         )
 

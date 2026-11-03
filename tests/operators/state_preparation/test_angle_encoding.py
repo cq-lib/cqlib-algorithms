@@ -57,7 +57,7 @@ def test_copies_gate_and_rejects_unsupported_or_bound_gate() -> None:
 def test_rejects_invalid_width_and_prefix() -> None:
     with pytest.raises(TypeError, match="num_qubits must be an int"):
         AngleEncoding(True, StandardGate.RY)
-    with pytest.raises(ValueError, match="at least 1"):
+    with pytest.raises(ValueError, match="greater than zero"):
         AngleEncoding(0, StandardGate.RY)
     with pytest.raises(TypeError, match="prefix must be a str"):
         AngleEncoding(1, StandardGate.RY).build_circuit(None)  # type: ignore[arg-type]

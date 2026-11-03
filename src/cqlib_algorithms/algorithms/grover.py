@@ -34,7 +34,7 @@ from cqlib import Circuit
 from ..operators.composite import GroverOperator
 from ..operators.oracle import BooleanFunction, BooleanVectorFunction, PhaseOracle
 from ..operators.state_preparation import UniformSuperposition
-from ..protocols.sampler import Sampler, SamplerRequest, validate_sampler_results
+from ..protocols.sampler import Sampler, SamplerRequest, require_sampler_results
 
 
 def _selected_marked_states(
@@ -402,7 +402,7 @@ class Grover:
         if not sampler_requests:
             return []
 
-        sampled = validate_sampler_results(
+        sampled = require_sampler_results(
             self._sampler.run(sampler_requests), sampler_requests
         )
         results: list[GroverResult] = []

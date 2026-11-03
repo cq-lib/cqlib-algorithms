@@ -20,6 +20,7 @@ from typing import Literal, final
 from cqlib.circuit import Circuit
 from cqlib.circuit.ansatz import EntanglementTopology
 
+from ..._utils.numeric import validate_repetitions
 from ...extension.lattice import (
     FermiHubbardModel,
     LatticeSystem,
@@ -27,7 +28,6 @@ from ...extension.lattice import (
     SpinMagnetizationSector,
 )
 from ..state_preparation import LatticeReferenceStatePreparation
-from ._validation import validate_repetitions
 from .base_ansatz import BaseAnsatz
 from .excitation_preserving_ansatz import ExcitationPreservingAnsatz
 

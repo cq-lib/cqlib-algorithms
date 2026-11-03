@@ -22,9 +22,9 @@ import numpy as np
 from cqlib.circuit import Circuit
 from numpy.typing import ArrayLike
 
+from ..._utils.parameters import validate_parameter_prefix
 from ...extension.chemistry import BogoliubovTransform
 from ...protocols.state_preparation import StatePreparation
-from ._state_synthesis import validate_prefix
 from .basis_state_initialization import BasisStateInitialization
 from .slater_determinant_state_preparation import (
     SlaterDeterminantStatePreparation,
@@ -151,7 +151,7 @@ class FermionicGaussianStatePreparation(StatePreparation):
 
     def build_circuit(self, prefix: str) -> Circuit:
         """Return an independent fixed fermionic Gaussian preparation circuit."""
-        validate_prefix(prefix)
+        validate_parameter_prefix(prefix)
         self.validate()
         if self._slater_preparation is not None:
             return self._slater_preparation.build_circuit(prefix)
