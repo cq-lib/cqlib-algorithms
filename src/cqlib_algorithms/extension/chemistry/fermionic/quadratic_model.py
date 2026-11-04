@@ -21,7 +21,7 @@ from cqlib.qis import FermionicLadder, FermionicOp
 from numpy.typing import NDArray
 from scipy.linalg import schur  # type: ignore[import-untyped]
 
-from ..validation.numerical import immutable_complex_array, validate_finite_real
+from .._numeric import immutable_complex_array, validate_finite_real
 from ._bogoliubov_decomposition import majorana_to_bogoliubov
 
 _STRUCTURE_ATOL = 1e-12

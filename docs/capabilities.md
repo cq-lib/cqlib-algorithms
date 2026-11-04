@@ -25,7 +25,7 @@
 | Ansatz | TwoLocal、RealAmplitudes、EfficientSU2、硬件高效、双量子比特参数化酉、PauliTwoDesign、算符演化、Hamiltonian 变分、激发保持、SimplifiedTwoDesign、随机层、MPS、TTN、MERA、UCC/UCCSD、PUCCD/PUCCSD、UVCC/UVCCSD、晶格守恒拟设、QAOA 成本/混合演化 |
 | Mixer | nearby-values、ring、fully-connected、null-swap、受控交换、排列交换、时间调度和有序组合 |
 | Oracle 与反射 | 布尔函数、位翻转/相位 Oracle、零态/一般态反射、Grover diffusion、Long 相位反射、任意酉矩阵综合、酉扩张块编码和 Dicke 权重分布组件 |
-| 线路组合 | Hadamard 相位查询、隐藏线性函数电路、Grover 迭代单元、相位估计电路、QSP 与 QSVT |
+| 线路组合 | QFT、Hadamard 相位查询、隐藏线性函数电路、Grover 迭代单元、相位估计电路、QSP 与 QSVT |
 | 测量 | Pauli none/QWC 分组、全局对易分组、局域基测量规划 |
 | 执行 | 本地态矢量 Sampler、回调式后端 Sampler、精确态矢量 Estimator、采样 Estimator |
 | 微分与优化 | 参数移位、线性组合、有限差分、SPSA 梯度，QGT、QFI、自然梯度，GradientDescent、Adam、SPSA、COBYLA、L-BFGS-B 优化器 |
@@ -33,7 +33,6 @@
 | 保真度与重叠 | `U2† U1` 酉重叠线路、基于 compute–uncompute 的线路纯态保真度 |
 | 误差缓解 | CDR、DDD、DEB、LRE、PEA、PEC、Pauli twirling、QSE、读出缓解、classical shadows、T-REx、Virtual Distillation 和 ZNE |
 | 量子核 | `FidelityQuantumKernel`、`TrainableFidelityQuantumKernel`、`BalancedKernelAlignmentLoss` |
-| 线路变换 | 可配置近似阶和输出 SWAP 的 `QFT` |
 
 ## 科研计算链
 

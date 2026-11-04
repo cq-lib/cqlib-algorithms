@@ -18,10 +18,10 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from .._numeric import validate_strict_int
 from ..electronic.integrals import ElectronicIntegrals
 from ..electronic.occupation import ElectronicOccupation
 from ..electronic.spin_resolved_integrals import SpinResolvedElectronicIntegrals
-from ..validation.numerical import validate_strict_int
 
 
 def _validate_indices(indices: tuple[int, ...], *, name: str) -> None:

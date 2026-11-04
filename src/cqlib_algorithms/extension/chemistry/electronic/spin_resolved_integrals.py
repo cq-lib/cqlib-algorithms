@@ -19,7 +19,7 @@ from dataclasses import dataclass
 import numpy as np
 from numpy.typing import NDArray
 
-from ..validation.numerical import immutable_real_array, validate_finite_real
+from .._numeric import immutable_real_array, validate_finite_real
 
 _SYMMETRY_ATOL = 1e-10
 

@@ -22,7 +22,7 @@ from cqlib.circuit import Circuit
 from cqlib.circuit.gates import StandardGate
 from numpy.typing import ArrayLike, NDArray
 
-from ..validation.numerical import immutable_complex_array
+from .._numeric import immutable_complex_array
 
 _CANONICAL_ATOL = 1e-12
 _DECOMPOSITION_ATOL = 5e-11

@@ -23,7 +23,10 @@ import pytest
 from cqlib import Circuit, Parameter
 from cqlib.device import ExecutionResult
 
-from cqlib_algorithms.algorithms.pegasos_qsvc import PegasosQSVC, _norm_squared
+from cqlib_algorithms.algorithms.machine_learning.pegasos_qsvc import (
+    PegasosQSVC,
+    _norm_squared,
+)
 from cqlib_algorithms.operators.quantum_kernel import FidelityQuantumKernel
 from cqlib_algorithms.protocols.sampler import Sampler
 

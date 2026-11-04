@@ -19,13 +19,13 @@ from dataclasses import dataclass
 import numpy as np
 from numpy.typing import NDArray
 
-from ..electronic.integrals import ElectronicIntegrals
-from ..electronic.spin_resolved_integrals import SpinResolvedElectronicIntegrals
-from ..validation.numerical import (
+from .._numeric import (
     immutable_real_array,
     validate_finite_real,
     validate_strict_int,
 )
+from ..electronic.integrals import ElectronicIntegrals
+from ..electronic.spin_resolved_integrals import SpinResolvedElectronicIntegrals
 from .specification import MolecularSpecification
 
 

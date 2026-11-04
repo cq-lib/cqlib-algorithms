@@ -26,7 +26,7 @@ from cqlib import Circuit, Parameter
 from cqlib.circuit import CircuitError
 from cqlib.device import ExecutionResult
 
-from cqlib_algorithms.algorithms.qsvr import QSVR
+from cqlib_algorithms.algorithms.machine_learning.qsvr import QSVR
 from cqlib_algorithms.operators.quantum_kernel import FidelityQuantumKernel
 from cqlib_algorithms.operators.sampler import StatevectorSampler
 from cqlib_algorithms.protocols import Sampler
@@ -368,7 +368,8 @@ def test_unrelated_optional_solver_import_error_is_not_mislabeled(monkeypatch):
         raise ModuleNotFoundError("broken transitive dependency", name="unrelated")
 
     monkeypatch.setattr(
-        "cqlib_algorithms.algorithms.qsvr.importlib.import_module", broken
+        "cqlib_algorithms.algorithms.machine_learning.qsvr.importlib.import_module",
+        broken,
     )
     with pytest.raises(ModuleNotFoundError, match="broken transitive"):
         QSVR(kernel()).fit([[0]], [1])

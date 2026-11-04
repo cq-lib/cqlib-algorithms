@@ -25,9 +25,9 @@ from typing import Protocol, cast
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
-from .._utils.numeric import copy_finite_real_array, validate_positive_integer
-from ..protocols.scalar_minimizer import ScalarMinimizer, ScalarMinimizerResult
-from ._ml_validation import _real_hyperparameter
+from ..._utils.numeric import copy_finite_real_array, validate_positive_integer
+from ...protocols.scalar_minimizer import ScalarMinimizer, ScalarMinimizerResult
+from ._validation import _real_hyperparameter
 
 
 def configuration(

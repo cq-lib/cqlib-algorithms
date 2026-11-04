@@ -29,10 +29,10 @@ from __future__ import annotations
 
 import math
 
+from cqlib import Circuit
 from cqlib.circuit.gates import StandardGate
 
-from cqlib import Circuit
-from cqlib_algorithms.transforms import QFT as TransformQFT
+from cqlib_algorithms.operators.composite.qft import QFT
 
 _TWO_PI = 2.0 * math.pi
 
@@ -41,7 +41,7 @@ def _qft_degree(
     register_size: int,
     approximation_degree: int | None,
 ) -> int:
-    """Translate an optional kept-distance hint into TransformQFT degree."""
+    """Translate an optional kept-distance hint into QFT degree."""
     if approximation_degree is None:
         return 0
     qft_degree = max(0, register_size - 1 - int(approximation_degree))
@@ -96,7 +96,7 @@ def build_draper_qft_multiplier(
     circuit = Circuit(4 * n)
 
     qft_degree = _qft_degree(len(product_indices), approximation_degree)
-    forward_qft = TransformQFT(
+    forward_qft = QFT(
         len(product_indices),
         approximation_degree=qft_degree,
         do_swaps=False,
@@ -111,7 +111,7 @@ def build_draper_qft_multiplier(
         product_indices=product_indices,
     )
 
-    inverse_qft = TransformQFT(
+    inverse_qft = QFT(
         len(product_indices),
         approximation_degree=qft_degree,
         do_swaps=False,

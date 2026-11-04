@@ -24,10 +24,10 @@ from cqlib import Circuit, Parameter, Qubit
 from cqlib.circuit import CircuitError
 from cqlib.device import ExecutionResult
 
-from cqlib_algorithms.algorithms import _ml_common as common
-from cqlib_algorithms.algorithms.pegasos_qsvc import PegasosQSVC
-from cqlib_algorithms.algorithms.qsvr import QSVR
-from cqlib_algorithms.algorithms.quantum_kernel_trainer import (
+from cqlib_algorithms.algorithms.machine_learning import _common as common
+from cqlib_algorithms.algorithms.machine_learning.pegasos_qsvc import PegasosQSVC
+from cqlib_algorithms.algorithms.machine_learning.qsvr import QSVR
+from cqlib_algorithms.algorithms.machine_learning.quantum_kernel_trainer import (
     QuantumKernelTrainer,
 )
 from cqlib_algorithms.operators.quantum_kernel import FidelityQuantumKernel

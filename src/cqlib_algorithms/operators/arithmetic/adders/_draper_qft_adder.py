@@ -30,11 +30,11 @@ from __future__ import annotations
 
 from typing import Literal
 
+from cqlib import Circuit
 from cqlib.circuit import Parameter
 from cqlib.circuit.gates import StandardGate
 
-from cqlib import Circuit
-from cqlib_algorithms.transforms import QFT as TransformQFT
+from cqlib_algorithms.operators.composite.qft import QFT
 
 DraperAdderKind = Literal["modular", "half"]
 
@@ -47,7 +47,7 @@ def _controlled_phase(
     target: int,
     lam: float | Parameter,
 ) -> None:
-    """Append CPHASE(lambda) matching transforms qft primitives."""
+    """Append CPHASE(lambda) matching the shared QFT component."""
     gate = StandardGate.Phase(lam).control(1)
     circuit.append_mc_gate(gate, [control, target])
 
@@ -76,7 +76,7 @@ def _append_draper_schedule(
         if qft_degree >= qft_size:
             qft_degree = qft_size - 1
 
-    fwd_qft_circ: Circuit = TransformQFT(
+    fwd_qft_circ: Circuit = QFT(
         qft_size,
         approximation_degree=qft_degree,
         do_swaps=False,
@@ -97,7 +97,7 @@ def _append_draper_schedule(
             control = a_start + (n - j - 1)
             _controlled_phase(circ, control, carry_out_index, lam)
 
-    inv_qft_circ: Circuit = TransformQFT(
+    inv_qft_circ: Circuit = QFT(
         qft_size,
         approximation_degree=qft_degree,
         do_swaps=False,

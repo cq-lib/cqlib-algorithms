@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 from numpy.typing import NDArray
 
-from ..validation.numerical import immutable_real_array, validate_finite_real
+from .._numeric import immutable_real_array, validate_finite_real
 from .integrals import ElectronicIntegrals
 from .occupation import ElectronicOccupation
 from .spin_resolved_integrals import SpinResolvedElectronicIntegrals

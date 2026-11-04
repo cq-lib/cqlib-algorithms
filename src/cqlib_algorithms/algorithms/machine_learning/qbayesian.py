@@ -31,12 +31,12 @@ from cqlib import Circuit
 from cqlib.circuit import CircuitError
 from cqlib.circuit.gates import StandardGate
 
-from .._utils.circuit import (
+from ..._utils.circuit import (
     snapshot_bound_static_unitary_circuit,
     validate_bound_static_unitary_circuit,
 )
-from ..operators.composite import GroverOperator
-from ..protocols.sampler import Sampler, SamplerRequest, require_sampler_results
+from ...operators.composite import GroverOperator
+from ...protocols.sampler import Sampler, SamplerRequest, require_sampler_results
 
 
 def _integer(value: int, name: str, *, minimum: int = 1) -> None:

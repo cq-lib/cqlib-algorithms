@@ -32,7 +32,7 @@ from ..._utils.phase_estimation import (
     unitary_matrix,
     validate_static_unitary_circuit,
 )
-from ...transforms import QFT
+from .qft import QFT
 
 
 @final

@@ -10,6 +10,20 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Internal numerical validation for chemistry-domain data."""
+"""Sample-based quantum diagonalization for electronic structures."""
 
-__all__: list[str] = []
+from .algorithm import SQD, SQDCallback
+from .recovery import recover_sqd_configurations
+from .results import SQDIteration, SQDResult, SQDSubspaceResult
+from .subspace import SQDSubspaceSolver, solve_sqd_subspace
+
+__all__ = [
+    "SQD",
+    "SQDCallback",
+    "SQDIteration",
+    "SQDResult",
+    "SQDSubspaceResult",
+    "SQDSubspaceSolver",
+    "recover_sqd_configurations",
+    "solve_sqd_subspace",
+]

@@ -27,6 +27,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from .._numeric import normalize_finite_complex
+from ._qubit_mapping import map_spin_half_terms
 
 SpinAxis: TypeAlias = Literal["X", "Y", "Z"]
 SpinFactor: TypeAlias = tuple[SpinAxis, int]
@@ -337,12 +338,8 @@ class SpinOp:
         if all(abs(left.get(key, 0.0j) - right.get(key, 0.0j)) <= atol for key in keys):
             return True
         if self.spin == Fraction(1, 2):
-            # The import is local to avoid a module-initialization cycle.
-            from .spin_half_mapping import SpinHalfMapper
-
-            mapper = SpinHalfMapper()
-            return mapper.map_operator(self).equiv(
-                mapper.map_operator(other),
+            return map_spin_half_terms(self.num_spins, self.terms).equiv(
+                map_spin_half_terms(other.num_spins, other.terms),
                 atol=float(atol),
             )
 

@@ -350,8 +350,12 @@ from cqlib_algorithms.algorithms.variational import (
     VQEResult as VariationalVQEResult,
 )
 from cqlib_algorithms.operators import (
+    QFT as OperatorQFT,
+)
+from cqlib_algorithms.operators import (
     PhaseEstimationCircuit as OperatorPhaseEstimationCircuit,
 )
+from cqlib_algorithms.operators.composite import QFT as CompositeQFT
 from cqlib_algorithms.protocols import (
     Ansatz,
     Estimator,
@@ -369,7 +373,6 @@ from cqlib_algorithms.protocols import (
     StateFidelity,
     StatePreparation,
 )
-from cqlib_algorithms.transforms import QFT as TransformQFT
 
 PUBLIC_COMPONENTS = {
     "AdaptVQE": AdaptVQE,
@@ -503,8 +506,8 @@ def test_protocols_package_is_importable():
     assert import_module("cqlib_algorithms.protocols") is not None
 
 
-def test_transforms_package_is_importable():
-    assert import_module("cqlib_algorithms.transforms") is not None
+def test_composite_operators_package_is_importable():
+    assert import_module("cqlib_algorithms.operators.composite") is not None
 
 
 def test_typing_marker_is_packaged():
@@ -538,7 +541,7 @@ def test_component_contracts_are_abstract_base_classes():
 
 
 def test_qft_is_exported_from_public_namespaces():
-    assert QFT is TransformQFT
+    assert QFT is OperatorQFT is CompositeQFT
 
 
 def test_phase_estimation_is_exported_from_public_namespaces():
@@ -733,6 +736,8 @@ def test_superdense_coding_is_exported_from_public_namespaces():
     ],
 )
 def test_qml_algorithms_are_exported_from_public_namespaces(name):
-    assert getattr(cqlib_algorithms, name) is getattr(
-        import_module("cqlib_algorithms.algorithms"), name
+    exported = getattr(cqlib_algorithms, name)
+    assert exported is getattr(import_module("cqlib_algorithms.algorithms"), name)
+    assert exported is getattr(
+        import_module("cqlib_algorithms.algorithms.machine_learning"), name
     )

@@ -25,11 +25,17 @@ from dataclasses import dataclass
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
-from .._utils.numeric import copy_finite_real_array, validate_positive_integer
-from ..operators.quantum_kernel import FidelityQuantumKernel
-from . import _ml_common as common
-from . import _ml_validation as validation
-from ._ml_validation import _real_hyperparameter, _targets
+from ..._utils.numeric import copy_finite_real_array, validate_positive_integer
+from ...operators.quantum_kernel import FidelityQuantumKernel
+from ._common import gram
+from ._validation import (
+    _real_hyperparameter,
+    _targets,
+    binary_labels,
+)
+from ._validation import (
+    data as validate_data,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -163,9 +169,9 @@ class PegasosQSVC:
 
     def fit(self, X: ArrayLike, y: ArrayLike) -> PegasosQSVC:
         """Fit finite nonempty X and exactly two numeric classes atomically."""
-        data = validation.data(X, self._kernel.num_features, nonempty=True)
-        labels, classes = validation.binary_labels(y, len(data))
-        raw = common.gram(self._kernel.evaluate(data), len(data))
+        data = validate_data(X, self._kernel.num_features, nonempty=True)
+        labels, classes = binary_labels(y, len(data))
+        raw = gram(self._kernel.evaluate(data), len(data))
         eigenvalues, eigenvectors = np.linalg.eigh(raw)
         matrix = (eigenvectors * np.maximum(eigenvalues, 0.0)) @ eigenvectors.T
         matrix = (matrix + matrix.T) / 2.0
@@ -212,7 +218,7 @@ class PegasosQSVC:
     def decision_function(self, X: ArrayLike) -> NDArray[np.float64]:
         """Return raw rectangular kernel decisions; empty (0,d) performs no work."""
         state = self._fitted()
-        data = validation.data(X, self._kernel.num_features)
+        data = validate_data(X, self._kernel.num_features)
         if not len(data):
             return np.empty(0, dtype=np.float64)
         matrix = copy_finite_real_array(
@@ -241,7 +247,7 @@ class PegasosQSVC:
     def score(self, X: ArrayLike, y: ArrayLike) -> float:
         """Return mean classification accuracy on nonempty known-class labels."""
         state = self._fitted()
-        data = validation.data(X, self._kernel.num_features, nonempty=True)
+        data = validate_data(X, self._kernel.num_features, nonempty=True)
         targets = _targets(y, len(data), "y")
         if not np.all(np.isin(targets, state.classes)):
             raise ValueError("score labels must belong to the fitted classes")

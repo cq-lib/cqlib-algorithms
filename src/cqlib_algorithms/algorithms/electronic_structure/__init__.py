@@ -15,7 +15,7 @@
 from .electronic_ground_state import ElectronicGroundState
 from .electronic_qeom import ElectronicQEOM
 from .results import ElectronicGroundStateResult, ElectronicQEOMResult
-from .sample_based_quantum_diagonalization import (
+from .sqd import (
     SQD,
     SQDCallback,
     SQDIteration,

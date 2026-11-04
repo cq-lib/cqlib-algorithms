@@ -58,10 +58,10 @@ References
 
 from __future__ import annotations
 
+from cqlib import Circuit
 from cqlib.circuit.gates import StandardGate
 
-from cqlib import Circuit
-from cqlib_algorithms.transforms import QFT as TransformQFT
+from cqlib_algorithms.operators.composite.qft import QFT
 
 _TWO_PI: float = 2.0 * 3.141592653589793
 
@@ -123,7 +123,7 @@ def build_qft_weighted_sum(
         else:
             qft_degree = 0
 
-    fwd_qft_circ: Circuit = TransformQFT(
+    fwd_qft_circ: Circuit = QFT(
         s,
         approximation_degree=qft_degree,
         do_swaps=False,
@@ -144,7 +144,7 @@ def build_qft_weighted_sum(
             target = sum_indices[l]
             _append_controlled_phase(circuit, control, target, lam)
 
-    inv_qft_circ: Circuit = TransformQFT(
+    inv_qft_circ: Circuit = QFT(
         s,
         approximation_degree=qft_degree,
         do_swaps=False,

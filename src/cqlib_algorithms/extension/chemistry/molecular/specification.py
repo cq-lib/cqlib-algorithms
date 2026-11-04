@@ -17,7 +17,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-from ..validation.numerical import validate_finite_real, validate_strict_int
+from .._numeric import validate_finite_real, validate_strict_int
 
 LengthUnit = Literal["angstrom", "bohr"]
 

@@ -16,34 +16,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from cqlib.qis import Hamiltonian, Pauli, PauliString, Phase
+from cqlib.qis import Hamiltonian
 
+from ._qubit_mapping import map_one_hot_vibrational_terms
 from .modal_space import ModalSpace
-from .vibrational_operator import VibrationalLadder, VibrationalOp
-
-
-def _local_pauli(width: int, qubit: int, pauli: Pauli) -> PauliString:
-    result = PauliString(width)
-    result.set_pauli(qubit, pauli)
-    return result
-
-
-def _ladder_expansion(
-    modal_space: ModalSpace,
-    ladder: VibrationalLadder,
-) -> tuple[tuple[PauliString, complex], tuple[PauliString, complex]]:
-    qubit = modal_space.qubit_index(ladder.mode, ladder.modal)
-    y_coefficient = -0.5j if ladder.kind == "+" else 0.5j
-    return (
-        (_local_pauli(modal_space.num_qubits, qubit, Pauli.x()), 0.5),
-        (_local_pauli(modal_space.num_qubits, qubit, Pauli.y()), y_coefficient),
-    )
-
-
-def _phase_free_copy(pauli: PauliString) -> PauliString:
-    copied = pauli.copy()
-    copied.phase = Phase.plus()
-    return copied
+from .vibrational_operator import VibrationalOp
 
 
 @dataclass(frozen=True, slots=True)
@@ -55,39 +32,11 @@ class OneHotVibrationalMapper:
         if not isinstance(operator, VibrationalOp):
             raise TypeError("operator must be a VibrationalOp")
 
-        width = operator.modal_space.num_qubits
-        aggregated: dict[tuple[int, int], tuple[PauliString, complex]] = {}
-        for term, coefficient in operator.terms:
-            expansion: tuple[tuple[PauliString, complex], ...] = (
-                (PauliString(width), coefficient),
-            )
-            for ladder in term:
-                next_expansion: list[tuple[PauliString, complex]] = []
-                for left_pauli, left_coefficient in expansion:
-                    for right_pauli, right_coefficient in _ladder_expansion(
-                        operator.modal_space,
-                        ladder,
-                    ):
-                        product = left_pauli.copy()
-                        product *= right_pauli
-                        next_expansion.append(
-                            (product, left_coefficient * right_coefficient)
-                        )
-                expansion = tuple(next_expansion)
-
-            for pauli, expanded_coefficient in expansion:
-                effective = expanded_coefficient * pauli.phase.to_complex()
-                key = (pauli.x_mask, pauli.z_mask)
-                phase_free = _phase_free_copy(pauli)
-                previous = aggregated.get(key, (phase_free, 0.0j))[1]
-                aggregated[key] = (phase_free, previous + effective)
-
-        terms = tuple(
-            (pauli, coefficient)
-            for _, (pauli, coefficient) in sorted(aggregated.items())
-            if coefficient != 0.0
+        return map_one_hot_vibrational_terms(
+            operator.modal_space.num_qubits,
+            operator.terms,
+            operator.modal_space.qubit_index,
         )
-        return Hamiltonian.from_terms(width, terms)
 
     @staticmethod
     def num_qubits(modal_space: ModalSpace) -> int:

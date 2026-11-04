@@ -22,7 +22,7 @@ import pytest
 from cqlib import Circuit, Parameter, Qubit
 from cqlib.device import ExecutionResult
 
-from cqlib_algorithms.algorithms.qbayesian import (
+from cqlib_algorithms.algorithms.machine_learning.qbayesian import (
     QBayesian,
     QBayesianResult,
     QBayesianRound,
@@ -190,7 +190,8 @@ def test_empty_evidence_skips_grover_and_uses_effective_budget(monkeypatch):
         pytest.fail("empty evidence must not construct Grover")
 
     monkeypatch.setattr(
-        "cqlib_algorithms.algorithms.qbayesian.GroverOperator", forbidden
+        "cqlib_algorithms.algorithms.machine_learning.qbayesian.GroverOperator",
+        forbidden,
     )
     sampler = ScriptedSampler([{"0": 2, "1": 3}])
     result = model(sampler).infer(

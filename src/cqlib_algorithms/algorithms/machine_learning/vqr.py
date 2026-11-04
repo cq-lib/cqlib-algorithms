@@ -29,22 +29,32 @@ from cqlib import Circuit
 from cqlib.qis import Hamiltonian, PauliString
 from numpy.typing import ArrayLike, NDArray
 
-from .._utils.circuit import validate_bound_static_unitary_circuit
-from .._utils.hamiltonian import validate_hermitian_observable
-from .._utils.numeric import (
+from ..._utils.circuit import validate_bound_static_unitary_circuit
+from ..._utils.hamiltonian import validate_hermitian_observable
+from ..._utils.numeric import (
     validate_optional_positive_integer,
     validate_positive_integer,
 )
-from ..protocols.estimator import (
+from ...protocols.estimator import (
     Estimator,
     EstimatorRequest,
     EstimatorResult,
     require_estimator_results,
 )
-from ..protocols.scalar_minimizer import ScalarMinimizer, ScalarMinimizerResult
-from . import _ml_common as common
-from . import _ml_validation as validation
-from ._ml_validation import _real_hyperparameter, _targets
+from ...protocols.scalar_minimizer import ScalarMinimizer, ScalarMinimizerResult
+from ._common import configuration, minimize, mse
+from ._validation import (
+    _real_hyperparameter,
+    _targets,
+    bindings,
+    immutable_parameters,
+    initial,
+    names,
+    template,
+)
+from ._validation import (
+    data as validate_data,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -96,12 +106,10 @@ class VQR:
         tolerance: float = 1e-6,
         initial_step: float = 1.0,
     ) -> None:
-        self._inputs = validation.names(input_parameters, "input_parameters")
-        self._weights = validation.names(weight_parameters, "weight_parameters")
-        self._fixed = validation.bindings(parameter_bindings, "parameter_bindings")
-        self._circuit = validation.template(
-            circuit, self._inputs, self._weights, self._fixed
-        )
+        self._inputs = names(input_parameters, "input_parameters")
+        self._weights = names(weight_parameters, "weight_parameters")
+        self._fixed = bindings(parameter_bindings, "parameter_bindings")
+        self._circuit = template(circuit, self._inputs, self._weights, self._fixed)
         if not isinstance(observable, (Hamiltonian, PauliString)):
             raise TypeError("observable must be a Hamiltonian or PauliString")
         validate_hermitian_observable(observable, name="observable")
@@ -117,7 +125,7 @@ class VQR:
             raise TypeError("optimizer must be callable")
         self._optimizer = optimizer
         if optimizer is None:
-            self._tolerance, self._initial_step = common.configuration(
+            self._tolerance, self._initial_step = configuration(
                 max_evaluations, len(self._weights), tolerance, initial_step
             )
         else:
@@ -235,20 +243,18 @@ class VQR:
             ValueError: If dimensions, values, or evaluation counts are invalid.
             ImportError: If default optimization requires an unavailable SciPy.
         """
-        data = validation.data(X, len(self._inputs), nonempty=True)
+        data = validate_data(X, len(self._inputs), nonempty=True)
         targets = _targets(y, len(data), "y")
-        point = validation.initial(initial_point, self._weights)
+        point = initial(initial_point, self._weights)
 
         def objective(candidate: NDArray[np.float64]) -> float:
-            return common.mse(
-                self._predict(
-                    data, validation.immutable_parameters(self._weights, candidate)
-                ),
+            return mse(
+                self._predict(data, immutable_parameters(self._weights, candidate)),
                 targets,
             )
 
         initial_loss = objective(point)
-        result = common.minimize(
+        result = minimize(
             objective,
             point,
             self._max_evaluations,
@@ -258,7 +264,7 @@ class VQR:
         )
         final_loss = objective(np.array(result.point, dtype=np.float64))
         self._state = _State(
-            validation.immutable_parameters(self._weights, result.point),
+            immutable_parameters(self._weights, result.point),
             initial_loss,
             final_loss,
             result,
@@ -279,7 +285,7 @@ class VQR:
             ValueError: If the model is unfitted or values or shapes are invalid.
         """
         state = self._fitted()
-        return self._predict(validation.data(X, len(self._inputs)), state.parameters)
+        return self._predict(validate_data(X, len(self._inputs)), state.parameters)
 
     def score(self, X: ArrayLike, y: ArrayLike) -> float:
         """Compute R-squared from at least two samples.
@@ -298,15 +304,15 @@ class VQR:
                 supplied, or values or shapes are invalid.
         """
         self._fitted()
-        data = validation.data(X, len(self._inputs))
+        data = validate_data(X, len(self._inputs))
         targets = _targets(y, len(data), "y")
         if len(targets) < 2:
             raise ValueError("score requires at least two targets")
-        numerator = common.mse(self.predict(data), targets)
+        numerator = mse(self.predict(data), targets)
         # Scaling the mean prevents a finite constant target from overflowing.
         scale = float(np.max(np.abs(targets)))
         mean = 0.0 if scale == 0.0 else float(np.mean(targets / scale)) * scale
-        denominator = common.mse(np.full_like(targets, mean), targets)
+        denominator = mse(np.full_like(targets, mean), targets)
         value = (
             1.0
             if numerator == 0.0

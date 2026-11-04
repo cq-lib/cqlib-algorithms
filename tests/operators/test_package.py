@@ -94,6 +94,7 @@ def test_composite_operators_are_exported_from_functional_packages():
         "HiddenLinearFunctionCircuit",
         "PhaseEstimationCircuit",
         "ProjectorControlledPhase",
+        "QFT",
         "QuantumSignalProcessing",
         "QuantumSingularValueTransformation",
         "RealValuedQSVT",

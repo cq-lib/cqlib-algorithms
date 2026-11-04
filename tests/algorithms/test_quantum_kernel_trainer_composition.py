@@ -12,8 +12,8 @@ import numpy as np
 import pytest
 
 from cqlib_algorithms.algorithms import QuantumKernelTrainer
-from cqlib_algorithms.algorithms import _ml_common as common
-from cqlib_algorithms.algorithms import _ml_validation as validation
+from cqlib_algorithms.algorithms.machine_learning import _common as common
+from cqlib_algorithms.algorithms.machine_learning import _validation as validation
 from cqlib_algorithms.protocols import (
     QuantumKernel,
     ScalarMinimizerResult,
@@ -245,10 +245,11 @@ def test_shared_validation_messages(values, width, exception, message):
 
 def test_shared_module_dependency_direction():
     base = Path(common.__file__).parent
-    for name in ["_ml_common", "_ml_validation", "vqr", "pegasos_qsvc"]:
+    for name in ["_common", "_validation", "vqr", "pegasos_qsvc"]:
         tree = ast.parse((base / f"{name}.py").read_text(encoding="utf-8"))
         for node in ast.walk(tree):
             if isinstance(node, ast.ImportFrom):
+                assert not (node.level == 1 and node.module is None)
                 assert node.module != "qsvr"
                 assert not (
                     node.module

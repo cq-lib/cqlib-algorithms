@@ -27,7 +27,8 @@ from __future__ import annotations
 import math
 
 from cqlib import Circuit
-from cqlib_algorithms.transforms import QFT as TransformQFT
+
+from cqlib_algorithms.operators.composite.qft import QFT
 
 
 def build_draper_constant_adder(
@@ -39,7 +40,7 @@ def build_draper_constant_adder(
     circuit = Circuit(n)
     wires = list(range(n))
 
-    forward_qft = TransformQFT(
+    forward_qft = QFT(
         n,
         approximation_degree=0,
         do_swaps=False,
@@ -57,7 +58,7 @@ def build_draper_constant_adder(
         if angle != 0.0:
             circuit.phase(qubit, angle)
 
-    inverse_qft = TransformQFT(
+    inverse_qft = QFT(
         n,
         approximation_degree=0,
         do_swaps=False,

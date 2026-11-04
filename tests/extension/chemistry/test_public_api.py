@@ -51,7 +51,13 @@ def test_chemistry_components_are_exported_from_extension_packages():
         "transform_active_space",
         "transform_spin_resolved_active_space",
     }
-    assert set(extension.__all__) == expected
+    assert extension.__all__[:4] == [
+        "chemistry",
+        "lattice",
+        "many_body",
+        "vibration",
+    ]
+    assert set(extension.__all__[4:]) == expected
     assert set(chemistry.__all__) == expected
     for name in expected:
         assert getattr(extension, name) is getattr(chemistry, name)

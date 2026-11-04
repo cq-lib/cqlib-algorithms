@@ -24,8 +24,8 @@ from cqlib.circuit import CircuitError
 from cqlib.device import ExecutionResult
 from cqlib.qis import Hamiltonian, PauliString, Phase
 
-from cqlib_algorithms.algorithms import _ml_common as common
-from cqlib_algorithms.algorithms.vqr import VQR
+from cqlib_algorithms.algorithms.machine_learning import _common as common
+from cqlib_algorithms.algorithms.machine_learning.vqr import VQR
 from cqlib_algorithms.operators.estimator import SamplingEstimator, StatevectorEstimator
 from cqlib_algorithms.protocols.estimator import Estimator, EstimatorResult
 from cqlib_algorithms.protocols.sampler import Sampler

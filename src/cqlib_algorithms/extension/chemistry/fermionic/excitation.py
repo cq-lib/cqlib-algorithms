@@ -18,7 +18,7 @@ from dataclasses import dataclass
 
 from cqlib.qis import FermionicLadder, FermionicOp
 
-from ..validation.numerical import validate_strict_int
+from .._numeric import validate_strict_int
 
 
 def _validate_indices(

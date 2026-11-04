@@ -25,18 +25,31 @@ import numpy as np
 from cqlib import Circuit
 from numpy.typing import ArrayLike, NDArray
 
-from .._utils.numeric import copy_finite_real_array, validate_positive_integer
-from ..operators.quantum_kernel import (
+from ..._utils.numeric import copy_finite_real_array, validate_positive_integer
+from ...operators.quantum_kernel import (
     BalancedKernelAlignmentLoss,
     FidelityQuantumKernel,
     TrainableFidelityQuantumKernel,
 )
-from ..protocols.quantum_kernel import KernelLoss, QuantumKernel, TrainableQuantumKernel
-from ..protocols.sampler import Sampler
-from ..protocols.scalar_minimizer import ScalarMinimizer, ScalarMinimizerResult
-from . import _ml_common as common
-from . import _ml_validation as validation
-from ._ml_validation import _real_hyperparameter, _targets
+from ...protocols.quantum_kernel import (
+    KernelLoss,
+    QuantumKernel,
+    TrainableQuantumKernel,
+)
+from ...protocols.sampler import Sampler
+from ...protocols.scalar_minimizer import ScalarMinimizer, ScalarMinimizerResult
+from ._common import configuration, gram, minimize
+from ._validation import (
+    _real_hyperparameter,
+    _targets,
+    bindings,
+    immutable_parameters,
+    initial,
+    names,
+)
+from ._validation import (
+    data as validate_data,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -58,7 +71,7 @@ class QuantumKernelTrainerResult:
     def __post_init__(self) -> None:
         if not isinstance(self.quantum_kernel, QuantumKernel):
             raise TypeError("quantum_kernel must be a QuantumKernel")
-        parameters = validation.bindings(self.optimal_parameters, "optimal_parameters")
+        parameters = bindings(self.optimal_parameters, "optimal_parameters")
         object.__setattr__(self, "optimal_parameters", MappingProxyType(parameters))
         for name in ("initial_loss", "loss"):
             value = getattr(self, name)
@@ -149,7 +162,7 @@ class QuantumKernelTrainer:
         if not isinstance(quantum_kernel, TrainableQuantumKernel):
             raise TypeError("quantum_kernel must be a TrainableQuantumKernel")
         validate_positive_integer(quantum_kernel.num_features, "num_features")
-        self._trainables = validation.names(
+        self._trainables = names(
             quantum_kernel.trainable_parameters, "trainable_parameters"
         )
         self._width = quantum_kernel.num_features
@@ -161,7 +174,7 @@ class QuantumKernelTrainer:
         self._loss: KernelLoss = BalancedKernelAlignmentLoss() if loss is None else loss
         self._optimizer = optimizer
         if optimizer is None:
-            self._tolerance, self._initial_step = common.configuration(
+            self._tolerance, self._initial_step = configuration(
                 max_evaluations, len(self._trainables), tolerance, initial_step
             )
         else:
@@ -274,9 +287,9 @@ class QuantumKernelTrainer:
         validates target semantics. Each candidate creates an independent
         bound kernel; successful final evaluation publishes a new result.
         """
-        data = validation.data(X, self._width, nonempty=True)
+        data = validate_data(X, self._width, nonempty=True)
         targets = _targets(y, len(data), "y")
-        point = validation.initial(initial_point, self._trainables)
+        point = initial(initial_point, self._trainables)
         classes = (
             self._loss.classes(targets)
             if isinstance(self._loss, BalancedKernelAlignmentLoss)
@@ -287,7 +300,7 @@ class QuantumKernelTrainer:
             candidate: NDArray[np.float64],
         ) -> tuple[QuantumKernel, NDArray[np.float64], float]:
             kernel = self._kernel_family.bind_parameters(
-                validation.immutable_parameters(self._trainables, candidate)
+                immutable_parameters(self._trainables, candidate)
             )
             if not isinstance(kernel, QuantumKernel):
                 raise TypeError("bind_parameters must return a QuantumKernel")
@@ -297,7 +310,7 @@ class QuantumKernelTrainer:
                 )
             values = kernel.evaluate(data.copy())
             if isinstance(kernel, FidelityQuantumKernel):
-                matrix = common.gram(values, len(data))
+                matrix = gram(values, len(data))
             else:
                 matrix = copy_finite_real_array(values, "kernel matrix", 2)
                 if matrix.shape != (len(data), len(data)) or not np.array_equal(
@@ -317,7 +330,7 @@ class QuantumKernelTrainer:
             return evaluate(candidate)[2]
 
         initial_loss = objective(point)
-        optimization = common.minimize(
+        optimization = minimize(
             objective,
             point,
             self._max_evaluations,
@@ -330,7 +343,7 @@ class QuantumKernelTrainer:
         )
         result = QuantumKernelTrainerResult(
             kernel,
-            validation.immutable_parameters(self._trainables, optimization.point),
+            immutable_parameters(self._trainables, optimization.point),
             initial_loss,
             final_loss,
             matrix,

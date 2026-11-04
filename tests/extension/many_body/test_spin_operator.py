@@ -60,6 +60,24 @@ def test_spin_half_mapper_preserves_same_site_product_order_and_phase():
     assert not xy.is_hermitian()
 
 
+def test_spin_half_mapping_preserves_angular_momentum_commutator():
+    sx = SpinOp.from_terms(1, (((("X", 0),), 1.0),))
+    sy = SpinOp.from_terms(1, (((("Y", 0),), 1.0),))
+    sz = SpinOp.from_terms(1, (((("Z", 0),), 1.0),))
+    mapper = SpinHalfMapper()
+
+    mapped_sx = mapper.map_operator(sx).to_matrix()
+    mapped_sy = mapper.map_operator(sy).to_matrix()
+    mapped_sz = mapper.map_operator(sz).to_matrix()
+
+    np.testing.assert_allclose(
+        mapped_sx @ mapped_sy - mapped_sy @ mapped_sx,
+        1.0j * mapped_sz,
+        rtol=0.0,
+        atol=1e-14,
+    )
+
+
 def test_multi_site_matrix_uses_site_zero_as_least_significant_subsystem():
     operator = SpinOp.from_terms(
         2,

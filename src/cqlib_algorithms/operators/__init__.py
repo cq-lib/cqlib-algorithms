@@ -12,143 +12,316 @@
 
 """Operator subpackage for algorithmic quantum building blocks."""
 
-from . import arithmetic
-from .ansatz import (
-    BaseAnsatz,
-    EfficientSU2Ansatz,
-    EvolvedOperatorAnsatz,
-    ExcitationPreservingAnsatz,
-    FermiHubbardAnsatz,
-    FermionicHoppingAnsatz,
-    HamiltonianVariationalAnsatz,
-    HardwareEfficientAnsatz,
-    MERAAnsatz,
-    MPSAnsatz,
-    PauliTwoDesignAnsatz,
-    PUCCDAnsatz,
-    PUCCSDAnsatz,
-    QAOACostEvolution,
-    QAOAMixerEvolution,
-    RandomLayersAnsatz,
-    RealAmplitudesAnsatz,
-    SimplifiedTwoDesignAnsatz,
-    SpinExchangeAnsatz,
-    TTNAnsatz,
-    TwoLocalAnsatz,
-    TwoQubitUnitaryAnsatz,
-    UCCAnsatz,
-    UCCSDAnsatz,
-    UVCCAnsatz,
-    UVCCSDAnsatz,
-)
-from .arithmetic import QuadraticForm
-from .composite import (
-    GroverOperator,
-    HadamardPhaseQuery,
-    HiddenLinearFunctionCircuit,
-    PhaseEstimationCircuit,
-    ProjectorControlledPhase,
-    QuantumSignalProcessing,
-    QuantumSingularValueTransformation,
-    RealValuedQSVT,
-)
-from .estimator import SamplingEstimator, StatevectorEstimator
-from .gradient import (
-    FiniteDifferenceGradient,
-    LinCombEstimatorGradient,
-    NaturalGradient,
-    ParameterShiftGradient,
-    QFIResult,
-    QGTResult,
-    SPSAGradient,
-    StatevectorQFI,
-    StatevectorQGT,
-)
-from .information import mutual_information
-from .measurement import (
-    CommutingObservableGrouping,
-    MeasurementGroup,
-    MeasurementPlan,
-    PauliGroupingStrategy,
-    PauliMeasurementPlanner,
-)
-from .mixer import (
-    ColorParityPermutationSwapMixer,
-    ControlledBitFlipMixer,
-    ControlledNullSwapMixer,
-    ControlledSwapMixer,
-    FullyConnectedMixer,
-    MixerApplication,
-    NearbyValuesMixer,
-    NullSwapMixer,
-    ParityRingMixer,
-    PartitionedMixer,
-    RingMixer,
-    TimeColorMixer,
-    TimeSwapMixer,
-    ValueIndependentPermutationSwapMixer,
-    ValueSelectivePermutationSwapMixer,
-)
-from .optimizer import (
-    Adam,
-    COBYLAOptimizer,
-    GradientDescent,
-    LBFGSBOptimizer,
-    SPSAOptimizer,
-)
-from .oracle import (
-    BitFlipOracle,
-    BlockEncoding,
-    BooleanFunction,
-    BooleanVectorFunction,
-    DickeUnitary,
-    GeneralStateReflection,
-    GroverDiffusion,
-    GroverLong,
-    PhaseOracle,
-    SplitCycleShift,
-    UnitaryDilation,
-    UnitaryMatrixOracle,
-    WeightDistributionBlock,
-    ZeroStateReflection,
-)
-from .quantum_kernel import FidelityQuantumKernel
-from .quantum_kernel.balanced_kernel_alignment_loss import BalancedKernelAlignmentLoss
-from .quantum_kernel.trainable_fidelity_quantum_kernel import (
-    TrainableFidelityQuantumKernel,
-)
-from .sampler import BackendSampler, StatevectorSampler
-from .state_fidelity import (
-    CircuitFidelityRequest,
-    CircuitFidelityResult,
-    ComputeUncomputeFidelity,
-    UnitaryOverlap,
-)
-from .state_preparation import (
-    BRQI,
-    AmplitudeEncoding,
-    AngleEncoding,
-    ArbitraryStatePreparation,
-    BasisEncoding,
-    BasisStateInitialization,
-    DickeStatePreparation,
-    FeatureMapPreparation,
-    FermionicGaussianStatePreparation,
-    GHZStatePreparation,
-    HartreeFockStatePreparation,
-    ImageAngleEncoding,
-    ImageBasisEncoding,
-    LatticeReferenceStatePreparation,
-    ProductStatePreparation,
-    SlaterDeterminantStatePreparation,
-    SparseAmplitudeEncoding,
-    UniformSuperposition,
-    UserCircuitPreparation,
-    VSCFStatePreparation,
-)
+from importlib import import_module
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from . import arithmetic
+    from .ansatz import (
+        BaseAnsatz,
+        EfficientSU2Ansatz,
+        EvolvedOperatorAnsatz,
+        ExcitationPreservingAnsatz,
+        FermiHubbardAnsatz,
+        FermionicHoppingAnsatz,
+        HamiltonianVariationalAnsatz,
+        HardwareEfficientAnsatz,
+        MERAAnsatz,
+        MPSAnsatz,
+        PauliTwoDesignAnsatz,
+        PUCCDAnsatz,
+        PUCCSDAnsatz,
+        QAOACostEvolution,
+        QAOAMixerEvolution,
+        RandomLayersAnsatz,
+        RealAmplitudesAnsatz,
+        SimplifiedTwoDesignAnsatz,
+        SpinExchangeAnsatz,
+        TTNAnsatz,
+        TwoLocalAnsatz,
+        TwoQubitUnitaryAnsatz,
+        UCCAnsatz,
+        UCCSDAnsatz,
+        UVCCAnsatz,
+        UVCCSDAnsatz,
+    )
+    from .arithmetic import QuadraticForm
+    from .composite import (
+        QFT,
+        GroverOperator,
+        HadamardPhaseQuery,
+        HiddenLinearFunctionCircuit,
+        PhaseEstimationCircuit,
+        ProjectorControlledPhase,
+        QuantumSignalProcessing,
+        QuantumSingularValueTransformation,
+        RealValuedQSVT,
+    )
+    from .estimator import SamplingEstimator, StatevectorEstimator
+    from .gradient import (
+        FiniteDifferenceGradient,
+        LinCombEstimatorGradient,
+        NaturalGradient,
+        ParameterShiftGradient,
+        QFIResult,
+        QGTResult,
+        SPSAGradient,
+        StatevectorQFI,
+        StatevectorQGT,
+    )
+    from .information import mutual_information
+    from .measurement import (
+        CommutingObservableGrouping,
+        MeasurementGroup,
+        MeasurementPlan,
+        PauliGroupingStrategy,
+        PauliMeasurementPlanner,
+    )
+    from .mixer import (
+        ColorParityPermutationSwapMixer,
+        ControlledBitFlipMixer,
+        ControlledNullSwapMixer,
+        ControlledSwapMixer,
+        FullyConnectedMixer,
+        MixerApplication,
+        NearbyValuesMixer,
+        NullSwapMixer,
+        ParityRingMixer,
+        PartitionedMixer,
+        RingMixer,
+        TimeColorMixer,
+        TimeSwapMixer,
+        ValueIndependentPermutationSwapMixer,
+        ValueSelectivePermutationSwapMixer,
+    )
+    from .optimizer import (
+        Adam,
+        COBYLAOptimizer,
+        GradientDescent,
+        LBFGSBOptimizer,
+        SPSAOptimizer,
+    )
+    from .oracle import (
+        BitFlipOracle,
+        BlockEncoding,
+        BooleanFunction,
+        BooleanVectorFunction,
+        DickeUnitary,
+        GeneralStateReflection,
+        GroverDiffusion,
+        GroverLong,
+        PhaseOracle,
+        SplitCycleShift,
+        UnitaryDilation,
+        UnitaryMatrixOracle,
+        WeightDistributionBlock,
+        ZeroStateReflection,
+    )
+    from .quantum_kernel import FidelityQuantumKernel
+    from .quantum_kernel.balanced_kernel_alignment_loss import (
+        BalancedKernelAlignmentLoss,
+    )
+    from .quantum_kernel.trainable_fidelity_quantum_kernel import (
+        TrainableFidelityQuantumKernel,
+    )
+    from .sampler import BackendSampler, StatevectorSampler
+    from .state_fidelity import (
+        CircuitFidelityRequest,
+        CircuitFidelityResult,
+        ComputeUncomputeFidelity,
+        UnitaryOverlap,
+    )
+    from .state_preparation import (
+        BRQI,
+        AmplitudeEncoding,
+        AngleEncoding,
+        ArbitraryStatePreparation,
+        BasisEncoding,
+        BasisStateInitialization,
+        DickeStatePreparation,
+        FeatureMapPreparation,
+        FermionicGaussianStatePreparation,
+        GHZStatePreparation,
+        HartreeFockStatePreparation,
+        ImageAngleEncoding,
+        ImageBasisEncoding,
+        LatticeReferenceStatePreparation,
+        ProductStatePreparation,
+        SlaterDeterminantStatePreparation,
+        SparseAmplitudeEncoding,
+        UniformSuperposition,
+        UserCircuitPreparation,
+        VSCFStatePreparation,
+    )
+
+_EXPORTS: dict[str, tuple[str, str | None]] = {
+    "arithmetic": (".arithmetic", None),
+    "BaseAnsatz": (".ansatz", "BaseAnsatz"),
+    "EfficientSU2Ansatz": (".ansatz", "EfficientSU2Ansatz"),
+    "EvolvedOperatorAnsatz": (".ansatz", "EvolvedOperatorAnsatz"),
+    "ExcitationPreservingAnsatz": (".ansatz", "ExcitationPreservingAnsatz"),
+    "FermiHubbardAnsatz": (".ansatz", "FermiHubbardAnsatz"),
+    "FermionicHoppingAnsatz": (".ansatz", "FermionicHoppingAnsatz"),
+    "HamiltonianVariationalAnsatz": (".ansatz", "HamiltonianVariationalAnsatz"),
+    "HardwareEfficientAnsatz": (".ansatz", "HardwareEfficientAnsatz"),
+    "MERAAnsatz": (".ansatz", "MERAAnsatz"),
+    "MPSAnsatz": (".ansatz", "MPSAnsatz"),
+    "PUCCDAnsatz": (".ansatz", "PUCCDAnsatz"),
+    "PUCCSDAnsatz": (".ansatz", "PUCCSDAnsatz"),
+    "PauliTwoDesignAnsatz": (".ansatz", "PauliTwoDesignAnsatz"),
+    "QAOACostEvolution": (".ansatz", "QAOACostEvolution"),
+    "QAOAMixerEvolution": (".ansatz", "QAOAMixerEvolution"),
+    "RandomLayersAnsatz": (".ansatz", "RandomLayersAnsatz"),
+    "RealAmplitudesAnsatz": (".ansatz", "RealAmplitudesAnsatz"),
+    "SimplifiedTwoDesignAnsatz": (".ansatz", "SimplifiedTwoDesignAnsatz"),
+    "SpinExchangeAnsatz": (".ansatz", "SpinExchangeAnsatz"),
+    "TTNAnsatz": (".ansatz", "TTNAnsatz"),
+    "TwoLocalAnsatz": (".ansatz", "TwoLocalAnsatz"),
+    "TwoQubitUnitaryAnsatz": (".ansatz", "TwoQubitUnitaryAnsatz"),
+    "UCCAnsatz": (".ansatz", "UCCAnsatz"),
+    "UCCSDAnsatz": (".ansatz", "UCCSDAnsatz"),
+    "UVCCAnsatz": (".ansatz", "UVCCAnsatz"),
+    "UVCCSDAnsatz": (".ansatz", "UVCCSDAnsatz"),
+    "QuadraticForm": (".arithmetic", "QuadraticForm"),
+    "GroverOperator": (".composite", "GroverOperator"),
+    "HadamardPhaseQuery": (".composite", "HadamardPhaseQuery"),
+    "HiddenLinearFunctionCircuit": (".composite", "HiddenLinearFunctionCircuit"),
+    "PhaseEstimationCircuit": (".composite", "PhaseEstimationCircuit"),
+    "ProjectorControlledPhase": (".composite", "ProjectorControlledPhase"),
+    "QFT": (".composite", "QFT"),
+    "QuantumSignalProcessing": (".composite", "QuantumSignalProcessing"),
+    "QuantumSingularValueTransformation": (
+        ".composite",
+        "QuantumSingularValueTransformation",
+    ),
+    "RealValuedQSVT": (".composite", "RealValuedQSVT"),
+    "SamplingEstimator": (".estimator", "SamplingEstimator"),
+    "StatevectorEstimator": (".estimator", "StatevectorEstimator"),
+    "FiniteDifferenceGradient": (".gradient", "FiniteDifferenceGradient"),
+    "LinCombEstimatorGradient": (".gradient", "LinCombEstimatorGradient"),
+    "NaturalGradient": (".gradient", "NaturalGradient"),
+    "ParameterShiftGradient": (".gradient", "ParameterShiftGradient"),
+    "QFIResult": (".gradient", "QFIResult"),
+    "QGTResult": (".gradient", "QGTResult"),
+    "SPSAGradient": (".gradient", "SPSAGradient"),
+    "StatevectorQFI": (".gradient", "StatevectorQFI"),
+    "StatevectorQGT": (".gradient", "StatevectorQGT"),
+    "mutual_information": (".information", "mutual_information"),
+    "CommutingObservableGrouping": (
+        ".measurement",
+        "CommutingObservableGrouping",
+    ),
+    "MeasurementGroup": (".measurement", "MeasurementGroup"),
+    "MeasurementPlan": (".measurement", "MeasurementPlan"),
+    "PauliGroupingStrategy": (".measurement", "PauliGroupingStrategy"),
+    "PauliMeasurementPlanner": (".measurement", "PauliMeasurementPlanner"),
+    "ColorParityPermutationSwapMixer": (
+        ".mixer",
+        "ColorParityPermutationSwapMixer",
+    ),
+    "ControlledBitFlipMixer": (".mixer", "ControlledBitFlipMixer"),
+    "ControlledNullSwapMixer": (".mixer", "ControlledNullSwapMixer"),
+    "ControlledSwapMixer": (".mixer", "ControlledSwapMixer"),
+    "FullyConnectedMixer": (".mixer", "FullyConnectedMixer"),
+    "MixerApplication": (".mixer", "MixerApplication"),
+    "NearbyValuesMixer": (".mixer", "NearbyValuesMixer"),
+    "NullSwapMixer": (".mixer", "NullSwapMixer"),
+    "ParityRingMixer": (".mixer", "ParityRingMixer"),
+    "PartitionedMixer": (".mixer", "PartitionedMixer"),
+    "RingMixer": (".mixer", "RingMixer"),
+    "TimeColorMixer": (".mixer", "TimeColorMixer"),
+    "TimeSwapMixer": (".mixer", "TimeSwapMixer"),
+    "ValueIndependentPermutationSwapMixer": (
+        ".mixer",
+        "ValueIndependentPermutationSwapMixer",
+    ),
+    "ValueSelectivePermutationSwapMixer": (
+        ".mixer",
+        "ValueSelectivePermutationSwapMixer",
+    ),
+    "Adam": (".optimizer", "Adam"),
+    "COBYLAOptimizer": (".optimizer", "COBYLAOptimizer"),
+    "GradientDescent": (".optimizer", "GradientDescent"),
+    "LBFGSBOptimizer": (".optimizer", "LBFGSBOptimizer"),
+    "SPSAOptimizer": (".optimizer", "SPSAOptimizer"),
+    "BitFlipOracle": (".oracle", "BitFlipOracle"),
+    "BlockEncoding": (".oracle", "BlockEncoding"),
+    "BooleanFunction": (".oracle", "BooleanFunction"),
+    "BooleanVectorFunction": (".oracle", "BooleanVectorFunction"),
+    "DickeUnitary": (".oracle", "DickeUnitary"),
+    "GeneralStateReflection": (".oracle", "GeneralStateReflection"),
+    "GroverDiffusion": (".oracle", "GroverDiffusion"),
+    "GroverLong": (".oracle", "GroverLong"),
+    "PhaseOracle": (".oracle", "PhaseOracle"),
+    "SplitCycleShift": (".oracle", "SplitCycleShift"),
+    "UnitaryDilation": (".oracle", "UnitaryDilation"),
+    "UnitaryMatrixOracle": (".oracle", "UnitaryMatrixOracle"),
+    "WeightDistributionBlock": (".oracle", "WeightDistributionBlock"),
+    "ZeroStateReflection": (".oracle", "ZeroStateReflection"),
+    "BalancedKernelAlignmentLoss": (
+        ".quantum_kernel.balanced_kernel_alignment_loss",
+        "BalancedKernelAlignmentLoss",
+    ),
+    "FidelityQuantumKernel": (".quantum_kernel", "FidelityQuantumKernel"),
+    "TrainableFidelityQuantumKernel": (
+        ".quantum_kernel.trainable_fidelity_quantum_kernel",
+        "TrainableFidelityQuantumKernel",
+    ),
+    "BackendSampler": (".sampler", "BackendSampler"),
+    "StatevectorSampler": (".sampler", "StatevectorSampler"),
+    "CircuitFidelityRequest": (".state_fidelity", "CircuitFidelityRequest"),
+    "CircuitFidelityResult": (".state_fidelity", "CircuitFidelityResult"),
+    "ComputeUncomputeFidelity": (".state_fidelity", "ComputeUncomputeFidelity"),
+    "UnitaryOverlap": (".state_fidelity", "UnitaryOverlap"),
+    "BRQI": (".state_preparation", "BRQI"),
+    "AmplitudeEncoding": (".state_preparation", "AmplitudeEncoding"),
+    "AngleEncoding": (".state_preparation", "AngleEncoding"),
+    "ArbitraryStatePreparation": (
+        ".state_preparation",
+        "ArbitraryStatePreparation",
+    ),
+    "BasisEncoding": (".state_preparation", "BasisEncoding"),
+    "BasisStateInitialization": (
+        ".state_preparation",
+        "BasisStateInitialization",
+    ),
+    "DickeStatePreparation": (".state_preparation", "DickeStatePreparation"),
+    "FeatureMapPreparation": (".state_preparation", "FeatureMapPreparation"),
+    "FermionicGaussianStatePreparation": (
+        ".state_preparation",
+        "FermionicGaussianStatePreparation",
+    ),
+    "GHZStatePreparation": (".state_preparation", "GHZStatePreparation"),
+    "HartreeFockStatePreparation": (
+        ".state_preparation",
+        "HartreeFockStatePreparation",
+    ),
+    "ImageAngleEncoding": (".state_preparation", "ImageAngleEncoding"),
+    "ImageBasisEncoding": (".state_preparation", "ImageBasisEncoding"),
+    "LatticeReferenceStatePreparation": (
+        ".state_preparation",
+        "LatticeReferenceStatePreparation",
+    ),
+    "ProductStatePreparation": (
+        ".state_preparation",
+        "ProductStatePreparation",
+    ),
+    "SlaterDeterminantStatePreparation": (
+        ".state_preparation",
+        "SlaterDeterminantStatePreparation",
+    ),
+    "SparseAmplitudeEncoding": (
+        ".state_preparation",
+        "SparseAmplitudeEncoding",
+    ),
+    "UniformSuperposition": (".state_preparation", "UniformSuperposition"),
+    "UserCircuitPreparation": (".state_preparation", "UserCircuitPreparation"),
+    "VSCFStatePreparation": (".state_preparation", "VSCFStatePreparation"),
+}
 
 __all__ = [
     "BRQI",
+    "QFT",
     "Adam",
     "AmplitudeEncoding",
     "AngleEncoding",
@@ -265,3 +438,20 @@ __all__ = [
     "arithmetic",
     "mutual_information",
 ]
+
+
+def __getattr__(name: str) -> object:
+    """Resolve and cache a public export on first access."""
+    try:
+        module_name, attribute = _EXPORTS[name]
+    except KeyError as exc:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}") from exc
+    module = import_module(module_name, __name__)
+    value: object = module if attribute is None else getattr(module, attribute)
+    globals()[name] = value
+    return value
+
+
+def __dir__() -> list[str]:
+    """Return module globals together with lazily exported names."""
+    return sorted(set(globals()) | set(__all__))

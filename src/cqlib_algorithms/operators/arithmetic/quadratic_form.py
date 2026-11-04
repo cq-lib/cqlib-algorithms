@@ -61,10 +61,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 import numpy as np
+from cqlib import Circuit
 from cqlib.circuit.gates import StandardGate
 
-from cqlib import Circuit
-from cqlib_algorithms.transforms import QFT as TransformQFT
+from cqlib_algorithms.operators.composite.qft import QFT
 
 if TYPE_CHECKING:
     from numpy.typing import ArrayLike, NDArray
@@ -208,7 +208,7 @@ def _validate_approximation_degree(
     m: int,
 ) -> int:
     """Validate and convert the QFT approximation degree into the internal
-    ``qft_degree`` form used by ``TransformQFT``.
+    ``qft_degree`` form used by ``QFT``.
 
     The mapping matches the Draper adder / QFT weighted-sum family:
 
@@ -226,7 +226,7 @@ def _validate_approximation_degree(
     Returns
     -------
     int
-        Internal ``qft_degree`` suitable for ``TransformQFT``.
+        Internal ``qft_degree`` suitable for ``QFT``.
 
     Raises
     ------
@@ -352,13 +352,13 @@ def _build_quadratic_form_schedule(
     result_indices :
         ``m`` local wire indices for the result accumulator (LSB first).
     qft_degree :
-        Internal ``TransformQFT`` approximation degree (already converted
+        Internal ``QFT`` approximation degree (already converted
         from the user-facing ``approximation_degree`` parameter).
     """
     scaling = _PI * (2 ** (1 - m))
 
     # ── 1. Forward QFT on result register ────────────────────────────
-    fwd_qft_circ: Circuit = TransformQFT(
+    fwd_qft_circ: Circuit = QFT(
         m,
         approximation_degree=qft_degree,
         do_swaps=True,
@@ -396,7 +396,7 @@ def _build_quadratic_form_schedule(
                 _append_k_phase(circuit, ctrls, result_indices[i], lam)
 
     # ── 3. Inverse QFT on result register ────────────────────────────
-    inv_qft_circ: Circuit = TransformQFT(
+    inv_qft_circ: Circuit = QFT(
         m,
         approximation_degree=qft_degree,
         do_swaps=True,

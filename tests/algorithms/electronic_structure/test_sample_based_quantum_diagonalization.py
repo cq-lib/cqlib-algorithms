@@ -14,10 +14,12 @@
 
 from __future__ import annotations
 
+import ast
 import math
 from collections.abc import Sequence
 from dataclasses import FrozenInstanceError, replace
 from itertools import combinations
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -33,8 +35,9 @@ from cqlib_algorithms import (
     recover_sqd_configurations,
     solve_sqd_subspace,
 )
-from cqlib_algorithms.algorithms.electronic_structure import (
-    sample_based_quantum_diagonalization as sqd_module,
+from cqlib_algorithms.algorithms.electronic_structure.sqd import algorithm as sqd_module
+from cqlib_algorithms.algorithms.electronic_structure.sqd import (
+    subspace as sqd_subspace_module,
 )
 from cqlib_algorithms.extension.chemistry import (
     AngularMomentum,
@@ -49,6 +52,26 @@ from cqlib_algorithms.operators.state_preparation import (
     HartreeFockStatePreparation,
 )
 from cqlib_algorithms.protocols import Sampler, SamplerRequest
+
+
+def test_sqd_internal_modules_follow_one_way_dependency_order() -> None:
+    base = Path(sqd_module.__file__).parent
+    allowed: dict[str, set[str]] = {
+        "results": set(),
+        "recovery": {"results"},
+        "subspace": {"recovery", "results"},
+        "algorithm": {"recovery", "results", "subspace"},
+    }
+    for module_name, dependencies in allowed.items():
+        tree = ast.parse((base / f"{module_name}.py").read_text(encoding="utf-8"))
+        internal_imports = {
+            node.module
+            for node in ast.walk(tree)
+            if isinstance(node, ast.ImportFrom)
+            and node.level == 1
+            and node.module in allowed
+        }
+        assert internal_imports <= dependencies
 
 
 class _ScriptedSampler(Sampler):
@@ -469,7 +492,7 @@ def test_carryover_capacity_prefers_largest_absolute_amplitudes() -> None:
         4,
     )
 
-    selected = sqd_module._select_required_configurations(
+    selected = sqd_subspace_module._select_required_configurations(
         (),
         result,
         carryover_threshold=0.0,
@@ -635,12 +658,12 @@ def test_public_subspace_solver_propagates_sparse_eigensolver_failure(
         sum(1 << (2 * orbital) for orbital in occupied)
         for occupied in combinations(range(num_orbitals), 4)
     )
-    assert len(configurations) > sqd_module._DENSE_SOLVER_CUTOFF
+    assert len(configurations) > sqd_subspace_module._DENSE_SOLVER_CUTOFF
 
     def failed_eigensolver(*args, **kwargs):
         raise ArpackError(-1)
 
-    monkeypatch.setattr(sqd_module, "eigsh", failed_eigensolver)
+    monkeypatch.setattr(sqd_subspace_module, "eigsh", failed_eigensolver)
     with pytest.raises(ArpackError, match="ARPACK error"):
         solve_sqd_subspace(system, configurations)
 

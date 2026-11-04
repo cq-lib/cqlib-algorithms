@@ -21,7 +21,7 @@ from cqlib.qis import FermionicLadder, FermionicOp, FermionToQubitMapper, Hamilt
 from numpy.typing import NDArray
 
 from ...many_body._fermionic_mapping import map_fermionic_operator
-from ..validation.numerical import immutable_real_array, validate_strict_int
+from .._numeric import immutable_real_array, validate_strict_int
 
 
 def _spin_z(num_spatial_orbitals: int) -> FermionicOp:

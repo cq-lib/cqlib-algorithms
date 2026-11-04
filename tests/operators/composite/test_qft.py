@@ -23,7 +23,7 @@ import pytest
 from cqlib import Circuit, Qubit
 from cqlib.qis import Statevector
 
-from cqlib_algorithms.transforms import QFT
+from cqlib_algorithms.operators.composite import QFT
 
 
 def _fourier_matrix(num_qubits: int) -> np.ndarray:

@@ -23,12 +23,12 @@ import numpy as np
 from cqlib import Circuit, Parameter
 from numpy.typing import ArrayLike, NDArray
 
-from .._utils.circuit import (
+from ..._utils.circuit import (
     validate_bound_static_unitary_circuit,
     validate_static_unitary_structure,
 )
-from .._utils.numeric import copy_finite_real_array
-from ..operators.state_preparation import UserCircuitPreparation
+from ..._utils.numeric import copy_finite_real_array
+from ...operators.state_preparation import UserCircuitPreparation
 
 
 def _real_hyperparameter(value: float, name: str, *, allow_zero: bool = False) -> float:

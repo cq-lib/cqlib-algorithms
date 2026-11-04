@@ -17,8 +17,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from fractions import Fraction
 
-from cqlib.qis import Hamiltonian, Pauli, PauliString
+from cqlib.qis import Hamiltonian
 
+from ._qubit_mapping import map_spin_half_terms
 from .spin_operator import SpinOp
 
 
@@ -33,22 +34,7 @@ class SpinHalfMapper:
         if operator.spin != Fraction(1, 2):
             raise ValueError("SpinHalfMapper supports only spin one half")
 
-        pauli_by_axis = {
-            "X": Pauli.x(),
-            "Y": Pauli.y(),
-            "Z": Pauli.z(),
-        }
-        mapped_terms: list[tuple[PauliString, complex]] = []
-        for term, coefficient in operator.terms:
-            pauli_string = PauliString(operator.num_spins)
-            mapped_coefficient = coefficient
-            for axis, index in term:
-                local = PauliString(operator.num_spins)
-                local.set_pauli(index, pauli_by_axis[axis])
-                pauli_string *= local
-                mapped_coefficient *= 0.5
-            mapped_terms.append((pauli_string, mapped_coefficient))
-        return Hamiltonian.from_terms(operator.num_spins, mapped_terms)
+        return map_spin_half_terms(operator.num_spins, operator.terms)
 
     @staticmethod
     def num_qubits(num_spins: int) -> int:

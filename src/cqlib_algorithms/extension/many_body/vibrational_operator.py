@@ -25,6 +25,7 @@ from .._numeric import (
     normalize_finite_complex,
     normalize_vibrational_atol,
 )
+from ._qubit_mapping import map_one_hot_vibrational_terms
 from .modal_space import ModalSpace
 
 VibrationalLadderKind = Literal["+", "-"]
@@ -284,13 +285,16 @@ class VibrationalOp:
         if self.coefficient_equiv(other, atol=threshold):
             return True
 
-        # The import is local to keep the sparse representation independent of
-        # the concrete mapper during module initialization.
-        from .one_hot_vibrational_mapping import OneHotVibrationalMapper
-
-        mapper = OneHotVibrationalMapper()
-        return mapper.map_operator(self).equiv(
-            mapper.map_operator(other),
+        return map_one_hot_vibrational_terms(
+            self.modal_space.num_qubits,
+            self.terms,
+            self.modal_space.qubit_index,
+        ).equiv(
+            map_one_hot_vibrational_terms(
+                other.modal_space.num_qubits,
+                other.terms,
+                other.modal_space.qubit_index,
+            ),
             atol=threshold,
         )
 
@@ -303,11 +307,11 @@ class VibrationalOp:
         Hermiticity test because distinct words can represent the same matrix.
         """
         threshold = normalize_vibrational_atol(atol)
-        # The import is local to keep the sparse representation independent of
-        # the concrete mapper during module initialization.
-        from .one_hot_vibrational_mapping import OneHotVibrationalMapper
-
-        return OneHotVibrationalMapper().map_operator(self).is_hermitian(atol=threshold)
+        return map_one_hot_vibrational_terms(
+            self.modal_space.num_qubits,
+            self.terms,
+            self.modal_space.qubit_index,
+        ).is_hermitian(atol=threshold)
 
     def preserves_one_hot_subspace(self) -> bool:
         """Return whether every monomial conserves occupancy of every mode."""

@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from ..validation.numerical import validate_strict_int
+from .._numeric import validate_strict_int
 
 
 @dataclass(frozen=True, slots=True)

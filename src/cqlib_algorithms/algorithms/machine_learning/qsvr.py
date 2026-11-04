@@ -27,9 +27,9 @@ from typing import Protocol, cast
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
-from ..operators.quantum_kernel import FidelityQuantumKernel
-from ._ml_validation import _real_hyperparameter, _targets
-from ._ml_validation import data as validate_data
+from ...operators.quantum_kernel import FidelityQuantumKernel
+from ._validation import _real_hyperparameter, _targets
+from ._validation import data as validate_data
 
 
 class _SVRSolver(Protocol):

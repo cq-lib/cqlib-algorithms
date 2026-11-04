@@ -5,8 +5,9 @@ docstring；算法的使用方法和结果解释写在 `docs/user-guide/`。
 
 ## 目录与依赖
 
-- 公共协议放在 `protocols/`，具体实现放在 `operators/`，完整工作流放在
-  `algorithms/`，纯线路变换放在 `transforms/`。
+- 公共协议放在 `protocols/`，可复用线路与具体算子实现放在 `operators/`，完整工作流
+  放在 `algorithms/`。由多个基础门组成且可被多个方向复用的线路放在
+  `operators/composite/`。
 - 化学、晶格和振动等领域数据模型及其中间表示放在 `extension/`。通用算子可以依赖
   领域扩展，领域扩展不得反向依赖具体算子或完整算法；领域扩展内部保持低层表示到
   高层系统模型的单向依赖。`extension/many_body/` 持有跨领域的低层表示；例如
