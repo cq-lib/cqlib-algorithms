@@ -518,7 +518,7 @@ def test_two_qubit_kak_weyl_boundary_a_pi_4_c_negative():
     )
 
     try:
-        synthesis = synthesize_numeric_2q_unitary(matrix, Qubit(0), Qubit(1))
+        synthesis = synthesize_numeric_2q_unitary(matrix, Qubit(1), Qubit(0))
     except CompilerTransformError as error:
         if "Weyl chamber violation" not in str(error):
             raise
