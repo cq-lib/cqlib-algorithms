@@ -18,19 +18,8 @@ from dataclasses import dataclass
 
 from ...extension.vibration import VibrationalSystem
 from ...protocols.estimator import EstimatorResult
+from .._ground_state_support import snapshot_estimator_results
 from ..variational import VQEResult
-
-
-def _estimator_results(
-    values: tuple[EstimatorResult, ...],
-    *,
-    name: str,
-) -> tuple[EstimatorResult, ...]:
-    if not isinstance(values, tuple):
-        raise TypeError(f"{name} must be a tuple")
-    if any(not isinstance(value, EstimatorResult) for value in values):
-        raise TypeError(f"{name} must contain only EstimatorResult values")
-    return tuple(values)
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,7 +45,7 @@ class VibrationalMeasurements:
             raise TypeError("modal_occupations must be a tuple")
         rows: list[tuple[EstimatorResult, ...]] = []
         for mode, row in enumerate(self.modal_occupations):
-            copied = _estimator_results(
+            copied = snapshot_estimator_results(
                 row,
                 name=f"modal_occupations[{mode}]",
             )
@@ -65,7 +54,7 @@ class VibrationalMeasurements:
             rows.append(copied)
         if not rows:
             raise ValueError("modal_occupations must not be empty")
-        totals = _estimator_results(
+        totals = snapshot_estimator_results(
             self.mode_occupations,
             name="mode_occupations",
         )
@@ -73,7 +62,7 @@ class VibrationalMeasurements:
             raise ValueError(
                 "mode_occupations must contain one result per modal-occupation row"
             )
-        leakages = _estimator_results(
+        leakages = snapshot_estimator_results(
             self.mode_leakages,
             name="mode_leakages",
         )

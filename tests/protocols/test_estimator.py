@@ -25,6 +25,7 @@ from cqlib_algorithms.protocols.estimator import (
     Estimator,
     EstimatorRequest,
     EstimatorResult,
+    require_estimator_results,
 )
 
 
@@ -343,6 +344,31 @@ def test_estimator_preserves_batch_order_and_supports_empty_batches():
 
     assert [result.expectation for result in results] == pytest.approx([0.25, 0.75])
     assert [result.variance for result in results] == [0.0, 0.0]
+
+
+def test_require_estimator_results_preserves_the_validated_list() -> None:
+    request = _symbolic_request()
+    results = [EstimatorResult(0.25, 0.0)]
+
+    assert require_estimator_results(results, [request]) is results
+
+
+@pytest.mark.parametrize(
+    ("results", "requests", "exception", "message"),
+    [
+        ((), [], TypeError, "must return a list"),
+        ([], [_symbolic_request()], ValueError, "one result per request"),
+        ([object()], [_symbolic_request()], TypeError, "EstimatorResult values"),
+    ],
+)
+def test_require_estimator_results_rejects_contract_violations(
+    results: object,
+    requests: list[EstimatorRequest],
+    exception: type[Exception],
+    message: str,
+) -> None:
+    with pytest.raises(exception, match=message):
+        require_estimator_results(results, requests)
 
 
 def test_estimator_is_distinct_and_uses_nominal_runtime_membership():

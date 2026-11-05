@@ -20,6 +20,10 @@ from typing import final
 from cqlib.circuit import Circuit
 from cqlib.qis import FermionicOp, Hamiltonian, JordanWignerMapper
 
+from ..._utils.hamiltonian import (
+    validate_nonzero_hermitian_hamiltonian,
+)
+from ..._utils.numeric import validate_repetitions
 from ...extension.lattice import (
     FermiHubbardModel,
     FermionicLatticeConfiguration,
@@ -30,10 +34,6 @@ from ._fermionic_hopping import (
     _HoppingEvolution,
     build_exact_commuting_evolution,
     hopping_operator,
-)
-from ._validation import (
-    validate_hermitian_hamiltonian,
-    validate_repetitions,
 )
 from .base_ansatz import BaseAnsatz
 
@@ -71,7 +71,7 @@ def _model_factors(
     if diagonal.is_zero():
         return tuple(factors), None
     mapped = JordanWignerMapper().map_operator(diagonal).normalized_hermitian()
-    validate_hermitian_hamiltonian(mapped, name="mapped diagonal block")
+    validate_nonzero_hermitian_hamiltonian(mapped, name="mapped diagonal block")
     if not mapped.all_terms_commute():
         raise ValueError("mapped Fermi--Hubbard diagonal terms must commute")
     return tuple(factors), mapped
@@ -166,7 +166,7 @@ class FermiHubbardAnsatz(BaseAnsatz):
             if factor.num_modes != self._initial_circuit.num_qubits:
                 raise ValueError("hopping factor width is inconsistent")
         if self._diagonal_operator is not None:
-            validate_hermitian_hamiltonian(
+            validate_nonzero_hermitian_hamiltonian(
                 self._diagonal_operator,
                 name="mapped diagonal block",
             )

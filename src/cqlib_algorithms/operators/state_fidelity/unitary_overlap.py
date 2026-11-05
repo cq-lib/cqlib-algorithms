@@ -19,7 +19,9 @@ from copy import deepcopy
 from cqlib import Circuit
 from cqlib.circuit import CircuitError
 
-from ._circuit_validation import validate_static_unitary
+from ..._utils.circuit import (
+    validate_static_unitary_structure,
+)
 
 
 class UnitaryOverlap:
@@ -65,8 +67,8 @@ class UnitaryOverlap:
         if unitary1.num_qubits != unitary2.num_qubits:
             raise ValueError("unitaries must have the same qubit count")
 
-        validate_static_unitary(unitary1, label="unitary1")
-        validate_static_unitary(unitary2, label="unitary2")
+        validate_static_unitary_structure(unitary1, label="unitary1")
+        validate_static_unitary_structure(unitary2, label="unitary2")
         shared_symbols = sorted(set(unitary1.used_symbols) & set(unitary2.used_symbols))
         if shared_symbols:
             raise ValueError(

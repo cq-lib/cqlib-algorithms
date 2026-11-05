@@ -18,8 +18,8 @@ from typing import final
 
 from cqlib.circuit import Circuit
 
+from ..._utils.numeric import validate_positive_qubit_count
 from ._tensor_network import append_real_two_qubit_block, mps_edges
-from ._validation import validate_positive_qubit_count
 from .base_ansatz import BaseAnsatz
 
 

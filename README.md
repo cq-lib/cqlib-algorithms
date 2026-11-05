@@ -1,15 +1,16 @@
 # cqlib-algorithms
 
 `cqlib-algorithms` 是构建在 Cqlib Core 之上的量子算法与可复用组件库。项目通过
-`StatePreparation`、`Ansatz`、`Sampler`、`Estimator`、`Gradient` 和
-`Optimizer` 六类公共协议解耦算法结构与执行后端，使状态制备、变分线路、测量、
-梯度和经典优化组件能够独立替换与组合。
+`StatePreparation`、`Ansatz`、`Sampler`、`Estimator`、`StateFidelity`、
+`Gradient` 和 `Optimizer` 七类公共协议解耦算法结构与执行后端，使状态制备、
+变分线路、测量、保真度、梯度和经典优化组件能够独立替换与组合。
 
 当前版本处于早期开发阶段。已实现能力及其稳定边界以
 [能力清单](docs/capabilities.md)为准；公共类和方法的参数、返回值与异常以源码
 docstring 为准。
 
 量子机器学习提供 QBayesian、QSVR、VQR、PegasosQSVC 和可组合的量子核训练；
+电子结构链同时提供 VQE/qEOM 与基于 determinant 样本的 SQD 选定子空间工作流。
 使用方法见[算法用户指南](docs/index.md#算法)。
 
 ## 安装

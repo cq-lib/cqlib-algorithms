@@ -19,21 +19,7 @@ from collections.abc import Sequence
 
 from cqlib.circuit.ansatz import EvolutionStrategy
 
-
-def validate_positive_integer(value: int, *, name: str) -> None:
-    """Validate a strictly positive integer without coercion."""
-    if isinstance(value, bool) or not isinstance(value, int):
-        raise TypeError(f"{name} must be an integer")
-    if value <= 0:
-        raise ValueError(f"{name} must be greater than zero")
-
-
-def validate_nonnegative_integer(value: int, *, name: str) -> None:
-    """Validate a non-negative integer without coercion."""
-    if isinstance(value, bool) or not isinstance(value, int):
-        raise TypeError(f"{name} must be an integer")
-    if value < 0:
-        raise ValueError(f"{name} must be non-negative")
+from ..._utils.numeric import validate_nonnegative_integer, validate_positive_integer
 
 
 def snapshot_strategy(strategy: EvolutionStrategy | None) -> EvolutionStrategy:

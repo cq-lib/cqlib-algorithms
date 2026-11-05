@@ -247,6 +247,7 @@ class SPSAOptimizer(Optimizer):
                             base.observable,
                             shifted,
                             base.shots,
+                            base.seed,
                         )
                     )
 
@@ -290,6 +291,7 @@ class SPSAOptimizer(Optimizer):
                     base.observable,
                     bindings[position],
                     base.shots,
+                    base.seed,
                 )
             )
         final_results = list(estimator.run(final_requests))

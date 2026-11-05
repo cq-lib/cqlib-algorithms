@@ -22,11 +22,10 @@ from typing import final
 from cqlib.circuit import Circuit, Parameter
 from cqlib.circuit.gates import StandardGate
 
+from ..._utils.numeric import validate_positive_qubit_count, validate_repetitions
 from ._validation import (
     snapshot_rotation_gates,
     validate_entanglement_gate,
-    validate_positive_qubit_count,
-    validate_repetitions,
 )
 from .base_ansatz import BaseAnsatz
 

@@ -18,9 +18,10 @@ import math
 from numbers import Real
 from typing import final
 
+from cqlib import Circuit
 from cqlib.circuit.gates import StandardGate
 
-from cqlib import Circuit
+from ...._utils.numeric import validate_nonnegative_integer
 
 
 @final
@@ -61,11 +62,11 @@ class ProjectorControlledPhase:
         *,
         phase: float,
     ) -> None:
-        _validate_non_negative_integer(
+        validate_nonnegative_integer(
             num_system_qubits,
             name="num_system_qubits",
         )
-        _validate_non_negative_integer(
+        validate_nonnegative_integer(
             num_ancilla_qubits,
             name="num_ancilla_qubits",
         )
@@ -147,14 +148,6 @@ class ProjectorControlledPhase:
         for qubit in range(len(ancillas) - 1, -1, -1):
             circuit.x(ancillas[qubit])
         return circuit
-
-
-def _validate_non_negative_integer(value: int, *, name: str) -> None:
-    r"""Validate a non-negative integer."""
-    if isinstance(value, bool) or not isinstance(value, int):
-        raise TypeError(f"{name} must be an integer")
-    if value < 0:
-        raise ValueError(f"{name} must be greater than or equal to zero")
 
 
 def _normalize_real_phase(value: float) -> float:

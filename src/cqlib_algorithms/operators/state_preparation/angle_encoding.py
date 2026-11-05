@@ -21,8 +21,9 @@ from cqlib.circuit import Circuit
 from cqlib.circuit.ansatz import AngleEncoding as CoreAngleEncoding
 from cqlib.circuit.gates import StandardGate
 
+from ..._utils.numeric import validate_positive_qubit_count
+from ..._utils.parameters import validate_parameter_prefix
 from ...protocols.state_preparation import StatePreparation
-from ._state_synthesis import validate_positive_qubit_count, validate_prefix
 
 _SUPPORTED_ROTATION_GATES = (
     StandardGate.RX,
@@ -70,7 +71,7 @@ class AngleEncoding(StatePreparation):
 
     def build_circuit(self, prefix: str) -> Circuit:
         """Return a new symbolic angle-encoding circuit."""
-        validate_prefix(prefix)
+        validate_parameter_prefix(prefix)
         return self._inner.build_circuit(prefix)
 
     def num_parameters(self) -> int:

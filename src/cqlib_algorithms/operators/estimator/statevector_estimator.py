@@ -14,11 +14,8 @@
 
 from __future__ import annotations
 
-import math
 from collections.abc import Sequence
-from typing import cast
 
-from cqlib.qis import Hamiltonian, PauliString
 from cqlib.qis.state import Statevector
 
 from cqlib_algorithms.protocols.estimator import (
@@ -27,48 +24,8 @@ from cqlib_algorithms.protocols.estimator import (
     EstimatorResult,
 )
 
-from ._circuit_validation import validate_unitary_state_preparation
-
-
-def _pauli_expectation(amplitudes: Sequence[complex], pauli: PauliString) -> complex:
-    """Compute a Pauli expectation in O(2**n) without a dense matrix.
-
-    Core's current ``Statevector.expectation`` uses the wrong sign for an odd
-    number of Y factors. The Core PauliString symplectic masks, phase and
-    Y phase instead define the correct action on basis index ``j``:
-
-    ``P|j> = phase * y_phase * (-1)**popcount(j & z_mask) |j ^ x_mask>``.
-
-    The amplitude array comes from Core's ``Statevector.data`` binding,
-    which copies the state once per request. No dense operator is allocated.
-    """
-    x_mask = pauli.x_mask
-    z_mask = pauli.z_mask
-    overlap = 0.0j
-    for index, amplitude in enumerate(amplitudes):
-        sign = -1 if ((index & z_mask).bit_count() & 1) else 1
-        overlap += amplitudes[index ^ x_mask].conjugate() * amplitude * sign
-    return complex(pauli.phase.to_complex() * pauli.y_phase() * overlap)
-
-
-def _expectation(state: Statevector, observable: Hamiltonian | PauliString) -> float:
-    """Return a real Hermitian expectation from the exact Core state."""
-    amplitudes = cast(Sequence[complex], state.data)
-    if isinstance(observable, PauliString):
-        value = _pauli_expectation(amplitudes, observable)
-        coefficient_scale = 1.0
-    else:
-        value = 0.0j
-        coefficient_scale = 1.0
-        for pauli, coefficient in observable.terms:
-            value += coefficient * _pauli_expectation(amplitudes, pauli)
-            coefficient_scale += abs(coefficient)
-
-    # Request validation proves algebraic Hermiticity. Only floating-point
-    # cancellation may leave a small imaginary component in the numeric sum.
-    if not math.isfinite(value.imag) or abs(value.imag) > 1e-12 * coefficient_scale:
-        raise ValueError("observable expectation has a non-negligible imaginary part")
-    return float(value.real)
+from ..._utils.circuit import validate_unitary_state_preparation
+from .._statevector_observable import hermitian_expectation
 
 
 class StatevectorEstimator(Estimator):
@@ -119,6 +76,9 @@ class StatevectorEstimator(Estimator):
             bound = request.circuit.assign_parameters(dict(request.parameter_bindings))
             state = Statevector.from_circuit(bound)
             results.append(
-                EstimatorResult(_expectation(state, request.observable), 0.0)
+                EstimatorResult(
+                    hermitian_expectation(state.data, request.observable),
+                    0.0,
+                )
             )
         return results

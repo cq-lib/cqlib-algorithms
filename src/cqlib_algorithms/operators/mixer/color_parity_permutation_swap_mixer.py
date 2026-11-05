@@ -26,9 +26,9 @@ from typing import final
 
 from cqlib.circuit import Circuit
 
+from ..._utils.numeric import validate_positive_integer
 from ._base import _BaseMixer
 from ._exchange import complete_graph_edge_colors, ring_edge_layers, transition_circuit
-from ._validation import validate_positive_integer
 
 
 @final

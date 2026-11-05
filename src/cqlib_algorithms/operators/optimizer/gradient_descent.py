@@ -165,6 +165,7 @@ class GradientDescent(Optimizer):
                     base.observable,
                     bindings[position],
                     base.shots,
+                    base.seed,
                 )
                 gradient_requests.append(
                     GradientRequest(objective, request.parameter_names)
@@ -212,6 +213,7 @@ class GradientDescent(Optimizer):
                     base.observable,
                     bindings[position],
                     base.shots,
+                    base.seed,
                 )
             )
         final_results = list(estimator.run(final_requests))

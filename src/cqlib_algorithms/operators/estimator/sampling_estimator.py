@@ -23,9 +23,15 @@ from cqlib import Circuit
 from cqlib.device import ExecutionResult
 from cqlib.qis import Hamiltonian, Pauli, PauliString, Phase
 
+from ..._utils.circuit import validate_unitary_state_preparation
+from ..._utils.hamiltonian import aggregate_finite_pauli_terms
 from ...protocols.estimator import Estimator, EstimatorRequest, EstimatorResult
-from ...protocols.sampler import Sampler, SamplerRequest, spawn_seeds
-from ._circuit_validation import validate_unitary_state_preparation
+from ...protocols.sampler import (
+    Sampler,
+    SamplerRequest,
+    require_sampler_results,
+    spawn_seeds,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,30 +62,19 @@ def _normalized_terms(
     """Absorb Pauli phases and stably combine equal phase-free strings."""
     raw_terms: Sequence[tuple[PauliString, complex]]
     if isinstance(observable, PauliString):
-        raw_terms = ((observable, 1.0 + 0.0j),)
+        representative = observable.copy()
+        effective = representative.phase.to_complex()
+        representative.phase = Phase.plus()
+        raw_terms = ((representative, effective),)
     else:
-        raw_terms = tuple(observable.terms)
-
-    order: list[tuple[int, int, int]] = []
-    representatives: dict[tuple[int, int, int], PauliString] = {}
-    coefficients: dict[tuple[int, int, int], complex] = {}
-    for pauli, coefficient in raw_terms:
-        key = (pauli.num_qubits, pauli.x_mask, pauli.z_mask)
-        if key not in coefficients:
-            order.append(key)
-            representatives[key] = pauli.copy()
-            coefficients[key] = 0.0j
-        coefficients[key] += complex(coefficient) * pauli.phase.to_complex()
+        raw_terms = aggregate_finite_pauli_terms(observable, name="observable")
 
     terms: list[_ObservableTerm] = []
-    for key in order:
-        effective = coefficients[key]
+    for representative, effective in raw_terms:
         if effective == 0.0j:
             continue
         if effective.imag != 0.0:
             raise ValueError("observable must be Hermitian after term aggregation")
-        representative = representatives[key]
-        representative.phase = Phase.plus()
         terms.append(
             _ObservableTerm(
                 representative,
@@ -103,34 +98,6 @@ def _basis_circuit(circuit: Circuit, pauli: PauliString) -> Circuit:
         elif axis not in (Pauli.i(), Pauli.z()):
             raise ValueError("observable contains an unsupported Pauli axis")
     return rotated
-
-
-def _validate_sample_result(
-    result: ExecutionResult,
-    request: SamplerRequest,
-) -> None:
-    """Validate the counts needed for expectation and variance calculation."""
-    if not result.status.is_terminal() or not result.status.is_success():
-        raise ValueError("sampler must return successful terminal results")
-    if result.shots != request.shots:
-        raise ValueError("sampler result shots must match the request")
-    if result.num_qubits != len(request.qubits):
-        raise ValueError("sampler result width must match the requested qubits")
-    if result.qubits != list(request.qubits):
-        raise ValueError("sampler result qubits must preserve request order")
-
-    total = 0
-    width = len(request.qubits)
-    for bitstring, count in result.counts.items():
-        if not isinstance(bitstring, str) or len(bitstring) != width:
-            raise ValueError("sampler count keys must match the requested width")
-        if any(bit not in "01" for bit in bitstring):
-            raise ValueError("sampler count keys must be binary strings")
-        if isinstance(count, bool) or not isinstance(count, int) or count < 0:
-            raise ValueError("sampler counts must be non-negative integers")
-        total += count
-    if total != request.shots:
-        raise ValueError("sampler counts must sum to the requested shots")
 
 
 def _sample_moments(
@@ -251,15 +218,12 @@ class SamplingEstimator(Estimator):
                 )
 
         if jobs:
-            sample_results = self._sampler.run([job.sampler_request for job in jobs])
-            if len(sample_results) != len(jobs):
-                raise ValueError("sampler must return one result per request")
-            for result, job in zip(sample_results, jobs):
-                if not isinstance(result, ExecutionResult):
-                    raise TypeError(
-                        "sampler results must be cqlib.device.ExecutionResult"
-                    )
-                _validate_sample_result(result, job.sampler_request)
+            sampler_requests = [job.sampler_request for job in jobs]
+            sample_results = require_sampler_results(
+                self._sampler.run(sampler_requests),
+                sampler_requests,
+            )
+            for result, job in zip(sample_results, jobs, strict=True):
                 mean, mean_variance = _sample_moments(result, job.support_mask)
                 accumulator = accumulators[job.request_index]
                 accumulator.expectation += job.coefficient * mean

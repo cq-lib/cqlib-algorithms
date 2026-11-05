@@ -25,33 +25,21 @@ import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from numbers import Real
-from types import MappingProxyType
 from typing import final
 
 from cqlib import Circuit
 from cqlib.circuit import CircuitError
-from cqlib.device import ExecutionResult
 
-from ...protocols.sampler import Sampler, SamplerRequest
-from ._circuit_validation import validate_static_unitary
-
-
-def _immutable_bindings(bindings: Mapping[str, float]) -> Mapping[str, float]:
-    """Return a finite, immutable copy of one parameter-binding mapping."""
-    if not isinstance(bindings, Mapping):
-        raise TypeError("parameter bindings must be a mapping")
-
-    normalized: dict[str, float] = {}
-    for name, value in bindings.items():
-        if not isinstance(name, str):
-            raise TypeError("parameter binding names must be strings")
-        if isinstance(value, bool) or not isinstance(value, Real):
-            raise TypeError("parameter binding values must be real numbers")
-        numeric_value = float(value)
-        if not math.isfinite(numeric_value):
-            raise ValueError("parameter binding values must be finite")
-        normalized[name] = numeric_value
-    return MappingProxyType(normalized)
+from ..._utils.circuit import (
+    validate_static_unitary_structure,
+)
+from ..._utils.parameters import snapshot_parameter_bindings
+from ...protocols.sampler import (
+    Sampler,
+    SamplerRequest,
+    require_sampler_results,
+)
+from ...protocols.state_fidelity import StateFidelity
 
 
 def _validate_exact_bindings(
@@ -86,10 +74,10 @@ def _bound_circuit_and_inverse(
     label: str,
 ) -> tuple[Circuit, Circuit]:
     """Bind, validate, and invert a circuit without mutating the source."""
-    validate_static_unitary(circuit, label=label)
+    validate_static_unitary_structure(circuit, label=label)
     bound = circuit.assign_parameters(dict(bindings))
     bound.validate()
-    validate_static_unitary(bound, label=label)
+    validate_static_unitary_structure(bound, label=label)
     try:
         inverse = bound.inverse()
     except CircuitError as exc:
@@ -120,6 +108,7 @@ class CircuitFidelityRequest:
         shots: Positive number of compute-uncompute samples.
         parameter_bindings_a: Exact finite bindings for ``circuit_a``.
         parameter_bindings_b: Exact finite bindings for ``circuit_b``.
+        seed: Non-negative sampler seed, or ``None`` for fresh randomness.
 
     Raises:
         TypeError: If an argument has the wrong type.
@@ -132,6 +121,7 @@ class CircuitFidelityRequest:
     shots: int
     parameter_bindings_a: Mapping[str, float] = field(default_factory=dict)
     parameter_bindings_b: Mapping[str, float] = field(default_factory=dict)
+    seed: int | None = None
 
     __hash__ = None  # type: ignore[assignment]
 
@@ -139,12 +129,18 @@ class CircuitFidelityRequest:
         object.__setattr__(
             self,
             "parameter_bindings_a",
-            _immutable_bindings(self.parameter_bindings_a),
+            snapshot_parameter_bindings(
+                self.parameter_bindings_a,
+                name="parameter bindings",
+            ),
         )
         object.__setattr__(
             self,
             "parameter_bindings_b",
-            _immutable_bindings(self.parameter_bindings_b),
+            snapshot_parameter_bindings(
+                self.parameter_bindings_b,
+                name="parameter bindings",
+            ),
         )
         self.validate()
 
@@ -162,6 +158,11 @@ class CircuitFidelityRequest:
             raise TypeError("shots must be an integer")
         if self.shots <= 0:
             raise ValueError("shots must be greater than zero")
+        if self.seed is not None:
+            if isinstance(self.seed, bool) or not isinstance(self.seed, int):
+                raise TypeError("seed must be an integer or None")
+            if self.seed < 0:
+                raise ValueError("seed must be non-negative")
 
         self.circuit_a.validate()
         self.circuit_b.validate()
@@ -231,36 +232,10 @@ class CircuitFidelityResult:
         object.__setattr__(self, "variance", variance)
 
 
-def _validate_sample_result(
-    result: ExecutionResult,
-    request: SamplerRequest,
-) -> None:
-    """Validate all sampler metadata and counts used by the estimator."""
-    if not result.status.is_terminal() or not result.status.is_success():
-        raise ValueError("sampler must return successful terminal results")
-    if result.shots != request.shots:
-        raise ValueError("sampler result shots must match the request")
-    if result.num_qubits != len(request.qubits):
-        raise ValueError("sampler result width must match the requested qubits")
-    if result.qubits != list(request.qubits):
-        raise ValueError("sampler result qubits must preserve request order")
-
-    width = len(request.qubits)
-    total = 0
-    for bitstring, count in result.counts.items():
-        if not isinstance(bitstring, str) or len(bitstring) != width:
-            raise ValueError("sampler count keys must match the requested width")
-        if any(bit not in "01" for bit in bitstring):
-            raise ValueError("sampler count keys must be binary strings")
-        if isinstance(count, bool) or not isinstance(count, int) or count < 0:
-            raise ValueError("sampler counts must be non-negative integers")
-        total += count
-    if total != request.shots:
-        raise ValueError("sampler counts must sum to the requested shots")
-
-
 @final
-class ComputeUncomputeFidelity:
+class ComputeUncomputeFidelity(
+    StateFidelity[CircuitFidelityRequest, CircuitFidelityResult]
+):
     """Estimate pure-state fidelity with an injected batch Sampler.
 
     For circuits ``U_A`` and ``U_B``, the submitted circuit applies ``U_B``
@@ -308,21 +283,28 @@ class ComputeUncomputeFidelity:
             compact.compose(bound_b, positions)
             compact.compose(inverse_a, positions)
             sampler_requests.append(
-                SamplerRequest(compact, tuple(compact.qubits), request.shots)
+                SamplerRequest(
+                    compact,
+                    tuple(compact.qubits),
+                    request.shots,
+                    request.seed,
+                )
             )
 
         if not sampler_requests:
             return []
 
-        sample_results = self._sampler.run(sampler_requests)
-        if len(sample_results) != len(sampler_requests):
-            raise ValueError("sampler must return one result per request")
+        sample_results = require_sampler_results(
+            self._sampler.run(sampler_requests),
+            sampler_requests,
+        )
 
         results: list[CircuitFidelityResult] = []
-        for result, sampler_request in zip(sample_results, sampler_requests):
-            if not isinstance(result, ExecutionResult):
-                raise TypeError("sampler results must be cqlib.device.ExecutionResult")
-            _validate_sample_result(result, sampler_request)
+        for result, sampler_request in zip(
+            sample_results,
+            sampler_requests,
+            strict=True,
+        ):
             all_zero = "0" * len(sampler_request.qubits)
             fidelity = result.counts.get(all_zero, 0) / result.shots
             variance = (

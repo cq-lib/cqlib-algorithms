@@ -28,7 +28,9 @@ from cqlib.circuit import Circuit
 from cqlib.circuit.ansatz import EvolutionStrategy, PauliEvolutionAnsatz
 from cqlib.qis import Hamiltonian
 
-from ._validation import copy_hermitian_hamiltonian
+from ..._utils.hamiltonian import (
+    snapshot_nonzero_hermitian_hamiltonian,
+)
 from .base_ansatz import _DelegatingAnsatz
 
 
@@ -68,7 +70,7 @@ class QAOACostEvolution(_DelegatingAnsatz):
         frozen_strategy = (
             EvolutionStrategy.auto(1) if strategy is None else copy.copy(strategy)
         )
-        cost_snapshot = copy_hermitian_hamiltonian(
+        cost_snapshot = snapshot_nonzero_hermitian_hamiltonian(
             cost_operator,
             name="cost_operator",
         )

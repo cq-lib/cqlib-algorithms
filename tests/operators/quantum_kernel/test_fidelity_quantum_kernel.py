@@ -153,13 +153,13 @@ def test_constructor_checks_fixed_operations_without_binding_input(monkeypatch):
     circuit.ry(0, 1 / Parameter("x"))
     circuit.rz(0, Parameter("fixed"))
     checked = []
-    original = module._validate_static_unitary_circuit
+    original = module.validate_bound_static_unitary_circuit
 
     def record(candidate, name):
         checked.append(candidate)
         original(candidate, name)
 
-    monkeypatch.setattr(module, "_validate_static_unitary_circuit", record)
+    monkeypatch.setattr(module, "validate_bound_static_unitary_circuit", record)
     FidelityQuantumKernel(circuit, ["x"], parameter_bindings={"fixed": 0.3})
     assert len(checked) == 1
     assert not checked[0].used_symbols

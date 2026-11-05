@@ -24,11 +24,17 @@ import cqlib_algorithms
 from cqlib_algorithms import (
     BB84,
     CHSH,
+    PVQD,
     QAOA,
     QFT,
     QSVR,
+    SQD,
+    VQD,
     VQE,
     VQR,
+    AdaptVQE,
+    AdaptVQEResult,
+    AdaptVQETermination,
     AmplitudeEstimationProblem,
     BB84Basis,
     BB84Request,
@@ -48,6 +54,9 @@ from cqlib_algorithms import (
     FasterAmplitudeEstimation,
     FasterAmplitudeEstimationRequest,
     FasterAmplitudeEstimationResult,
+    Grover,
+    GroverRequest,
+    GroverResult,
     HamiltonianPhaseEstimation,
     HamiltonianPhaseEstimationRequest,
     HamiltonianPhaseEstimationResult,
@@ -68,6 +77,7 @@ from cqlib_algorithms import (
     PhaseEstimationProblem,
     PhaseEstimationRequest,
     PhaseEstimationResult,
+    PVQDResult,
     QAOAResult,
     QBayesian,
     QBayesianResult,
@@ -78,25 +88,50 @@ from cqlib_algorithms import (
     QuantumTeleportation,
     QuantumTeleportationRequest,
     QuantumTeleportationResult,
+    SamplingVQE,
+    SamplingVQEMeasurement,
+    SamplingVQEResult,
     Simon,
     SimonRequest,
     SimonResult,
+    SQDCallback,
+    SQDIteration,
+    SQDResult,
+    SQDSubspaceResult,
+    SQDSubspaceSolver,
     StandardAmplitudeEstimation,
     StandardAmplitudeEstimationRequest,
     StandardAmplitudeEstimationResult,
     SuperdenseCoding,
     SuperdenseCodingRequest,
     SuperdenseCodingResult,
+    VarQITE,
+    VarQITEResult,
+    VarQRTE,
+    VarQRTEResult,
     VibrationalGroundState,
     VibrationalGroundStateResult,
     VibrationalMeasurements,
     VQAResult,
+    VQDResult,
     VQEResult,
+    recover_sqd_configurations,
+    solve_sqd_subspace,
 )
 from cqlib_algorithms.algorithms import BB84 as AlgorithmBB84
 from cqlib_algorithms.algorithms import CHSH as AlgorithmCHSH
+from cqlib_algorithms.algorithms import PVQD as AlgorithmPVQD
 from cqlib_algorithms.algorithms import QAOA as AlgorithmQAOA
+from cqlib_algorithms.algorithms import SQD as AlgorithmSQD
+from cqlib_algorithms.algorithms import VQD as AlgorithmVQD
 from cqlib_algorithms.algorithms import VQE as AlgorithmVQE
+from cqlib_algorithms.algorithms import AdaptVQE as AlgorithmAdaptVQE
+from cqlib_algorithms.algorithms import (
+    AdaptVQEResult as AlgorithmAdaptVQEResult,
+)
+from cqlib_algorithms.algorithms import (
+    AdaptVQETermination as AlgorithmAdaptVQETermination,
+)
 from cqlib_algorithms.algorithms import (
     AmplitudeEstimationProblem as AlgorithmAmplitudeEstimationProblem,
 )
@@ -142,6 +177,9 @@ from cqlib_algorithms.algorithms import (
 from cqlib_algorithms.algorithms import (
     FasterAmplitudeEstimationResult as AlgorithmFasterAmplitudeEstimationResult,
 )
+from cqlib_algorithms.algorithms import Grover as AlgorithmGrover
+from cqlib_algorithms.algorithms import GroverRequest as AlgorithmGroverRequest
+from cqlib_algorithms.algorithms import GroverResult as AlgorithmGroverResult
 from cqlib_algorithms.algorithms import (
     HamiltonianPhaseEstimation as AlgorithmHamiltonianPhaseEstimation,
 )
@@ -194,6 +232,7 @@ from cqlib_algorithms.algorithms import (
 from cqlib_algorithms.algorithms import (
     PhaseEstimationResult as AlgorithmPhaseEstimationResult,
 )
+from cqlib_algorithms.algorithms import PVQDResult as AlgorithmPVQDResult
 from cqlib_algorithms.algorithms import QAOAResult as AlgorithmQAOAResult
 from cqlib_algorithms.algorithms import (
     QuantumTeleportation as AlgorithmQuantumTeleportation,
@@ -204,9 +243,23 @@ from cqlib_algorithms.algorithms import (
 from cqlib_algorithms.algorithms import (
     QuantumTeleportationResult as AlgorithmQuantumTeleportationResult,
 )
+from cqlib_algorithms.algorithms import SamplingVQE as AlgorithmSamplingVQE
+from cqlib_algorithms.algorithms import (
+    SamplingVQEMeasurement as AlgorithmSamplingVQEMeasurement,
+)
+from cqlib_algorithms.algorithms import (
+    SamplingVQEResult as AlgorithmSamplingVQEResult,
+)
 from cqlib_algorithms.algorithms import Simon as AlgorithmSimon
 from cqlib_algorithms.algorithms import SimonRequest as AlgorithmSimonRequest
 from cqlib_algorithms.algorithms import SimonResult as AlgorithmSimonResult
+from cqlib_algorithms.algorithms import SQDCallback as AlgorithmSQDCallback
+from cqlib_algorithms.algorithms import SQDIteration as AlgorithmSQDIteration
+from cqlib_algorithms.algorithms import SQDResult as AlgorithmSQDResult
+from cqlib_algorithms.algorithms import (
+    SQDSubspaceResult as AlgorithmSQDSubspaceResult,
+)
+from cqlib_algorithms.algorithms import SQDSubspaceSolver as AlgorithmSQDSubspaceSolver
 from cqlib_algorithms.algorithms import (
     StandardAmplitudeEstimation as AlgorithmStandardAmplitudeEstimation,
 )
@@ -225,6 +278,10 @@ from cqlib_algorithms.algorithms import (
 from cqlib_algorithms.algorithms import (
     SuperdenseCodingResult as AlgorithmSuperdenseCodingResult,
 )
+from cqlib_algorithms.algorithms import VarQITE as AlgorithmVarQITE
+from cqlib_algorithms.algorithms import VarQITEResult as AlgorithmVarQITEResult
+from cqlib_algorithms.algorithms import VarQRTE as AlgorithmVarQRTE
+from cqlib_algorithms.algorithms import VarQRTEResult as AlgorithmVarQRTEResult
 from cqlib_algorithms.algorithms import (
     VibrationalGroundState as AlgorithmVibrationalGroundState,
 )
@@ -235,14 +292,59 @@ from cqlib_algorithms.algorithms import (
     VibrationalMeasurements as AlgorithmVibrationalMeasurements,
 )
 from cqlib_algorithms.algorithms import VQAResult as AlgorithmVQAResult
+from cqlib_algorithms.algorithms import VQDResult as AlgorithmVQDResult
 from cqlib_algorithms.algorithms import VQEResult as AlgorithmVQEResult
+from cqlib_algorithms.algorithms import (
+    recover_sqd_configurations as algorithm_recover_sqd_configurations,
+)
+from cqlib_algorithms.algorithms import (
+    solve_sqd_subspace as algorithm_solve_sqd_subspace,
+)
+from cqlib_algorithms.algorithms.time_evolution import PVQD as TimeEvolutionPVQD
+from cqlib_algorithms.algorithms.time_evolution import (
+    PVQDResult as TimeEvolutionPVQDResult,
+)
+from cqlib_algorithms.algorithms.time_evolution import (
+    VarQITE as TimeEvolutionVarQITE,
+)
+from cqlib_algorithms.algorithms.time_evolution import (
+    VarQITEResult as TimeEvolutionVarQITEResult,
+)
+from cqlib_algorithms.algorithms.time_evolution import (
+    VarQRTE as TimeEvolutionVarQRTE,
+)
+from cqlib_algorithms.algorithms.time_evolution import (
+    VarQRTEResult as TimeEvolutionVarQRTEResult,
+)
 from cqlib_algorithms.algorithms.variational import QAOA as VariationalQAOA
+from cqlib_algorithms.algorithms.variational import VQD as VariationalVQD
 from cqlib_algorithms.algorithms.variational import VQE as VariationalVQE
+from cqlib_algorithms.algorithms.variational import (
+    AdaptVQE as VariationalAdaptVQE,
+)
+from cqlib_algorithms.algorithms.variational import (
+    AdaptVQEResult as VariationalAdaptVQEResult,
+)
+from cqlib_algorithms.algorithms.variational import (
+    AdaptVQETermination as VariationalAdaptVQETermination,
+)
 from cqlib_algorithms.algorithms.variational import (
     QAOAResult as VariationalQAOAResult,
 )
 from cqlib_algorithms.algorithms.variational import (
+    SamplingVQE as VariationalSamplingVQE,
+)
+from cqlib_algorithms.algorithms.variational import (
+    SamplingVQEMeasurement as VariationalSamplingVQEMeasurement,
+)
+from cqlib_algorithms.algorithms.variational import (
+    SamplingVQEResult as VariationalSamplingVQEResult,
+)
+from cqlib_algorithms.algorithms.variational import (
     VQAResult as VariationalVQAResult,
+)
+from cqlib_algorithms.algorithms.variational import (
+    VQDResult as VariationalVQDResult,
 )
 from cqlib_algorithms.algorithms.variational import (
     VQEResult as VariationalVQEResult,
@@ -264,11 +366,15 @@ from cqlib_algorithms.protocols import (
     OptimizerStatus,
     Sampler,
     SamplerRequest,
+    StateFidelity,
     StatePreparation,
 )
 from cqlib_algorithms.transforms import QFT as TransformQFT
 
 PUBLIC_COMPONENTS = {
+    "AdaptVQE": AdaptVQE,
+    "AdaptVQEResult": AdaptVQEResult,
+    "AdaptVQETermination": AdaptVQETermination,
     "QuantumKernel": cqlib_algorithms.QuantumKernel,
     "TrainableQuantumKernel": cqlib_algorithms.TrainableQuantumKernel,
     "KernelLoss": cqlib_algorithms.KernelLoss,
@@ -296,6 +402,9 @@ PUBLIC_COMPONENTS = {
     "FasterAmplitudeEstimation": FasterAmplitudeEstimation,
     "FasterAmplitudeEstimationRequest": FasterAmplitudeEstimationRequest,
     "FasterAmplitudeEstimationResult": FasterAmplitudeEstimationResult,
+    "Grover": Grover,
+    "GroverRequest": GroverRequest,
+    "GroverResult": GroverResult,
     "HamiltonianPhaseEstimation": HamiltonianPhaseEstimation,
     "HamiltonianPhaseEstimationRequest": HamiltonianPhaseEstimationRequest,
     "HamiltonianPhaseEstimationResult": HamiltonianPhaseEstimationResult,
@@ -320,8 +429,18 @@ PUBLIC_COMPONENTS = {
     "OptimizerRequest": OptimizerRequest,
     "OptimizerResult": OptimizerResult,
     "OptimizerStatus": OptimizerStatus,
+    "PVQD": PVQD,
+    "PVQDResult": PVQDResult,
     "QAOA": QAOA,
     "QAOAResult": QAOAResult,
+    "SQD": SQD,
+    "SQDCallback": SQDCallback,
+    "SQDIteration": SQDIteration,
+    "SQDResult": SQDResult,
+    "SQDSubspaceResult": SQDSubspaceResult,
+    "SQDSubspaceSolver": SQDSubspaceSolver,
+    "recover_sqd_configurations": recover_sqd_configurations,
+    "solve_sqd_subspace": solve_sqd_subspace,
     "PhaseEstimation": PhaseEstimation,
     "PhaseEstimationCircuit": PhaseEstimationCircuit,
     "PhaseEstimationProblem": PhaseEstimationProblem,
@@ -332,9 +451,13 @@ PUBLIC_COMPONENTS = {
     "QuantumTeleportationResult": QuantumTeleportationResult,
     "Sampler": Sampler,
     "SamplerRequest": SamplerRequest,
+    "SamplingVQE": SamplingVQE,
+    "SamplingVQEMeasurement": SamplingVQEMeasurement,
+    "SamplingVQEResult": SamplingVQEResult,
     "Simon": Simon,
     "SimonRequest": SimonRequest,
     "SimonResult": SimonResult,
+    "StateFidelity": StateFidelity,
     "StatePreparation": StatePreparation,
     "SuperdenseCoding": SuperdenseCoding,
     "SuperdenseCodingRequest": SuperdenseCodingRequest,
@@ -342,9 +465,15 @@ PUBLIC_COMPONENTS = {
     "StandardAmplitudeEstimation": StandardAmplitudeEstimation,
     "StandardAmplitudeEstimationRequest": StandardAmplitudeEstimationRequest,
     "StandardAmplitudeEstimationResult": StandardAmplitudeEstimationResult,
+    "VQAResult": VQAResult,
+    "VQD": VQD,
+    "VQDResult": VQDResult,
     "VQE": VQE,
     "VQEResult": VQEResult,
-    "VQAResult": VQAResult,
+    "VarQITE": VarQITE,
+    "VarQITEResult": VarQITEResult,
+    "VarQRTE": VarQRTE,
+    "VarQRTEResult": VarQRTEResult,
     "VibrationalGroundState": VibrationalGroundState,
     "VibrationalGroundStateResult": VibrationalGroundStateResult,
     "VibrationalMeasurements": VibrationalMeasurements,
@@ -402,6 +531,7 @@ def test_component_contracts_are_abstract_base_classes():
         Gradient,
         Optimizer,
         Sampler,
+        StateFidelity,
         StatePreparation,
     ):
         assert inspect.isabstract(component)
@@ -430,7 +560,43 @@ def test_phase_estimation_is_exported_from_public_namespaces():
 def test_vqe_is_exported_from_public_namespaces():
     assert VQE is AlgorithmVQE is VariationalVQE
     assert VQEResult is AlgorithmVQEResult is VariationalVQEResult
+    assert PVQD is AlgorithmPVQD is TimeEvolutionPVQD
+    assert PVQDResult is AlgorithmPVQDResult is TimeEvolutionPVQDResult
     assert VQAResult is AlgorithmVQAResult is VariationalVQAResult
+
+
+def test_var_qite_is_exported_from_public_namespaces():
+    assert VarQITE is AlgorithmVarQITE is TimeEvolutionVarQITE
+    assert VarQITEResult is AlgorithmVarQITEResult is TimeEvolutionVarQITEResult
+
+
+def test_var_qrte_is_exported_from_public_namespaces():
+    assert VarQRTE is AlgorithmVarQRTE is TimeEvolutionVarQRTE
+    assert VarQRTEResult is AlgorithmVarQRTEResult is TimeEvolutionVarQRTEResult
+
+
+def test_adaptive_and_sampling_vqe_are_exported_from_public_namespaces():
+    assert AdaptVQE is AlgorithmAdaptVQE is VariationalAdaptVQE
+    assert AdaptVQEResult is AlgorithmAdaptVQEResult is VariationalAdaptVQEResult
+    assert (
+        AdaptVQETermination
+        is AlgorithmAdaptVQETermination
+        is VariationalAdaptVQETermination
+    )
+    assert SamplingVQE is AlgorithmSamplingVQE is VariationalSamplingVQE
+    assert (
+        SamplingVQEMeasurement
+        is AlgorithmSamplingVQEMeasurement
+        is VariationalSamplingVQEMeasurement
+    )
+    assert (
+        SamplingVQEResult is AlgorithmSamplingVQEResult is VariationalSamplingVQEResult
+    )
+
+
+def test_vqd_is_exported_from_public_namespaces():
+    assert VQD is AlgorithmVQD is VariationalVQD
+    assert VQDResult is AlgorithmVQDResult is VariationalVQDResult
 
 
 def test_electronic_ground_state_is_exported_from_public_namespaces():
@@ -438,6 +604,17 @@ def test_electronic_ground_state_is_exported_from_public_namespaces():
     assert ElectronicGroundStateResult is AlgorithmElectronicGroundStateResult
     assert ElectronicQEOM is AlgorithmElectronicQEOM
     assert ElectronicQEOMResult is AlgorithmElectronicQEOMResult
+
+
+def test_sqd_is_exported_from_public_namespaces():
+    assert SQD is AlgorithmSQD
+    assert SQDCallback is AlgorithmSQDCallback
+    assert SQDIteration is AlgorithmSQDIteration
+    assert SQDResult is AlgorithmSQDResult
+    assert SQDSubspaceResult is AlgorithmSQDSubspaceResult
+    assert SQDSubspaceSolver is AlgorithmSQDSubspaceSolver
+    assert recover_sqd_configurations is algorithm_recover_sqd_configurations
+    assert solve_sqd_subspace is algorithm_solve_sqd_subspace
 
 
 def test_lattice_ground_state_is_exported_from_public_namespaces():
@@ -490,6 +667,12 @@ def test_amplitude_estimation_is_exported_from_public_namespaces():
 def test_qaoa_is_exported_from_public_namespaces():
     assert QAOA is AlgorithmQAOA is VariationalQAOA
     assert QAOAResult is AlgorithmQAOAResult is VariationalQAOAResult
+
+
+def test_grover_is_exported_from_public_namespaces():
+    assert Grover is AlgorithmGrover
+    assert GroverRequest is AlgorithmGroverRequest
+    assert GroverResult is AlgorithmGroverResult
 
 
 def test_quantum_teleportation_is_exported_from_public_namespaces():

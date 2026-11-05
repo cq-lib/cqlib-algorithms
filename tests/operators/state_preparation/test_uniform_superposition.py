@@ -39,5 +39,5 @@ def test_prepares_uniform_positive_amplitudes(num_qubits: int) -> None:
 
 @pytest.mark.parametrize("num_qubits", [0, -1])
 def test_rejects_non_positive_width(num_qubits: int) -> None:
-    with pytest.raises(ValueError, match="at least 1"):
+    with pytest.raises(ValueError, match="greater than zero"):
         UniformSuperposition(num_qubits)

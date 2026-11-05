@@ -21,7 +21,11 @@ from typing import Any
 
 import numpy as np
 
-from ...protocols.estimator import Estimator, EstimatorRequest, EstimatorResult
+from ...protocols.estimator import (
+    Estimator,
+    EstimatorRequest,
+    require_estimator_results,
+)
 from ...protocols.optimizer import (
     OptimizerRequest,
     OptimizerResult,
@@ -74,7 +78,7 @@ def _run_scipy_optimizer(
             [bindings[position][name] for name in names], dtype=np.float64
         )
         point, iteration_count, status = solve(estimator, request, initial_point)
-        point = _validate_point(point, len(names))
+        point = _normalize_point(point, len(names))
         for name, value in zip(names, point, strict=True):
             bindings[position][name] = float(value)
         iterations.append(iteration_count)
@@ -84,19 +88,14 @@ def _run_scipy_optimizer(
         _estimator_request(request, bindings[position])
         for position, request in enumerate(request_list)
     ]
-    final_results = list(estimator.run(final_requests))
-    if len(final_results) != len(request_list):
-        raise ValueError(
-            "estimator must return exactly one result per final request, "
-            f"expected {len(request_list)}, got {len(final_results)}"
-        )
+    final_results = require_estimator_results(
+        estimator.run(final_requests), final_requests
+    )
 
     results: list[OptimizerResult] = []
     for position, (request, final_result) in enumerate(
         zip(request_list, final_results, strict=True)
     ):
-        if not isinstance(final_result, EstimatorResult):
-            raise TypeError("estimator must return EstimatorResult values")
         parameters = tuple(bindings[position][name] for name in request.parameter_names)
         results.append(
             OptimizerResult(
@@ -115,7 +114,13 @@ def _estimator_request(
     bindings: dict[str, float],
 ) -> EstimatorRequest:
     base = request.estimator_request
-    return EstimatorRequest(base.circuit, base.observable, bindings, base.shots)
+    return EstimatorRequest(
+        base.circuit,
+        base.observable,
+        bindings,
+        base.shots,
+        base.seed,
+    )
 
 
 def _evaluate(
@@ -124,23 +129,20 @@ def _evaluate(
     point: np.ndarray,
 ) -> float:
     """Evaluate one finite point through the public estimator contract."""
-    point = _validate_point(point, len(request.parameter_names))
+    point = _normalize_point(point, len(request.parameter_names))
     bindings = dict(request.estimator_request.parameter_bindings)
     for name, value in zip(request.parameter_names, point, strict=True):
         bindings[name] = float(value)
-    results = list(estimator.run([_estimator_request(request, bindings)]))
-    if len(results) != 1:
-        raise ValueError(
-            "estimator must return exactly one result per objective evaluation, "
-            f"got {len(results)}"
-        )
-    result = results[0]
-    if not isinstance(result, EstimatorResult):
-        raise TypeError("estimator must return EstimatorResult values")
+    objective = _estimator_request(request, bindings)
+    result = require_estimator_results(
+        estimator.run([objective]),
+        [objective],
+        count_error="estimator must return exactly one result per objective evaluation",
+    )[0]
     return result.expectation
 
 
-def _validate_point(point: np.ndarray, expected_size: int) -> np.ndarray:
+def _normalize_point(point: np.ndarray, expected_size: int) -> np.ndarray:
     numeric = np.asarray(point, dtype=np.float64)
     if numeric.shape != (expected_size,):
         raise ValueError(

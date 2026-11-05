@@ -57,6 +57,16 @@ def test_modal_space_defensively_copies_the_modal_counts():
     assert space.num_modals == (2, 3)
 
 
+def test_modal_space_normalizes_default_and_explicit_reference_modals() -> None:
+    space = ModalSpace((2, 3))
+    reference = [1, 2]
+
+    assert space.normalize_reference_modals(None) == (0, 0)
+    assert space.normalize_reference_modals(reference) == (1, 2)
+    reference.clear()
+    assert space.normalize_reference_modals((1, 2)) == (1, 2)
+
+
 @pytest.mark.parametrize(
     ("counts", "error"),
     [

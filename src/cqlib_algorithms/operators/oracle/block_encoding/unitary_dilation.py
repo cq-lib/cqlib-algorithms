@@ -27,9 +27,9 @@ from typing import final
 
 import numpy as np
 import numpy.typing as npt
-
 from cqlib import Circuit
 
+from .._matrix_validation import normalize_atol
 from ..unitary_matrix_oracle import UnitaryMatrixOracle
 from .block_encoding import BlockEncoding
 
@@ -94,12 +94,14 @@ class UnitaryDilation(BlockEncoding):
         validate: bool = True,
     ) -> None:
         normalized_matrix = _normalize_input_matrix(matrix)
-        tolerance = _normalize_tolerance(atol)
+        tolerance = normalize_atol(atol)
         if not isinstance(validate, bool):
             raise TypeError("validate must be a bool")
 
         spectral_norm = _spectral_norm(normalized_matrix)
-        effective_alpha = _resolve_alpha(alpha, spectral_norm=spectral_norm, atol=tolerance)
+        effective_alpha = _resolve_alpha(
+            alpha, spectral_norm=spectral_norm, atol=tolerance
+        )
         contraction = np.asarray(
             normalized_matrix / effective_alpha,
             dtype=np.complex128,
@@ -201,18 +203,6 @@ def _normalize_input_matrix(
     return normalized
 
 
-def _normalize_tolerance(value: float) -> float:
-    r"""Validate and return a non-negative tolerance in normalized form."""
-    if isinstance(value, bool) or not isinstance(value, Real):
-        raise TypeError("atol must be a real finite scalar")
-    scalar = float(value)
-    if not math.isfinite(scalar):
-        raise TypeError("atol must be a real finite scalar")
-    if scalar < 0.0:
-        raise ValueError("atol must be greater than or equal to zero")
-    return scalar
-
-
 def _spectral_norm(matrix: npt.NDArray[np.complex128]) -> float:
     r"""Return the largest singular value (spectral norm) of ``matrix``."""
     singular_values = np.linalg.svd(matrix, compute_uv=False)
@@ -252,7 +242,9 @@ def _matrix_square_root_psd(
     hermitian = np.asarray((matrix + matrix.conj().T) / 2.0, dtype=np.complex128)
     eigenvalues, eigenvectors = np.linalg.eigh(hermitian)
     if float(np.min(eigenvalues)) < -10.0 * max(atol, 1e-12):
-        raise ValueError("matrix square root received a non-positive semidefinite input")
+        raise ValueError(
+            "matrix square root received a non-positive semidefinite input"
+        )
     clipped = np.clip(eigenvalues, 0.0, None)
     root = eigenvectors @ np.diag(np.sqrt(clipped)) @ eigenvectors.conj().T
     return np.asarray((root + root.conj().T) / 2.0, dtype=np.complex128)

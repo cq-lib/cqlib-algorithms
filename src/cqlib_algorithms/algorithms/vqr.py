@@ -29,22 +29,22 @@ from cqlib import Circuit
 from cqlib.qis import Hamiltonian, PauliString
 from numpy.typing import ArrayLike, NDArray
 
+from .._utils.circuit import validate_bound_static_unitary_circuit
+from .._utils.hamiltonian import validate_hermitian_observable
+from .._utils.numeric import (
+    validate_optional_positive_integer,
+    validate_positive_integer,
+)
 from ..protocols.estimator import (
     Estimator,
     EstimatorRequest,
     EstimatorResult,
-    _validate_hermitian,
-    _validate_positive_shots,
+    require_estimator_results,
 )
 from ..protocols.scalar_minimizer import ScalarMinimizer, ScalarMinimizerResult
 from . import _ml_common as common
 from . import _ml_validation as validation
-from ._ml_validation import (
-    _positive_integer,
-    _real_hyperparameter,
-    _targets,
-    _validate_static_unitary_circuit,
-)
+from ._ml_validation import _real_hyperparameter, _targets
 
 
 @dataclass(frozen=True, slots=True)
@@ -104,12 +104,12 @@ class VQR:
         )
         if not isinstance(observable, (Hamiltonian, PauliString)):
             raise TypeError("observable must be a Hamiltonian or PauliString")
-        _validate_hermitian(observable)
+        validate_hermitian_observable(observable, name="observable")
         if observable.num_qubits != self._circuit.num_qubits:
             raise ValueError("observable and circuit must have the same qubit count")
         if not isinstance(estimator, Estimator):
             raise TypeError("estimator must be an Estimator")
-        _validate_positive_shots(shots)
+        validate_optional_positive_integer(shots, "shots")
         self._observable = observable.copy()
         self._estimator = estimator
         self._shots = shots
@@ -121,7 +121,7 @@ class VQR:
                 max_evaluations, len(self._weights), tolerance, initial_step
             )
         else:
-            _positive_integer(max_evaluations, "max_evaluations")
+            validate_positive_integer(max_evaluations, "max_evaluations")
             self._tolerance = _real_hyperparameter(tolerance, "tolerance")
             self._initial_step = _real_hyperparameter(initial_step, "initial_step")
         self._max_evaluations = max_evaluations
@@ -198,20 +198,14 @@ class VQR:
                     **dict(zip(self._inputs, (float(value) for value in row))),
                 }
             )
-            _validate_static_unitary_circuit(bound, "bound VQR circuit")
+            validate_bound_static_unitary_circuit(bound, "bound VQR circuit")
             bound.inverse()
             requests.append(
                 EstimatorRequest(bound, self._observable.copy(), {}, self._shots)
             )
         if not requests:
             return np.empty(0, dtype=np.float64)
-        results = self._estimator.run(requests)
-        if not isinstance(results, list):
-            raise TypeError("estimator must return a list of EstimatorResult values")
-        if len(results) != len(requests):
-            raise ValueError("estimator must return one result per request")
-        if any(not isinstance(result, EstimatorResult) for result in results):
-            raise TypeError("estimator must return EstimatorResult values")
+        results = require_estimator_results(self._estimator.run(requests), requests)
         prediction = np.array(
             [
                 EstimatorResult(result.expectation, result.variance).expectation

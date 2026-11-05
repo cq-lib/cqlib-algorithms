@@ -31,12 +31,12 @@ from cqlib import Circuit
 from cqlib.circuit import CircuitError
 from cqlib.circuit.gates import StandardGate
 
-from ..operators.composite import GroverOperator
-from ..protocols.sampler import Sampler, SamplerRequest, validate_sampler_results
-from .amplitude_estimation.problem import (
-    _snapshot_circuit,
-    _validate_static_unitary_circuit,
+from .._utils.circuit import (
+    snapshot_bound_static_unitary_circuit,
+    validate_bound_static_unitary_circuit,
 )
+from ..operators.composite import GroverOperator
+from ..protocols.sampler import Sampler, SamplerRequest, require_sampler_results
 
 
 def _integer(value: int, name: str, *, minimum: int = 1) -> None:
@@ -246,7 +246,9 @@ class QBayesian:
     ) -> None:
         if not isinstance(sampler, Sampler):
             raise TypeError("sampler must be a Sampler instance")
-        preparation = _snapshot_circuit(state_preparation, "state_preparation")
+        preparation = snapshot_bound_static_unitary_circuit(
+            state_preparation, "state_preparation"
+        )
         self._require_inverse(preparation)
         if not isinstance(variable_qubits, Mapping):
             raise TypeError("variable_qubits must be a mapping")
@@ -283,7 +285,7 @@ class QBayesian:
         """Return immutable variable insertion positions."""
         return self._variable_qubits
 
-    def _validate_evidence(
+    def _normalize_evidence(
         self, evidence: Mapping[str, int | bool] | None
     ) -> dict[str, int]:
         result = _evidence(evidence)
@@ -307,8 +309,10 @@ class QBayesian:
         _integer(max_grover_power, "max_grover_power", minimum=0)
         if grover_power > max_grover_power:
             raise ValueError("grover_power exceeds max_grover_power")
-        assignments = self._validate_evidence(evidence)
-        _validate_static_unitary_circuit(self._state_preparation, "state_preparation")
+        assignments = self._normalize_evidence(evidence)
+        validate_bound_static_unitary_circuit(
+            self._state_preparation, "state_preparation"
+        )
         self._require_inverse(self._state_preparation)
         circuit = copy.deepcopy(self._state_preparation)
         if not assignments or grover_power == 0:
@@ -356,7 +360,7 @@ class QBayesian:
         names = _names(query, "query")
         if any(name not in self._variable_qubits for name in names):
             raise ValueError("query contains an unknown variable")
-        assignments = self._validate_evidence(evidence)
+        assignments = self._normalize_evidence(evidence)
         for value, label in (
             (target_accepted, "target_accepted"),
             (shots_per_round, "shots_per_round"),
@@ -401,9 +405,7 @@ class QBayesian:
                 tuple(circuit.qubits[position] for position in positions),
                 shots_per_round,
             )
-            result = validate_sampler_results(self._sampler.run([request]), [request])[
-                0
-            ]
+            result = require_sampler_results(self._sampler.run([request]), [request])[0]
             round_accepted = 0
             for bits, count in result.counts.items():
                 decoded = {

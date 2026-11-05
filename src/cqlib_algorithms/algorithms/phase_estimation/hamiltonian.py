@@ -33,10 +33,14 @@ from typing import final
 from cqlib import Circuit
 from cqlib.qis import Hamiltonian, TrotterMode
 
-from ...operators.ansatz._validation import copy_hermitian_hamiltonian
-from ...operators.composite.phase_estimation_circuit import (
-    _snapshot_static_unitary_circuit,
-    _validate_evaluation_qubits,
+from ..._utils.hamiltonian import (
+    snapshot_nonzero_hermitian_hamiltonian,
+)
+from ..._utils.numeric import normalize_positive_integer
+from ..._utils.phase_estimation import (
+    normalize_evaluation_qubits,
+    normalize_shots,
+    snapshot_static_unitary_circuit,
 )
 from ...protocols import Sampler
 from .problem import PhaseEstimationProblem
@@ -44,16 +48,7 @@ from .standard import (
     PhaseEstimation,
     PhaseEstimationRequest,
     PhaseEstimationResult,
-    _validate_shots,
 )
-
-
-def _validate_positive_integer(value: object, name: str) -> int:
-    if isinstance(value, bool) or not isinstance(value, int):
-        raise TypeError(f"{name} must be an integer")
-    if value <= 0:
-        raise ValueError(f"{name} must be greater than zero")
-    return value
 
 
 def _coefficient_bound(hamiltonian: Hamiltonian) -> float:
@@ -117,11 +112,11 @@ class HamiltonianPhaseEstimationRequest:
     def __post_init__(self) -> None:
         if not isinstance(self.hamiltonian, Hamiltonian):
             raise TypeError("hamiltonian must be a Hamiltonian")
-        hamiltonian = copy_hermitian_hamiltonian(
+        hamiltonian = snapshot_nonzero_hermitian_hamiltonian(
             self.hamiltonian,
             name="hamiltonian",
         )
-        state_preparation = _snapshot_static_unitary_circuit(
+        state_preparation = snapshot_static_unitary_circuit(
             self.state_preparation,
             "state_preparation",
         )
@@ -139,8 +134,8 @@ class HamiltonianPhaseEstimationRequest:
 
     def validate(self) -> None:
         """Revalidate the shallowly frozen request before execution."""
-        copy_hermitian_hamiltonian(self.hamiltonian, name="hamiltonian")
-        _snapshot_static_unitary_circuit(
+        snapshot_nonzero_hermitian_hamiltonian(self.hamiltonian, name="hamiltonian")
+        snapshot_static_unitary_circuit(
             self.state_preparation,
             "state_preparation",
         )
@@ -148,10 +143,10 @@ class HamiltonianPhaseEstimationRequest:
             raise ValueError(
                 "state_preparation and hamiltonian must have the same qubit count"
             )
-        width = _validate_evaluation_qubits(self.num_evaluation_qubits)
-        _validate_shots(self.shots)
+        width = normalize_evaluation_qubits(self.num_evaluation_qubits)
+        normalize_shots(self.shots)
         _resolved_bound(self.hamiltonian, self.bound)
-        _validate_positive_integer(self.trotter_steps, "trotter_steps")
+        normalize_positive_integer(self.trotter_steps, "trotter_steps")
         if not isinstance(self.trotter_mode, TrotterMode):
             raise TypeError("trotter_mode must be a TrotterMode")
         if isinstance(self.approximation_degree, bool) or not isinstance(
@@ -269,9 +264,11 @@ class HamiltonianPhaseEstimation:
         trotter_mode: TrotterMode | None = None,
     ) -> tuple[Circuit, float, float]:
         """Build ``exp(i*scale*H)`` and return circuit, bound, and scale."""
-        snapshot = copy_hermitian_hamiltonian(hamiltonian, name="hamiltonian")
+        snapshot = snapshot_nonzero_hermitian_hamiltonian(
+            hamiltonian, name="hamiltonian"
+        )
         resolved_bound = _resolved_bound(snapshot, bound)
-        _validate_positive_integer(trotter_steps, "trotter_steps")
+        normalize_positive_integer(trotter_steps, "trotter_steps")
         mode = TrotterMode.second_order() if trotter_mode is None else trotter_mode
         if not isinstance(mode, TrotterMode):
             raise TypeError("trotter_mode must be a TrotterMode or None")

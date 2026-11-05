@@ -20,8 +20,8 @@ from typing import final
 from cqlib.circuit import Circuit
 from cqlib.circuit.ansatz import BasisEncoding as CoreBasisEncoding
 
+from ..._utils.parameters import validate_parameter_prefix
 from ...protocols.state_preparation import StatePreparation
-from ._state_synthesis import validate_prefix
 
 
 @final
@@ -60,7 +60,7 @@ class BasisEncoding(StatePreparation):
 
     def build_circuit(self, prefix: str) -> Circuit:
         """Return a new basis-encoding circuit."""
-        validate_prefix(prefix)
+        validate_parameter_prefix(prefix)
         return self._inner.build_circuit(prefix)
 
     def num_parameters(self) -> int:

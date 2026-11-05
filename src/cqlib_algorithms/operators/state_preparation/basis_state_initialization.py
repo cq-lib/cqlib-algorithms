@@ -18,8 +18,8 @@ from typing import final
 
 from cqlib.circuit import Circuit
 
+from ..._utils.numeric import validate_positive_qubit_count
 from ...protocols.state_preparation import StatePreparation
-from ._state_synthesis import validate_positive_qubit_count
 from .basis_encoding import BasisEncoding
 
 

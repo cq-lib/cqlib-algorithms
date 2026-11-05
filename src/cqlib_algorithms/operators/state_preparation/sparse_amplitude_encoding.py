@@ -19,11 +19,11 @@ from typing import final
 
 from cqlib.circuit import Circuit
 
+from ..._utils.parameters import validate_parameter_prefix
 from ...protocols.state_preparation import StatePreparation
 from ._state_synthesis import (
     build_sparse_two_level_circuit,
     canonicalize_sparse_entries,
-    validate_prefix,
     validate_sparse_entries,
 )
 
@@ -67,7 +67,7 @@ class SparseAmplitudeEncoding(StatePreparation):
 
     def build_circuit(self, prefix: str) -> Circuit:
         """Return a new exact support-set two-level preparation circuit."""
-        validate_prefix(prefix)
+        validate_parameter_prefix(prefix)
         return build_sparse_two_level_circuit(self._num_qubits, self._entries)
 
     def num_parameters(self) -> int:

@@ -21,6 +21,10 @@ from cqlib.circuit import Circuit
 from cqlib.circuit.ansatz import EvolutionStrategy
 from cqlib.qis import Hamiltonian
 
+from ..._utils.hamiltonian import (
+    snapshot_nonzero_hermitian_hamiltonian,
+)
+from ..._utils.state_preparation import snapshot_fixed_initial_state
 from ...extension.many_body import OneHotVibrationalMapper
 from ...extension.vibration import VibrationalExcitation
 from ...protocols.state_preparation import StatePreparation
@@ -28,7 +32,6 @@ from ._ordered_evolution import (
     build_fixed_reference_evolution,
     validate_fixed_reference_evolution,
 )
-from ._validation import copy_hermitian_hamiltonian, snapshot_fixed_initial_state
 from .base_ansatz import _DelegatingAnsatz
 from .evolved_operator_ansatz import EvolvedOperatorAnsatz
 
@@ -62,7 +65,7 @@ def _mapped_generator_snapshots(
         transition = excitation.to_vibrational_op()
         generator = (transition - transition.adjoint()).scaled(1j)
         mapped = mapper.map_operator(generator)
-        snapshot = copy_hermitian_hamiltonian(
+        snapshot = snapshot_nonzero_hermitian_hamiltonian(
             mapped,
             name=f"mapped generator[{index}]",
         )

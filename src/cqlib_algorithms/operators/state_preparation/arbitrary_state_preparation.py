@@ -27,13 +27,13 @@ from typing import final
 
 from cqlib.circuit import Circuit
 
+from ..._utils.parameters import validate_parameter_prefix
 from ...protocols.state_preparation import StatePreparation
 from ._state_synthesis import (
     build_mottonen_circuit,
     copy_complex_vector,
     normalize_unit_vector,
     validate_normalized_vector,
-    validate_prefix,
 )
 
 
@@ -66,7 +66,7 @@ class ArbitraryStatePreparation(StatePreparation):
 
     def build_circuit(self, prefix: str) -> Circuit:
         """Return a new exact Möttönen state-preparation circuit."""
-        validate_prefix(prefix)
+        validate_parameter_prefix(prefix)
         return build_mottonen_circuit(self._amplitudes)
 
     def num_parameters(self) -> int:

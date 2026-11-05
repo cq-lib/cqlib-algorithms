@@ -22,12 +22,12 @@ from cqlib.circuit import Circuit
 from cqlib.circuit.ansatz import EvolutionStrategy, PauliEvolutionAnsatz
 from cqlib.qis import Hamiltonian
 
-from ._validation import (
-    copy_hermitian_hamiltonian,
-    validate_boolean,
-    validate_hermitian_hamiltonian,
-    validate_repetitions,
+from ..._utils.hamiltonian import (
+    snapshot_nonzero_hermitian_hamiltonian,
+    validate_nonzero_hermitian_hamiltonian,
 )
+from ..._utils.numeric import validate_repetitions
+from ._validation import validate_boolean
 from .base_ansatz import BaseAnsatz
 
 
@@ -51,7 +51,7 @@ def _snapshot_operators(
         if operator.num_qubits <= 0:
             raise ValueError("operators must act on at least one qubit")
         snapshots.append(
-            copy_hermitian_hamiltonian(operator, name=f"operators[{index}]")
+            snapshot_nonzero_hermitian_hamiltonian(operator, name=f"operators[{index}]")
         )
 
     width = snapshots[0].num_qubits
@@ -137,7 +137,7 @@ class EvolvedOperatorAnsatz(BaseAnsatz):
         for operator in self._operators:
             if operator.num_qubits != self._num_qubits:
                 raise ValueError("all operators must retain their original width")
-            validate_hermitian_hamiltonian(operator, name="operator")
+            validate_nonzero_hermitian_hamiltonian(operator, name="operator")
             (
                 PauliEvolutionAnsatz(operator)
                 .with_strategy(copy.copy(self._strategy))

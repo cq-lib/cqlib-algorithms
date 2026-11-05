@@ -71,7 +71,7 @@ def _powerset(items: list[_T]) -> list[list[_T]]:
     return subsets
 
 
-def _validated_axis(value: object) -> Axis:
+def _resolve_axis(value: object) -> Axis:
     """Return a supported Pauli axis from an internal generator recipe."""
     if value == "X":
         return "X"
@@ -101,7 +101,7 @@ def _decompose_generator(
             raise ValueError(f"invalid Pauli generator recipe {generator!r}")
         if len(qubits) != 1:
             raise ValueError("a Pauli generator must act on one qubit")
-        pauli_axis = _validated_axis(generator[1])
+        pauli_axis = _resolve_axis(generator[1])
         return ((0.5, ((pauli_axis, qubits[0]),)),)
     if kind == "pauli2":
         if len(generator) != 2 or not isinstance(generator[1], str):
@@ -109,7 +109,7 @@ def _decompose_generator(
         axes = generator[1]
         if len(axes) != len(qubits):
             raise ValueError(f"invalid two-Pauli generator recipe {generator!r}")
-        validated_axes = tuple(_validated_axis(axis) for axis in axes)
+        validated_axes = tuple(_resolve_axis(axis) for axis in axes)
         factors: tuple[tuple[Axis, int], ...] = tuple(
             (axis, position)
             for axis, position in zip(validated_axes, qubits, strict=True)
@@ -124,7 +124,7 @@ def _decompose_generator(
             raise ValueError(f"invalid controlled-Pauli generator recipe {generator!r}")
         if len(qubits) < 2:
             raise ValueError("a controlled-Pauli generator needs a control and target")
-        controlled_axis = _validated_axis(generator[1])
+        controlled_axis = _resolve_axis(generator[1])
         controls, target = qubits[:-1], qubits[-1]
         # Pi_controls P / 2 = sum_S (-1)^|S| Z_S P / 2^(k+1).
         denominator = float(2 ** (len(controls) + 1))
@@ -354,7 +354,13 @@ class LinCombEstimatorGradient(Gradient):
                                 )
                             test_circuit.append(operation)
                         evaluations.append(
-                            EstimatorRequest(test_circuit, extended, {}, base.shots)
+                            EstimatorRequest(
+                                test_circuit,
+                                extended,
+                                {},
+                                base.shots,
+                                base.seed,
+                            )
                         )
                         owners.append(
                             (

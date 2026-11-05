@@ -131,6 +131,7 @@ class FiniteDifferenceGradient(Gradient):
                             base.observable,
                             shifted,
                             base.shots,
+                            base.seed,
                         )
                     )
                     owners.append((position, name_index, weight))

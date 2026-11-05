@@ -19,73 +19,13 @@ from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from numbers import Real
-from types import MappingProxyType
 
 from cqlib import Circuit
 from cqlib.qis import Hamiltonian, PauliString
 
-
-def _validate_positive_shots(shots: int | None) -> None:
-    if shots is None:
-        return
-    if isinstance(shots, bool) or not isinstance(shots, int):
-        raise TypeError("shots must be an integer or None")
-    if shots <= 0:
-        raise ValueError("shots must be greater than zero")
-
-
-def _validate_seed(seed: int | None) -> None:
-    if seed is None:
-        return
-    if isinstance(seed, bool) or not isinstance(seed, int):
-        raise TypeError("seed must be an integer or None")
-    if seed < 0:
-        raise ValueError("seed must be non-negative")
-
-
-def _immutable_bindings(bindings: Mapping[str, float]) -> Mapping[str, float]:
-    if not isinstance(bindings, Mapping):
-        raise TypeError("parameter_bindings must be a mapping")
-
-    normalized: dict[str, float] = {}
-    for name, value in bindings.items():
-        if not isinstance(name, str):
-            raise TypeError("parameter binding names must be strings")
-        if isinstance(value, bool) or not isinstance(value, Real):
-            raise TypeError("parameter binding values must be real numbers")
-        numeric_value = float(value)
-        if not math.isfinite(numeric_value):
-            raise ValueError("parameter binding values must be finite")
-        normalized[name] = numeric_value
-    return MappingProxyType(normalized)
-
-
-def _is_finite(value: complex) -> bool:
-    return math.isfinite(value.real) and math.isfinite(value.imag)
-
-
-def _validate_hermitian(observable: Hamiltonian | PauliString) -> None:
-    if isinstance(observable, PauliString):
-        phase = observable.phase.to_complex()
-        if phase not in (1.0 + 0.0j, -1.0 + 0.0j):
-            raise ValueError("observable PauliString phase must be +1 or -1")
-        return
-
-    aggregated: dict[tuple[int, int, int], complex] = {}
-    for pauli, coefficient in observable.terms:
-        effective = complex(coefficient) * pauli.phase.to_complex()
-        if not _is_finite(effective):
-            raise ValueError("observable coefficients must be finite")
-
-        key = (pauli.num_qubits, pauli.x_mask, pauli.z_mask)
-        combined = aggregated.get(key, 0.0j) + effective
-        if not _is_finite(combined):
-            raise ValueError("observable coefficients must be finite")
-        aggregated[key] = combined
-
-    for coefficient in aggregated.values():
-        if coefficient != 0.0j and coefficient.imag != 0.0:
-            raise ValueError("observable must be Hermitian")
+from .._utils.hamiltonian import validate_hermitian_observable
+from .._utils.numeric import validate_optional_positive_integer, validate_optional_seed
+from .._utils.parameters import snapshot_parameter_bindings
 
 
 @dataclass(frozen=True, slots=True)
@@ -132,7 +72,10 @@ class EstimatorRequest:
     __hash__ = None  # type: ignore[assignment]
 
     def __post_init__(self) -> None:
-        bindings = _immutable_bindings(self.parameter_bindings)
+        bindings = snapshot_parameter_bindings(
+            self.parameter_bindings,
+            name="parameter_bindings",
+        )
         object.__setattr__(self, "parameter_bindings", bindings)
         self.validate()
 
@@ -168,9 +111,9 @@ class EstimatorRequest:
                 + ", ".join(details)
             )
 
-        _validate_positive_shots(self.shots)
-        _validate_seed(self.seed)
-        _validate_hermitian(self.observable)
+        validate_optional_positive_integer(self.shots, "shots")
+        validate_optional_seed(self.seed)
+        validate_hermitian_observable(self.observable, name="observable")
 
 
 @dataclass(frozen=True, slots=True)
@@ -207,6 +150,36 @@ class EstimatorResult:
         if variance < 0.0:
             raise ValueError("variance must be non-negative")
         object.__setattr__(self, "variance", variance)
+
+
+def require_estimator_results(
+    results: object,
+    requests: Sequence[EstimatorRequest],
+    *,
+    count_error: str = "estimator must return one result per request",
+) -> list[EstimatorResult]:
+    """Validate and return an ordered Estimator result batch unchanged.
+
+    Args:
+        results: Object returned by :meth:`Estimator.run`.
+        requests: Requests passed to the Estimator in the same order.
+        count_error: Error text used when the result count is invalid.
+
+    Returns:
+        The validated result list, unchanged.
+
+    Raises:
+        TypeError: If the result container or one of its entries has the
+            wrong type.
+        ValueError: If the result count does not match the request count.
+    """
+    if not isinstance(results, list):
+        raise TypeError("estimator must return a list of EstimatorResult values")
+    if len(results) != len(requests):
+        raise ValueError(count_error)
+    if any(not isinstance(result, EstimatorResult) for result in results):
+        raise TypeError("estimator must return EstimatorResult values")
+    return results
 
 
 class Estimator(ABC):

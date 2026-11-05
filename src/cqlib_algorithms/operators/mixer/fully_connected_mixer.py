@@ -27,8 +27,8 @@ from typing import final
 from cqlib.circuit import Circuit
 from cqlib.circuit.ansatz import EvolutionStrategy
 
+from ..._utils.numeric import validate_positive_integer
 from ._base import _BaseMixer
-from ._validation import validate_positive_integer
 from .nearby_values_mixer import NearbyValuesMixer
 
 

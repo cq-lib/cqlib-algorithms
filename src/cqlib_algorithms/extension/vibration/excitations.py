@@ -24,21 +24,6 @@ from ..many_body import ModalSpace, VibrationalLadder, VibrationalOp
 from .modal_integrals import ModalTransition
 
 
-def _copy_reference_modals(
-    modal_space: ModalSpace,
-    reference_modals: Sequence[int] | None,
-) -> tuple[int, ...]:
-    if reference_modals is None:
-        return (0,) * modal_space.num_modes
-    if isinstance(reference_modals, (str, bytes)) or not isinstance(
-        reference_modals, Sequence
-    ):
-        raise TypeError("reference_modals must be a sequence of integers or None")
-    copied = tuple(reference_modals)
-    modal_space.modal_basis_index(copied)
-    return copied
-
-
 def _copy_transitions(
     modal_space: ModalSpace,
     transitions: Iterable[ModalTransition],
@@ -182,7 +167,7 @@ def generate_vibrational_single_excitations(
     """
     if not isinstance(modal_space, ModalSpace):
         raise TypeError("modal_space must be a ModalSpace")
-    reference = _copy_reference_modals(modal_space, reference_modals)
+    reference = modal_space.normalize_reference_modals(reference_modals)
     return tuple(
         VibrationalExcitation.from_transitions(
             modal_space,

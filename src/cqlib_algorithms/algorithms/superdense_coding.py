@@ -28,8 +28,9 @@ from typing import final
 
 from cqlib import Circuit
 
+from .._utils.numeric import validate_positive_integer
 from ..operators.state_preparation import GHZStatePreparation
-from ..protocols.sampler import Sampler, SamplerRequest, validate_sampler_results
+from ..protocols.sampler import Sampler, SamplerRequest, require_sampler_results
 
 _MESSAGES = ((0, 0), (0, 1), (1, 0), (1, 1))
 
@@ -42,13 +43,6 @@ def _validate_message(message: tuple[int, int]) -> None:
         raise TypeError("message bits must be integers")
     if bit_flip_bit not in (0, 1) or phase_bit not in (0, 1):
         raise ValueError("message bits must be zero or one")
-
-
-def _validate_shots(shots: int) -> None:
-    if type(shots) is not int:
-        raise TypeError("shots must be an integer")
-    if shots < 1:
-        raise ValueError("shots must be greater than zero")
 
 
 def _validate_counts(counts: tuple[int, int, int, int], shots: int) -> None:
@@ -90,7 +84,7 @@ class SuperdenseCodingRequest:
     def validate(self) -> None:
         """Validate the classical message and requested shot count."""
         _validate_message(self.message)
-        _validate_shots(self.shots)
+        validate_positive_integer(self.shots, "shots")
 
 
 @dataclass(frozen=True, slots=True)
@@ -114,7 +108,7 @@ class SuperdenseCodingResult:
 
     def __post_init__(self) -> None:
         _validate_message(self.sent_message)
-        _validate_shots(self.shots)
+        validate_positive_integer(self.shots, "shots")
         _validate_counts(self.decoded_counts, self.shots)
 
     @property
@@ -242,7 +236,7 @@ class SuperdenseCoding:
             return []
 
         sampler_requests = [sampler_request for _, sampler_request in prepared]
-        sample_results = validate_sampler_results(
+        sample_results = require_sampler_results(
             self._sampler.run(sampler_requests), sampler_requests
         )
 

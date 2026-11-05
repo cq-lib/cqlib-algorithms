@@ -15,9 +15,9 @@
 from __future__ import annotations
 
 import pytest
+from cqlib import Circuit
 from cqlib.circuit.gates import StandardGate
 
-from cqlib import Circuit
 from cqlib_algorithms.operators.oracle import BlockEncoding
 
 
@@ -96,7 +96,7 @@ def test_block_encoding_rejects_invalid_ancilla_qubits() -> None:
         _ExampleBlockEncoding(ancilla_qubits=True)  # type: ignore[arg-type]
     with pytest.raises(
         ValueError,
-        match="ancilla_qubits must be greater than or equal to zero",
+        match="ancilla_qubits must be non-negative",
     ):
         _ExampleBlockEncoding(ancilla_qubits=-1)
 
@@ -114,9 +114,13 @@ def test_block_encoding_rejects_invalid_epsilon() -> None:
 def test_block_encoding_rejects_invalid_matrix_shape() -> None:
     with pytest.raises(TypeError, match="matrix_shape must be a tuple of two integers"):
         _ExampleBlockEncoding(matrix_shape=[2, 2])  # type: ignore[arg-type]
-    with pytest.raises(ValueError, match="matrix_shape\\[0\\] must be greater than zero"):
+    with pytest.raises(
+        ValueError, match="matrix_shape\\[0\\] must be greater than zero"
+    ):
         _ExampleBlockEncoding(matrix_shape=(0, 2))
-    with pytest.raises(ValueError, match="matrix_shape\\[1\\] must be greater than zero"):
+    with pytest.raises(
+        ValueError, match="matrix_shape\\[1\\] must be greater than zero"
+    ):
         _ExampleBlockEncoding(matrix_shape=(2, 0))
 
 

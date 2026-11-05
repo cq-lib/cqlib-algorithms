@@ -31,11 +31,11 @@ from itertools import pairwise
 from numbers import Real
 from typing import final
 
-from ...protocols.sampler import Sampler, SamplerRequest, validate_sampler_results
+from ..._utils.numeric import normalize_positive_integer
+from ...protocols.sampler import Sampler, SamplerRequest, require_sampler_results
 from ._common import (
     _build_grover_power_circuit,
     _count_good_outcomes,
-    _validate_positive_integer,
 )
 from .problem import AmplitudeEstimationProblem, _validate_problem
 
@@ -88,7 +88,7 @@ class MaximumLikelihoodAmplitudeEstimationRequest:
             raise ValueError("powers must start with zero")
         if any(left >= right for left, right in zip(self.powers, self.powers[1:])):
             raise ValueError("powers must be strictly increasing")
-        _validate_positive_integer(self.shots, "shots")
+        normalize_positive_integer(self.shots, "shots")
         if self.shots > _MAX_BINARY64_LIKELIHOOD_SHOTS:
             raise ValueError(
                 "shots exceeds the likelihood candidate geometry numeric limit "
@@ -750,7 +750,7 @@ class MaximumLikelihoodAmplitudeEstimation:
         if not sampler_requests:
             return []
 
-        sampled = validate_sampler_results(
+        sampled = require_sampler_results(
             self._sampler.run(sampler_requests), sampler_requests
         )
         results: list[MaximumLikelihoodAmplitudeEstimationResult] = []

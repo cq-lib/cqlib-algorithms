@@ -21,12 +21,12 @@ from typing import final
 
 from cqlib.circuit import Circuit
 
+from ..._utils.parameters import validate_parameter_prefix
 from ...protocols.state_preparation import StatePreparation
 from ._state_synthesis import (
     ComplexVector,
     normalize_unit_vector,
     validate_normalized_vector,
-    validate_prefix,
 )
 
 
@@ -89,7 +89,7 @@ class ProductStatePreparation(StatePreparation):
 
     def build_circuit(self, prefix: str) -> Circuit:
         """Return a new circuit of independent RY and Phase preparations."""
-        validate_prefix(prefix)
+        validate_parameter_prefix(prefix)
         circuit = Circuit(len(self._qubit_states))
         global_phase = 0.0
         for qubit, (zero_amplitude, one_amplitude) in enumerate(self._qubit_states):

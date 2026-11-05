@@ -24,21 +24,6 @@ from ...protocols.state_preparation import StatePreparation
 from .basis_state_initialization import BasisStateInitialization
 
 
-def _copy_reference_modals(
-    modal_space: ModalSpace,
-    reference_modals: Sequence[int] | None,
-) -> tuple[int, ...]:
-    if reference_modals is None:
-        return (0,) * modal_space.num_modes
-    if isinstance(reference_modals, (str, bytes)) or not isinstance(
-        reference_modals, Sequence
-    ):
-        raise TypeError("reference_modals must be a sequence of integers or None")
-    copied = tuple(reference_modals)
-    modal_space.modal_basis_index(copied)
-    return copied
-
-
 @final
 class VSCFStatePreparation(StatePreparation):
     """Prepare one modal per mode in the direct one-hot encoding.
@@ -66,9 +51,8 @@ class VSCFStatePreparation(StatePreparation):
         if not isinstance(modal_space, ModalSpace):
             raise TypeError("modal_space must be a ModalSpace")
         self._modal_space = modal_space
-        self._reference_modals = _copy_reference_modals(
-            modal_space,
-            reference_modals,
+        self._reference_modals = modal_space.normalize_reference_modals(
+            reference_modals
         )
         self._basis_state = BasisStateInitialization(
             modal_space.num_qubits,

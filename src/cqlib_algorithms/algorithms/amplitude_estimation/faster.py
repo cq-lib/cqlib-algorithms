@@ -26,11 +26,12 @@ from dataclasses import dataclass, field
 from numbers import Real
 from typing import final
 
-from ...protocols.sampler import Sampler, SamplerRequest, validate_sampler_results
+from ..._utils.numeric import normalize_positive_integer
+from ...protocols.sampler import Sampler, SamplerRequest, require_sampler_results
 from ._common import (
     _build_grover_power_circuit,
     _count_good_outcomes,
-    _validate_positive_integer,
+    _normalize_open_probability,
 )
 from .problem import AmplitudeEstimationProblem, _validate_problem
 
@@ -39,18 +40,7 @@ _MAX_EXPLICIT_GROVER_POWER = 1_000_000
 _MAX_SAFE_POWER_ITERATIONS = 21
 
 
-def _validate_open_probability(value: object, name: str) -> float:
-    if isinstance(value, bool) or not isinstance(value, Real):
-        raise TypeError(f"{name} must be a real number")
-    converted = float(value)
-    if not math.isfinite(converted):
-        raise ValueError(f"{name} must be finite")
-    if not 0.0 < converted < 1.0:
-        raise ValueError(f"{name} must lie in (0, 1)")
-    return converted
-
-
-def _validate_rescaling_factor(value: object) -> float:
+def _normalize_rescaling_factor(value: object) -> float:
     if isinstance(value, bool) or not isinstance(value, Real):
         raise TypeError("amplitude_rescaling_factor must be a real number")
     converted = float(value)
@@ -101,13 +91,13 @@ class FasterAmplitudeEstimationRequest:
     def validate(self) -> None:
         """Revalidate the shallowly frozen request before execution."""
         _validate_problem(self.problem)
-        alpha = _validate_open_probability(self.alpha, "alpha")
+        alpha = _normalize_open_probability(self.alpha, "alpha")
         if 1.0 - alpha == 1.0:
             raise ValueError("alpha is below binary64 probability resolution")
-        max_iterations = _validate_positive_integer(
+        max_iterations = normalize_positive_integer(
             self.max_iterations, "max_iterations"
         )
-        _validate_rescaling_factor(self.amplitude_rescaling_factor)
+        _normalize_rescaling_factor(self.amplitude_rescaling_factor)
         if max_iterations > _MAX_SAFE_POWER_ITERATIONS:
             raise ValueError(
                 "max_iterations exceeds the safe explicit-power validation limit"
@@ -166,7 +156,7 @@ class FasterAmplitudeEstimationResult:
     __hash__ = None  # type: ignore[assignment]
 
     def __post_init__(self) -> None:
-        factor = _validate_rescaling_factor(self.amplitude_rescaling_factor)
+        factor = _normalize_rescaling_factor(self.amplitude_rescaling_factor)
         if not isinstance(self.estimation, float) or not math.isfinite(self.estimation):
             raise TypeError("estimation must be a finite float")
         if not 0.0 <= self.estimation <= 1.0:
@@ -230,7 +220,7 @@ class FasterAmplitudeEstimationResult:
                 raise TypeError("theta_intervals entries must be pairs")
             if not 0.0 <= interval[0] <= interval[1] <= theta_limit:
                 raise ValueError("theta_intervals entries exceed the promised domain")
-        lower_bound = _validate_open_probability(
+        lower_bound = _normalize_open_probability(
             self.success_probability_lower_bound,
             "success_probability_lower_bound",
         )
@@ -378,7 +368,7 @@ class FasterAmplitudeEstimation:
                     sampler_requests.append(SamplerRequest(circuit, measured, shots))
                     experiments.append((state, power, shots))
 
-            sampled = validate_sampler_results(
+            sampled = require_sampler_results(
                 self._sampler.run(sampler_requests), sampler_requests
             )
             observations: dict[int, list[float]] = {id(state): [] for state in states}

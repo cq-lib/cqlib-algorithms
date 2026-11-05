@@ -27,8 +27,11 @@ from typing import final
 from cqlib.circuit.ansatz import EvolutionStrategy
 from cqlib.qis import Hamiltonian
 
+from ..._utils.hamiltonian import (
+    snapshot_nonzero_hermitian_hamiltonian,
+)
+from ..._utils.numeric import validate_repetitions
 from ..measurement import CommutingObservableGrouping
-from ._validation import copy_hermitian_hamiltonian, validate_repetitions
 from .base_ansatz import _DelegatingAnsatz
 from .evolved_operator_ansatz import EvolvedOperatorAnsatz
 
@@ -37,7 +40,7 @@ def _automatic_blocks(hamiltonian: Hamiltonian) -> tuple[Hamiltonian, ...]:
     """Partition one Hamiltonian into stable globally commuting blocks."""
     if hamiltonian.num_qubits <= 0:
         raise ValueError("hamiltonian must act on at least one qubit")
-    snapshot = copy_hermitian_hamiltonian(hamiltonian, name="hamiltonian")
+    snapshot = snapshot_nonzero_hermitian_hamiltonian(hamiltonian, name="hamiltonian")
     snapshot_terms = tuple(snapshot.terms)
     terms = tuple(pauli for pauli, _ in snapshot_terms)
     groups = CommutingObservableGrouping().group(terms)
@@ -66,7 +69,7 @@ def _explicit_blocks(
             raise TypeError("hamiltonian blocks must contain only Hamiltonian values")
         if candidate.num_qubits <= 0:
             raise ValueError("hamiltonian blocks must act on at least one qubit")
-        block = copy_hermitian_hamiltonian(
+        block = snapshot_nonzero_hermitian_hamiltonian(
             candidate,
             name=f"hamiltonian[{index}]",
         )

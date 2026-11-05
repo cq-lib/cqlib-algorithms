@@ -33,10 +33,11 @@ from typing import final
 
 from cqlib.circuit import Circuit
 
+from ..._utils.numeric import validate_positive_qubit_count
+from ..._utils.parameters import validate_parameter_prefix
 from ...protocols.state_preparation import StatePreparation
 from ..oracle.dicke_unitary import DickeUnitary
 from ..oracle.weight_distribution_block import WeightDistributionBlock
-from ._state_synthesis import validate_positive_qubit_count, validate_prefix
 from .basis_state_initialization import BasisStateInitialization
 
 
@@ -91,7 +92,7 @@ class DickeStatePreparation(StatePreparation):
 
     def build_circuit(self, prefix: str) -> Circuit:
         """Return a new divide-and-conquer Dicke-state preparation circuit."""
-        validate_prefix(prefix)
+        validate_parameter_prefix(prefix)
         circuit = BasisStateInitialization(
             self._num_qubits,
             _unary_index(self._num_qubits, self._weight),
@@ -130,7 +131,9 @@ class DickeStatePreparation(StatePreparation):
         left_positions = positions[:left_width]
         right_positions = positions[left_width:]
         circuit.compose(
-            WeightDistributionBlock(local_qubits, left_width, max_weight).build_circuit(),
+            WeightDistributionBlock(
+                local_qubits, left_width, max_weight
+            ).build_circuit(),
             positions,
         )
         self._append_recursive_preparation(

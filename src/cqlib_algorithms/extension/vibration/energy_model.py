@@ -18,8 +18,8 @@ from dataclasses import dataclass
 
 from cqlib.qis import Hamiltonian
 
+from ..._utils.hamiltonian import snapshot_real_hamiltonian
 from ..many_body import ModalSpace, OneHotVibrationalMapper, VibrationalOp
-from ..many_body._mapping_validation import snapshot_real_hamiltonian
 from .modal_integrals import ModalIntegrals
 
 

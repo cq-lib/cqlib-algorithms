@@ -30,15 +30,15 @@ from typing import final
 import numpy as np
 from cqlib import Circuit
 
-from ...operators.composite.phase_estimation_circuit import (
-    _append_controlled_matrix,
-    _unitary_matrix,
-    _validate_evaluation_qubits,
+from ..._utils.phase_estimation import (
+    append_controlled_matrix,
+    normalize_evaluation_qubits,
+    normalize_shots,
+    unitary_matrix,
 )
 from ...protocols import Sampler, SamplerRequest
-from ...protocols.sampler import validate_sampler_results
+from ...protocols.sampler import require_sampler_results
 from .problem import PhaseEstimationProblem, _validate_problem
-from .standard import _validate_shots
 
 
 @dataclass(frozen=True, slots=True)
@@ -70,8 +70,8 @@ class IterativePhaseEstimationRequest:
     def validate(self) -> None:
         """Revalidate the shallowly frozen request before execution."""
         _validate_problem(self.problem)
-        _validate_evaluation_qubits(self.num_iterations)
-        _validate_shots(self.shots_per_iteration, "shots_per_iteration")
+        normalize_evaluation_qubits(self.num_iterations)
+        normalize_shots(self.shots_per_iteration, "shots_per_iteration")
 
 
 @dataclass(frozen=True, slots=True)
@@ -97,8 +97,8 @@ class IterativePhaseEstimationResult:
     num_unitary_queries: int
 
     def __post_init__(self) -> None:
-        width = _validate_evaluation_qubits(self.num_iterations)
-        shots = _validate_shots(
+        width = normalize_evaluation_qubits(self.num_iterations)
+        shots = normalize_shots(
             self.shots_per_iteration,
             "shots_per_iteration",
         )
@@ -152,7 +152,7 @@ def _build_iteration_circuit(
     system_targets = tuple(circuit.qubits[1:])
     circuit.compose(problem.state_preparation, list(system_targets))
     circuit.h(control)
-    _append_controlled_matrix(
+    append_controlled_matrix(
         circuit,
         control,
         system_targets,
@@ -209,7 +209,7 @@ class IterativePhaseEstimation:
                     "requests must contain IterativePhaseEstimationRequest instances"
                 )
             request.validate()
-            matrix = _unitary_matrix(request.problem.unitary, 1)
+            matrix = unitary_matrix(request.problem.unitary, 1)
             known_fraction = 0.0
             extracted_bits: list[int] = []
             extracted_probabilities: list[float] = []
@@ -227,7 +227,7 @@ class IterativePhaseEstimation:
                     (circuit.qubits[0],),
                     request.shots_per_iteration,
                 )
-                sampled = validate_sampler_results(
+                sampled = require_sampler_results(
                     self._sampler.run([sampler_request]),
                     [sampler_request],
                 )[0]

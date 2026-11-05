@@ -25,15 +25,11 @@ from dataclasses import dataclass
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
+from .._utils.numeric import copy_finite_real_array, validate_positive_integer
 from ..operators.quantum_kernel import FidelityQuantumKernel
 from . import _ml_common as common
 from . import _ml_validation as validation
-from ._ml_validation import (
-    _positive_integer,
-    _real_array,
-    _real_hyperparameter,
-    _targets,
-)
+from ._ml_validation import _real_hyperparameter, _targets
 
 
 @dataclass(frozen=True, slots=True)
@@ -87,7 +83,7 @@ class PegasosQSVC:
         if not isinstance(quantum_kernel, FidelityQuantumKernel):
             raise TypeError("quantum_kernel must be a FidelityQuantumKernel")
         self._regularization = _real_hyperparameter(regularization, "regularization")
-        _positive_integer(num_steps, "num_steps")
+        validate_positive_integer(num_steps, "num_steps")
         if seed is not None and (isinstance(seed, bool) or not isinstance(seed, int)):
             raise TypeError("seed must be an integer or None")
         if seed is not None and seed < 0:
@@ -219,7 +215,7 @@ class PegasosQSVC:
         data = validation.data(X, self._kernel.num_features)
         if not len(data):
             return np.empty(0, dtype=np.float64)
-        matrix = _real_array(
+        matrix = copy_finite_real_array(
             self._kernel.evaluate(data, state.data), "prediction kernel", 2
         )
         if (

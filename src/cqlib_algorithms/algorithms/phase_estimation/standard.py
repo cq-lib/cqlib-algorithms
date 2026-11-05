@@ -29,25 +29,11 @@ from typing import final
 
 from cqlib import Circuit
 
+from ..._utils.phase_estimation import normalize_evaluation_qubits, normalize_shots
 from ...operators import PhaseEstimationCircuit
-from ...operators.composite.phase_estimation_circuit import (
-    _validate_evaluation_qubits,
-)
 from ...protocols import Sampler, SamplerRequest
-from ...protocols.sampler import validate_sampler_results
+from ...protocols.sampler import require_sampler_results
 from .problem import PhaseEstimationProblem, _validate_problem
-
-_MAX_EXACT_BINARY64_INTEGER = (1 << 53) - 1
-
-
-def _validate_shots(value: object, name: str = "shots") -> int:
-    if isinstance(value, bool) or not isinstance(value, int):
-        raise TypeError(f"{name} must be an integer")
-    if value <= 0:
-        raise ValueError(f"{name} must be greater than zero")
-    if value > _MAX_EXACT_BINARY64_INTEGER:
-        raise ValueError(f"{name} must not exceed 2**53 - 1")
-    return value
 
 
 @dataclass(frozen=True, slots=True)
@@ -78,8 +64,8 @@ class PhaseEstimationRequest:
     def validate(self) -> None:
         """Revalidate the shallowly frozen request before execution."""
         _validate_problem(self.problem)
-        width = _validate_evaluation_qubits(self.num_evaluation_qubits)
-        _validate_shots(self.shots)
+        width = normalize_evaluation_qubits(self.num_evaluation_qubits)
+        normalize_shots(self.shots)
         if isinstance(self.approximation_degree, bool) or not isinstance(
             self.approximation_degree, int
         ):
@@ -120,8 +106,8 @@ class PhaseEstimationResult:
     __hash__ = None  # type: ignore[assignment]
 
     def __post_init__(self) -> None:
-        width = _validate_evaluation_qubits(self.num_evaluation_qubits)
-        shots = _validate_shots(self.shots)
+        width = normalize_evaluation_qubits(self.num_evaluation_qubits)
+        shots = normalize_shots(self.shots)
         dimension = 1 << width
         if (
             isinstance(self.grid_point, bool)
@@ -265,7 +251,7 @@ class PhaseEstimation:
         if not sampler_requests:
             return []
 
-        sampled = validate_sampler_results(
+        sampled = require_sampler_results(
             self._sampler.run(sampler_requests),
             sampler_requests,
         )

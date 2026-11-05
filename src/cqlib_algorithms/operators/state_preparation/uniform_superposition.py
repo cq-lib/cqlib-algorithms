@@ -18,8 +18,9 @@ from typing import final
 
 from cqlib.circuit import Circuit
 
+from ..._utils.numeric import validate_positive_qubit_count
+from ..._utils.parameters import validate_parameter_prefix
 from ...protocols.state_preparation import StatePreparation
-from ._state_synthesis import validate_positive_qubit_count, validate_prefix
 
 
 @final
@@ -46,7 +47,7 @@ class UniformSuperposition(StatePreparation):
 
     def build_circuit(self, prefix: str) -> Circuit:
         """Return a new circuit containing one Hadamard per qubit."""
-        validate_prefix(prefix)
+        validate_parameter_prefix(prefix)
         circuit = Circuit(self._num_qubits)
         for qubit in range(self._num_qubits):
             circuit.h(qubit)

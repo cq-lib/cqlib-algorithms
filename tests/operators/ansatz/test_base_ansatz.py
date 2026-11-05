@@ -18,14 +18,18 @@ import pytest
 from cqlib import Circuit, Parameter
 from cqlib.circuit.gates import StandardGate
 
+from cqlib_algorithms._utils.numeric import (
+    validate_positive_qubit_count,
+    validate_repetitions,
+)
+from cqlib_algorithms._utils.parameters import (
+    validate_parameter_prefix as validate_prefix,
+)
 from cqlib_algorithms.operators.ansatz import BaseAnsatz
 from cqlib_algorithms.operators.ansatz._validation import (
     snapshot_rotation_gates,
     validate_boolean,
     validate_entanglement_gate,
-    validate_positive_qubit_count,
-    validate_prefix,
-    validate_repetitions,
 )
 from cqlib_algorithms.protocols import Ansatz
 

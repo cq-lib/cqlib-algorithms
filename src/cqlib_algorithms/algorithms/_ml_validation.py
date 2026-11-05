@@ -21,36 +21,14 @@ from types import MappingProxyType
 
 import numpy as np
 from cqlib import Circuit, Parameter
-from cqlib.circuit import CircuitError
 from numpy.typing import ArrayLike, NDArray
 
+from .._utils.circuit import (
+    validate_bound_static_unitary_circuit,
+    validate_static_unitary_structure,
+)
+from .._utils.numeric import copy_finite_real_array
 from ..operators.state_preparation import UserCircuitPreparation
-
-_UNITARY_ATOL = 1e-10
-
-
-def _real_array(values: ArrayLike, name: str, ndim: int) -> NDArray[np.float64]:
-    """Copy finite arrays of real numbers."""
-    try:
-        raw = np.asarray(values)
-    except (TypeError, ValueError) as error:
-        raise ValueError(f"{name} must be a rectangular real numeric array") from error
-    if raw.dtype.kind not in "iuf":
-        raise TypeError(f"{name} must contain real numeric values, excluding bool")
-    if raw.ndim != ndim:
-        raise ValueError(f"{name} must be {ndim}-dimensional")
-    with np.errstate(over="ignore", invalid="ignore"):
-        result = np.array(raw, dtype=np.float64, copy=True)
-    if not np.all(np.isfinite(result)):
-        raise ValueError(f"{name} must contain finite values")
-    return result
-
-
-def _positive_integer(value: int, name: str) -> None:
-    if isinstance(value, bool) or not isinstance(value, int):
-        raise TypeError(f"{name} must be an integer")
-    if value <= 0:
-        raise ValueError(f"{name} must be greater than zero")
 
 
 def _real_hyperparameter(value: float, name: str, *, allow_zero: bool = False) -> float:
@@ -65,7 +43,7 @@ def _real_hyperparameter(value: float, name: str, *, allow_zero: bool = False) -
 
 
 def _targets(values: ArrayLike, size: int, name: str) -> NDArray[np.float64]:
-    result = _real_array(values, name, 1)
+    result = copy_finite_real_array(values, name, 1)
     if len(result) != size:
         raise ValueError(f"{name} length must match the number of samples")
     return result
@@ -107,7 +85,7 @@ def bindings(values: Mapping[str, float] | None, label: str) -> dict[str, float]
 def data(
     values: ArrayLike, width: int, *, nonempty: bool = False
 ) -> NDArray[np.float64]:
-    result = _real_array(values, "X", 2)
+    result = copy_finite_real_array(values, "X", 2)
     if result.shape[1] != width:
         raise ValueError("X feature width must match input_parameters")
     if nonempty and not len(result):
@@ -141,83 +119,6 @@ def immutable_parameters(
     return MappingProxyType(dict(zip(parameters, (float(value) for value in point))))
 
 
-def _validate_static_unitary(circuit: Circuit, *, label: str) -> None:
-    """Validate static unitary circuit structure."""
-    if circuit.classical_vars or circuit.classical_values:
-        raise ValueError(f"{label} must be a static unitary circuit")
-
-    try:
-        expanded = circuit.decompose()
-    except CircuitError as exc:
-        raise ValueError(
-            f"{label} must be a decomposable static unitary circuit"
-        ) from exc
-
-    for operation in expanded.operations:
-        if (
-            operation.is_classical_data
-            or operation.is_classical_control
-            or operation.is_delay
-            or (operation.is_directive and operation.name != "barrier")
-        ):
-            raise ValueError(
-                f"{label} must contain only static unitary operations "
-                "without measurement, reset, delay, or classical control"
-            )
-
-
-def _validate_static_unitary_circuit(circuit: Circuit, name: str) -> None:
-    """Validate a fully bound circuit containing only static unitary work."""
-    try:
-        circuit.validate()
-    except CircuitError as error:
-        raise ValueError(f"{name} must be a valid circuit") from error
-    if circuit.num_qubits <= 0:
-        raise ValueError(f"{name} must contain at least one qubit")
-    if circuit.used_symbols:
-        raise ValueError(f"{name} must be fully bound")
-    if circuit.classical_vars or circuit.classical_values:
-        raise ValueError(f"{name} must not contain classical data")
-
-    try:
-        expanded = circuit.decompose()
-    except CircuitError as error:
-        raise ValueError(f"{name} must be statically decomposable") from error
-
-    for operation in expanded.operations:
-        if operation.is_directive and operation.name == "barrier":
-            continue
-        if (
-            operation.is_classical_data
-            or operation.is_classical_control
-            or operation.is_delay
-            or operation.is_directive
-        ):
-            raise ValueError(
-                f"{name} must contain only static unitary operations and barriers"
-            )
-        if operation.instruction_type not in {"standard", "mcgate", "unitary"}:
-            raise ValueError(
-                f"{name} must contain only static unitary operations and barriers"
-            )
-        if operation.instruction_type != "unitary":
-            continue
-        try:
-            matrix = np.asarray(operation.matrix(), dtype=np.complex128)
-        except (TypeError, ValueError, CircuitError) as error:
-            raise ValueError(f"{name} contains an invalid numeric unitary") from error
-        if not np.all(np.isfinite(matrix)):
-            raise ValueError(f"{name} contains a non-finite numeric unitary")
-        identity = np.eye(matrix.shape[0], dtype=np.complex128)
-        if not np.allclose(
-            matrix.conj().T @ matrix,
-            identity,
-            rtol=0.0,
-            atol=_UNITARY_ATOL,
-        ):
-            raise ValueError(f"{name} contains a non-unitary numeric gate")
-
-
 def template(
     circuit: Circuit,
     inputs: tuple[str, ...],
@@ -232,7 +133,7 @@ def template(
             "parameter names must cover exactly the active circuit symbols"
         )
     partial = normalized.assign_parameters(dict(fixed))
-    _validate_static_unitary(partial, label="circuit")
+    validate_static_unitary_structure(partial, label="circuit")
     partial.inverse()
     constants = Circuit(partial.num_qubits)
     if not partial.global_phase.symbols:
@@ -249,5 +150,5 @@ def template(
             isinstance(value, Parameter) and value.symbols for value in operation.params
         ):
             constants.append(operation)
-    _validate_static_unitary_circuit(constants, "circuit constant operations")
+    validate_bound_static_unitary_circuit(constants, "circuit constant operations")
     return normalized

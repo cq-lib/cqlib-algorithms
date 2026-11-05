@@ -20,11 +20,17 @@ from typing import final
 from cqlib import Circuit
 from cqlib.qis import Hamiltonian
 
+from ..._utils.numeric import validate_repetitions
 from ...extension.vibration import ModalOccupation, VibrationalSystem
 from ...operators.ansatz import UVCCSDAnsatz
 from ...operators.state_preparation import VSCFStatePreparation
 from ...protocols.ansatz import Ansatz
-from ...protocols.estimator import Estimator, EstimatorRequest, EstimatorResult
+from ...protocols.estimator import (
+    Estimator,
+    EstimatorRequest,
+    EstimatorResult,
+    require_estimator_results,
+)
 from ...protocols.optimizer import Optimizer
 from ..variational import VQE
 from .results import VibrationalGroundStateResult, VibrationalMeasurements
@@ -54,31 +60,6 @@ class _FixedVSCFAnsatz(Ansatz):
     def num_qubits(self) -> int:
         """Return the one-hot modal-register width."""
         return self._preparation.num_qubits()
-
-
-def _validate_repetitions(reps: int) -> None:
-    """Validate a non-negative repetition count."""
-    if type(reps) is not int:
-        raise TypeError("reps must be an int")
-    if reps < 0:
-        raise ValueError("reps must be non-negative")
-
-
-def _normalize_estimates(
-    estimates: object,
-    *,
-    expected: int,
-) -> list[EstimatorResult]:
-    """Validate and return estimator results in their original order."""
-    if not isinstance(estimates, list):
-        raise TypeError("estimator must return a list of EstimatorResult values")
-    if len(estimates) != expected:
-        raise ValueError(
-            "estimator must return one result per auxiliary-observable request"
-        )
-    if any(not isinstance(result, EstimatorResult) for result in estimates):
-        raise TypeError("estimator must return EstimatorResult values")
-    return estimates
 
 
 def _auxiliary_observables(system: VibrationalSystem) -> tuple[Hamiltonian, ...]:
@@ -211,7 +192,7 @@ class VibrationalGroundState:
         """
         if not isinstance(system, VibrationalSystem):
             raise TypeError("system must be a VibrationalSystem")
-        _validate_repetitions(reps)
+        validate_repetitions(reps)
         selected_ansatz: Ansatz
         if ansatz is None:
             if all(count == 1 for count in system.modal_space.num_modals):
@@ -267,10 +248,7 @@ class VibrationalGroundState:
             )
             for observable in observables
         ]
-        estimates = _normalize_estimates(
-            self._estimator.run(requests),
-            expected=len(requests),
-        )
+        estimates = require_estimator_results(self._estimator.run(requests), requests)
         return VibrationalGroundStateResult(
             system,
             vqe_result,

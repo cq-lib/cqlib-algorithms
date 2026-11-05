@@ -22,14 +22,7 @@ import numpy as np
 from cqlib import Circuit, Qubit
 from cqlib.device import ExecutionResult
 
-
-def _validate_seed(seed: int | None) -> None:
-    if seed is None:
-        return
-    if isinstance(seed, bool) or not isinstance(seed, int):
-        raise TypeError("seed must be an integer or None")
-    if seed < 0:
-        raise ValueError("seed must be non-negative")
+from .._utils.numeric import validate_optional_seed
 
 
 def spawn_seeds(seed: int | None, count: int, /) -> list[int]:
@@ -52,7 +45,7 @@ def spawn_seeds(seed: int | None, count: int, /) -> list[int]:
         TypeError: If ``seed`` or ``count`` has the wrong type.
         ValueError: If ``seed`` or ``count`` is negative.
     """
-    _validate_seed(seed)
+    validate_optional_seed(seed)
     if isinstance(count, bool) or not isinstance(count, int):
         raise TypeError("count must be an integer")
     if count < 0:
@@ -120,7 +113,7 @@ class SamplerRequest:
             raise TypeError("shots must be an integer")
         if self.shots <= 0:
             raise ValueError("shots must be greater than zero")
-        _validate_seed(self.seed)
+        validate_optional_seed(self.seed)
 
         self.circuit.validate()
         if self.circuit.used_symbols:
@@ -214,11 +207,11 @@ def validate_sampler_result(
         raise ValueError("sampler counts must sum to the requested shots")
 
 
-def validate_sampler_results(
+def require_sampler_results(
     results: object,
     requests: Sequence[SamplerRequest],
 ) -> list[ExecutionResult]:
-    """Validate a complete ordered result batch from a Sampler.
+    """Validate and return a complete ordered Sampler result batch unchanged.
 
     Args:
         results: Object returned by :meth:`Sampler.run`.
@@ -243,3 +236,8 @@ def validate_sampler_results(
             raise TypeError("sampler results must be cqlib.device.ExecutionResult")
         validate_sampler_result(result, request)
     return results
+
+
+# Retain the original public spelling for callers written before
+# ``require_sampler_results`` made the returning contract explicit.
+validate_sampler_results = require_sampler_results

@@ -20,6 +20,8 @@ from numbers import Real
 
 from cqlib import Circuit
 
+from ...._utils.numeric import validate_nonnegative_integer, validate_positive_integer
+
 
 class BlockEncoding(ABC):
     r"""Represent a standard ``(alpha, a, epsilon)`` block-encoding.
@@ -73,7 +75,7 @@ class BlockEncoding(ABC):
         system_qubits: int | None = None,
     ) -> None:
         self._alpha = _normalize_positive_real(alpha, name="alpha")
-        _validate_non_negative_integer(
+        validate_nonnegative_integer(
             ancilla_qubits,
             name="ancilla_qubits",
         )
@@ -87,7 +89,7 @@ class BlockEncoding(ABC):
         if system_qubits is None:
             self._system_qubits = minimum_system_qubits
         else:
-            _validate_non_negative_integer(
+            validate_nonnegative_integer(
                 system_qubits,
                 name="system_qubits",
             )
@@ -180,34 +182,18 @@ def _normalize_non_negative_real(value: float, *, name: str) -> float:
     return scalar
 
 
-def _validate_non_negative_integer(value: int, *, name: str) -> None:
-    r"""Validate a non-negative integer."""
-    if isinstance(value, bool) or not isinstance(value, int):
-        raise TypeError(f"{name} must be an integer")
-    if value < 0:
-        raise ValueError(f"{name} must be greater than or equal to zero")
-
-
 def _canonicalize_matrix_shape(matrix_shape: tuple[int, int]) -> tuple[int, int]:
     r"""Validate and return the canonical two-dimensional matrix shape."""
     if not isinstance(matrix_shape, tuple) or len(matrix_shape) != 2:
         raise TypeError("matrix_shape must be a tuple of two integers")
 
     rows, columns = matrix_shape
-    _validate_positive_shape_entry(rows, name="matrix_shape[0]")
-    _validate_positive_shape_entry(
+    validate_positive_integer(rows, name="matrix_shape[0]")
+    validate_positive_integer(
         matrix_shape[1],
         name="matrix_shape[1]",
     )
     return (rows, columns)
-
-
-def _validate_positive_shape_entry(value: int, *, name: str) -> None:
-    r"""Validate a positive matrix-shape entry."""
-    if isinstance(value, bool) or not isinstance(value, int):
-        raise TypeError(f"{name} must be an integer")
-    if value <= 0:
-        raise ValueError(f"{name} must be greater than zero")
 
 
 def _minimum_system_qubits(max_dimension: int) -> int:

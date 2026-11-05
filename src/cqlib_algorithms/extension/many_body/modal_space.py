@@ -92,6 +92,21 @@ class ModalSpace:
         """Return the physical modal Hilbert-space dimension."""
         return math.prod(self.num_modals)
 
+    def normalize_reference_modals(
+        self,
+        reference_modals: Sequence[int] | None,
+    ) -> tuple[int, ...]:
+        """Return a validated immutable reference-modal configuration."""
+        if reference_modals is None:
+            return (0,) * self.num_modes
+        if isinstance(reference_modals, (str, bytes)) or not isinstance(
+            reference_modals, Sequence
+        ):
+            raise TypeError("reference_modals must be a sequence of integers or None")
+        copied = tuple(reference_modals)
+        self.modal_basis_index(copied)
+        return copied
+
     @property
     def qubit_offsets(self) -> tuple[int, ...]:
         """Return the first qubit index of every mode block."""

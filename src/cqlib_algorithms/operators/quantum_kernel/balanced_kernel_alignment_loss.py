@@ -20,8 +20,8 @@ from __future__ import annotations
 import numpy as np
 from numpy.typing import NDArray
 
+from ..._utils.numeric import copy_finite_real_array
 from ...protocols.quantum_kernel import KernelLoss
-from ._validation import _real_array
 
 
 def _alignment(matrix: NDArray[np.float64], target: NDArray[np.float64]) -> float:
@@ -52,7 +52,7 @@ class BalancedKernelAlignmentLoss(KernelLoss):
 
     def classes(self, targets: NDArray[np.float64]) -> tuple[float, float]:
         """Return the two finite numeric labels in sorted order."""
-        values = _real_array(targets, "y", 1)
+        values = copy_finite_real_array(targets, "y", 1)
         unique = np.unique(values)
         if len(unique) != 2:
             raise ValueError("y must contain exactly two distinct classes")
@@ -61,9 +61,9 @@ class BalancedKernelAlignmentLoss(KernelLoss):
     def __call__(
         self, matrix: NDArray[np.float64], targets: NDArray[np.float64], /
     ) -> float:
-        values = _real_array(targets, "y", 1)
+        values = copy_finite_real_array(targets, "y", 1)
         classes = self.classes(values)
-        gram = _real_array(matrix, "kernel matrix", 2)
+        gram = copy_finite_real_array(matrix, "kernel matrix", 2)
         if gram.shape != (len(values), len(values)) or not np.array_equal(gram, gram.T):
             raise ValueError("kernel must return a symmetric square training matrix")
         balanced = np.where(

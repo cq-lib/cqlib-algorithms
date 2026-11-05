@@ -27,13 +27,13 @@ from typing import final
 
 from cqlib.circuit import Circuit
 
+from ..._utils.numeric import validate_nonnegative_integer
 from ._base import _BaseMixer
 from ._exchange import absolute_register_offsets, absolute_width, transition_circuit
 from ._validation import (
     resolve_horizon,
     snapshot_processing_times,
     validate_job,
-    validate_nonnegative_integer,
 )
 
 

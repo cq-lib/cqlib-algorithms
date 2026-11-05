@@ -32,11 +32,14 @@ from typing import ClassVar
 from cqlib import Circuit
 from cqlib.qis import Hamiltonian, Pauli, PauliString
 
-from ..operators.estimator._circuit_validation import (
-    validate_unitary_state_preparation,
-)
+from .._utils.circuit import validate_unitary_state_preparation
+from .._utils.numeric import validate_optional_positive_integer
 from ..operators.state_preparation import GHZStatePreparation
-from ..protocols.estimator import Estimator, EstimatorRequest, EstimatorResult
+from ..protocols.estimator import (
+    Estimator,
+    EstimatorRequest,
+    require_estimator_results,
+)
 
 _COEFFICIENT_TOLERANCE = 1e-15
 
@@ -51,15 +54,6 @@ def _validate_angles(angles: tuple[float, float], name: str) -> None:
             raise TypeError(f"{name} must contain real numbers")
         if not math.isfinite(float(angle)):
             raise ValueError(f"{name} must contain finite angles")
-
-
-def _validate_shots(shots: int | None) -> None:
-    if shots is None:
-        return
-    if isinstance(shots, bool) or not isinstance(shots, int):
-        raise TypeError("shots must be an integer or None")
-    if shots <= 0:
-        raise ValueError("shots must be greater than zero")
 
 
 def _validate_tolerance(tolerance: float) -> None:
@@ -133,7 +127,7 @@ class CHSHRequest:
             "bob_angles",
             _normalize_pair(self.bob_angles, "bob_angles"),
         )
-        _validate_shots(self.shots)
+        validate_optional_positive_integer(self.shots, "shots")
         _validate_tolerance(self.tolerance)
         object.__setattr__(self, "tolerance", float(self.tolerance))
         _validate_state_preparation(self.state_preparation)
@@ -143,7 +137,7 @@ class CHSHRequest:
         _validate_state_preparation(self.state_preparation)
         _validate_angles(self.alice_angles, "alice_angles")
         _validate_angles(self.bob_angles, "bob_angles")
-        _validate_shots(self.shots)
+        validate_optional_positive_integer(self.shots, "shots")
         _validate_tolerance(self.tolerance)
 
 
@@ -374,13 +368,11 @@ class CHSH:
 
         if not estimator_requests:
             return []
-        estimator_results = self._estimator.run(estimator_requests)
-        if not isinstance(estimator_results, list):
-            raise TypeError("estimator must return a list")
-        if len(estimator_results) != len(estimator_requests):
-            raise ValueError("estimator returned an unexpected result count")
-        if any(not isinstance(result, EstimatorResult) for result in estimator_results):
-            raise TypeError("estimator results must contain EstimatorResult instances")
+        estimator_results = require_estimator_results(
+            self._estimator.run(estimator_requests),
+            estimator_requests,
+            count_error="estimator returned an unexpected result count",
+        )
 
         results: list[CHSHResult] = []
         for index, request in enumerate(validated_requests):

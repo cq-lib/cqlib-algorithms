@@ -387,6 +387,15 @@ class InvalidSampler(Sampler):
         if self.mode == "missing":
             return []
         request = requests[0]
+        if self.mode == "tuple":
+            result = ExecutionResult.from_counts(
+                "tuple",
+                list(request.qubits),
+                request.shots,
+                len(request.qubits),
+                {"0": request.shots},
+            )
+            return (result,)  # type: ignore[return-value]
         if self.mode == "failed":
             result = ExecutionResult("failed", list(request.qubits), request.shots, 1)
             result.fail("failure", 1)
@@ -406,7 +415,12 @@ class InvalidSampler(Sampler):
 
 @pytest.mark.parametrize(
     ("mode", "message"),
-    [("missing", "one result"), ("failed", "successful"), ("filtered", "sum")],
+    [
+        ("missing", "one result"),
+        ("tuple", "return a list"),
+        ("failed", "successful"),
+        ("filtered", "sum"),
+    ],
 )
 def test_invalid_sampler_results_are_rejected(mode: str, message: str) -> None:
     request = EstimatorRequest(
@@ -415,5 +429,6 @@ def test_invalid_sampler_results_are_rejected(mode: str, message: str) -> None:
         shots=2,
     )
 
-    with pytest.raises(ValueError, match=message):
+    error = TypeError if mode == "tuple" else ValueError
+    with pytest.raises(error, match=message):
         SamplingEstimator(InvalidSampler(mode)).run([request])

@@ -21,6 +21,7 @@ from typing import final
 
 from cqlib.circuit import Circuit
 
+from ..._utils.parameters import validate_parameter_prefix
 from ...protocols.state_preparation import StatePreparation
 from ._image_data import (
     copy_image_channels,
@@ -28,7 +29,6 @@ from ._image_data import (
     validate_image_channels,
     validate_image_shape,
 )
-from ._state_synthesis import validate_prefix
 
 
 @final
@@ -188,7 +188,7 @@ class ImageAngleEncoding(StatePreparation):
 
     def build_circuit(self, prefix: str) -> Circuit:
         """Return a fresh fixed ``RY`` product-state circuit."""
-        validate_prefix(prefix)
+        validate_parameter_prefix(prefix)
         self.validate()
         circuit = Circuit(self.num_qubits())
         lower, upper = self._value_range

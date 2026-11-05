@@ -10,6 +10,7 @@
 | `Ansatz` | 构建可训练参数化线路 |
 | `Sampler` | 批量执行有限-shot 测量采样 |
 | `Estimator` | 批量估计可观测量期望值 |
+| `StateFidelity` | 批量估计量子态保真度 |
 | `Gradient` | 批量计算 Estimator 目标的梯度 |
 | `Optimizer` | 批量优化经典参数 |
 | `QuantumKernel`、`TrainableQuantumKernel` | 固定核求值与可训练核参数绑定 |
@@ -38,7 +39,7 @@
 
 | 方向 | 已实现能力 |
 | --- | --- |
-| 分子电子结构 | RHF/ROHF/UHF 数据、限制性与自旋分辨活性空间、费米 Hamiltonian、Jordan–Wigner 映射、HF/Slater/Gaussian 参考态、UCC 系列、VQE 基态、中性 qEOM、粒子数与自旋诊断 |
+| 分子电子结构 | RHF/ROHF/UHF 数据、限制性与自旋分辨活性空间、费米 Hamiltonian、Jordan–Wigner 映射、HF/Slater/Gaussian 参考态、UCC 系列、VQE 基态、SQD 选定子空间基态、中性 qEOM、粒子数与自旋诊断 |
 | 晶格与自旋 | 通用/线形/矩形/超立方晶格、Fermi–Hubbard、Ising、Heisenberg、守恒扇区、物理参考态与拟设、VQE 基态、占据/磁化/关联观测量 |
 | 振动系统 | 有限 modal 积分、稀疏振动算符、one-hot 映射、VSCF 参考、UVCC 系列、VQE 基态、modal 占据与严格 one-hot 泄漏诊断 |
 
@@ -50,7 +51,8 @@
 | --- | --- |
 | 相位估计 | 标准 QPE、迭代 QPE、Hamiltonian 相位估计 |
 | 振幅估计 | 标准 AE、迭代 AE、最大似然 AE、快速 AE |
-| 变分算法 | VQE、QAOA、电子结构基态与 qEOM、晶格基态、振动基态 |
+| 搜索 | Grover 搜索 |
+| 变分与选定子空间 | VQE、VQD、ADAPT-VQE、Sampling VQE、QAOA、PVQD 实时演化、VarQITE 虚时演化、VarQRTE 实时演化、电子结构 VQE 基态、SQD 与 qEOM、晶格基态、振动基态 |
 | Oracle 算法 | Deutsch–Jozsa、Bernstein–Vazirani、Simon |
 | 量子机器学习 | QBayesian、QSVR、VQR、PegasosQSVC、QuantumKernelTrainer |
 | 量子信息与协议 | CHSH、BB84 协议实验、量子隐形传态、超密编码 |

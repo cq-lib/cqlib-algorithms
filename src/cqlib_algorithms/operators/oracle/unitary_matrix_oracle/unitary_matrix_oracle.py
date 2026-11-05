@@ -25,16 +25,15 @@ from typing import final
 
 import numpy as np
 import numpy.typing as npt
-
 from cqlib import Circuit
 
-from ._synthesis import synthesize_unitary_matrix_circuit
-from ._synthesis._common import assert_square_unitary, num_qubits_from_matrix
-from ._validation import (
+from .._matrix_validation import (
     allclose_up_to_global_phase,
     normalize_atol,
     reconstruction_error_norm,
 )
+from ._synthesis import synthesize_unitary_matrix_circuit
+from ._synthesis._common import assert_square_unitary, num_qubits_from_matrix
 
 
 @final

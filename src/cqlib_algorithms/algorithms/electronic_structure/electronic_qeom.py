@@ -22,13 +22,17 @@ from typing import final
 import numpy as np
 from cqlib.qis import FermionToQubitMapper
 
+from ..._utils.hamiltonian import snapshot_real_hamiltonian
 from ...extension.chemistry.electronic import ElectronicEnergy
 from ...extension.chemistry.fermionic import (
     FermionicExcitation,
     generate_uccsd_excitations,
 )
-from ...extension.many_body._mapping_validation import snapshot_real_hamiltonian
-from ...protocols.estimator import Estimator, EstimatorRequest, EstimatorResult
+from ...protocols.estimator import (
+    Estimator,
+    EstimatorRequest,
+    require_estimator_results,
+)
 from ._qeom_operators import _hermitian_components, _qeom_operator_matrices
 from ._qeom_solver import _solve_qeom_pencil
 from .results import ElectronicGroundStateResult, ElectronicQEOMResult
@@ -228,16 +232,8 @@ class ElectronicQEOM:
                         )
                         destinations.append((matrix_index, row, column, is_imaginary))
 
-        estimates = self._estimator.run(requests)
-        if not isinstance(estimates, list):
-            raise TypeError("estimator must return a list of EstimatorResult values")
-        if len(estimates) != len(requests):
-            raise ValueError(
-                "estimator must return one result per qEOM component request"
-            )
+        estimates = require_estimator_results(self._estimator.run(requests), requests)
         for destination, estimate in zip(destinations, estimates, strict=True):
-            if not isinstance(estimate, EstimatorResult):
-                raise TypeError("estimator must return EstimatorResult values")
             matrix_index, row, column, is_imaginary = destination
             contribution = (
                 1j * estimate.expectation if is_imaginary else estimate.expectation

@@ -25,18 +25,15 @@ from typing import Protocol, cast
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
+from .._utils.numeric import copy_finite_real_array, validate_positive_integer
 from ..protocols.scalar_minimizer import ScalarMinimizer, ScalarMinimizerResult
-from ._ml_validation import (
-    _positive_integer,
-    _real_array,
-    _real_hyperparameter,
-)
+from ._ml_validation import _real_hyperparameter
 
 
 def configuration(
     max_evaluations: int, dimension: int, tolerance: float, initial_step: float
 ) -> tuple[float, float]:
-    _positive_integer(max_evaluations, "max_evaluations")
+    validate_positive_integer(max_evaluations, "max_evaluations")
     if max_evaluations < dimension + 2:
         raise ValueError(
             "max_evaluations must be at least the trainable dimension plus two"
@@ -81,7 +78,7 @@ def minimize(
         nonlocal calls
         if calls >= budget:
             raise ValueError("optimizer exceeded max_evaluations")
-        numeric = _real_array(candidate, "optimizer candidate", 1)
+        numeric = copy_finite_real_array(candidate, "optimizer candidate", 1)
         if numeric.shape != point.shape:
             raise ValueError("optimizer candidate has the wrong dimension")
         calls += 1
@@ -119,7 +116,7 @@ def minimize(
             options={"maxiter": budget, "tol": tolerance, "rhobeg": initial_step},
         ),
     )
-    optimum = _real_array(result.x, "optimizer result", 1)
+    optimum = copy_finite_real_array(result.x, "optimizer result", 1)
     if optimum.shape != point.shape:
         raise ValueError("optimizer result has the wrong dimension")
     if not isinstance(result.success, (bool, np.bool_)):
@@ -153,7 +150,7 @@ def minimize(
 
 
 def gram(values: ArrayLike, size: int) -> NDArray[np.float64]:
-    matrix = _real_array(values, "kernel matrix", 2)
+    matrix = copy_finite_real_array(values, "kernel matrix", 2)
     if matrix.shape != (size, size) or not np.array_equal(matrix, matrix.T):
         raise ValueError("kernel must return a symmetric square training matrix")
     if np.any(matrix < 0.0) or np.any(matrix > 1.0):

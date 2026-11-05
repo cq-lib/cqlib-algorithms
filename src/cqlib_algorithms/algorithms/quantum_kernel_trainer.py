@@ -25,6 +25,7 @@ import numpy as np
 from cqlib import Circuit
 from numpy.typing import ArrayLike, NDArray
 
+from .._utils.numeric import copy_finite_real_array, validate_positive_integer
 from ..operators.quantum_kernel import (
     BalancedKernelAlignmentLoss,
     FidelityQuantumKernel,
@@ -35,12 +36,7 @@ from ..protocols.sampler import Sampler
 from ..protocols.scalar_minimizer import ScalarMinimizer, ScalarMinimizerResult
 from . import _ml_common as common
 from . import _ml_validation as validation
-from ._ml_validation import (
-    _positive_integer,
-    _real_array,
-    _real_hyperparameter,
-    _targets,
-)
+from ._ml_validation import _real_hyperparameter, _targets
 
 
 @dataclass(frozen=True, slots=True)
@@ -71,7 +67,7 @@ class QuantumKernelTrainerResult:
             if not math.isfinite(float(value)):
                 raise ValueError(f"{name} must be finite")
             object.__setattr__(self, name, float(value))
-        matrix = _real_array(self.kernel_matrix, "kernel matrix", 2)
+        matrix = copy_finite_real_array(self.kernel_matrix, "kernel matrix", 2)
         if matrix.shape[0] != matrix.shape[1] or not np.array_equal(matrix, matrix.T):
             raise ValueError("kernel must return a symmetric square training matrix")
         snapshot: NDArray[np.float64] = np.frombuffer(
@@ -152,7 +148,7 @@ class QuantumKernelTrainer:
             )
         if not isinstance(quantum_kernel, TrainableQuantumKernel):
             raise TypeError("quantum_kernel must be a TrainableQuantumKernel")
-        _positive_integer(quantum_kernel.num_features, "num_features")
+        validate_positive_integer(quantum_kernel.num_features, "num_features")
         self._trainables = validation.names(
             quantum_kernel.trainable_parameters, "trainable_parameters"
         )
@@ -169,7 +165,7 @@ class QuantumKernelTrainer:
                 max_evaluations, len(self._trainables), tolerance, initial_step
             )
         else:
-            _positive_integer(max_evaluations, "max_evaluations")
+            validate_positive_integer(max_evaluations, "max_evaluations")
             self._tolerance = _real_hyperparameter(tolerance, "tolerance")
             self._initial_step = _real_hyperparameter(initial_step, "initial_step")
         self._max_evaluations = max_evaluations
@@ -303,7 +299,7 @@ class QuantumKernelTrainer:
             if isinstance(kernel, FidelityQuantumKernel):
                 matrix = common.gram(values, len(data))
             else:
-                matrix = _real_array(values, "kernel matrix", 2)
+                matrix = copy_finite_real_array(values, "kernel matrix", 2)
                 if matrix.shape != (len(data), len(data)) or not np.array_equal(
                     matrix, matrix.T
                 ):

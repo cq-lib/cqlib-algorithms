@@ -19,6 +19,7 @@ from typing import Literal, TypeAlias
 
 from ...extension.lattice import FermiHubbardModel, LatticeSystem
 from ...protocols.estimator import EstimatorResult
+from .._ground_state_support import snapshot_estimator_results
 from ..variational import VQEResult
 
 SpinAxis: TypeAlias = Literal["X", "Y", "Z"]
@@ -28,18 +29,6 @@ def _estimator_result(value: EstimatorResult, *, name: str) -> EstimatorResult:
     if not isinstance(value, EstimatorResult):
         raise TypeError(f"{name} must be an EstimatorResult")
     return value
-
-
-def _estimator_results(
-    values: tuple[EstimatorResult, ...],
-    *,
-    name: str,
-) -> tuple[EstimatorResult, ...]:
-    if not isinstance(values, tuple):
-        raise TypeError(f"{name} must be a tuple")
-    if any(not isinstance(value, EstimatorResult) for value in values):
-        raise TypeError(f"{name} must contain only EstimatorResult values")
-    return tuple(values)
 
 
 @dataclass(frozen=True, slots=True)
@@ -74,11 +63,11 @@ class FermionicLatticeMeasurements:
             "magnetization",
         ):
             _estimator_result(getattr(self, name), name=name)
-        sites = _estimator_results(
+        sites = snapshot_estimator_results(
             self.site_occupations,
             name="site_occupations",
         )
-        doubles = _estimator_results(
+        doubles = snapshot_estimator_results(
             self.double_occupations,
             name="double_occupations",
         )
@@ -152,7 +141,7 @@ class SpinLatticeMeasurements:
             name="total_magnetization",
         )
         _estimator_result(self.interaction_energy, name="interaction_energy")
-        sites = _estimator_results(
+        sites = snapshot_estimator_results(
             self.site_magnetizations,
             name="site_magnetizations",
         )

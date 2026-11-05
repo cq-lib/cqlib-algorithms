@@ -36,11 +36,20 @@ from .bernstein_vazirani import (
 from .chsh import CHSH, CHSHRequest, CHSHResult
 from .deutsch_jozsa import DeutschJozsa, DeutschJozsaRequest, DeutschJozsaResult
 from .electronic_structure import (
+    SQD,
     ElectronicGroundState,
     ElectronicGroundStateResult,
     ElectronicQEOM,
     ElectronicQEOMResult,
+    SQDCallback,
+    SQDIteration,
+    SQDResult,
+    SQDSubspaceResult,
+    SQDSubspaceSolver,
+    recover_sqd_configurations,
+    solve_sqd_subspace,
 )
+from .grover import Grover, GroverRequest, GroverResult
 from .lattice import LatticeGroundState, LatticeGroundStateResult
 from .pegasos_qsvc import PegasosQSVC
 from .phase_estimation import (
@@ -69,7 +78,29 @@ from .superdense_coding import (
     SuperdenseCodingRequest,
     SuperdenseCodingResult,
 )
-from .variational import QAOA, VQE, QAOAResult, VQAResult, VQEResult
+from .time_evolution import (
+    PVQD,
+    PVQDResult,
+    VarQITE,
+    VarQITEResult,
+    VarQRTE,
+    VarQRTEResult,
+)
+from .variational import (
+    QAOA,
+    VQD,
+    VQE,
+    AdaptVQE,
+    AdaptVQEResult,
+    AdaptVQETermination,
+    QAOAResult,
+    SamplingVQE,
+    SamplingVQEMeasurement,
+    SamplingVQEResult,
+    VQAResult,
+    VQDResult,
+    VQEResult,
+)
 from .vibration import (
     VibrationalGroundState,
     VibrationalGroundStateResult,
@@ -80,10 +111,16 @@ from .vqr import VQR
 __all__ = [
     "BB84",
     "CHSH",
+    "PVQD",
     "QAOA",
     "QSVR",
+    "SQD",
+    "VQD",
     "VQE",
     "VQR",
+    "AdaptVQE",
+    "AdaptVQEResult",
+    "AdaptVQETermination",
     "AmplitudeEstimationProblem",
     "BB84Basis",
     "BB84Request",
@@ -103,6 +140,9 @@ __all__ = [
     "FasterAmplitudeEstimation",
     "FasterAmplitudeEstimationRequest",
     "FasterAmplitudeEstimationResult",
+    "Grover",
+    "GroverRequest",
+    "GroverResult",
     "HamiltonianPhaseEstimation",
     "HamiltonianPhaseEstimationRequest",
     "HamiltonianPhaseEstimationResult",
@@ -117,6 +157,7 @@ __all__ = [
     "MaximumLikelihoodAmplitudeEstimation",
     "MaximumLikelihoodAmplitudeEstimationRequest",
     "MaximumLikelihoodAmplitudeEstimationResult",
+    "PVQDResult",
     "PegasosQSVC",
     "PhaseEstimation",
     "PhaseEstimationProblem",
@@ -132,6 +173,14 @@ __all__ = [
     "QuantumTeleportation",
     "QuantumTeleportationRequest",
     "QuantumTeleportationResult",
+    "SQDCallback",
+    "SQDIteration",
+    "SQDResult",
+    "SQDSubspaceResult",
+    "SQDSubspaceSolver",
+    "SamplingVQE",
+    "SamplingVQEMeasurement",
+    "SamplingVQEResult",
     "Simon",
     "SimonRequest",
     "SimonResult",
@@ -142,8 +191,15 @@ __all__ = [
     "SuperdenseCodingRequest",
     "SuperdenseCodingResult",
     "VQAResult",
+    "VQDResult",
     "VQEResult",
+    "VarQITE",
+    "VarQITEResult",
+    "VarQRTE",
+    "VarQRTEResult",
     "VibrationalGroundState",
     "VibrationalGroundStateResult",
     "VibrationalMeasurements",
+    "recover_sqd_configurations",
+    "solve_sqd_subspace",
 ]

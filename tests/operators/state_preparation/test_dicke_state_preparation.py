@@ -81,9 +81,9 @@ def test_dicke_state_preparation_matches_reference_state(
     assert preparation.num_parameters() == 0
     _assert_state_close_up_to_global_phase(actual, expected)
     assert len(_nonzero_indices(actual)) == math.comb(num_qubits, weight)
-    assert {
-        basis_index.bit_count() for basis_index in _nonzero_indices(actual)
-    } == {weight}
+    assert {basis_index.bit_count() for basis_index in _nonzero_indices(actual)} == {
+        weight
+    }
     np.testing.assert_allclose(
         np.sum(np.abs(actual) ** 2),
         1.0,
@@ -141,7 +141,7 @@ def test_dicke_state_preparation_rejects_invalid_qubit_count_type(
 def test_dicke_state_preparation_rejects_invalid_qubit_count_value(
     num_qubits: int,
 ) -> None:
-    with pytest.raises(ValueError, match="num_qubits must be at least 1"):
+    with pytest.raises(ValueError, match="num_qubits must be greater than zero"):
         DickeStatePreparation(num_qubits, 0)
 
 

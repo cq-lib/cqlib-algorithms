@@ -43,7 +43,7 @@ def test_rejects_non_integer_qubit_count(num_qubits: object) -> None:
 
 @pytest.mark.parametrize("num_qubits", [0, -1])
 def test_rejects_non_positive_qubit_count(num_qubits: int) -> None:
-    with pytest.raises(ValueError, match="at least 1"):
+    with pytest.raises(ValueError, match="greater than zero"):
         BasisStateInitialization(num_qubits, 0)
 
 

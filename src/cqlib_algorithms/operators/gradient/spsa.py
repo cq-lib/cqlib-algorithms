@@ -156,6 +156,7 @@ class SPSAGradient(Gradient):
                         base.observable,
                         shifted,
                         base.shots,
+                        base.seed,
                     )
                 )
                 owners.append((position, int(sign)))
