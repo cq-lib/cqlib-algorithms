@@ -588,7 +588,7 @@ def test_initial_mapping_order_does_not_change_ansatz_parameter_order() -> None:
 def test_noncommuting_hamiltonian_matches_independent_matrix_evolution() -> None:
     algorithm = _pvqd(
         UniversalOneQubitAnsatz(),
-        COBYLAOptimizer(maxiter=500, rhobeg=0.4, tolerance=1e-8),
+        COBYLAOptimizer(maxiter=600, rhobeg=0.4, tolerance=1e-8),
         strategy=EvolutionStrategy.trotter(TrotterMode.second_order(), 16),
     )
     result = algorithm.evolve(
@@ -618,7 +618,7 @@ def test_paper_transverse_field_ising_multistep_benchmark() -> None:
     total_time = time_step * num_timesteps
     algorithm = _pvqd(
         ansatz,
-        COBYLAOptimizer(maxiter=1_200, rhobeg=0.15, tolerance=1e-8),
+        COBYLAOptimizer(maxiter=3_000, rhobeg=0.02, tolerance=1e-8),
         estimator=StatevectorEstimator(),
         strategy=EvolutionStrategy.trotter(TrotterMode.second_order(), 8),
     )

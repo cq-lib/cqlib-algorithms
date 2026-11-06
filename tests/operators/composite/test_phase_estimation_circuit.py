@@ -156,6 +156,35 @@ def test_component_rejects_unbound_and_measured_unitaries() -> None:
         PhaseEstimationCircuit(measured, 2)
 
 
+@pytest.mark.reference
+def test_inverse_configuration_builds_the_adjoint_of_the_forward_circuit() -> None:
+    unitary = Circuit(1)
+    unitary.rx(0, 0.7)
+
+    forward = PhaseEstimationCircuit(unitary, 3, approximation_degree=1)
+    adjoint = PhaseEstimationCircuit(
+        unitary, 3, approximation_degree=1, inverse=True
+    )
+
+    np.testing.assert_allclose(
+        adjoint.build_circuit().to_matrix(),
+        forward.build_circuit().to_matrix().conj().T,
+        rtol=0.0,
+        atol=1e-12,
+    )
+
+
+def test_component_reports_inverse_configuration() -> None:
+    assert PhaseEstimationCircuit(Circuit(1), 2).inverse is False
+    assert PhaseEstimationCircuit(Circuit(1), 2, inverse=True).inverse is True
+
+
+@pytest.mark.parametrize("value", [1, "yes", None])
+def test_component_rejects_non_boolean_inverse(value: object) -> None:
+    with pytest.raises(TypeError, match="must be a boolean"):
+        PhaseEstimationCircuit(Circuit(1), 2, inverse=value)  # type: ignore[arg-type]
+
+
 def test_dense_memory_limit_is_checked_before_matrix_construction() -> None:
     component = PhaseEstimationCircuit(Circuit(11), 1)
 

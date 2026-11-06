@@ -50,6 +50,7 @@ from .electronic_structure import (
     solve_sqd_subspace,
 )
 from .grover import Grover, GroverRequest, GroverResult
+from .hhl import HHL, HHLComponents, HHLRequest, HHLResult, LinearSystemProblem
 from .lattice import LatticeGroundState, LatticeGroundStateResult
 from .pegasos_qsvc import PegasosQSVC
 from .phase_estimation import (
@@ -111,6 +112,7 @@ from .vqr import VQR
 __all__ = [
     "BB84",
     "CHSH",
+    "HHL",
     "PVQD",
     "QAOA",
     "QSVR",
@@ -143,6 +145,9 @@ __all__ = [
     "Grover",
     "GroverRequest",
     "GroverResult",
+    "HHLComponents",
+    "HHLRequest",
+    "HHLResult",
     "HamiltonianPhaseEstimation",
     "HamiltonianPhaseEstimationRequest",
     "HamiltonianPhaseEstimationResult",
@@ -154,6 +159,7 @@ __all__ = [
     "IterativePhaseEstimationResult",
     "LatticeGroundState",
     "LatticeGroundStateResult",
+    "LinearSystemProblem",
     "MaximumLikelihoodAmplitudeEstimation",
     "MaximumLikelihoodAmplitudeEstimationRequest",
     "MaximumLikelihoodAmplitudeEstimationResult",
