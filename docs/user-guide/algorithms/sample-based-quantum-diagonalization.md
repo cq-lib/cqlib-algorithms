@@ -124,7 +124,7 @@ SQD 依次执行：
 import numpy as np
 
 from cqlib_algorithms import SQD
-from cqlib_algorithms.extension.chemistry import (
+from cqlib_algorithms.extension.electronic_structure import (
     ElectronicIntegrals,
     ElectronicOccupation,
     ElectronicSystem,

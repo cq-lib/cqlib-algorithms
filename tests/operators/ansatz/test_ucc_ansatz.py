@@ -24,7 +24,7 @@ from cqlib.qis import (
     PauliString,
 )
 
-from cqlib_algorithms.extension.chemistry import FermionicExcitation
+from cqlib_algorithms.extension.electronic_structure import FermionicExcitation
 from cqlib_algorithms.operators.ansatz import UCCAnsatz
 from cqlib_algorithms.operators.estimator import StatevectorEstimator
 from cqlib_algorithms.operators.gradient import ParameterShiftGradient

@@ -10,7 +10,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Validated electronic-system input for chemistry algorithms."""
+"""Validated electronic-system input for electronic-structure algorithms."""
 
 from __future__ import annotations
 

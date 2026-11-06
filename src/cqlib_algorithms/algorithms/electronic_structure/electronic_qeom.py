@@ -23,8 +23,8 @@ import numpy as np
 from cqlib.qis import FermionToQubitMapper
 
 from ..._utils.hamiltonian import snapshot_real_hamiltonian
-from ...extension.chemistry.electronic import ElectronicEnergy
-from ...extension.chemistry.fermionic import (
+from ...extension.electronic_structure.electronic import ElectronicEnergy
+from ...extension.electronic_structure.fermionic import (
     FermionicExcitation,
     generate_uccsd_excitations,
 )

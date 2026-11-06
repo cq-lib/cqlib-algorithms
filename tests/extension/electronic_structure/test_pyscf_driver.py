@@ -17,12 +17,12 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from cqlib_algorithms.extension.chemistry import (
+from cqlib_algorithms.extension.electronic_structure import (
     Atom,
     MolecularSpecification,
     PySCFDriver,
 )
-from cqlib_algorithms.extension.chemistry.molecular import (
+from cqlib_algorithms.extension.electronic_structure.molecular import (
     pyscf_adapter as driver_module,
 )
 

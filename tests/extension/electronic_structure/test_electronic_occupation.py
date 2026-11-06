@@ -16,7 +16,7 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-from cqlib_algorithms.extension.chemistry import ElectronicOccupation
+from cqlib_algorithms.extension.electronic_structure import ElectronicOccupation
 
 
 @pytest.mark.parametrize(

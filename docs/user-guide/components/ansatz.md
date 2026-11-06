@@ -194,7 +194,7 @@ U_k(theta_k) = exp(-i * theta_k * G_k)
 会被拒绝，而不是隐式构造无参数参考态线路。
 
 ```python
-from cqlib_algorithms.extension.chemistry import ElectronicOccupation
+from cqlib_algorithms.extension.electronic_structure import ElectronicOccupation
 from cqlib_algorithms.operators import UCCSDAnsatz
 
 occupation = ElectronicOccupation.closed_shell(2, 2)
@@ -266,7 +266,7 @@ repetitions。默认初态为使用同一映射器构造的闭壳层 Hartree--Fo
 初态仍须满足 `UCCAnsatz` 的宽度、无活跃参数和静态可逆约束。
 
 ```python
-from cqlib_algorithms.extension.chemistry import ElectronicOccupation
+from cqlib_algorithms.extension.electronic_structure import ElectronicOccupation
 from cqlib_algorithms.operators import PUCCDAnsatz, PUCCSDAnsatz
 
 occupation = ElectronicOccupation.closed_shell(2, 2)

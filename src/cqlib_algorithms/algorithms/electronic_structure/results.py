@@ -23,8 +23,8 @@ import numpy as np
 from cqlib.qis import FermionToQubitMapper
 from numpy.typing import NDArray
 
-from ...extension.chemistry.electronic.system import ElectronicSystem
-from ...extension.chemistry.fermionic import FermionicExcitation
+from ...extension.electronic_structure.electronic.system import ElectronicSystem
+from ...extension.electronic_structure.fermionic import FermionicExcitation
 from ...protocols.estimator import EstimatorResult
 from ..variational import VQEResult
 

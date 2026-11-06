@@ -19,7 +19,7 @@ import math
 import numpy as np
 import pytest
 
-from cqlib_algorithms.extension.chemistry import BogoliubovTransform
+from cqlib_algorithms.extension.electronic_structure import BogoliubovTransform
 
 
 def _ladders(num_modes: int) -> tuple[list[np.ndarray], list[np.ndarray]]:

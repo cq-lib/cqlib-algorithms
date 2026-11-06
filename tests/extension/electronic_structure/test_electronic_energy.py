@@ -22,7 +22,10 @@ from cqlib.qis import (
     Phase,
 )
 
-from cqlib_algorithms.extension.chemistry import ElectronicEnergy, ElectronicIntegrals
+from cqlib_algorithms.extension.electronic_structure import (
+    ElectronicEnergy,
+    ElectronicIntegrals,
+)
 
 
 def _apply_ladder(state: int, mode: int, *, create: bool) -> tuple[int, float] | None:

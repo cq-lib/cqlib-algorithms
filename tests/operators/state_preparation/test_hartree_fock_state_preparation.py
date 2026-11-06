@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 from cqlib.qis import JordanWignerMapper
 
-from cqlib_algorithms.extension.chemistry import (
+from cqlib_algorithms.extension.electronic_structure import (
     ElectronicEnergy,
     ElectronicIntegrals,
     ElectronicOccupation,

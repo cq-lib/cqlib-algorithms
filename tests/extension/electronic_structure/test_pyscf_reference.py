@@ -21,7 +21,7 @@ pyscf = pytest.importorskip("pyscf")
 from pyscf import fci, gto, mcscf, mp, scf
 
 from cqlib_algorithms.algorithms import VQE, ElectronicGroundState, ElectronicQEOM
-from cqlib_algorithms.extension.chemistry import (
+from cqlib_algorithms.extension.electronic_structure import (
     ActiveSpace,
     AngularMomentum,
     Atom,

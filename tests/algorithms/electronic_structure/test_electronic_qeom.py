@@ -39,7 +39,7 @@ from cqlib_algorithms.algorithms.electronic_structure.electronic_qeom import (
     _structure_residuals,
 )
 from cqlib_algorithms.algorithms.variational import VQEResult
-from cqlib_algorithms.extension.chemistry import (
+from cqlib_algorithms.extension.electronic_structure import (
     ElectronicEnergy,
     ElectronicIntegrals,
     ElectronicOccupation,

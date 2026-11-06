@@ -17,7 +17,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from cqlib_algorithms.extension.chemistry import (
+from cqlib_algorithms.extension.electronic_structure import (
     ActiveSpace,
     Atom,
     ElectronicOccupation,
@@ -30,7 +30,7 @@ from cqlib_algorithms.extension.chemistry import (
     hartree_fock_initial_point,
     mp2_initial_point,
 )
-from cqlib_algorithms.extension.chemistry.molecular import (
+from cqlib_algorithms.extension.electronic_structure.molecular import (
     pyscf_adapter as driver_module,
 )
 

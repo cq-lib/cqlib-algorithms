@@ -10,7 +10,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Numerical validation helpers for immutable chemistry data."""
+"""Numerical validation helpers for immutable electronic-structure data."""
 
 from __future__ import annotations
 

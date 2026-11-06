@@ -24,7 +24,7 @@ from cqlib_algorithms.algorithms import (
     ElectronicGroundState,
     ElectronicGroundStateResult,
 )
-from cqlib_algorithms.extension.chemistry import (
+from cqlib_algorithms.extension.electronic_structure import (
     ElectronicEnergy,
     ElectronicIntegrals,
     ElectronicOccupation,

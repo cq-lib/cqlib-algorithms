@@ -21,7 +21,7 @@ from numbers import Real
 
 import numpy as np
 
-from ....extension.chemistry.electronic import ElectronicSystem
+from ....extension.electronic_structure.electronic import ElectronicSystem
 from ....protocols.sampler import spawn_seeds
 from .results import _validate_configuration
 

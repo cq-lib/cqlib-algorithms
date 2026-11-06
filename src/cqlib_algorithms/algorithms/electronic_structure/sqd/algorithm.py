@@ -34,7 +34,10 @@ from ...._utils.numeric import (
     normalize_nonnegative_real,
     validate_positive_integer,
 )
-from ....extension.chemistry.electronic import ElectronicEnergy, ElectronicSystem
+from ....extension.electronic_structure.electronic import (
+    ElectronicEnergy,
+    ElectronicSystem,
+)
 from ....protocols.sampler import (
     Sampler,
     SamplerRequest,

@@ -55,7 +55,7 @@ Jordan–Wigner；自定义 mapper 必须同时用于 Hamiltonian、初态、拟
 import numpy as np
 
 from cqlib_algorithms import ElectronicGroundState
-from cqlib_algorithms.extension.chemistry import (
+from cqlib_algorithms.extension.electronic_structure import (
     ElectronicIntegrals,
     ElectronicOccupation,
     ElectronicSystem,

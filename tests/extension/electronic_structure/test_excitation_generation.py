@@ -16,7 +16,7 @@ from math import comb
 
 import pytest
 
-from cqlib_algorithms.extension.chemistry import (
+from cqlib_algorithms.extension.electronic_structure import (
     ElectronicOccupation,
     FermionicExcitation,
     generate_double_excitations,

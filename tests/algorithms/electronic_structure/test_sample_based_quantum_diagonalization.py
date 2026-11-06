@@ -39,7 +39,7 @@ from cqlib_algorithms.algorithms.electronic_structure.sqd import algorithm as sq
 from cqlib_algorithms.algorithms.electronic_structure.sqd import (
     subspace as sqd_subspace_module,
 )
-from cqlib_algorithms.extension.chemistry import (
+from cqlib_algorithms.extension.electronic_structure import (
     AngularMomentum,
     ElectronicEnergy,
     ElectronicIntegrals,

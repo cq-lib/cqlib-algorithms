@@ -18,7 +18,7 @@ from cqlib.qis import (
     OccupationStateMapper,
 )
 
-from ...extension.chemistry import ElectronicOccupation
+from ...extension.electronic_structure import ElectronicOccupation
 from ...protocols.state_preparation import StatePreparation
 from ..state_preparation.hartree_fock_state_preparation import (
     HartreeFockStatePreparation,

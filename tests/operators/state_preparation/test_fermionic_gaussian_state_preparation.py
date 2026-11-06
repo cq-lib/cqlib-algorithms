@@ -17,7 +17,9 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from cqlib_algorithms.extension.chemistry import QuadraticFermionicHamiltonian
+from cqlib_algorithms.extension.electronic_structure import (
+    QuadraticFermionicHamiltonian,
+)
 from cqlib_algorithms.operators.state_preparation import (
     FermionicGaussianStatePreparation,
     SlaterDeterminantStatePreparation,

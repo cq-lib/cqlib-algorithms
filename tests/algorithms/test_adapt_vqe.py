@@ -26,7 +26,7 @@ from cqlib_algorithms import AdaptVQE, AdaptVQEResult, AdaptVQETermination
 from cqlib_algorithms.algorithms.variational.adapt_vqe import (
     _commutator_observable,
 )
-from cqlib_algorithms.extension.chemistry import FermionicExcitation
+from cqlib_algorithms.extension.electronic_structure import FermionicExcitation
 from cqlib_algorithms.operators.estimator import StatevectorEstimator
 from cqlib_algorithms.operators.optimizer import LBFGSBOptimizer
 from cqlib_algorithms.operators.state_preparation import (

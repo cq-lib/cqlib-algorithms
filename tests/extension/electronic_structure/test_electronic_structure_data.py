@@ -10,12 +10,12 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Tests for immutable chemistry input and driver data."""
+"""Tests for immutable electronic-structure input and driver data."""
 
 import numpy as np
 import pytest
 
-from cqlib_algorithms.extension.chemistry import (
+from cqlib_algorithms.extension.electronic_structure import (
     Atom,
     ElectronicIntegrals,
     ElectronicStructureData,

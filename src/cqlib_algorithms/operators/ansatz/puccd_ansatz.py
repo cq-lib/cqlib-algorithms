@@ -18,7 +18,7 @@ from typing import final
 
 from cqlib.qis import FermionToQubitMapper
 
-from ...extension.chemistry import (
+from ...extension.electronic_structure import (
     ElectronicOccupation,
     generate_paired_double_excitations,
 )

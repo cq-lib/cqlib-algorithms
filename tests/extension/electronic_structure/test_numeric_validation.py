@@ -10,7 +10,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Behavior and placement tests for chemistry numerical helpers."""
+"""Behavior and placement tests for electronic-structure numeric helpers."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from cqlib_algorithms.extension.chemistry._numeric import (
+from cqlib_algorithms.extension.electronic_structure._numeric import (
     immutable_complex_array,
     immutable_real_array,
     validate_finite_real,
@@ -27,7 +27,11 @@ from cqlib_algorithms.extension.chemistry._numeric import (
 )
 
 _CHEMISTRY_SOURCE = (
-    Path(__file__).parents[3] / "src" / "cqlib_algorithms" / "extension" / "chemistry"
+    Path(__file__).parents[3]
+    / "src"
+    / "cqlib_algorithms"
+    / "extension"
+    / "electronic_structure"
 )
 
 

@@ -23,7 +23,10 @@ from numpy.typing import NDArray
 from scipy.sparse import coo_matrix, csr_matrix  # type: ignore[import-untyped]
 from scipy.sparse.linalg import eigsh  # type: ignore[import-untyped]
 
-from ....extension.chemistry.electronic import ElectronicEnergy, ElectronicSystem
+from ....extension.electronic_structure.electronic import (
+    ElectronicEnergy,
+    ElectronicSystem,
+)
 from .recovery import (
     _combine_spin_strings,
     _configuration_spin_strings,

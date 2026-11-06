@@ -25,7 +25,10 @@ from ..._utils.hamiltonian import (
     snapshot_nonzero_hermitian_hamiltonian,
 )
 from ..._utils.state_preparation import snapshot_fixed_initial_state
-from ...extension.chemistry import FermionicExcitation, GroupedFermionicGenerator
+from ...extension.electronic_structure import (
+    FermionicExcitation,
+    GroupedFermionicGenerator,
+)
 from ...protocols.state_preparation import StatePreparation
 from ._ordered_evolution import (
     build_fixed_reference_evolution,

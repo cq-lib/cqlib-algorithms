@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 from cqlib.qis import JordanWignerMapper
 
-from cqlib_algorithms.extension.chemistry import FermionicExcitation
+from cqlib_algorithms.extension.electronic_structure import FermionicExcitation
 
 
 def _apply_ladder(state: int, mode: int, *, create: bool) -> tuple[int, float] | None:

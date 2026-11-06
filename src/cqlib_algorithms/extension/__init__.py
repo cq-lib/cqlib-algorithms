@@ -16,8 +16,8 @@ from importlib import import_module
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from . import chemistry, lattice, many_body, vibration
-    from .chemistry import (
+    from . import electronic_structure, lattice, many_body, vibration
+    from .electronic_structure import (
         ActiveSpace,
         ActiveSpaceResult,
         AngularMomentum,
@@ -52,57 +52,72 @@ if TYPE_CHECKING:
     )
 
 _EXPORTS: dict[str, tuple[str, str | None]] = {
-    "chemistry": (".chemistry", None),
+    "electronic_structure": (".electronic_structure", None),
     "lattice": (".lattice", None),
     "many_body": (".many_body", None),
     "vibration": (".vibration", None),
-    "ActiveSpace": (".chemistry", "ActiveSpace"),
-    "ActiveSpaceResult": (".chemistry", "ActiveSpaceResult"),
-    "AngularMomentum": (".chemistry", "AngularMomentum"),
-    "Atom": (".chemistry", "Atom"),
-    "BogoliubovTransform": (".chemistry", "BogoliubovTransform"),
-    "ElectronicEnergy": (".chemistry", "ElectronicEnergy"),
-    "ElectronicIntegrals": (".chemistry", "ElectronicIntegrals"),
-    "ElectronicOccupation": (".chemistry", "ElectronicOccupation"),
-    "ElectronicStructureData": (".chemistry", "ElectronicStructureData"),
-    "ElectronicSystem": (".chemistry", "ElectronicSystem"),
-    "FermionicExcitation": (".chemistry", "FermionicExcitation"),
-    "GroupedFermionicGenerator": (".chemistry", "GroupedFermionicGenerator"),
-    "Magnetization": (".chemistry", "Magnetization"),
-    "MolecularSpecification": (".chemistry", "MolecularSpecification"),
-    "ParticleNumber": (".chemistry", "ParticleNumber"),
-    "PySCFDriver": (".chemistry", "PySCFDriver"),
+    "ActiveSpace": (".electronic_structure", "ActiveSpace"),
+    "ActiveSpaceResult": (".electronic_structure", "ActiveSpaceResult"),
+    "AngularMomentum": (".electronic_structure", "AngularMomentum"),
+    "Atom": (".electronic_structure", "Atom"),
+    "BogoliubovTransform": (".electronic_structure", "BogoliubovTransform"),
+    "ElectronicEnergy": (".electronic_structure", "ElectronicEnergy"),
+    "ElectronicIntegrals": (".electronic_structure", "ElectronicIntegrals"),
+    "ElectronicOccupation": (".electronic_structure", "ElectronicOccupation"),
+    "ElectronicStructureData": (".electronic_structure", "ElectronicStructureData"),
+    "ElectronicSystem": (".electronic_structure", "ElectronicSystem"),
+    "FermionicExcitation": (".electronic_structure", "FermionicExcitation"),
+    "GroupedFermionicGenerator": (".electronic_structure", "GroupedFermionicGenerator"),
+    "Magnetization": (".electronic_structure", "Magnetization"),
+    "MolecularSpecification": (".electronic_structure", "MolecularSpecification"),
+    "ParticleNumber": (".electronic_structure", "ParticleNumber"),
+    "PySCFDriver": (".electronic_structure", "PySCFDriver"),
     "QuadraticFermionicHamiltonian": (
-        ".chemistry",
+        ".electronic_structure",
         "QuadraticFermionicHamiltonian",
     ),
-    "SCFReference": (".chemistry", "SCFReference"),
-    "SpinResolvedActiveSpace": (".chemistry", "SpinResolvedActiveSpace"),
+    "SCFReference": (".electronic_structure", "SCFReference"),
+    "SpinResolvedActiveSpace": (".electronic_structure", "SpinResolvedActiveSpace"),
     "SpinResolvedActiveSpaceResult": (
-        ".chemistry",
+        ".electronic_structure",
         "SpinResolvedActiveSpaceResult",
     ),
     "SpinResolvedElectronicIntegrals": (
-        ".chemistry",
+        ".electronic_structure",
         "SpinResolvedElectronicIntegrals",
     ),
     "SpinResolvedElectronicStructureData": (
-        ".chemistry",
+        ".electronic_structure",
         "SpinResolvedElectronicStructureData",
     ),
-    "generate_double_excitations": (".chemistry", "generate_double_excitations"),
+    "generate_double_excitations": (
+        ".electronic_structure",
+        "generate_double_excitations",
+    ),
     "generate_paired_double_excitations": (
-        ".chemistry",
+        ".electronic_structure",
         "generate_paired_double_excitations",
     ),
-    "generate_puccsd_generators": (".chemistry", "generate_puccsd_generators"),
-    "generate_single_excitations": (".chemistry", "generate_single_excitations"),
-    "generate_uccsd_excitations": (".chemistry", "generate_uccsd_excitations"),
-    "hartree_fock_initial_point": (".chemistry", "hartree_fock_initial_point"),
-    "mp2_initial_point": (".chemistry", "mp2_initial_point"),
-    "transform_active_space": (".chemistry", "transform_active_space"),
+    "generate_puccsd_generators": (
+        ".electronic_structure",
+        "generate_puccsd_generators",
+    ),
+    "generate_single_excitations": (
+        ".electronic_structure",
+        "generate_single_excitations",
+    ),
+    "generate_uccsd_excitations": (
+        ".electronic_structure",
+        "generate_uccsd_excitations",
+    ),
+    "hartree_fock_initial_point": (
+        ".electronic_structure",
+        "hartree_fock_initial_point",
+    ),
+    "mp2_initial_point": (".electronic_structure", "mp2_initial_point"),
+    "transform_active_space": (".electronic_structure", "transform_active_space"),
     "transform_spin_resolved_active_space": (
-        ".chemistry",
+        ".electronic_structure",
         "transform_spin_resolved_active_space",
     ),
 }
@@ -110,7 +125,7 @@ _EXPORTS: dict[str, tuple[str, str | None]] = {
 # Domain namespaces intentionally precede compatibility aliases, whose prior
 # relative order remains stable for callers inspecting the public facade.
 __all__ = [  # noqa: RUF022
-    "chemistry",
+    "electronic_structure",
     "lattice",
     "many_body",
     "vibration",

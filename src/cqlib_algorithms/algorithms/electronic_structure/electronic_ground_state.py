@@ -19,7 +19,7 @@ from typing import final
 
 from cqlib.qis import FermionToQubitMapper, JordanWignerMapper
 
-from ...extension.chemistry.electronic import (
+from ...extension.electronic_structure.electronic import (
     AngularMomentum,
     ElectronicEnergy,
     ElectronicSystem,

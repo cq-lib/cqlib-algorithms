@@ -23,7 +23,7 @@ from cqlib.circuit import Circuit
 from numpy.typing import ArrayLike
 
 from ..._utils.parameters import validate_parameter_prefix
-from ...extension.chemistry import BogoliubovTransform
+from ...extension.electronic_structure import BogoliubovTransform
 from ...protocols.state_preparation import StatePreparation
 from .basis_state_initialization import BasisStateInitialization
 from .slater_determinant_state_preparation import (

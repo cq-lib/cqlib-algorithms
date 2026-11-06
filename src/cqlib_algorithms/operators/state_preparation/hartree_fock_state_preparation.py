@@ -19,7 +19,7 @@ from typing import final
 from cqlib.circuit import Circuit
 from cqlib.qis import JordanWignerMapper, OccupationStateMapper
 
-from ...extension.chemistry import ElectronicOccupation
+from ...extension.electronic_structure import ElectronicOccupation
 from ...protocols.state_preparation import StatePreparation
 from .basis_state_initialization import BasisStateInitialization
 

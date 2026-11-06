@@ -18,7 +18,7 @@ from collections.abc import Sequence
 
 from cqlib.qis import FermionicLadder, FermionicOp
 
-from ...extension.chemistry.fermionic import FermionicExcitation
+from ...extension.electronic_structure.fermionic import FermionicExcitation
 
 
 def _from_weighted_operators(

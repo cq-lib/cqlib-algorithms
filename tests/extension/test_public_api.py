@@ -38,7 +38,7 @@ import sys
 import cqlib_algorithms.extension
 
 domains = [
-    "cqlib_algorithms.extension.chemistry",
+    "cqlib_algorithms.extension.electronic_structure",
     "cqlib_algorithms.extension.lattice",
     "cqlib_algorithms.extension.many_body",
     "cqlib_algorithms.extension.vibration",
@@ -57,10 +57,15 @@ import importlib
 import json
 
 import cqlib_algorithms.extension as extension
-from cqlib_algorithms.extension import chemistry, lattice, many_body, vibration
+from cqlib_algorithms.extension import (
+    electronic_structure,
+    lattice,
+    many_body,
+    vibration,
+)
 
-domain_modules = [chemistry, lattice, many_body, vibration]
-domain_names = ["chemistry", "lattice", "many_body", "vibration"]
+domain_modules = [electronic_structure, lattice, many_body, vibration]
+domain_names = ["electronic_structure", "lattice", "many_body", "vibration"]
 namespace = {}
 exec("from cqlib_algorithms.extension import *", namespace)
 
@@ -74,9 +79,11 @@ print(
     json.dumps(
         {
             "aliases": [
-                extension.ActiveSpace is chemistry.ActiveSpace,
-                extension.BogoliubovTransform is chemistry.BogoliubovTransform,
-                extension.transform_active_space is chemistry.transform_active_space,
+                extension.ActiveSpace is electronic_structure.ActiveSpace,
+                extension.BogoliubovTransform
+                is electronic_structure.BogoliubovTransform,
+                extension.transform_active_space
+                is electronic_structure.transform_active_space,
             ],
             "cached": [
                 extension.__dict__[name] is module
