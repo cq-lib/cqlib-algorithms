@@ -64,6 +64,7 @@ from __future__ import annotations
 
 import itertools
 import math
+import warnings
 from collections.abc import Sequence
 
 import numpy as np
@@ -95,6 +96,12 @@ _FEASIBILITY_TOLERANCE = 1e-7
 # accuracy of random targets degrades monotonically once the peel starts
 # accepting a wrong spectral factor, so ``1e-10`` is the empirical optimum.
 _PEEL_TOLERANCE = 1e-10
+
+# Degree from which the conjugate-root pairing of ``chebroots`` starts to
+# degrade.  The solver keeps running, but the regime is flagged with a
+# ``UserWarning`` because a valid target can then be reported as having no
+# QSP-decomposable spectral factor.
+_CONJUGATE_PAIRING_DEGREE_LIMIT = 16
 
 _LaurentSeries = dict[int, npt.NDArray[np.complex128]]
 r"""Laurent coefficients ``{j: C_j}`` of ``F(t) = \sum_j C_j t^j``."""
@@ -370,9 +377,22 @@ def _complement_candidates(coefficients: np.ndarray) -> list[np.ndarray]:
             split into the expected number of conjugate pairs, or if the leading
             coefficient of ``h`` is numerically non-positive.
 
+    Warns:
+        UserWarning: If the degree reaches :data:`_CONJUGATE_PAIRING_DEGREE_LIMIT`, at
+            which the conjugate-root pairing becomes numerically unreliable.
+
     """
     coefficients = np.asarray(coefficients, dtype=np.complex128)
     degree = coefficients.size - 1
+    if degree >= _CONJUGATE_PAIRING_DEGREE_LIMIT:
+        warnings.warn(
+            "the Haah spectral factorisation is numerically unreliable from "
+            f"degree {_CONJUGATE_PAIRING_DEGREE_LIMIT} onwards; at degree "
+            f"{degree} the conjugate-root pairing of chebroots may fail and "
+            "report a missing QSP-decomposable factor for a valid target",
+            UserWarning,
+            stacklevel=2,
+        )
 
     abs_squared = _cheb_mul(coefficients, np.conj(coefficients))
     magnitude = max(1.0, float(np.max(np.abs(np.real(abs_squared)))))
@@ -641,6 +661,11 @@ def solve_haah_phases(
             spectral factor is QSP decomposable.  This is the deterministic
             analogue of the non-convergence failure of the iterative solvers and
             signals an ill-conditioned factorisation rather than a bad argument.
+
+    Warns:
+        UserWarning: If the degree reaches :data:`_CONJUGATE_PAIRING_DEGREE_LIMIT`, at
+            which the conjugate-root pairing of the spectral factorisation becomes
+            numerically unreliable and a valid target may be rejected.
 
     Note:
         The target must follow Corollary 8 of Ref. [2].  The four conditions are

@@ -233,40 +233,40 @@ def refine_degenerate_eigenbasis(
     *,
     atol: float,
 ) -> npt.NDArray[np.complex128]:
-    """Return an orthonormal eigenbasis refined inside near-degenerate clusters."""
+    r"""Return an orthonormal eigenbasis of a normal matrix.
 
-    _ = matrix
+    For a normal ``A`` with eigenpair decomposition ``A V = V Lambda``, the
+    thin QR factorisation ``V = Q R`` gives ``Q^H A Q = R Lambda R^-1``.
+    That product is upper triangular, and a unitary similarity preserves
+    normality, so ``Q^H A Q`` is a normal triangular matrix and is therefore
+    diagonal.  Hence the orthonormal factor ``Q`` is an exact eigenbasis and
+    column ``i`` carries the eigenvalue ``Lambda[i]``.
+
+    Applying one QR factorisation to the whole ordered basis is what makes
+    this exact: an eigenvector matrix that is merely close to orthogonal still
+    yields ``R = I + E`` with small ``E``, and the ``E Lambda E^-1`` part of
+    ``R Lambda R^-1`` cancels to the rounding floor.  Clustering the basis by
+    eigenvalue gap before factorising instead leaves the residual at the
+    orthogonality defect of the raw basis, which was the failure mode for
+    tightly grouped eigenvalues.
+
+    Args:
+        matrix: Matrix whose eigenvectors were computed, retained for a
+            signature-stable call site.
+        raw_eigenvalues: Eigenvalues returned by the dense eigensolver.
+        raw_eigenvectors: Eigenvectors returned by the dense eigensolver.
+        atol: Diagonalisation tolerance of the caller, retained for a
+            signature-stable call site.
+
+    Returns:
+        Complex orthonormal eigenbasis ordered by increasing eigenphase.
+    """
+
+    del matrix, atol
     order = np.argsort(np.angle(raw_eigenvalues))
-    eigenvalues = np.asarray(raw_eigenvalues[order], dtype=np.complex128)
-    eigenvectors = np.asarray(raw_eigenvectors[:, order], dtype=np.complex128)
-
-    orthonormal_columns: list[npt.NDArray[np.complex128]] = []
-    cluster_tolerance = max(atol * 10.0, 1e-10)
-    start = 0
-    while start < eigenvalues.size:
-        stop = start + 1
-        while (
-            stop < eigenvalues.size
-            and abs(eigenvalues[stop] - eigenvalues[start]) <= cluster_tolerance
-        ):
-            stop += 1
-
-        cluster = eigenvectors[:, start:stop]
-        q_factor, _ = np.linalg.qr(cluster)
-        # Optional refinement kept disabled for now because it noticeably slows
-        # down recursive Block-ZXZ synthesis on dilation-structured inputs.
-        # projected_cluster = q_factor.conj().T @ matrix @ q_factor
-        # _, local_vectors = np.linalg.eig(projected_cluster)
-        # refined_cluster = q_factor @ local_vectors
-        # refined_cluster, _ = np.linalg.qr(refined_cluster)
-        # q_factor = refined_cluster
-        for column in range(q_factor.shape[1]):
-            orthonormal_columns.append(
-                np.asarray(q_factor[:, column], dtype=np.complex128)
-            )
-        start = stop
-
-    return np.column_stack(orthonormal_columns).astype(np.complex128)
+    ordered_basis = np.asarray(raw_eigenvectors[:, order], dtype=np.complex128)
+    orthonormal_basis, _ = np.linalg.qr(ordered_basis)
+    return np.asarray(orthonormal_basis, dtype=np.complex128)
 
 
 def num_qubits_from_matrix(

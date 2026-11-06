@@ -23,6 +23,7 @@ from __future__ import annotations
 
 from typing import final
 
+import numpy as np
 from cqlib import Circuit
 
 from ..._utils.phase_estimation import (
@@ -43,7 +44,8 @@ class PhaseEstimationCircuit:
     ``U|psi> = exp(2*pi*i*phi)|psi>``, evaluation qubit ``j`` controls
     ``U**(2**j)``. An inverse QFT then maps ``phi`` to the evaluation
     register. The returned circuit contains no state preparation or
-    measurement operations.
+    measurement operations. The inverse configuration returns the adjoint of
+    the complete forward circuit built with the same approximation settings.
 
     Arbitrary Core circuits cannot currently be promoted directly to a
     quantum-controlled circuit. This component therefore constructs dense
@@ -55,6 +57,8 @@ class PhaseEstimationCircuit:
         unitary: Positive-width, fully bound static unitary circuit.
         num_evaluation_qubits: Positive phase-register width.
         approximation_degree: Small-angle inverse-QFT layers to omit.
+        inverse: Whether to return the adjoint of the configured forward
+            circuit.
 
     Raises:
         TypeError: If an argument has the wrong type.
@@ -63,6 +67,7 @@ class PhaseEstimationCircuit:
 
     __slots__ = (
         "_approximation_degree",
+        "_inverse",
         "_num_evaluation_qubits",
         "_unitary",
     )
@@ -73,6 +78,7 @@ class PhaseEstimationCircuit:
         num_evaluation_qubits: int,
         *,
         approximation_degree: int = 0,
+        inverse: bool = False,
     ) -> None:
         self._num_evaluation_qubits = normalize_evaluation_qubits(num_evaluation_qubits)
         if isinstance(approximation_degree, bool) or not isinstance(
@@ -84,7 +90,10 @@ class PhaseEstimationCircuit:
                 "approximation_degree must satisfy "
                 "0 <= approximation_degree < num_evaluation_qubits"
             )
+        if not isinstance(inverse, bool):
+            raise TypeError("inverse must be a boolean")
         self._approximation_degree = approximation_degree
+        self._inverse = inverse
         self._unitary = snapshot_static_unitary_circuit(unitary, "unitary")
 
     @property
@@ -107,8 +116,17 @@ class PhaseEstimationCircuit:
         """Return the inverse-QFT approximation degree."""
         return self._approximation_degree
 
+    @property
+    def inverse(self) -> bool:
+        """Return whether the adjoint of the forward circuit is built."""
+        return self._inverse
+
     def build_circuit(self) -> Circuit:
-        """Return a fresh, unmeasured phase-estimation circuit."""
+        """Return a fresh, unmeasured phase-estimation circuit.
+
+        The adjoint of the forward circuit is returned when ``inverse`` is
+        enabled.
+        """
         validate_static_unitary_circuit(self._unitary, "unitary")
         matrix = unitary_matrix(
             self._unitary,
@@ -118,29 +136,54 @@ class PhaseEstimationCircuit:
         evaluation_targets = tuple(circuit.qubits[: self._num_evaluation_qubits])
         system_targets = tuple(circuit.qubits[self._num_evaluation_qubits :])
 
-        for target in evaluation_targets:
-            circuit.h(target)
-
+        powers: list[np.ndarray] = []
         powered = matrix
-        for index, control in enumerate(evaluation_targets):
+        for index in range(self._num_evaluation_qubits):
+            powers.append(powered)
+            if index + 1 < self._num_evaluation_qubits:
+                powered = powered @ powered
+
+        # The forward block order is Hadamards, controlled powers, inverse QFT.
+        # Its adjoint reverses the block order and conjugates every block: the
+        # trailing inverse QFT becomes a forward QFT, each dense controlled
+        # matrix becomes a conjugate transpose, and the Hadamards stay put
+        # because they are self-adjoint. Core's numerical gate cannot be
+        # inverted in place, so the reverse order is assembled explicitly.
+        if self._inverse:
+            controls = tuple(reversed(evaluation_targets))
+            matrices = tuple(value.conj().T for value in reversed(powers))
+            leading_qft = QFT(
+                self._num_evaluation_qubits,
+                approximation_degree=self._approximation_degree,
+            ).build_circuit()
+            circuit.compose(leading_qft, list(evaluation_targets))
+        else:
+            controls = evaluation_targets
+            matrices = tuple(powers)
+            for target in evaluation_targets:
+                circuit.h(target)
+
+        for control, value in zip(controls, matrices, strict=True):
+            exponent = evaluation_targets.index(control)
             append_controlled_matrix(
                 circuit,
                 control,
                 system_targets,
-                powered,
-                label=f"controlled-unitary-power-{1 << index}",
+                value,
+                label=f"controlled-unitary-power-{1 << exponent}",
             )
-            if index + 1 < self._num_evaluation_qubits:
-                powered = powered @ powered
 
-        circuit.compose(
-            QFT(
+        if self._inverse:
+            for target in evaluation_targets:
+                circuit.h(target)
+        else:
+            trailing_qft = QFT(
                 self._num_evaluation_qubits,
                 approximation_degree=self._approximation_degree,
                 inverse=True,
-            ).build_circuit(),
-            list(evaluation_targets),
-        )
+            ).build_circuit()
+            circuit.compose(trailing_qft, list(evaluation_targets))
+
         return circuit
 
 

@@ -54,6 +54,7 @@ if TYPE_CHECKING:
         solve_sqd_subspace,
     )
     from .grover import Grover, GroverRequest, GroverResult
+    from .hhl import HHL, HHLComponents, HHLRequest, HHLResult, LinearSystemProblem
     from .lattice import LatticeGroundState, LatticeGroundStateResult
     from .machine_learning import (
         QSVR,
@@ -186,6 +187,10 @@ _EXPORTS: dict[str, tuple[str, str | None]] = {
         ".phase_estimation",
         "HamiltonianPhaseEstimationResult",
     ),
+    "HHL": (".hhl", "HHL"),
+    "HHLComponents": (".hhl", "HHLComponents"),
+    "HHLRequest": (".hhl", "HHLRequest"),
+    "HHLResult": (".hhl", "HHLResult"),
     "IterativeAmplitudeEstimation": (
         ".amplitude_estimation",
         "IterativeAmplitudeEstimation",
@@ -212,6 +217,7 @@ _EXPORTS: dict[str, tuple[str, str | None]] = {
     ),
     "LatticeGroundState": (".lattice", "LatticeGroundState"),
     "LatticeGroundStateResult": (".lattice", "LatticeGroundStateResult"),
+    "LinearSystemProblem": (".hhl", "LinearSystemProblem"),
     "MaximumLikelihoodAmplitudeEstimation": (
         ".amplitude_estimation",
         "MaximumLikelihoodAmplitudeEstimation",
@@ -304,6 +310,7 @@ _EXPORTS: dict[str, tuple[str, str | None]] = {
 __all__ = [
     "BB84",
     "CHSH",
+    "HHL",
     "PVQD",
     "QAOA",
     "QSVR",
@@ -336,6 +343,9 @@ __all__ = [
     "Grover",
     "GroverRequest",
     "GroverResult",
+    "HHLComponents",
+    "HHLRequest",
+    "HHLResult",
     "HamiltonianPhaseEstimation",
     "HamiltonianPhaseEstimationRequest",
     "HamiltonianPhaseEstimationResult",
@@ -347,6 +357,7 @@ __all__ = [
     "IterativePhaseEstimationResult",
     "LatticeGroundState",
     "LatticeGroundStateResult",
+    "LinearSystemProblem",
     "MaximumLikelihoodAmplitudeEstimation",
     "MaximumLikelihoodAmplitudeEstimationRequest",
     "MaximumLikelihoodAmplitudeEstimationResult",

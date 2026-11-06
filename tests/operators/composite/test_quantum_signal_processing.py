@@ -29,6 +29,7 @@ from cqlib_algorithms.operators.composite.quantum_singular_value_transformation.
     solve_haah_phases,
 )
 from cqlib_algorithms.operators.composite.quantum_singular_value_transformation._phase_solver._haah_solver import (  # noqa: E501
+    _CONJUGATE_PAIRING_DEGREE_LIMIT,
     _decompose_product,
     _evaluate_laurent,
     _laurent_multiply,
@@ -709,13 +710,6 @@ _HAH_HIGH_DEGREE_REJECTED_CASES: list[tuple[int, int]] = [
 ]
 r"""Degrees at which the Haah spectral factorisation is known to break down."""
 
-_HAH_HIGH_DEGREE_REJECTION_REASON = (
-    "the Fejer-Riesz spectral factorisation inside solve_haah_phases loses its "
-    "conjugate-root pairing above roughly degree 16 (and reports a missing "
-    "QSP-decomposable factor); the target is still a valid Corollary 8 "
-    "polynomial, so this is a solver conditioning limit, not a target defect"
-)
-
 
 def _is_high_degree_haah_rejection(error: BaseException) -> bool:
     r"""Return whether ``error`` is the known high-degree spectral breakdown."""
@@ -752,7 +746,11 @@ def test_solve_haah_phases_high_degree_smoke_stays_finite_and_accurate(
     degree: int,
     seed: int,
 ) -> None:
-    _assert_haah_high_degree_smoke(degree, seed, atol=1e-10)
+    if degree >= _CONJUGATE_PAIRING_DEGREE_LIMIT:
+        with pytest.warns(UserWarning, match="numerically unreliable"):
+            _assert_haah_high_degree_smoke(degree, seed, atol=1e-10)
+    else:
+        _assert_haah_high_degree_smoke(degree, seed, atol=1e-10)
 
 
 @pytest.mark.parametrize(
@@ -764,12 +762,12 @@ def test_solve_haah_phases_high_degree_breakdown_is_reported(
     degree: int,
     seed: int,
 ) -> None:
-    try:
-        _assert_haah_high_degree_smoke(degree, seed, atol=1e-10)
-    except RuntimeError as error:
-        if not _is_high_degree_haah_rejection(error):
-            raise
-        pytest.xfail(_HAH_HIGH_DEGREE_REJECTION_REASON)
+    with pytest.warns(UserWarning, match="numerically unreliable"):
+        try:
+            _assert_haah_high_degree_smoke(degree, seed, atol=1e-10)
+        except RuntimeError as error:
+            if not _is_high_degree_haah_rejection(error):
+                raise
 
 
 _HAH_DECOMPOSITION_CASES: list[tuple[int, int]] = [

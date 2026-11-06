@@ -20,7 +20,6 @@ import math
 import numpy as np
 import pytest
 from cqlib import Circuit, Qubit
-from cqlib.compile import CompilerTransformError
 from numpy.polynomial.chebyshev import chebfit, chebval
 
 from cqlib_algorithms.operators.composite import (
@@ -1519,29 +1518,6 @@ _QSVT_REAL_RANDOM_CASES: list[tuple[str, int, int, int]] = [
     for seed in range(2)
 ]
 
-_QSVT_REAL_SYNTHESIS_XFAIL_REASON = (
-    "diag(I, U_Phi) circuit synthesis is rejected on this controlled-structured "
-    "unitary by two known numerical limitations: cqlib's two-qubit KAK "
-    "canonical check (validate_weyl_chamber rejects a = pi/4 with c < 0) and "
-    "this repo's unitary_eigendecomposition diagonalisation floor "
-    "(failed to diagonalize unitary demux factor). Neither is a QSVT logic error"
-)
-r"""Reason attached to real-valued cases the synthesis layer currently rejects."""
-
-
-def _is_known_real_qsvt_synthesis_rejection(error: BaseException) -> bool:
-    r"""Return whether ``error`` is a known synthesis-layer rejection.
-
-    Both signatures belong to the controlled ``diag(I, U_{\Phi})`` oracle
-    synthesis and are unrelated to the QSVT phase logic under test, so the
-    affected cases are reported as runtime ``xfail`` instead of failures.
-    """
-    if isinstance(error, CompilerTransformError):
-        return "Weyl chamber violation" in str(error)
-    return isinstance(error, ValueError) and (
-        "failed to diagonalize unitary demux factor" in str(error)
-    )
-
 
 def _random_feasible_real_polynomial(degree: int, *, seed: int) -> np.ndarray:
     r"""Return Chebyshev coefficients of a random real QSP-feasible target.
@@ -1608,21 +1584,16 @@ def test_real_valued_qsvt_matches_power_basis_target(
     qubits: int,
     coefficients: list[float],
 ) -> None:
-    try:
-        operator = RealValuedQSVT.from_polynomial_coefficients(
-            _qsvt_encoding(family, qubits=qubits),
-            coefficients,
-        )
-        _assert_real_valued_qsvt_block_matches(
-            operator,
-            degree=len(coefficients) - 1,
-            chebyshev_coefficients=list(polynomial_to_chebyshev(coefficients)),
-            atol=1e-5,
-        )
-    except (CompilerTransformError, ValueError) as error:
-        if not _is_known_real_qsvt_synthesis_rejection(error):
-            raise
-        pytest.xfail(_QSVT_REAL_SYNTHESIS_XFAIL_REASON)
+    operator = RealValuedQSVT.from_polynomial_coefficients(
+        _qsvt_encoding(family, qubits=qubits),
+        coefficients,
+    )
+    _assert_real_valued_qsvt_block_matches(
+        operator,
+        degree=len(coefficients) - 1,
+        chebyshev_coefficients=list(polynomial_to_chebyshev(coefficients)),
+        atol=1e-5,
+    )
 
 
 @pytest.mark.parametrize(
@@ -1640,18 +1611,13 @@ def test_real_valued_qsvt_matches_random_feasible_target(
     seed: int,
 ) -> None:
     chebyshev_coefficients = _random_feasible_real_polynomial(degree, seed=seed)
-    try:
-        operator = RealValuedQSVT.from_chebyshev_coefficients(
-            _qsvt_encoding(family, qubits=qubits),
-            chebyshev_coefficients,
-        )
-        _assert_real_valued_qsvt_block_matches(
-            operator,
-            degree=degree,
-            chebyshev_coefficients=list(chebyshev_coefficients),
-            atol=1e-5,
-        )
-    except (CompilerTransformError, ValueError) as error:
-        if not _is_known_real_qsvt_synthesis_rejection(error):
-            raise
-        pytest.xfail(_QSVT_REAL_SYNTHESIS_XFAIL_REASON)
+    operator = RealValuedQSVT.from_chebyshev_coefficients(
+        _qsvt_encoding(family, qubits=qubits),
+        chebyshev_coefficients,
+    )
+    _assert_real_valued_qsvt_block_matches(
+        operator,
+        degree=degree,
+        chebyshev_coefficients=list(chebyshev_coefficients),
+        atol=1e-5,
+    )
