@@ -36,6 +36,7 @@ References
 from __future__ import annotations
 
 import math
+import warnings
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from types import MappingProxyType
@@ -48,7 +49,7 @@ from cqlib.circuit.gates import UnitaryGate
 from cqlib.qis import Hamiltonian, TrotterMode
 
 from .._utils.hamiltonian import snapshot_nonzero_hermitian_hamiltonian
-from .._utils.numeric import validate_optional_seed
+from .._utils.numeric import normalize_positive_integer, validate_optional_seed
 from .._utils.phase_estimation import (
     normalize_evaluation_qubits,
     normalize_shots,
@@ -195,13 +196,28 @@ def _hermitian_spectrum(operator: object) -> npt.NDArray[np.float64]:
     return np.asarray(np.linalg.eigvalsh(matrix), dtype=np.float64)
 
 
-def _spectral_bound(operator: object, bound: float | None) -> float:
-    """Resolve the spectral bound ``alpha`` of a positive-definite operator.
+def _spectral_bound(
+    operator: object,
+    bound: float | None,
+    *,
+    num_evaluation_qubits: int,
+) -> float:
+    r"""Resolve the spectral bound ``alpha`` of a positive-definite operator.
+
+    The reciprocal encoding is exact only where ``lambda / alpha`` lands on an
+    integer multiple of the phase-grid step :math:`2^{-m}`; the zero grid point
+    encodes the zero eigenvalue and applies no rotation, so any branch that
+    rounds onto it is dropped. The default bound therefore shrinks the largest
+    eigenvalue by one grid step, ``alpha = lambda_max / (1 - 2**-m)``, which
+    places ``lambda_max / alpha`` on the last resolvable grid point instead of
+    the period endpoint.
 
     Args:
         operator: Dense matrix or Hamiltonian defining ``A``.
-        bound: Requested spectral bound, or ``None`` to use the largest
-            eigenvalue.
+        bound: Requested spectral bound, or ``None`` to derive
+            ``lambda_max / (1 - 2**-m)`` from the spectrum.
+        num_evaluation_qubits: Width ``m`` of the evaluation register, which
+            fixes the phase-grid step ``2**-m``.
 
     Returns:
         The resolved spectral bound ``alpha``.
@@ -210,26 +226,59 @@ def _spectral_bound(operator: object, bound: float | None) -> float:
         TypeError: If ``operator`` or ``bound`` has the wrong type.
         ValueError: If ``A`` is not Hermitian positive definite, or ``bound``
             is not positive, finite, and at least the largest eigenvalue.
+
+    Warns:
+        UserWarning: If an eigenvalue is closer to the period endpoint than
+            half a phase-grid step, so it rounds onto the zero grid point and
+            the reciprocal encoding drops it.
     """
     spectrum = _hermitian_spectrum(operator)
-    if float(spectrum[0]) <= 0.0:
+    smallest = float(spectrum[0])
+    if smallest <= 0.0:
         raise ValueError("operator must be positive definite")
     largest = float(spectrum[-1])
     if bound is None:
-        return largest
-    if isinstance(bound, bool) or not isinstance(bound, (int, float)):
-        raise TypeError("bound must be a real number or None")
-    resolved = float(bound)
-    if not math.isfinite(resolved) or resolved <= 0.0:
-        raise ValueError("bound must be positive and finite")
-    if resolved < largest and not math.isclose(
-        resolved,
-        largest,
-        rel_tol=_BOUND_RTOL,
-        abs_tol=0.0,
+        alpha = largest / (1.0 - 2.0**-num_evaluation_qubits)
+    else:
+        if isinstance(bound, bool) or not isinstance(bound, (int, float)):
+            raise TypeError("bound must be a real number or None")
+        alpha = float(bound)
+        if not math.isfinite(alpha) or alpha <= 0.0:
+            raise ValueError("bound must be positive and finite")
+        if alpha < largest and not math.isclose(
+            alpha,
+            largest,
+            rel_tol=_BOUND_RTOL,
+            abs_tol=0.0,
+        ):
+            raise ValueError("bound must not be smaller than the largest eigenvalue")
+
+    # A branch survives only while its phase rounds to a non-zero grid point.
+    # Phase 0 and phase 1 address the same zero grid point, so either end can
+    # swallow a branch that is closer to the endpoint than half a grid step.
+    # The distances are compared on the eigenvalue scale, where the default
+    # bound sits exactly on the boundary of the upper test, and the relative
+    # tolerance keeps the round trip through ``alpha`` from reporting that
+    # exact case.
+    half_step = 2.0 ** -(num_evaluation_qubits + 1)
+    low_cutoff = alpha * half_step
+    high_cutoff = alpha * (1.0 - half_step)
+    if (
+        smallest < low_cutoff
+        and not math.isclose(smallest, low_cutoff, rel_tol=_BOUND_RTOL, abs_tol=0.0)
+    ) or (
+        largest > high_cutoff
+        and not math.isclose(largest, high_cutoff, rel_tol=_BOUND_RTOL, abs_tol=0.0)
     ):
-        raise ValueError("bound must not be smaller than the largest eigenvalue")
-    return resolved
+        warnings.warn(
+            "the spectral bound leaves an eigenvalue closer to the period "
+            "endpoint than half a phase-grid step; that branch rounds onto the "
+            "zero grid point and is dropped by the reciprocal encoding, so "
+            "raise bound or enlarge num_evaluation_qubits",
+            UserWarning,
+            stacklevel=2,
+        )
+    return alpha
 
 
 def _hermitian_unitary(operator: object, alpha: float) -> Circuit:
@@ -386,11 +435,12 @@ class HHLRequest:
     """Configure one HHL run for the linear system ``A x = b``.
 
     ``alpha`` is resolved from ``bound`` when it is given, and otherwise from
-    the largest eigenvalue of ``A``. Because ``alpha`` fixes the phase scale,
-    ``bound`` must not be smaller than that eigenvalue. At the default bound
-    the largest eigenvalue maps to phase ``1``, which aliases onto the zero
-    grid point and is discarded by the reciprocal encoding; supply a strictly
-    larger bound to retain it.
+    the largest eigenvalue, shrunk by one phase-grid step so that it stays
+    resolvable. Because ``alpha`` fixes the phase scale, ``bound`` must not be
+    smaller than that eigenvalue. A ``bound`` that pushes an eigenvalue closer
+    to the period endpoint than half a grid step rounds that branch onto the
+    zero grid point, where the reciprocal encoding drops it; a ``UserWarning``
+    is raised in that case.
 
     Args:
         problem: Hermitian positive-definite linear system.
@@ -399,13 +449,17 @@ class HHLRequest:
         shots: Positive number of circuit samples.
         approximation_degree: Small-angle inverse-QFT layers to omit.
         bound: Positive spectral bound ``alpha``, or ``None`` for the largest
-            eigenvalue.
+            eigenvalue shrunk by one phase-grid step.
         seed: Non-negative seed of the shot draw, or ``None``.
 
     Raises:
         TypeError: If a field has the wrong type.
         ValueError: If a setting is out of range, the problem invariant fails,
             or the operator is not Hermitian positive definite.
+
+    Warns:
+        UserWarning: If the resolved bound leaves an eigenvalue within one
+            phase-grid step of the period endpoint.
     """
 
     problem: LinearSystemProblem
@@ -437,7 +491,11 @@ class HHLRequest:
             self.approximation_degree,
             num_evaluation_qubits=self.num_evaluation_qubits,
         )
-        _spectral_bound(self.problem.operator, self.bound)
+        _spectral_bound(
+            self.problem.operator,
+            self.bound,
+            num_evaluation_qubits=self.num_evaluation_qubits,
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -451,12 +509,17 @@ class HHLResult:
     ``success_probability`` is the raw fraction of shots whose ancilla outcome
     is ``1``, before that renormalization.
 
+    The evaluation-register width and the system-register width are
+    independent settings, so ``num_system_qubits`` is stored separately and
+    fixes the valid range of ``solution_probabilities``.
+
     Args:
         success_probability: Fraction of shots with ancilla outcome ``1``.
         solution_probabilities: Post-selected system-register distribution.
         spectral_bound: Spectral bound ``alpha`` used for the phase scale.
         scaling: Reciprocal amplitude scaling ``s``.
         num_evaluation_qubits: Width ``m`` of the evaluation register.
+        num_system_qubits: Width ``n`` of the system register.
         shots: Samples used for the circuit.
 
     Raises:
@@ -469,12 +532,17 @@ class HHLResult:
     spectral_bound: float
     scaling: float
     num_evaluation_qubits: int
+    num_system_qubits: int
     shots: int
 
     __hash__ = None  # type: ignore[assignment]
 
     def __post_init__(self) -> None:
         width = normalize_evaluation_qubits(self.num_evaluation_qubits)
+        system_width = normalize_positive_integer(
+            self.num_system_qubits,
+            "num_system_qubits",
+        )
         normalize_shots(self.shots)
         _validate_scaling(self.scaling, num_evaluation_qubits=width)
         if (
@@ -499,7 +567,7 @@ class HHLResult:
             if (
                 isinstance(index, bool)
                 or not isinstance(index, int)
-                or not 0 <= index < (1 << width)
+                or not 0 <= index < (1 << system_width)
             ):
                 raise ValueError("solution indices must be valid system indices")
             if (
@@ -579,7 +647,11 @@ def _assemble(
     else:
         _validate_components(components)
 
-    alpha = _spectral_bound(problem.operator, bound)
+    alpha = _spectral_bound(
+        problem.operator,
+        bound,
+        num_evaluation_qubits=num_evaluation_qubits,
+    )
     unitary = _hermitian_unitary(problem.operator, alpha)
     if isinstance(problem.rhs, Circuit):
         state_preparation = snapshot_static_unitary_circuit(problem.rhs, "rhs")
@@ -650,6 +722,7 @@ def _reduce_counts(
         spectral_bound=alpha,
         scaling=float(request.scaling),
         num_evaluation_qubits=request.num_evaluation_qubits,
+        num_system_qubits=system_width,
         shots=shots,
     )
 
@@ -667,10 +740,12 @@ class HHL:
     on ``|1>`` leaves the system register in a state proportional to
     ``A**-1 |b>`` [1].
 
-    The default spectral bound is the largest eigenvalue, so that eigenvalue
-    aliases onto the phase-zero grid point and is discarded by the reciprocal
-    encoding; a strictly larger ``bound`` avoids the endpoint. The reciprocal
-    amplitude scaling bounds the post-selection success probability, which is
+    The default spectral bound shrinks the largest eigenvalue by one
+    phase-grid step, so that eigenvalue stays resolvable instead of rounding
+    onto the phase-zero grid point, where the reciprocal encoding would drop
+    it. A ``bound`` that pushes any eigenvalue closer to the period endpoint
+    than half a grid step triggers a ``UserWarning``. The reciprocal amplitude
+    scaling bounds the post-selection success probability, which is
     ``O(1/kappa**2)`` up to the scaling factor.
 
     Registers are little-endian. ``circuit.qubits[0:m]`` is the evaluation
@@ -688,6 +763,10 @@ class HHL:
         TypeError: If ``sampler``, ``components``, or a request has the wrong
             type.
         ValueError: If a request invariant or sampler-result contract fails.
+
+    Warns:
+        UserWarning: If a request resolves a bound that leaves an eigenvalue
+            within one phase-grid step of the period endpoint.
     """
 
     __slots__ = ("_components", "_sampler")

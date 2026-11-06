@@ -609,7 +609,8 @@ def test_request_rejects_bound_below_largest_eigenvalue():
 
 
 def test_request_accepts_bound_equal_to_largest_eigenvalue():
-    request = _request(_diag_problem([1.0, 0.5], [1.0, 1.0]), bound=1.0)
+    with pytest.warns(UserWarning, match="rounds onto the zero grid point"):
+        request = _request(_diag_problem([1.0, 0.5], [1.0, 1.0]), bound=1.0)
 
     assert request.bound == 1.0
 
@@ -646,6 +647,7 @@ def test_result_num_unitary_applications(width):
         spectral_bound=2.0,
         scaling=2.0**-width,
         num_evaluation_qubits=width,
+        num_system_qubits=1,
         shots=8,
     )
 
@@ -666,6 +668,7 @@ def test_result_rejects_unnormalized_distribution():
             spectral_bound=2.0,
             scaling=2.0**-2,
             num_evaluation_qubits=2,
+            num_system_qubits=1,
             shots=8,
         )
 
@@ -679,6 +682,7 @@ def test_result_rejects_out_of_range_indices(index):
             spectral_bound=2.0,
             scaling=2.0**-2,
             num_evaluation_qubits=2,
+            num_system_qubits=2,
             shots=8,
         )
 
@@ -692,6 +696,7 @@ def test_result_rejects_out_of_range_probabilities(probability):
             spectral_bound=2.0,
             scaling=2.0**-2,
             num_evaluation_qubits=2,
+            num_system_qubits=1,
             shots=8,
         )
 
@@ -706,6 +711,7 @@ def test_result_requires_positive_success_for_a_reported_solution():
             spectral_bound=2.0,
             scaling=2.0**-2,
             num_evaluation_qubits=2,
+            num_system_qubits=1,
             shots=8,
         )
 
@@ -718,6 +724,7 @@ def test_result_requires_distribution_when_ancilla_succeeds():
             spectral_bound=2.0,
             scaling=2.0**-2,
             num_evaluation_qubits=2,
+            num_system_qubits=1,
             shots=8,
         )
 
@@ -731,6 +738,7 @@ def test_result_rejects_out_of_range_success_probability(success):
             spectral_bound=2.0,
             scaling=2.0**-2,
             num_evaluation_qubits=2,
+            num_system_qubits=1,
             shots=8,
         )
 
@@ -744,6 +752,7 @@ def test_result_rejects_invalid_spectral_bound(bound):
             spectral_bound=bound,
             scaling=2.0**-2,
             num_evaluation_qubits=2,
+            num_system_qubits=1,
             shots=8,
         )
 
@@ -755,6 +764,7 @@ def test_result_distribution_is_read_only():
         spectral_bound=2.0,
         scaling=2.0**-2,
         num_evaluation_qubits=2,
+        num_system_qubits=1,
         shots=8,
     )
 
@@ -769,11 +779,55 @@ def test_result_is_frozen():
         spectral_bound=2.0,
         scaling=2.0**-2,
         num_evaluation_qubits=2,
+        num_system_qubits=1,
         shots=8,
     )
 
     with pytest.raises(AttributeError):
         result.shots = 16  # type: ignore[misc]
+
+
+@pytest.mark.parametrize("system_width", [False, 0, -1])
+def test_result_rejects_invalid_system_width(system_width):
+    with pytest.raises((TypeError, ValueError), match="num_system_qubits"):
+        HHLResult(
+            success_probability=0.5,
+            solution_probabilities={},
+            spectral_bound=2.0,
+            scaling=2.0**-2,
+            num_evaluation_qubits=2,
+            num_system_qubits=system_width,
+            shots=8,
+        )
+
+
+def test_result_accepts_indices_wider_than_the_evaluation_register():
+    # A two-qubit system under a one-qubit evaluation register still admits
+    # |11>, which the evaluation width cannot express.
+    result = HHLResult(
+        success_probability=0.5,
+        solution_probabilities={3: 1.0},
+        spectral_bound=2.0,
+        scaling=2.0**-1,
+        num_evaluation_qubits=1,
+        num_system_qubits=2,
+        shots=8,
+    )
+
+    assert dict(result.solution_probabilities) == {3: 1.0}
+
+
+def test_result_rejects_indices_wider_than_the_system_register():
+    with pytest.raises(ValueError, match="solution indices must be valid system indices"):
+        HHLResult(
+            success_probability=0.5,
+            solution_probabilities={4: 1.0},
+            spectral_bound=2.0,
+            scaling=2.0**-3,
+            num_evaluation_qubits=3,
+            num_system_qubits=2,
+            shots=8,
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -1299,31 +1353,62 @@ def test_reference_joint_distribution_matches_direct_statevector_readout():
 
 
 @pytest.mark.reference
-def test_default_bound_discards_the_largest_eigenvalue_branch():
-    problem = _diag_problem([1.0, 0.5], [1.0, 1.0])
-    default_bound = HHL.build_circuit(
+def test_default_bound_retains_every_eigenvalue_branch():
+    # With alpha = lambda_max / (1 - 2**-m) = 16/15 the largest eigenvalue
+    # lands on grid point 15 and the smallest on grid point 5, so the
+    # reciprocal encoding is exact for both branches.
+    alpha = 16.0 / 15.0
+    scaling = 2.0**-_EVALUATION_QUBITS
+    eigenvalues = [1.0, 1.0 / 3.0]
+    problem = _diag_problem(eigenvalues, [1.0, 1.0])
+    circuit = HHL.build_circuit(
         problem,
         num_evaluation_qubits=_EVALUATION_QUBITS,
-        scaling=2.0**-_EVALUATION_QUBITS,
+        scaling=scaling,
     )
+    joint = _joint_distribution(circuit, _EVALUATION_QUBITS, 1)
+
+    # A x = b gives x proportional to (1, 3), hence 1/10 and 9/10.
+    np.testing.assert_allclose(
+        _dense_distribution(joint, 1),
+        [0.1, 0.9],
+        rtol=0.0,
+        atol=_SCALING_TOLERANCE,
+    )
+    assert _success_probability(joint) == pytest.approx(
+        _analytic_success(np.diag(eigenvalues), [1.0, 1.0], alpha, scaling),
+        abs=_SCALING_TOLERANCE,
+    )
+
+
+@pytest.mark.reference
+def test_bound_at_the_largest_eigenvalue_warns_and_drops_that_branch():
+    problem = _diag_problem([1.0, 0.5], [1.0, 1.0])
+    with pytest.warns(UserWarning, match="rounds onto the zero grid point"):
+        aliased_bound = HHL.build_circuit(
+            problem,
+            num_evaluation_qubits=_EVALUATION_QUBITS,
+            scaling=2.0**-_EVALUATION_QUBITS,
+            bound=1.0,
+        )
     raised_bound = HHL.build_circuit(
         problem,
         num_evaluation_qubits=_EVALUATION_QUBITS,
         scaling=2.0**-_EVALUATION_QUBITS,
         bound=2.0,
     )
-    default_joint = _joint_distribution(default_bound, _EVALUATION_QUBITS, 1)
+    aliased_joint = _joint_distribution(aliased_bound, _EVALUATION_QUBITS, 1)
     raised_joint = _joint_distribution(raised_bound, _EVALUATION_QUBITS, 1)
 
     # The largest eigenvalue aliases onto the phase-zero grid point, whose
     # reciprocal amplitude is zero, so only the smaller branch survives.
     np.testing.assert_allclose(
-        _dense_distribution(default_joint, 1),
+        _dense_distribution(aliased_joint, 1),
         [0.0, 1.0],
         rtol=0.0,
         atol=_SCALING_TOLERANCE,
     )
-    assert _success_probability(default_joint) == pytest.approx(
+    assert _success_probability(aliased_joint) == pytest.approx(
         0.5 * (2.0**-_EVALUATION_QUBITS) ** 2 / 0.5**2,
         abs=_SCALING_TOLERANCE,
     )
@@ -1498,6 +1583,7 @@ def test_num_unitary_applications_depends_only_on_the_evaluation_width():
         spectral_bound=2.0,
         scaling=2.0**-3,
         num_evaluation_qubits=3,
+        num_system_qubits=5,
         shots=8,
     )
     many_shots = HHLResult(
@@ -1506,6 +1592,7 @@ def test_num_unitary_applications_depends_only_on_the_evaluation_width():
         spectral_bound=1024.0,
         scaling=2.0**-3,
         num_evaluation_qubits=3,
+        num_system_qubits=2,
         shots=1 << 20,
     )
 
