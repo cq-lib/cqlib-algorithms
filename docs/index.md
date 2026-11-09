@@ -14,6 +14,7 @@ docstring 为准；本目录负责说明当前能力、使用方法和开发规�
 
 - [振幅估计](user-guide/algorithms/amplitude-estimation.md)
 - [相位估计](user-guide/algorithms/phase-estimation.md)
+- [HHL 线性方程组求解](user-guide/algorithms/hhl.md)
 - [VQE](user-guide/algorithms/vqe.md)
 - [VQD](user-guide/algorithms/vqd.md)
 - [ADAPT-VQE](user-guide/algorithms/adapt-vqe.md)
@@ -45,6 +46,7 @@ docstring 为准；本目录负责说明当前能力、使用方法和开发规�
 - [Mixer](user-guide/components/mixer.md)
 - [Oracle 与反射](user-guide/components/oracle.md)
 - [线路组合](user-guide/components/circuit-composition.md)
+- [量子算术](user-guide/components/arithmetic.md)
 - [测量规划](user-guide/components/measurement.md)
 - [执行组件](user-guide/components/execution.md)
 - [微分、量子几何与优化](user-guide/components/differentiation.md)
@@ -62,4 +64,3 @@ docstring 为准；本目录负责说明当前能力、使用方法和开发规�
 
 - [文档与 Docstring 规范](documentation-style.md)
 - [开发规范](development.md)
-- [Agent 协作流程](agent-workflow.md)

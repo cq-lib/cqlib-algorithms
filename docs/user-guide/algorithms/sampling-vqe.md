@@ -1,12 +1,12 @@
 # 采样型变分量子本征求解器（Sampling VQE）
 
 `SamplingVQE` 用有限-shot 计算基联合采样最小化对角 Hermitian 目标。当前目标只能由
-`I` 和 `Z` Pauli 因子组成，因此每个比特串 (x) 都有确定目标值 (C(x))，一次
+$I$ 和 $Z$ Pauli 因子组成，因此每个比特串 $x$ 都有确定目标值 $C(x)$，一次
 全寄存器计数分布即可计算普通样本均值
 
-\[
+$$
 \widehat E=\frac{1}{N}\sum_x n_x C(x).
-\]
+$$
 
 ## 联合采样语义
 
@@ -58,5 +58,5 @@ result = algorithm.compute_minimum_eigenvalue(
 print(result.best_measurement)
 ```
 
-该组件适合组合优化和其他计算基对角目标，不接受含 `X` 或 `Y` 的一般 Hamiltonian。
+该组件适合组合优化和其他计算基对角目标，不接受含 $X$ 或 $Y$ 的一般 Hamiltonian。
 有限-shot 噪声会影响优化轨迹和最终估计，结果不保证达到全局最小值。

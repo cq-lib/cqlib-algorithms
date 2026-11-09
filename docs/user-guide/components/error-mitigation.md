@@ -47,7 +47,7 @@ value = execute_with_zne(
 | T-REx | 可执行随机读出翻转及相应校准线路 | 读出 twirling 后的期望值 |
 | Classical Shadows | 可执行随机局域 Pauli 测量 | Pauli 可观测量的 shadow 估计 |
 | QSE | 给定扩展算符基和代码 Hamiltonian | 广义本征值问题的最低能量估计 |
-| Virtual Distillation | 能执行多副本 copy-swap 线路，副本噪声近似独立 | `Tr(O rho**M) / Tr(rho**M)` |
+| Virtual Distillation | 能执行多副本 copy-swap 线路，副本噪声近似独立 | $\operatorname{Tr}(O\rho^M)/\operatorname{Tr}(\rho^M)$ |
 
 ## 缩放、推断与拟概率
 
@@ -67,7 +67,7 @@ value = execute_with_zne(
 - 有限-shot 方差可能因缓解权重、外推或拟概率开销显著放大。
 - PEC 和 PEA 的正确性依赖拟概率模型与实际噪声的一致性。
 - REM 当前使用逐量子比特混淆数据，不表示一般相关读出噪声模型。
-- Virtual Distillation 的线路宽度为 `M*n + 1`，并要求副本噪声近似独立。
+- Virtual Distillation 的线路宽度为 $Mn+1$，并要求副本噪声近似独立。
 - QSE 的结果依赖扩展基、重叠矩阵条件数和广义本征值截断容差。
 - 组件只提供同步本地契约；认证、任务提交、排队和异步轮询由外部适配层负责。
 

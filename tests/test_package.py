@@ -499,7 +499,7 @@ PUBLIC_COMPONENTS = {
 
 def test_distribution_metadata():
     distribution = metadata("cqlib-algorithms")
-    assert distribution["Requires-Python"] == ">=3.10"
+    assert distribution["Requires-Python"] == ">=3.11"
     assert cqlib_algorithms.__version__ == distribution["Version"]
 
 

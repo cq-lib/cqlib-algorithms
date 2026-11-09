@@ -57,7 +57,7 @@ result = solver.compute(system)
 
 默认参考态占据每个 mode 的 modal 0，也可通过 `reference_modals` 指定。返回结果包含
 每个 modal 的占据、每个 mode 的总占据以及
-`(N_mode - I)^2` 泄漏量；总占据等于 1 只是均值条件，泄漏量为 0 才严格证明状态完全
+$\left(N_{\mathrm{mode}}-I\right)^2$ 泄漏量；总占据等于 1 只是均值条件，泄漏量为 0 才严格证明状态完全
 位于 one-hot 物理子空间。
 
 ## 适用边界

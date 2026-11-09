@@ -96,8 +96,8 @@ _ILL_CONDITIONED_LIMIT = 1.0e8
 class ScalingMethod(str, Enum):
     r"""Noise-scaling strategy used to build the folded circuits.
 
-    A plain :class:`str` enumeration is used rather than :class:`enum.StrEnum`
-    so the type is available on Python 3.10.
+    A plain :class:`str` enumeration keeps the public values compatible with
+    ordinary strings.
 
     Attributes:
         GLOBAL: Fold the whole gate body uniformly.

@@ -30,10 +30,10 @@ Brierley 的
 
 ## Penalty 与结果
 
-显式 `betas` 必须包含 `k - 1` 个有限正数。省略时，算法采用
+显式 `betas` 必须包含 $k-1$ 个有限正数。省略时，算法采用
 $10\sum_l |c_l|$ 作为统一 penalty，其中 $c_l$ 是 Hamiltonian 的 Pauli
 系数；这是保守默认值而非问题相关最优值。过小的 penalty 可能使多个级别收敛到同一
-低能态，过大的 penalty 会恶化目标尺度。零 Hamiltonian 在 `k > 1` 时没有可推导
+低能态，过大的 penalty 会恶化目标尺度。零 Hamiltonian 在 $k>1$ 时没有可推导
 尺度，必须显式给出 penalty。
 
 `VQDResult.eigenvalues` 保存最终线路的原始 Hamiltonian 期望值；

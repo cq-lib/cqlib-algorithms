@@ -73,15 +73,17 @@ lbfgsb_results = lbfgsb.run(estimator, optimizer_requests)
 - `SPSAGradient` —— 每个非空请求固定两次期望值评估的随机梯度估计；
 - `StatevectorQGT` / `QGTResult` —— 精确量子几何张量与实度规；
 - `StatevectorQFI` / `QFIResult` —— 纯态量子 Fisher 信息矩阵；
-- `NaturalGradient` —— 自然梯度方向 `g·η = ∇E` 的求解器。
+- `NaturalGradient` —— 自然梯度方向 $g\eta=\nabla E$ 的求解器。
 
 数学定义采用 Stokes et al.（arXiv:1909.02108）的对称化约定：
-`F_ij = ⟨∂iψ|(1−|ψ⟩⟨ψ|)|∂jψ⟩`，`g_ij = Re F_ij`。端序遵循 Cqlib
+$F_{ij}=\langle\partial_i\psi|(1-|\psi\rangle\langle\psi|)|\partial_j\psi\rangle$，
+$g_{ij}=\operatorname{Re}F_{ij}$。端序遵循 Cqlib
 小端约定，量子比特位置按线路插入顺序解释，支持非连续量子比特 ID。
 
 ## 参数移位规则
 
-每个参数化门按其分支本征值谱分类（`G(angle) = Σ_λ e^{-iλ·angle}P_λ`）：
+每个参数化门按其分支本征值谱分类
+（$G(\vartheta)=\sum_\lambda e^{-i\lambda\vartheta}P_\lambda$）：
 
 | 门 | 槽位谱 |
 |---|---|
@@ -92,14 +94,14 @@ lbfgsb_results = lbfgsb.run(estimator, optimizer_requests)
 | U 的 φ/λ 槽 | {0, −1} |
 | GPhase | 零贡献 |
 
-符号通过仿射表达式（如 `2θ+1`）进入门时，组件对每个门参数槽独立执行
+符号通过仿射表达式（如 $2\theta+1$）进入门时，组件对每个门参数槽独立执行
 精确局部移位，再按仿射链式系数加权并对同一符号的全部出现点求和。普通
 旋转门和相位门的每个出现点使用经典两点规则
-（`s=±π/2, w=±1/2`）；受控旋转的局部频率为 `{1/2, 1}`，每个出现点
+（$s=\pm\pi/2$，$w=\pm1/2$）；受控旋转的局部频率为 $\{1/2,1\}$，每个出现点
 使用四点规则。该逐出现点算法避免构造共享符号所有门谱的组合频率集，
 因此评估次数随出现点数量线性增长。例如，一个成本参数同时出现在 11 个
 普通双量子比特旋转中时，恰好产生 22 次评估。它不使用有限差分降级。
-非线性参数表达式（如 `sin(θ)`）以及待求导
+非线性参数表达式（如 $\sin\theta$）以及待求导
 符号进入不支持的参数化门（XY/XY2P/XY2M/RXY/FSIM、符号化
 UnitaryGate）时以 `ValueError` 拒绝，且在任何 estimator 调用之前抛出。
 线路中其他已完整绑定、但未列入 `parameter_names` 的参数门作为固定酉演化
@@ -112,43 +114,45 @@ shots 模式的统计质量取决于底层 Estimator。仅出现在 `set_global_
 ## 线性组合梯度（LinCombEstimatorGradient）
 
 该组件采用 Schuld et al.（arXiv:1811.11184）的辅助量子比特线性组合
-测量思路。对仿射门参数 `angle = a·t+b`，若生成元分解为
-`G = Σ_k w_k P_k`，则在线路参数因子前插入受辅助量子比特控制的 `P_k`，
-辅助位制备为 `RY(π/2)|0⟩`，并测量 `O⊗Y_aux`：
+测量思路。对仿射门参数 $\vartheta=at+b$，若生成元分解为
+$G=\sum_k w_kP_k$，则在线路参数因子前插入受辅助量子比特控制的 $P_k$，
+辅助位制备为 $R_Y(\pi/2)|0\rangle$，并测量 $O\otimes Y_{\mathrm{aux}}$：
 
-`∂E/∂t = 2a Σ_k w_k ⟨O⊗Y_aux⟩_k`。
+$\partial E/\partial t=2a\sum_k w_k\langle O\otimes Y_{\mathrm{aux}}\rangle_k$。
 
-普通 Pauli 旋转生成元为 `P/2`；受 `k` 个量子比特控制的 Pauli 旋转展开为
-`Σ_S (-1)^|S| Z_S P / 2^(k+1)`。受控 Phase 的生成元展开为控制位与目标位
+普通 Pauli 旋转生成元为 $P/2$；受 $k$ 个量子比特控制的 Pauli 旋转展开为
+$\sum_S(-1)^{|S|}Z_SP/2^{k+1}$。受控 Phase 的生成元展开为控制位与目标位
 上投影算子的 Pauli-Z 线性组合，其中纯单位项不影响 Hermitian 期望值导数，
-因此不产生评估。`U(θ,φ,λ)` 按执行顺序展开为
-`RZ(λ) → RY(θ) → RZ(φ)`，再分别插入对应生成元。PauliString 的 `±1`
+因此不产生评估。$U(\theta,\phi,\lambda)$ 按执行顺序展开为
+$R_Z(\lambda)\rightarrow R_Y(\theta)\rightarrow R_Z(\phi)$，再分别插入对应生成元。PauliString 的 $\pm1$
 相位和 Hamiltonian 每个项的相位、系数均会原样扩展到辅助位。
 
-一次普通旋转需要 1 个辅助线路；`k` 控旋转需要 `2^k` 个；具有 `k` 个控制位的
-受控 Phase 需要 `2^(k+1)-1` 个。该组件支持非连续或重排的量子比特 ID；shots
+一次普通旋转需要 1 个辅助线路；$k$ 控旋转需要 $2^k$ 个；具有 $k$ 个控制位的
+受控 Phase 需要 $2^{k+1}-1$ 个。该组件支持非连续或重排的量子比特 ID；shots
 统计误差由底层 Estimator 决定。
 
 ## 数值梯度
 
 `FiniteDifferenceGradient(epsilon=1e-6, method="central")` 不分析门生成元，
 因此可用于底层 Estimator 能执行的任意参数化线路。中心差分使用
-`[E(t+ε)-E(t-ε)]/(2ε)`，每个参数两次评估，截断误差为 `O(ε²)`；
-`method="forward"` 使用 `[E(t+ε)-E(t)]/ε`，每个参数两次评估，截断误差为
-`O(ε)`。所有请求的评估点压平为单批，调用方需要结合浮点舍入、shots 噪声和
+$[E(t+\epsilon)-E(t-\epsilon)]/(2\epsilon)$，每个参数两次评估，截断误差为
+$O(\epsilon^2)$；`method="forward"` 使用
+$[E(t+\epsilon)-E(t)]/\epsilon$，每个参数两次评估，截断误差为
+$O(\epsilon)$。所有请求的评估点压平为单批，调用方需要结合浮点舍入、shots 噪声和
 目标函数尺度选择 `epsilon`。
 
 `SPSAGradient(perturbation, seed)` 对每个非空请求抽取一个 Rademacher 向量
-`Δ∈{−1,+1}^d`，仅评估 `E(θ+cΔ)` 与 `E(θ−cΔ)`，并返回
-`ĝ_i=[E(θ+cΔ)-E(θ−cΔ)]Δ_i/(2c)`。评估数与参数维数无关。整数 seed 可复现；
+$\Delta\in\{-1,+1\}^d$，仅评估 $E(\theta+c\Delta)$ 与 $E(\theta-c\Delta)$，并返回
+$\widehat g_i=[E(\theta+c\Delta)-E(\theta-c\Delta)]\Delta_i/(2c)$。评估数与参数维数无关。整数 seed 可复现；
 传入 NumPy `Generator` 时共享其随机流；同一实例的随机状态会随调用推进。
 当前实现每次调用只使用一组扰动，不包含多扰动平均。
 
 ## QGT（StatevectorQGT）
 
 `StatevectorQGT.compute(request)` 精确计算导数态并返回 `QGTResult`。
-`tensor` 为复 Hermitian 张量 `F`，`metric` 为实对称度规 `g = Re F`，两者顺序
-均与 `parameter_names` 一致。全局相位的导数与 `|ψ⟩` 平行，经投影后不影响结果。
+`tensor` 为复 Hermitian 张量 $F$，`metric` 为实对称度规
+$g=\operatorname{Re}F$，两者顺序均与 `parameter_names` 一致。全局相位的导数与
+$|\psi\rangle$ 平行，经投影后不影响结果。
 支持的参数化门和线路限制见源码 docstring。
 
 ## 自然梯度（NaturalGradient）
@@ -157,16 +161,16 @@ shots 模式的统计质量取决于底层 Estimator。仅出现在 `set_global_
 单批参数移位梯度 + QGT + 线性求解：
 
 - `regularization=0`：最小范数最小二乘（伪逆），容忍奇异度规；
-- `regularization=ε>0`：岭正则 `(g+εI)·η = ∇E`。
+- $\mathtt{regularization}=\epsilon>0$：岭正则 $(g+\epsilon I)\eta=\nabla E$。
 
 它不继承 `Gradient` 抽象基类：其输出是几何修正后的方向，不是期望值
 的导数。经典优化循环（迭代、步长调度）不在本组件范围内。
 
 ## 量子 Fisher 信息（StatevectorQFI）
 
-纯态约定下 `QFI = 4·Re(F) = 4g`。`StatevectorQFI.compute(request)` 返回
+纯态约定下 $\mathrm{QFI}=4\operatorname{Re}(F)=4g$。`StatevectorQFI.compute(request)` 返回
 `QFIResult`；矩阵按 `parameter_names` 排列且为有限实对称矩阵。空参数请求返回
-`0×0` 矩阵。自然梯度仍使用 `g`，改用 QFI 会把相同步长下的方向缩放为四分之一。
+$0\times0$ 矩阵。自然梯度仍使用 $g$，改用 QFI 会把相同步长下的方向缩放为四分之一。
 
 ## 使用示例
 

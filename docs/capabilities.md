@@ -1,6 +1,8 @@
 # 当前能力清单
 
-本页只列出当前源码已经导出的能力。参数、返回值和异常以相应源码 docstring 为准。
+本页只列出当前源码已经导出的协议、可执行组件、完整算法和执行工作流。请求、结果、
+状态枚举、回调及配置容器属于这些能力的配套接口，不重复计为独立能力。参数、返回值
+和异常以相应源码 docstring 为准。
 
 ## 公共协议
 
@@ -24,14 +26,15 @@
 | 状态制备 | 基态、均匀叠加、任意纯态、乘积态、GHZ、Dicke、稠密/稀疏幅度编码、角度/基编码、图像角度编码、BRQI、用户线路、Feature Map、Hartree–Fock、Slater、费米 Gaussian、晶格参考态与 VSCF |
 | Ansatz | TwoLocal、RealAmplitudes、EfficientSU2、硬件高效、双量子比特参数化酉、PauliTwoDesign、算符演化、Hamiltonian 变分、激发保持、SimplifiedTwoDesign、随机层、MPS、TTN、MERA、UCC/UCCSD、PUCCD/PUCCSD、UVCC/UVCCSD、晶格守恒拟设、QAOA 成本/混合演化 |
 | Mixer | nearby-values、ring、fully-connected、null-swap、受控交换、排列交换、时间调度和有序组合 |
-| Oracle 与反射 | 布尔函数、位翻转/相位 Oracle、零态/一般态反射、Grover diffusion、Long 相位反射、任意酉矩阵综合、酉扩张块编码和 Dicke 权重分布组件 |
+| Oracle 与反射 | 布尔函数、位翻转/相位 Oracle、零态/一般态反射、Grover diffusion、`GroverLong` 相位匹配反射、任意酉矩阵综合、酉扩张块编码和 Dicke 权重分布组件 |
 | 线路组合 | QFT、Hadamard 相位查询、隐藏线性函数电路、Grover 迭代单元、相位估计电路、QSP 与 QSVT |
+| 量子算术 | 半加器、全加器、模加器、Draper 常数加法器、整数比较器、乘法器、加权和、二次型、均匀受控旋转、任意函数/倒数/线性/分段多项式幅度旋转 |
 | 测量 | Pauli none/QWC 分组、全局对易分组、局域基测量规划 |
 | 执行 | 本地态矢量 Sampler、回调式后端 Sampler、精确态矢量 Estimator、采样 Estimator |
 | 微分与优化 | 参数移位、线性组合、有限差分、SPSA 梯度，QGT、QFI、自然梯度，GradientDescent、Adam、SPSA、COBYLA、L-BFGS-B 优化器 |
 | 量子信息 | 纯态或混态任意量子比特二分下的精确量子互信息 |
-| 保真度与重叠 | `U2† U1` 酉重叠线路、基于 compute–uncompute 的线路纯态保真度 |
-| 误差缓解 | CDR、DDD、DEB、LRE、PEA、PEC、Pauli twirling、QSE、读出缓解、classical shadows、T-REx、Virtual Distillation 和 ZNE |
+| 保真度与重叠 | $U_2^\dagger U_1$ 酉重叠线路、基于 compute–uncompute 的线路纯态保真度 |
+| 误差缓解基础组件 | `QemExecutor`、线路折叠/单位层插入/参数缩放、外推 Factory、拟概率表示、读出混淆矩阵、动态解耦与 Pauli twirling 线路变换 |
 | 量子核 | `FidelityQuantumKernel`、`TrainableFidelityQuantumKernel`、`BalancedKernelAlignmentLoss` |
 
 ## 科研计算链
@@ -42,19 +45,20 @@
 | 晶格与自旋 | 通用/线形/矩形/超立方晶格、Fermi–Hubbard、Ising、Heisenberg、守恒扇区、物理参考态与拟设、VQE 基态、占据/磁化/关联观测量 |
 | 振动系统 | 有限 modal 积分、稀疏振动算符、one-hot 映射、VSCF 参考、UVCC 系列、VQE 基态、modal 占据与严格 one-hot 泄漏诊断 |
 
-量子算术子包已经存在，但不属于本轮文档与 docstring 整理范围；其接口保持现状。
-
-## 完整算法
+## 完整算法与执行工作流
 
 | 类别 | 已实现算法 |
 | --- | --- |
 | 相位估计 | 标准 QPE、迭代 QPE、Hamiltonian 相位估计 |
 | 振幅估计 | 标准 AE、迭代 AE、最大似然 AE、快速 AE |
 | 搜索 | Grover 搜索 |
-| 变分与选定子空间 | VQE、VQD、ADAPT-VQE、Sampling VQE、QAOA、PVQD 实时演化、VarQITE 虚时演化、VarQRTE 实时演化、电子结构 VQE 基态、SQD 与 qEOM、晶格基态、振动基态 |
+| 线性系统 | HHL 线性方程组求解 |
+| 变分与时间演化 | VQE、VQD、ADAPT-VQE、Sampling VQE、QAOA、PVQD 实时演化、VarQITE 虚时演化、VarQRTE 实时演化 |
+| 量子化学与多体求解 | 电子结构 VQE 基态、SQD 选定子空间对角化、电子结构 qEOM、晶格与自旋模型基态、振动结构基态 |
 | Oracle 算法 | Deutsch–Jozsa、Bernstein–Vazirani、Simon |
 | 量子机器学习 | QBayesian、QSVR、VQR、PegasosQSVC、QuantumKernelTrainer |
 | 量子信息与协议 | CHSH、BB84 协议实验、量子隐形传态、超密编码 |
+| 误差缓解与统计执行 | ZNE、LRE、CDR、DDD、DEB、PEA、PEC、Pauli twirling、QSE、REM、classical shadows、T-REx 和 Virtual Distillation |
 
 未在本页列出的规划项不视为当前能力。当前实现仍可能受模拟规模、显式真值表或稠密
 矩阵构造限制，具体边界见对应用户指南和源码 docstring。

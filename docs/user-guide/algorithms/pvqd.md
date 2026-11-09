@@ -1,17 +1,17 @@
 # 投影变分量子动力学（PVQD）
 
 `PVQD` 用参数化线路近似封闭量子系统的实时演化。设当前拟设态为
-\(|\psi(\theta_n)\rangle\)，每个时间步先构造短时目标态
+$|\psi(\theta_n)\rangle$，每个时间步先构造短时目标态
 
-\[
+$$
 |\phi_{n+1}\rangle=e^{-i\Delta tH}|\psi(\theta_n)\rangle,
-\]
+$$
 
 再同时优化全部活跃参数，使投影损失
 
-\[
+$$
 1-|\langle\psi(\theta_{n+1})|\phi_{n+1}\rangle|^2
-\]
+$$
 
 最小。实现依据 Barison、Vicentini 和 Carleo 提出的投影变分动力学方法：
 [An efficient quantum algorithm for the time evolution of parameterized circuits](https://doi.org/10.22331/q-2021-07-28-512)。

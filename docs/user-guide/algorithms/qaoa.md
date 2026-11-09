@@ -6,18 +6,26 @@
 
 ## 数学约定
 
-对成本 Hamiltonian `H_C`、一参数混合族 `U_M(beta)` 和层数 `p`，算法构造
+对成本 Hamiltonian $H_C$、一参数混合族 $U_M(\beta)$ 和层数 $p$，算法构造
 
-```text
-|gamma, beta> = U_M(beta[p-1]) U_C(gamma[p-1]) ...
-                U_M(beta[0]) U_C(gamma[0]) |s>
-U_C(gamma) = exp(-i gamma H_C)
-U_M(beta)  = exp(-i beta H_M)       # Hamiltonian mixer
-           或一参数 Mixer 线路       # partitioned/controlled mixer
-```
+$$
+|\boldsymbol{\gamma},\boldsymbol{\beta}\rangle
+=U_M(\beta_{p-1})U_C(\gamma_{p-1})\cdots
+U_M(\beta_0)U_C(\gamma_0)|s\rangle,
+$$
 
-线路时间顺序是初态、第 0 层成本演化、第 0 层混合演化，依次直到第 `p-1` 层。
-默认 `|s>` 是全量子比特均匀叠加态，默认 `H_M = sum_i X_i`。量子比特 0 是
+其中 Hamiltonian Mixer 满足
+
+$$
+U_C(\gamma)=e^{-i\gamma H_C},\qquad
+U_M(\beta)=e^{-i\beta H_M}.
+$$
+
+也可以用满足同一参数契约的 partitioned 或 controlled Mixer 线路替代
+Hamiltonian Mixer。
+
+线路时间顺序是初态、第 0 层成本演化、第 0 层混合演化，依次直到第 $p-1$ 层。
+默认 $|s\rangle$ 是全量子比特均匀叠加态，默认 $H_M=\sum_iX_i$。量子比特 0 是
 计算基索引的最低有效位。
 
 实现采用 Farhi、Goldstone 与 Gutmann 提出的交替成本/混合演化形式；自定义混合
@@ -61,14 +69,14 @@ result = algorithm.compute_minimum_eigenvalue(
 ```
 
 `reps` 必须是非布尔正整数。参数严格按层交错排列：
-`prefix_0_gamma, prefix_0_beta, ..., prefix_{p-1}_gamma,
-prefix_{p-1}_beta`。初值必须精确覆盖线路中的活跃参数。
+`prefix_0_gamma, prefix_0_beta, ..., prefix_{p-1}_gamma, prefix_{p-1}_beta`。
+初值必须精确覆盖线路中的活跃参数。
 
 成本输入必须满足：
 
 - 是至少作用于一个量子比特的非空 `Hamiltonian`；
 - 所有有效系数有限且整体 Hermitian；
-- 每个有效 Pauli 项只含 `I` 和 `Z`，因此计算基对角元素可解释为经典目标值。
+- 每个有效 Pauli 项只含 $I$ 和 $Z$，因此计算基对角元素可解释为经典目标值。
 
 自定义 `mixer_operator` 必须非空、系数有限、整体 Hermitian 且与成本同宽；它不要求
 计算基对角。也可通过 `mixer=Ansatz` 传入已经定义综合顺序的一参数 Mixer。线路 Mixer
@@ -85,9 +93,9 @@ prefix_{p-1}_beta`。初值必须精确覆盖线路中的活跃参数。
 
 原始 QAOA 论文常用最大化组合优化收益的表述，这并不要求算法接口只能最大化。
 本库统一以 `compute_minimum_eigenvalue(cost, initial_point, shots=None)` 为主入口，
-直接最小化原始 `H_C`；不保证结果是精确本征态或全局最优解。
+直接最小化原始 $H_C$；不保证结果是精确本征态或全局最优解。
 
-兼容入口 `compute_maximum` 仍最小化 `-H_C`，但成本演化线路使用原始 `H_C`。
+兼容入口 `compute_maximum` 仍最小化 $-H_C$，但成本演化线路使用原始 $H_C$。
 不能仅改方法名称而保持隐藏负号。上方 MaxCut 示例显式编码负收益；原有调用
 `compute_maximum(positive_cut_cost, ...)` 则不需要自行取负。
 
@@ -121,8 +129,8 @@ gamma/beta 两个符号，但退化演化可能不包含某些逻辑参数槽，
 ## 组件复用边界
 
 - `UniformSuperposition` 负责默认初态；
-- `QAOACostEvolution` 负责每层 `exp(-i gamma H_C)`；
-- `QAOAMixerEvolution` 负责 Hamiltonian Mixer 的每层 `exp(-i beta H_M)`；
+- `QAOACostEvolution` 负责每层 $e^{-i\gamma H_C}$；
+- `QAOAMixerEvolution` 负责 Hamiltonian Mixer 的每层 $e^{-i\beta H_M}$；
 - `operators.mixer` 的一参数组件负责受控与 partitioned Mixer 线路；
 - `QAOA` 直接创建 Estimator/Optimizer 请求，校验返回结果并完成参数绑定；
 - 注入的 Optimizer 继续拥有梯度组件及其更新规则。

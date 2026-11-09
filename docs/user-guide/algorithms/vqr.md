@@ -6,7 +6,7 @@
 
 ## 默认训练
 
-以下示例通过单量子比特 RY 线路拟合 `cos(x+0.43)`。
+以下示例通过单量子比特 RY 线路拟合 $\cos(x+0.43)$。
 
 ```python
 import numpy as np

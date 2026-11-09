@@ -9,17 +9,17 @@
 
 对相同正宽度的线路 `U1` 和 `U2`，`UnitaryOverlap(U1, U2)` 构建
 
-```text
-U_overlap = U2† U1。
-```
+$$
+U_{\mathrm{overlap}}=U_2^\dagger U_1.
+$$
 
 该结果是可继续组合、参数绑定或求逆的 Cqlib 线路，不自动测量，也不直接
 返回一个重叠度标量。两个输入的量子比特按各自的插入位置对应，输出紧凑映射到
-`0..n-1`，因此源量子比特标识无需相同。构造时保存两条输入的独立快照；后续
+$0,\ldots,n-1$，因此源量子比特标识无需相同。构造时保存两条输入的独立快照；后续
 修改源线路不会改变组件，每次 `build_circuit()` 都返回新线路。
 
 参数化输入的活动参数名会原样保留。两条线路中不得出现相同的活动参数名，
-避免在组合时隐式共享训练参数。`insert_barrier=True` 只在 `U1` 与 `U2†`
+避免在组合时隐式共享训练参数。`insert_barrier=True` 只在 $U_1$ 与 $U_2^\dagger$
 之间加入非语义 barrier，不改变线路矩阵。
 
 ```python
@@ -38,7 +38,7 @@ inverse_overlap = overlap.inverse()
 
 输入必须为等宽、可分解且可静态求逆的酉线路；允许 barrier，但拒绝测量、
 重置、delay、经典数据和经典控制，包括嵌套线路中隐藏的这些操作。该组件实现
-的是线路乘积 `U2† U1`，不是 Hilbert–Schmidt trace overlap。
+的是线路乘积 $U_2^\dagger U_1$，不是 Hilbert–Schmidt trace overlap。
 
 ## 采样态保真度
 
@@ -49,24 +49,27 @@ inverse_overlap = overlap.inverse()
 
 设
 
-```text
-|psi_a> = U_a |0...0>
-|psi_b> = U_b |0...0>，
-```
+$$
+|\psi_a\rangle=U_a|0\ldots0\rangle,\qquad
+|\psi_b\rangle=U_b|0\ldots0\rangle.
+$$
 
 则纯态保真度为
 
-```text
-F(|psi_a>, |psi_b>) = |<psi_a|psi_b>|^2
-                     = |<0...0| U_a† U_b |0...0>|^2。
-```
+$$
+F(|\psi_a\rangle,|\psi_b\rangle)
+=|\langle\psi_a|\psi_b\rangle|^2
+=|\langle0\ldots0|U_a^\dagger U_b|0\ldots0\rangle|^2.
+$$
 
-组件构建 `U_a† U_b` 的 compute-uncompute 线路，并对全部量子比特采样。全零比特串
-的频率即保真度估计值 `p`。当 `shots > 1` 时，返回的估计方差为
+组件构建 $U_a^\dagger U_b$ 的 compute-uncompute 线路，并对全部量子比特采样。全零比特串
+的频率即保真度估计值 $p$。当 `shots > 1` 时，返回的估计方差为
 
-```text
-p * (1 - p) / (shots - 1)。
-```
+$$
+\frac{p(1-p)}{N-1},
+$$
+
+其中 $N$ 为 shots 数。
 
 单次采样无法估计统计方差，因此 `variance` 为 `None`。
 

@@ -13,25 +13,25 @@
 
 算法复用 `GHZStatePreparation(2)` 制备
 
-```text
-|Phi+> = (|00> + |11>) / sqrt(2).
-```
+$$
+|\Phi^+\rangle=\frac{|00\rangle+|11\rangle}{\sqrt{2}}.
+$$
 
-公开消息采用 `(bit_flip_bit, phase_bit) = (x, z)`，严格为两个 Python 整数位。
+公开消息采用 $(\mathtt{bit\_flip\_bit},\mathtt{phase\_bit})=(x,z)$，严格为两个 Python 整数位。
 Alice 施加
 
-```text
-X**x Z**z
-```
+$$
+X^xZ^z.
+$$
 
 在算符乘积中右侧先作用，因此线路按 `Z`、`X` 的时间顺序追加：
 
 | 消息 `(x,z)` | 编码操作 |
 | --- | --- |
-| `(0,0)` | `I` |
-| `(0,1)` | `Z` |
-| `(1,0)` | `X` |
-| `(1,1)` | `XZ` |
+| $(0,0)$ | $I$ |
+| $(0,1)$ | $Z$ |
+| $(1,0)$ | $X$ |
+| $(1,1)$ | $XZ$ |
 
 `XZ` 与其他常见的 Pauli 排列可能相差全局相位；全局相位不改变 Bell 基测量结果。
 Bob 收到 Alice 的量子比特后依次执行 `CX(0,1)`、`H(0)`，再按 `(0,1)` 的

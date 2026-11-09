@@ -11,10 +11,10 @@ Ritz 问题”的量子—经典协同场景。已有硬件 counts 可以直接�
 设 `state_preparation` 在 $M=2N_{\mathrm{orb}}$ 个 Jordan–Wigner 量子比特上制备
 $|\Psi\rangle$。计算基测量给出带噪声的 determinant 样本集合
 
-\[
+$$
 \widetilde{\mathcal X}=\{x\mid x\sim\widetilde P_\Psi(x)\},
 \qquad x\in\{0,1\}^{M}.
-\]
+$$
 
 本库电子结构采用交错自旋轨道顺序：位置 $2p$ 表示空间轨道 $p$ 的 alpha
 自旋，位置 $2p+1$ 表示 beta 自旋；Core 计数字符串按小端量子比特语义解释。
@@ -35,24 +35,24 @@ SQD 依次执行：
    至多 `samples_per_batch` 个唯一 determinant。启用 `symmetrize_spin=True` 时，改按
    论文式 (11) 抽取约 $\sqrt{\mathtt{samples\_per\_batch}}/2$ 个完整配置，将每个配置的 alpha、
    beta 空间占据串收集到同一个集合，再取该集合与自身的笛卡尔积。这会自动加入
-   开壳层配置的自旋交换伙伴并促进总自旋守恒，但不等价于严格投影到某个 `S²` 本征值。
+   开壳层配置的自旋交换伙伴并促进总自旋守恒，但不等价于严格投影到某个 $S^2$ 本征值。
 4. 对每批 $\mathcal S^{(k)}$ 构造
 
-   \[
+   $$
    H_{{\mathcal S}^{(k)}}=
    P_{{\mathcal S}^{(k)}} H P_{{\mathcal S}^{(k)}},\qquad
    P_{{\mathcal S}^{(k)}}=
    \sum_{x\in{\mathcal S}^{(k)}}|x\rangle\langle x|,
-   \]
+   $$
 
    并求其最低 Ritz 对 $(E^{(k)},|\psi^{(k)}\rangle)$。投影采用 Pauli 位掩码稀疏
    作用，不生成完整 $2^M\times2^M$ Hamiltonian。
 5. 按论文定义对所有批次等权平均新占据数：
 
-   \[
+   $$
    n_{p\sigma}=\frac{1}{K}\sum_{k=1}^{K}
    \langle\psi^{(k)}|\hat n_{p\sigma}|\psi^{(k)}\rangle.
-   \]
+   $$
 
 6. 当相邻轮最低能量变化不超过 `energy_tolerance`，且最大轨道占据数变化不超过
    `occupancy_tolerance` 时收敛；否则继续恢复，最多执行 `max_iterations` 轮。
@@ -190,12 +190,12 @@ result = SQD().compute_from_counts(
 
 若样本包含开壳层 determinant，该模式会把 alpha、beta 空间占据串重组为闭包子空间。
 它为 singlet/triplet 线性组合提供所需 determinant 支撑，但没有加入论文式 (12) 的
-`S²` 软约束，因此调用方不能仅凭该开关声称结果是严格的总自旋本征态。
+$S^2$ 软约束，因此调用方不能仅凭该开关声称结果是严格的总自旋本征态。
 
 ## 适用边界与资源
 
 - 当前公开算法实现电子结构 SQD，并可选提供论文式 (11) 的自旋配置闭包；不包含式 (12)
-  的 `S²` 罚函数、Pauli-only 通用 SQD、轨道优化、Trim SQD、分布式调度或
+  的 $S^2$ 罚函数、Pauli-only 通用 SQD、轨道优化、Trim SQD、分布式调度或
   excited-state targeting。外部求解器可以替换单批对角化，但批次调度仍由当前进程
   串行执行。
 - 内置求解器为单进程参考实现。投影组装约为“子空间维数 × Pauli 项数”，稀疏

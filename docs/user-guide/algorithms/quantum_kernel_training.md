@@ -6,7 +6,7 @@
 
 ## 使用示例
 
-以下示例训练 `RY(w*x)` 中的参数 w，并使用保真度核训练分类器。
+以下示例训练 $R_Y(wx)$ 中的参数 $w$，并使用保真度核训练分类器。
 
 ```python
 from cqlib import Circuit, Parameter

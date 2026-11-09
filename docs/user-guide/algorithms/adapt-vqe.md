@@ -2,12 +2,12 @@
 
 `AdaptVQE` 从给定 Hermitian 生成元池逐步构造拟设。对当前态
 
-\[
+$$
 g_j=i\langle\psi|[G_j,H]|\psi\rangle
-\]
+$$
 
 计算完整生成元池的梯度，选择绝对值最大的分量，将
-`exp(-i theta_j G_j)` 追加到线路末尾，再用现有 `VQE` 重新优化全部活跃参数。
+$e^{-i\theta_jG_j}$ 追加到线路末尾，再用现有 `VQE` 重新优化全部活跃参数。
 实现依据 Grimsley 等人提出的自适应变分方法：
 [Nature Communications 10, 3007 (2019)](https://doi.org/10.1038/s41467-019-10988-2)。
 

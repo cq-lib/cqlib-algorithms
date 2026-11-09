@@ -6,14 +6,14 @@
 
 ## 数学约定
 
-对酉算子 `U` 的本征态 `|psi>`，归一化本征相位定义为
+对酉算子 $U$ 的本征态 $|\psi\rangle$，归一化本征相位定义为
 
-```text
-U|psi> = exp(2*pi*i*phi)|psi>,  phi in [0, 1).
-```
+$$
+U|\psi\rangle=e^{2\pi i\phi}|\psi\rangle,\qquad \phi\in[0,1).
+$$
 
-系统量子比特采用 Cqlib 小端序。`m` 个估计量子比特的整数结果 `y` 表示
-`phi=y/2**m`。所有状态制备和酉线路必须固定、完全绑定、静态且同宽；量子比特按
+系统量子比特采用 Cqlib 小端序。$m$ 个估计量子比特的整数结果 $y$ 表示
+$\phi=y/2^m$。所有状态制备和酉线路必须固定、完全绑定、静态且同宽；量子比特按
 插入位置映射到连续位置。
 
 ## PhaseEstimationCircuit
@@ -21,11 +21,11 @@ U|psi> = exp(2*pi*i*phi)|psi>,  phi in [0, 1).
 `PhaseEstimationCircuit` 是无状态制备、无测量的 L2 复合线路算子。它依次执行：
 
 1. 对估计寄存器施加 Hadamard；
-2. 第 `j` 个估计量子比特控制 `U**(2**j)`；
+2. 第 $j$ 个估计量子比特控制 $U^{2^j}$；
 3. 对估计寄存器施加逆 QFT。
 
 当前 Core 尚无把任意线路直接提升为量子受控线路的通用接口，因此实现从
-`Circuit.to_matrix` 构造 `diag(I,U**k)`。该过程保留 `U` 的全局相位，但系统宽度的
+`Circuit.to_matrix` 构造 $\operatorname{diag}(I,U^k)$。该过程保留 $U$ 的全局相位，但系统宽度的
 内存复杂度为指数级；构造前执行 256 MiB 稠密工作集上限检查。数值酉门也不保证每个
 远端后端都能直接接受或分解。
 
@@ -43,13 +43,13 @@ binary64 相位结果仍具有逐位分辨能力，并避免超大指数转换�
 `PhaseEstimationRequest` 另外给出估计位数、shots 和可选 QFT 近似度。算法支持
 输入态为本征态叠加：若
 
-```text
-|psi> = sum_j c_j |phi_j>,
-```
+$$
+|\psi\rangle=\sum_j c_j|\phi_j\rangle,
+$$
 
-则理想采样以 `|c_j|**2` 的权重观察对应本征相位。结果返回经验众数相位、整数网格点
+则理想采样以 $|c_j|^2$ 的权重观察对应本征相位。结果返回经验众数相位、整数网格点
 和只包含已观测网格点的稀疏概率映射；众数并列时选择最小网格点。线路内逻辑酉调用
-总数为 `2**m-1`，`num_unitary_queries` 是再乘 shots 的采样加权查询数。
+总数为 $2^m-1$，`num_unitary_queries` 是再乘 shots 的采样加权查询数。
 
 ```python
 algorithm = PhaseEstimation(sampler)
@@ -61,7 +61,7 @@ result = algorithm.run([
 ## 迭代 QPE
 
 `IterativePhaseEstimation` 使用一个估计辅助比特，以独立线路从最低有效位向最高有效位
-提取相位。第 `k` 轮使用受控 `U**(2**k)`，并根据已经得到的低位施加经典反馈相位；
+提取相位。第 $k$ 轮使用受控 $U^{2^k}$，并根据已经得到的低位施加经典反馈相位；
 每轮重新制备同一系统态。因不同位不在同一次相干演化中关联，该接口要求输入制备态
 为一个本征态，不支持用一次运行解析本征态叠加的联合相位分布。
 
@@ -80,21 +80,25 @@ result = algorithm.run([
 
 对有限 Hermitian Pauli Hamiltonian `H`，HPE 选择正比例因子
 
-```text
-scale = pi / bound,
-U = exp(i * scale * H),
-```
+$$
+s=\frac{\pi}{B},\qquad U=e^{isH},
+$$
 
 其中 `bound` 是本征值绝对值上界。若未显式提供，使用各 Pauli 项有效系数绝对值之和。
-Core 的演化约定为 `exp(-i*t*H)`，实现以 `t=-scale` 构造上述 `U`。相位 `phi` 先映射
+Core 的演化约定为 $e^{-itH}$，实现以 $t=-s$ 构造上述 $U$。相位 $\phi$ 先映射
 到有符号区间，再恢复本征值：
 
-```text
-signed_phi = phi            if phi < 1/2 else phi - 1
-eigenvalue = 2*pi*signed_phi / scale.
-```
+$$
+\widetilde{\phi}=
+\begin{cases}
+\phi, & \phi<\tfrac12,\\
+\phi-1, & \phi\geq\tfrac12,
+\end{cases}
+\qquad
+\lambda=\frac{2\pi\widetilde{\phi}}{s}.
+$$
 
-`+bound` 与 `-bound` 都映射到相位端点 `1/2`，无法区分；可能占据端点时应提供严格
+$+\mathtt{bound}$ 与 $-\mathtt{bound}$ 都映射到相位端点 $1/2$，无法区分；可能占据端点时应提供严格
 大于实际谱半径的 `bound`。对非对易 Pauli 项，Core 使用指定 `TrotterMode` 和
 `trotter_steps` 合成演化，结果对应这一乘积公式近似；默认使用二阶公式、一步。
 对易项由 Core 使用精确单遍分解。
