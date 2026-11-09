@@ -58,7 +58,6 @@ from collections.abc import Sequence
 from enum import Enum
 
 import numpy as np
-
 from cqlib import Circuit
 from cqlib.circuit import Instruction
 from cqlib.error_mitigation import ExtrapolateMethod, ZNEMitigation
@@ -160,12 +159,10 @@ def construct_circuits(
     # count, so the configuration is rejected before any circuit is built.
     if num_chunks is None:
         raise ValueError(
-            "scaling=ScalingMethod.LOCAL requires num_chunks, but num_chunks "
-            "was None."
+            "scaling=ScalingMethod.LOCAL requires num_chunks, but num_chunks was None."
         )
     return [
-        fold_local(circuit, factor, num_chunks=num_chunks)
-        for factor in scale_factors
+        fold_local(circuit, factor, num_chunks=num_chunks) for factor in scale_factors
     ]
 
 

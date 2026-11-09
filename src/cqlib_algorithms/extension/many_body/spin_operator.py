@@ -20,7 +20,6 @@ import warnings
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from fractions import Fraction
-from functools import reduce
 from typing import Literal, TypeAlias, cast
 
 import numpy as np
@@ -373,7 +372,9 @@ class SpinOp:
             local_operators = [identity.copy() for _ in range(self.num_spins)]
             for axis, index in term:
                 local_operators[index] = local_operators[index] @ matrices[axis]
-            tensor = reduce(np.kron, reversed(local_operators))
+            tensor = local_operators[-1]
+            for operator in reversed(local_operators[:-1]):
+                tensor = cast(NDArray[np.complex128], np.kron(tensor, operator))
             result += coefficient * tensor
         return result
 
