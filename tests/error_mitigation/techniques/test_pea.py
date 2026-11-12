@@ -85,9 +85,7 @@ def test_the_amplified_coefficients_match_the_closed_form() -> None:
         noise_level,
         scale_factor,
     )
-    identity_weight, correction_weight = _amplified_weights(
-        noise_level, scale_factor
-    )
+    identity_weight, correction_weight = _amplified_weights(noise_level, scale_factor)
 
     # The amplified weights follow the Mari closed form directly: the identity
     # keeps 1 - s * eps and each of the three Pauli corrections takes

@@ -54,7 +54,6 @@ from dataclasses import dataclass
 from functools import reduce
 
 import numpy as np
-
 from cqlib import Circuit
 from cqlib.device import ExecutionResult, ReadoutError
 from cqlib.qis import Hamiltonian, PauliString
@@ -245,8 +244,7 @@ def mitigate_counts(
     for bitstring, count in counts.items():
         if not isinstance(bitstring, str) or len(bitstring) != num_qubits:
             raise ValueError(
-                "count keys must be little-endian bitstrings of length "
-                f"{num_qubits}"
+                f"count keys must be little-endian bitstrings of length {num_qubits}"
             )
         if any(bit not in "01" for bit in bitstring):
             raise ValueError("count keys must be binary strings")
@@ -643,8 +641,7 @@ def _warn_if_ill_conditioned(confusion: ConfusionMatrix) -> None:
 
 
 def _validate_z_diagonal(observable: Hamiltonian | PauliString) -> None:
-    r"""Validate a Z-diagonal observable.
-    """
+    r"""Validate a Z-diagonal observable."""
     if isinstance(observable, PauliString):
         diagonal = observable.x_mask == 0
     else:

@@ -67,9 +67,8 @@ from typing import Literal
 
 import numpy as np
 import numpy.typing as npt
-from cqlib.circuit.gates import MCGate
-
 from cqlib import Circuit
+from cqlib.circuit.gates import MCGate
 
 from ._mc_rotation import (
     _append_axis_rotation as _shared_append_axis_rotation,
@@ -280,17 +279,13 @@ class PolynomialPauliRotation:
         axis: Literal["x", "y", "z"] = "y",
         name: str | None = None,
     ) -> None:
-        if isinstance(num_state_qubits, bool) or not isinstance(
-            num_state_qubits, int
-        ):
+        if isinstance(num_state_qubits, bool) or not isinstance(num_state_qubits, int):
             raise TypeError(
-                "num_state_qubits must be an int, got "
-                f"{num_state_qubits!r}."
+                f"num_state_qubits must be an int, got {num_state_qubits!r}."
             )
         if num_state_qubits < 1:
             raise ValueError(
-                "num_state_qubits must be >= 1, got "
-                f"{num_state_qubits!r}."
+                f"num_state_qubits must be >= 1, got {num_state_qubits!r}."
             )
 
         validated_coeffs = _validate_coefficients(coeffs)
@@ -305,9 +300,7 @@ class PolynomialPauliRotation:
         self._degree = len(validated_coeffs) - 1
         self._name = name or self._DEFAULT_NAME
 
-        const_term, gammas, degree_gt_n = _expand_polynomial_gammas(
-            n, validated_coeffs
-        )
+        const_term, gammas, degree_gt_n = _expand_polynomial_gammas(n, validated_coeffs)
         self._const_term = const_term
         self._gammas = gammas
         if degree_gt_n:

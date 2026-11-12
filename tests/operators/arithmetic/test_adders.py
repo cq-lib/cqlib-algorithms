@@ -36,9 +36,9 @@ from _adder_utils import (
     _expected_num_qubits,
     _run_adder,
 )
+from cqlib import Circuit
 from cqlib.qis.state import Statevector
 
-from cqlib import Circuit
 from cqlib_algorithms.operators.arithmetic import (
     DraperConstantAdder,
     FullAdder,
@@ -575,9 +575,7 @@ def test_constant_adder_invalid_inputs_raise_valueerror() -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize(
-    "adder_cls", [HalfAdder, FullAdder, ModularAdder]
-)
+@pytest.mark.parametrize("adder_cls", [HalfAdder, FullAdder, ModularAdder])
 def test_adder_general_constructible_and_qubit_count(
     adder_cls: type[HalfAdder | FullAdder | ModularAdder],
 ) -> None:
@@ -587,9 +585,7 @@ def test_adder_general_constructible_and_qubit_count(
     assert adder.num_qubits == _expected_num_qubits(adder_cls, n)
 
 
-@pytest.mark.parametrize(
-    "adder_cls", [HalfAdder, FullAdder, ModularAdder]
-)
+@pytest.mark.parametrize("adder_cls", [HalfAdder, FullAdder, ModularAdder])
 def test_adder_general_registers_clean_layout(
     adder_cls: type[HalfAdder | FullAdder | ModularAdder],
 ) -> None:
@@ -599,9 +595,7 @@ def test_adder_general_registers_clean_layout(
     _assert_clean_register_layout(adder)
 
 
-@pytest.mark.parametrize(
-    "adder_cls", [HalfAdder, FullAdder, ModularAdder]
-)
+@pytest.mark.parametrize("adder_cls", [HalfAdder, FullAdder, ModularAdder])
 def test_adder_general_zero_width_raises_valueerror(
     adder_cls: type[HalfAdder | FullAdder | ModularAdder],
 ) -> None:
@@ -624,10 +618,7 @@ def test_adder_general_zero_width_raises_valueerror(
         ("constant_adder_name_int", lambda: DraperConstantAdder(3, 2, name=123)),
     ],
 )
-def test_all_adders_invalid_types_raise_typeerror(
-    case: str, callable_wrapper
-) -> None:
+def test_all_adders_invalid_types_raise_typeerror(case: str, callable_wrapper) -> None:
     """Invalid construction input types raise TypeError across all adders."""
     with pytest.raises(TypeError):
         callable_wrapper()
-

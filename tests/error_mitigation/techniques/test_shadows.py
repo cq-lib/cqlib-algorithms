@@ -112,8 +112,7 @@ def _direct_z_mean(
         ]
     )[0]
     distribution = {
-        bitstring: count / sampled.shots
-        for bitstring, count in sampled.counts.items()
+        bitstring: count / sampled.shots for bitstring, count in sampled.counts.items()
     }
     measurement = PauliString.from_str("Z" * circuit.num_qubits)
     expectation = observable.expectation_probs([(measurement, distribution)])

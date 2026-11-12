@@ -59,7 +59,6 @@ from collections.abc import Sequence
 from numbers import Real
 
 import numpy as np
-
 from cqlib import Circuit
 from cqlib.qis import Hamiltonian, PauliString
 
@@ -143,8 +142,7 @@ def construct_circuits(
     num_samples = math.ceil(1.0 / float(precision) ** 2)
     rng = np.random.default_rng(seed)
     return [
-        _sample_variant(circuit, representations, rng)[0]
-        for _ in range(num_samples)
+        _sample_variant(circuit, representations, rng)[0] for _ in range(num_samples)
     ]
 
 
@@ -167,8 +165,7 @@ def combine_results(results: Sequence[EstimatorResult], /) -> float:
     """
     if not results:
         raise ValueError(
-            "probabilistic error amplification needs at least one result to "
-            "average."
+            "probabilistic error amplification needs at least one result to average."
         )
     return float(np.mean([result.expectation for result in results]))
 
@@ -484,8 +481,7 @@ def _validate_amplification(
         raise TypeError("noise_level must be a real number")
     if not np.isfinite(noise_level) or noise_level < 0.0:
         raise ValueError(
-            f"noise_level must be finite and non-negative but was "
-            f"{noise_level!r}."
+            f"noise_level must be finite and non-negative but was {noise_level!r}."
         )
     if not scale_factors:
         raise ValueError("scale_factors must contain at least one factor.")

@@ -19,9 +19,8 @@ from collections.abc import Sequence
 from numbers import Real
 
 import numpy as np
-from cqlib.circuit.gates import StandardGate
-
 from cqlib import Circuit
+from cqlib.circuit.gates import StandardGate
 
 from ._phase_solver import (
     polynomial_to_chebyshev,

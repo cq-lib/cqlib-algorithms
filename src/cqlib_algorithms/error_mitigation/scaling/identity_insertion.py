@@ -46,7 +46,6 @@ References
 from __future__ import annotations
 
 import numpy as np
-
 from cqlib import Circuit
 from cqlib.circuit import Qubit, StandardGate, ValueOperation
 
@@ -140,6 +139,5 @@ def _select_partial_layers(
 def _identity_layer(qubits: list[Qubit], /) -> list[ValueOperation]:
     r"""Return one identity layer acting on every qubit in ``qubits``."""
     return [
-        ValueOperation.from_standard_gate(StandardGate.I, [qubit])
-        for qubit in qubits
+        ValueOperation.from_standard_gate(StandardGate.I, [qubit]) for qubit in qubits
     ]

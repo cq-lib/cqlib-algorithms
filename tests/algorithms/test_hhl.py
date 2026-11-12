@@ -87,7 +87,9 @@ class _RecordingInversion(ExactReciprocal):
 
 def _diag_problem(eigenvalues, rhs):
     operator = np.diag(np.asarray(eigenvalues, dtype=np.complex128))
-    return LinearSystemProblem(operator=operator, rhs=np.asarray(rhs, dtype=np.complex128))
+    return LinearSystemProblem(
+        operator=operator, rhs=np.asarray(rhs, dtype=np.complex128)
+    )
 
 
 def _request(
@@ -201,9 +203,7 @@ def _assert_solution_matches_analytic(result, operator, rhs, shots, sigmas=3.0):
     observed = dict(result.solution_probabilities)
     post_selected = max(result.success_probability * shots, 1.0)
     for index, probability in enumerate(expected):
-        standard_error = math.sqrt(
-            probability * (1.0 - probability) / post_selected
-        )
+        standard_error = math.sqrt(probability * (1.0 - probability) / post_selected)
         assert observed.get(index, 0.0) == pytest.approx(
             probability, abs=sigmas * standard_error
         )
@@ -357,7 +357,9 @@ def test_problem_snapshots_rhs_circuit():
 def test_problem_rejects_rhs_circuit_width():
     preparation = Circuit(2)
     preparation.h(0)
-    with pytest.raises(ValueError, match="rhs circuit width must equal the system width"):
+    with pytest.raises(
+        ValueError, match="rhs circuit width must equal the system width"
+    ):
         LinearSystemProblem(operator=np.diag([1.0, 0.5]), rhs=preparation)
 
 
@@ -509,7 +511,9 @@ def test_request_rejects_non_integer_evaluation_width(width):
 
 @pytest.mark.parametrize("width", [0, -1])
 def test_request_rejects_non_positive_evaluation_width(width):
-    with pytest.raises(ValueError, match="num_evaluation_qubits must be greater than zero"):
+    with pytest.raises(
+        ValueError, match="num_evaluation_qubits must be greater than zero"
+    ):
         _request(_diag_problem([1.0, 0.5], [1.0, 1.0]), num_evaluation_qubits=width)
 
 
@@ -675,7 +679,9 @@ def test_result_rejects_unnormalized_distribution():
 
 @pytest.mark.parametrize("index", [-1, 4, 16])
 def test_result_rejects_out_of_range_indices(index):
-    with pytest.raises(ValueError, match="solution indices must be valid system indices"):
+    with pytest.raises(
+        ValueError, match="solution indices must be valid system indices"
+    ):
         HHLResult(
             success_probability=0.5,
             solution_probabilities={index: 1.0},
@@ -818,7 +824,9 @@ def test_result_accepts_indices_wider_than_the_evaluation_register():
 
 
 def test_result_rejects_indices_wider_than_the_system_register():
-    with pytest.raises(ValueError, match="solution indices must be valid system indices"):
+    with pytest.raises(
+        ValueError, match="solution indices must be valid system indices"
+    ):
         HHLResult(
             success_probability=0.5,
             solution_probabilities={4: 1.0},
@@ -1149,9 +1157,7 @@ def test_run_rejects_malformed_count_entries(counts, message):
 
 
 def test_reduction_selects_only_ancilla_one_shots():
-    sampler = _ScriptedSampler(
-        [{"10": 3, "11": 5, _counts_key(0, 0, 1): 2}]
-    )
+    sampler = _ScriptedSampler([{"10": 3, "11": 5, _counts_key(0, 0, 1): 2}])
 
     result = HHL(sampler).run(
         [_request(_diag_problem([1.0, 0.5], [1.0, 1.0]), shots=10)]
@@ -1175,7 +1181,9 @@ def test_reduction_reports_empty_distribution_without_ancilla_success():
 def test_reduction_reports_metadata_from_the_request():
     sampler = _ScriptedSampler([{_counts_key(0, 1, 2): 16}])
     problem = _diag_problem([1.0, 0.5, 0.25, 0.125], [1.0, 1.0, 1.0, 1.0])
-    request = _request(problem, num_evaluation_qubits=3, scaling=2.0**-3, shots=16, bound=2.0)
+    request = _request(
+        problem, num_evaluation_qubits=3, scaling=2.0**-3, shots=16, bound=2.0
+    )
 
     result = HHL(sampler).run([request])[0]
 
@@ -1245,7 +1253,9 @@ def test_success_probability_matches_closed_form():
         _analytic_success(np.diag(eigenvalues), rhs, 2.0, scaling),
         abs=_SCALING_TOLERANCE,
     )
-    assert _success_probability(joint) == pytest.approx(85.0 / 256.0, abs=_SCALING_TOLERANCE)
+    assert _success_probability(joint) == pytest.approx(
+        85.0 / 256.0, abs=_SCALING_TOLERANCE
+    )
 
 
 @pytest.mark.reference

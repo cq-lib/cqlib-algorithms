@@ -27,9 +27,8 @@ References
 
 from __future__ import annotations
 
-from cqlib.circuit.gates import StandardGate
-
 from cqlib import Circuit
+from cqlib.circuit.gates import StandardGate
 
 
 def _accumulator_window_indices(

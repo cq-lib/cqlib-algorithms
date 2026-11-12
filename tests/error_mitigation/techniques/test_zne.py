@@ -17,7 +17,6 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 
-import numpy as np
 import pytest
 from cqlib import Circuit
 from cqlib.circuit import Instruction, StandardGate
@@ -147,9 +146,7 @@ def test_richardson_reproduces_a_linear_noise_response(
 
 def test_combine_results_matches_the_factory_reduce() -> None:
     scale_factors = (1.0, 2.0, 3.0)
-    results = [
-        EstimatorResult(expectation=value) for value in (0.5, 0.4, 0.3)
-    ]
+    results = [EstimatorResult(expectation=value) for value in (0.5, 0.4, 0.3)]
 
     combined = combine_results(results, factory=RichardsonFactory(scale_factors))
 

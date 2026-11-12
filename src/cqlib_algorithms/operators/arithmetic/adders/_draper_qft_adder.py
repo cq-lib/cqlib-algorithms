@@ -113,11 +113,7 @@ def build_draper_qft_adder(
     approximation_degree: int | None = None,
 ) -> Circuit:
     """Return a fresh Circuit instance implementing this adder."""
-    num_qubits = (
-        2 * num_state_qubits
-        if kind == "modular"
-        else 2 * num_state_qubits + 1
-    )
+    num_qubits = 2 * num_state_qubits if kind == "modular" else 2 * num_state_qubits + 1
     circ = Circuit(num_qubits)
     _append_draper_schedule(
         circ,

@@ -240,4 +240,6 @@ class QemExecutor:
         for key, result in zip(miss_keys, self._sampler.run(misses)):
             self._sampler_cache[key] = result
 
-        return [self._sampler_cache[_sampler_cache_key(request)] for request in requests]
+        return [
+            self._sampler_cache[_sampler_cache_key(request)] for request in requests
+        ]

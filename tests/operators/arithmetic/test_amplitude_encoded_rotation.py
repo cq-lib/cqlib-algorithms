@@ -58,9 +58,9 @@ from collections import Counter
 
 import numpy as np
 import pytest
+from cqlib import Circuit
 from cqlib.qis.state import Statevector
 
-from cqlib import Circuit
 from cqlib_algorithms.operators.arithmetic import (
     UCRX,
     UCRY,
@@ -85,8 +85,6 @@ UNITARITY_ATOL = 1e-10
 # NOTE: ``tests`` is deliberately left as a plain directory (no
 # ``__init__.py``), so ``from tests.operators.arithmetic.conftest import ...``
 # would fail at collection time.
-
-
 
 
 # ---------------------------------------------------------------------------
@@ -239,8 +237,10 @@ def _rot_2x2(axis: str, theta: float) -> np.ndarray:
         return np.array([[c, -s], [s, c]], dtype=np.complex128)
     if axis == "z":
         return np.array(
-            [[complex(math.cos(theta / 2.0) - 1j * math.sin(theta / 2.0)), 0j],
-             [0j, complex(math.cos(theta / 2.0) + 1j * math.sin(theta / 2.0))]],
+            [
+                [complex(math.cos(theta / 2.0) - 1j * math.sin(theta / 2.0)), 0j],
+                [0j, complex(math.cos(theta / 2.0) + 1j * math.sin(theta / 2.0))],
+            ],
             dtype=np.complex128,
         )
     raise ValueError(f"Unknown axis: {axis!r}")
@@ -314,9 +314,7 @@ class TestUCRYGateLevel0:
         expected_a0 = math.cos(theta / 2.0)
         expected_a1 = math.sin(theta / 2.0)
         for x in range(8):
-            _assert_branch_amplitudes(
-                circ, 3, x, amp_0=expected_a0, amp_1=expected_a1
-            )
+            _assert_branch_amplitudes(circ, 3, x, amp_0=expected_a0, amp_1=expected_a1)
 
     @pytest.mark.parametrize("n", [1, 2, 3, 4])
     def test_ucry_004_cnot_count(self, n: int) -> None:
@@ -327,8 +325,7 @@ class TestUCRYGateLevel0:
         counts = _count_ops(circ)
         cnots = counts.get("cx", 0) + counts.get("cnot", 0)
         assert cnots == 1 << n, (
-            f"UCRY-004 violation for n={n}: expected 2^{n} CX gates, "
-            f"observed {cnots}."
+            f"UCRY-004 violation for n={n}: expected 2^{n} CX gates, observed {cnots}."
         )
 
     @pytest.mark.parametrize("n", [1, 2, 3, 4])
@@ -340,8 +337,7 @@ class TestUCRYGateLevel0:
         counts = _count_ops(circ)
         rys = counts.get("ry", 0)
         assert rys == 1 << n, (
-            f"UCRY-005 violation for n={n}: expected 2^{n} RY gates, "
-            f"observed {rys}."
+            f"UCRY-005 violation for n={n}: expected 2^{n} RY gates, observed {rys}."
         )
 
 
@@ -350,7 +346,6 @@ class TestUCRYGateLevel0:
 # ---------------------------------------------------------------------------
 # Section 2.  Level 1 — Exact reciprocal (REC-001 .. REC-004) -------------
 # ---------------------------------------------------------------------------
-
 
 
 class TestExactReciprocalLevel2:
@@ -383,14 +378,20 @@ class TestExactReciprocalLevel2:
         # x=2: sf=0.5
         f2 = 0.5
         _assert_branch_amplitudes(
-            circ, n, 2,
-            amp_0=math.sqrt(1.0 - f2 * f2), amp_1=f2,
+            circ,
+            n,
+            2,
+            amp_0=math.sqrt(1.0 - f2 * f2),
+            amp_1=f2,
         )
         # x=3: sf=1/3
         f3 = 1.0 / 3.0
         _assert_branch_amplitudes(
-            circ, n, 3,
-            amp_0=math.sqrt(1.0 - f3 * f3), amp_1=f3,
+            circ,
+            n,
+            3,
+            amp_0=math.sqrt(1.0 - f3 * f3),
+            amp_1=f3,
         )
 
     @staticmethod
@@ -427,8 +428,11 @@ class TestExactReciprocalLevel2:
             else:
                 f_k = (1.0 / 8.0) * (1 << n) / k
             _assert_branch_amplitudes(
-                circ, n, k,
-                amp_0=math.sqrt(1.0 - f_k * f_k), amp_1=f_k,
+                circ,
+                n,
+                k,
+                amp_0=math.sqrt(1.0 - f_k * f_k),
+                amp_1=f_k,
             )
 
     # -- Validation tests (beyond the numeric doc cases) -------------------
@@ -463,11 +467,10 @@ class TestExactReciprocalLevel2:
         with pytest.raises(ValueError, match="neg_vals=True"):
             ExactReciprocal(1, 0.5, neg_vals=True)
 
+
 # ---------------------------------------------------------------------------
 # Section 3.  Level 2 — Negative value support (neg_vals) ----------------
 # ---------------------------------------------------------------------------
-
-
 
 
 class TestNegativeValuesLevel5:
@@ -524,7 +527,7 @@ class TestNegativeValuesLevel5:
 
         circ = ExactReciprocal(3, 1.0 / 4.0, neg_vals=True).build_circuit()
         for mag in [1, 2, 3]:
-            x_pos = mag            # qubit layout: sign on bit 2, magnitude low
+            x_pos = mag  # qubit layout: sign on bit 2, magnitude low
             x_neg = mag | 0b100
             sv_pos = _probed_statevector(circ, 3, x_pos)
             sv_neg = _probed_statevector(circ, 3, x_neg)
@@ -617,9 +620,7 @@ class TestIntegrationLevel7:
             ),
         ],
     )
-    def test_int001_unitarity(
-        self, name: str, circuit_builder: object
-    ) -> None:
+    def test_int001_unitarity(self, name: str, circuit_builder: object) -> None:
         """U†U = I within ``UNITARITY_ATOL`` for each representative circuit."""
 
         del name
@@ -712,9 +713,7 @@ class TestIntegrationLevel7:
 
         if kind == "ucr":
             gate_cls = {"x": UCRX, "y": UCRY, "z": UCRZ}[axis]
-            alpha = np.round(
-                (np.arange(1 << n, dtype=np.float64) + 1) * 0.1, 4
-            )
+            alpha = np.round((np.arange(1 << n, dtype=np.float64) + 1) * 0.1, 4)
             circ = gate_cls(n, alpha).build_circuit()
         elif kind == "exact_reciprocal":
             assert scaling is not None
@@ -822,9 +821,7 @@ class TestUCRXUCRZSymmetry:
         """Gate-count shape + per-branch matrix-element convention, n=1..3."""
 
         del axis
-        alpha = np.round(
-            (np.arange(1 << n, dtype=np.float64) + 1) * 0.1, 4
-        )
+        alpha = np.round((np.arange(1 << n, dtype=np.float64) + 1) * 0.1, 4)
         circ = gate_cls(n, alpha).build_circuit()
 
         counts = _count_ops(circ)
@@ -838,9 +835,7 @@ class TestUCRXUCRZSymmetry:
         for x, a in enumerate(alpha):
             amp_0 = amp_0_of(a)  # type: ignore[misc]
             amp_1 = amp_1_of(a)  # type: ignore[misc]
-            _assert_branch_amplitudes(
-                circ, n, x, amp_0=amp_0, amp_1=amp_1
-            )
+            _assert_branch_amplitudes(circ, n, x, amp_0=amp_0, amp_1=amp_1)
 
 
 # ---------------------------------------------------------------------------
@@ -890,7 +885,9 @@ class TestArbitraryFunctionValidation:
     def test_v6_invalid_mode(bad_mode: object) -> None:
         with pytest.raises((TypeError, ValueError)):
             ArbitraryFunction(
-                2, np.ones(4), mode=bad_mode  # type: ignore[arg-type]
+                2,
+                np.ones(4),
+                mode=bad_mode,  # type: ignore[arg-type]
             )
 
     # -- V7: axis ------------------------------------------------------
@@ -900,7 +897,9 @@ class TestArbitraryFunctionValidation:
     def test_v7_invalid_axis(bad_axis: object) -> None:
         with pytest.raises((TypeError, ValueError)):
             ArbitraryFunction(
-                2, np.ones(4), axis=bad_axis  # type: ignore[arg-type]
+                2,
+                np.ones(4),
+                axis=bad_axis,  # type: ignore[arg-type]
             )
 
     # -- V8 / V9: amplitude mode domain --------------------------------
@@ -1103,9 +1102,7 @@ class TestMultiplexedFunctionTable:
         # n=4) and f(16−k) mirrors behaviour for k=1..7 vs k=9..15.
         for k in range(1, 8):
             fk = float(np.sin(np.pi * k / 4.0) * np.cos(np.pi * k / 8.0))
-            f2k = float(
-                np.sin(np.pi * (16 - k) / 4.0) * np.cos(np.pi * (16 - k) / 8.0)
-            )
+            f2k = float(np.sin(np.pi * (16 - k) / 4.0) * np.cos(np.pi * (16 - k) / 8.0))
             # sin(4π - πk/4) = -sin(πk/4); cos(2π - πk/8) = +cos(πk/8).
             assert abs(f2k - (-fk)) < 1e-12, (
                 f"Symmetry failure at k={k}: f(k)={fk}, f(16-k)={f2k}"
@@ -1134,8 +1131,7 @@ class TestMultiplexedFunctionTable:
             expected_alpha = 2.0 * math.asin(val)
             for k in range(lo, hi):
                 assert abs(op.alpha[k] - expected_alpha) < 1e-12, (
-                    f"k={k} alpha mismatch: got {op.alpha[k]}, "
-                    f"want {expected_alpha}"
+                    f"k={k} alpha mismatch: got {op.alpha[k]}, want {expected_alpha}"
                 )
 
     # -- MUX-FUNC-005 gold-standard reference vs LinearPauliRotation ---
@@ -1168,14 +1164,20 @@ class TestMultiplexedFunctionTable:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", UserWarning)
             op_ref = ArbitraryFunction(
-                n, f_linear, mode="angle", axis=axis  # type: ignore[arg-type]
+                n,
+                f_linear,
+                mode="angle",
+                axis=axis,  # type: ignore[arg-type]
             )
 
         # Polynomial (bit-wise linear) route.
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", UserWarning)
             op_lin = LinearPauliRotation(
-                n, slope=slope, offset=offset, axis=axis  # type: ignore[arg-type]
+                n,
+                slope=slope,
+                offset=offset,
+                axis=axis,  # type: ignore[arg-type]
             )
 
         # alpha tables must match mod 2pi (i.e. same point on circle).
@@ -1202,7 +1204,7 @@ class TestMultiplexedFunctionTable:
             diff = float(np.linalg.norm(u - u_exact, "fro"))
             norm = float(np.linalg.norm(u_exact, "fro")) or 1.0
             assert diff / norm <= max(AMPLITUDE_ATOL * 1e3, 1e-8), (
-                f"{label}-vs-exact rel Frobenius {diff/norm:.3e} > tol"
+                f"{label}-vs-exact rel Frobenius {diff / norm:.3e} > tol"
             )
 
 
@@ -1309,8 +1311,7 @@ def _assert_pwcheb_statevector(
     num_qubits = op.num_qubits
     if num_qubits != n + J:  # pragma: no cover - class-invariant guard
         raise AssertionError(
-            f"PiecewiseChebyshev num_qubits invariant broken: "
-            f"{num_qubits} != {n} + {J}"
+            f"PiecewiseChebyshev num_qubits invariant broken: {num_qubits} != {n} + {J}"
         )
     x_wires = op.control_register_indices
     geq_wires = op.geq_register_indices
@@ -1342,13 +1343,12 @@ def _assert_pwcheb_statevector(
         # so the linear scan is perfectly fine; the precomputed masks
         # just keep the code readable.
         x_masks_local = [1 << wire for wire in x_wires]
-        geq_masks = [1 << wire for wire in geq_wires]
         target_mask = 1 << target_wire
         for idx in range(1 << num_qubits):
             # --- decode x_val LSB-first from the physical x_wires ---
             x_val = 0
             for bit_local, physical_mask in enumerate(x_masks_local):
-                if (idx & physical_mask):
+                if idx & physical_mask:
                     x_val |= 1 << bit_local
             mag2 = float(abs(sv[idx]) ** 2)
             if x_val != k:
@@ -1382,7 +1382,7 @@ def _assert_pwcheb_statevector(
                 raise AssertionError(
                     f"PiecewiseChebyshev k={k} (n={n}, J={J}) {label} mismatch: "
                     f"have {have:.6e}, want {want:.6e}; "
-                    f"|diff|={abs(have-want):.3e}; theta_k={theta_k:.6e}. "
+                    f"|diff|={abs(have - want):.3e}; theta_k={theta_k:.6e}. "
                     f"(Comparator geq values are allowed to be non-zero; "
                     f"only x-register invariance + result probabilities "
                     f"are enforced.)"
@@ -1475,18 +1475,21 @@ class TestPiecewiseChebyshevBase:
         p1_cheb = np.sin(0.5 * alpha_cheb) ** 2
         p1_lin = np.sin(0.5 * alpha_lin) ** 2
         np.testing.assert_allclose(
-            p0_cheb, p0_lin, atol=1e-10,
+            p0_cheb,
+            p0_lin,
+            atol=1e-10,
             err_msg="degree=1 Chebyshev != PiecewiseLinear (P(result=0))",
         )
         np.testing.assert_allclose(
-            p1_cheb, p1_lin, atol=1e-10,
+            p1_cheb,
+            p1_lin,
+            atol=1e-10,
             err_msg="degree=1 Chebyshev != PiecewiseLinear (P(result=1))",
         )
 
     @staticmethod
     @pytest.mark.filterwarnings(
-        "ignore:PiecewisePolynomialPauliRotation max_degree d_max="
-        ":UserWarning"
+        "ignore:PiecewisePolynomialPauliRotation max_degree d_max=:UserWarning"
     )
     def test_pwcheb_base_003_single_segment_default_bp() -> None:
         """breakpoints=None (single-segment default) covers [0, 2**n)."""
@@ -1514,16 +1517,15 @@ class TestPiecewiseChebyshevBase:
         """``f_x`` accepts a plain ``float`` (not a callable)."""
 
         n = 2
-        op = PiecewiseChebyshev(
-            f_x=0.5, degree=0, breakpoints=None, num_state_qubits=n
-        )
+        op = PiecewiseChebyshev(f_x=0.5, degree=0, breakpoints=None, num_state_qubits=n)
         polys = op.polynomials
         assert len(polys) == 1
         # degree=0 Chebyshev: the wrapper multiplies the fitted constant
         # by 2, so f_x=0.5 -> coefficients = [1.0] per segment.
         expected_coeff = np.asarray([1.0], dtype=np.float64)
-        diff = float(np.max(np.abs(np.asarray(polys[0], dtype=np.float64)
-                                    - expected_coeff)))
+        diff = float(
+            np.max(np.abs(np.asarray(polys[0], dtype=np.float64) - expected_coeff))
+        )
         # Don't hard-fail on tiny fitting noise: anything below 1e-8 is
         # effectively a degree-0 Chebyshev constant 1.0 within tolerance
         # and the statevector assertion below will catch functional
@@ -1618,8 +1620,7 @@ class TestPiecewiseChebyshevDocCases:
         # A degree-2 fit on three / four integer points should be small
         # when expressed in f-units (NOT yet multiplied by 2).
         assert grid_abs_err < 0.2, (
-            f"PWCHEB-001 classical approximation error too large: "
-            f"{grid_abs_err:.3e}"
+            f"PWCHEB-001 classical approximation error too large: {grid_abs_err:.3e}"
         )
 
         # 2. Instantiate the operator and run the black-box check.
@@ -1642,8 +1643,7 @@ class TestPiecewiseChebyshevDocCases:
 
     @staticmethod
     @pytest.mark.filterwarnings(
-        "ignore:PiecewisePolynomialPauliRotation max_degree d_max="
-        ":UserWarning"
+        "ignore:PiecewisePolynomialPauliRotation max_degree d_max=:UserWarning"
     )
     @pytest.mark.filterwarnings(
         "ignore:One or more theta\\(k\\) values produced by the piecewise "
@@ -1728,9 +1728,7 @@ class TestPiecewiseChebyshevDocCases:
             cheb = _NpCheb.interpolate(f_vec, deg=degree, domain=[a, b])
             poly = cheb.convert(kind=_NpPoly)
             coeffs = 2.0 * np.asarray(poly.coef, dtype=np.float64)
-            return np.asarray(
-                np.polyval(coeffs[::-1], ks), dtype=np.float64
-            )
+            return np.asarray(np.polyval(coeffs[::-1], ks), dtype=np.float64)
 
         interpolation_errors: list[float] = []
         for d in degrees:
@@ -1763,13 +1761,10 @@ class TestPiecewiseChebyshevDocCases:
         # nodes.  Allow 1e-14 floating-point slack for near-machine-
         # precision equalities between two adjacent degrees.
         for idx in range(len(interpolation_errors) - 1):
-            assert (
-                interpolation_errors[idx + 1]
-                <= interpolation_errors[idx] + 1e-14
-            ), (
+            assert interpolation_errors[idx + 1] <= interpolation_errors[idx] + 1e-14, (
                 f"PWCHEB-002 degree={degrees[idx]} err="
                 f"{interpolation_errors[idx]:.3e} exceeds degree="
-                f"{degrees[idx+1]} err={interpolation_errors[idx+1]:.3e}"
+                f"{degrees[idx + 1]} err={interpolation_errors[idx + 1]:.3e}"
             )
         # Primary rate check: d=5 error must be at least 10× smaller
         # than d=1 for a smoothly varying analytic target.
@@ -1798,9 +1793,7 @@ class TestPiecewiseChebyshevDocCases:
         def f(x: float) -> float:
             return 0.25 * float(x)
 
-        op = PiecewiseChebyshev(
-            f_x=f, degree=1, breakpoints=[2], num_state_qubits=n
-        )
+        op = PiecewiseChebyshev(f_x=f, degree=1, breakpoints=[2], num_state_qubits=n)
         alpha = _pwcheb_expected_alpha(op)
         for k in (0, 1):
             theta_k = float(alpha[k])
@@ -1848,9 +1841,7 @@ class TestPiecewiseChebyshevBound:
         def f(x: float) -> float:
             return 0.2 * float(x)
 
-        op = PiecewiseChebyshev(
-            f_x=f, degree=1, breakpoints=[2, 5], num_state_qubits=n
-        )
+        op = PiecewiseChebyshev(f_x=f, degree=1, breakpoints=[2, 5], num_state_qubits=n)
         assert op.breakpoints == [0, 2, 5, 8]
         for idx in (0, -1):
             np.testing.assert_allclose(
@@ -1883,9 +1874,7 @@ class TestPiecewiseChebyshevBound:
             )
         # degree: negative
         with pytest.raises(ValueError, match="degree"):
-            PiecewiseChebyshev(
-                f_x=0.5, degree=-1, breakpoints=None, num_state_qubits=2
-            )
+            PiecewiseChebyshev(f_x=0.5, degree=-1, breakpoints=None, num_state_qubits=2)
         # breakpoints: descending
         with pytest.raises(ValueError, match="breakpoints"):
             PiecewiseChebyshev(
@@ -1988,7 +1977,7 @@ class TestPiecewiseChebyshevBlackBox:
             for idx in range(1 << num_qubits):
                 x_val = 0
                 for bit_local, physical_mask in enumerate(x_masks):
-                    if (idx & physical_mask):
+                    if idx & physical_mask:
                         x_val |= 1 << bit_local
                 mag2 = float(abs(sv[idx]) ** 2)
                 if x_val != k:
@@ -2010,15 +1999,14 @@ class TestPiecewiseChebyshevBlackBox:
                 if abs(have - want) > atol:  # pragma: no cover
                     raise AssertionError(
                         f"PWCHEB-BB k={k}: {label} = {have:.6e}, want "
-                        f"{want:.6e} (|diff|={abs(have-want):.3e})."
+                        f"{want:.6e} (|diff|={abs(have - want):.3e})."
                     )
 
     # -- PWCHEB-BB-001 single-segment smooth sine -----------------------
 
     @staticmethod
     @pytest.mark.filterwarnings(
-        "ignore:PiecewisePolynomialPauliRotation max_degree d_max="
-        ":UserWarning"
+        "ignore:PiecewisePolynomialPauliRotation max_degree d_max=:UserWarning"
     )
     @pytest.mark.filterwarnings(
         "ignore:One or more theta\\(k\\) values produced by the piecewise "
@@ -2154,7 +2142,8 @@ class TestPiecewiseChebyshevBlackBox:
             return 0.1 * float(x) + 0.05
 
         op = PiecewiseChebyshev(
-            f_x=f, degree=1,
+            f_x=f,
+            degree=1,
             breakpoints=list(user_breakpoints),
             num_state_qubits=n,
         )
@@ -2260,12 +2249,8 @@ class TestPiecewiseChebyshevBlackBox:
             poly = cheb.convert(kind=_NpPoly)
             coeffs = 2.0 * np.asarray(poly.coef, dtype=np.float64)
             for k in range(lo, hi):
-                theta_k = float(
-                    np.polyval(coeffs[::-1], np.float64(k))
-                )
+                theta_k = float(np.polyval(coeffs[::-1], np.float64(k)))
                 want_p1[k] = float(math.sin(0.5 * theta_k) ** 2)
         TestPiecewiseChebyshevBlackBox._black_box_probe_and_assert(
             op, want_p1, atol=1e-6
         )
-
-

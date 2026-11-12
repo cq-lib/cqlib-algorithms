@@ -43,7 +43,6 @@ from typing import Any, Literal
 
 import numpy as np
 import numpy.typing as npt
-
 from cqlib import Circuit
 
 from ._synthesis import _FunctionalPauliRotation
@@ -118,8 +117,7 @@ def _validate_values_sequence(
         values, (Sequence, np.ndarray)
     ):
         raise TypeError(
-            "values must be a sequence of floats, got "
-            f"{type(values).__name__}."
+            f"values must be a sequence of floats, got {type(values).__name__}."
         )
     if isinstance(values, np.ndarray):
         arr = np.asarray(values, dtype=np.float64)
@@ -178,7 +176,7 @@ def _compute_arbitrary_alpha(
             raise ValueError(
                 "Function values exceed the amplitude-encoding domain "
                 f"[-1, 1]; max |f(k)| = {max_mag:.6g} > 1 + {atol:.3g}.  Reduce the "
-                "function magnitude or use mode=\"angle\" instead."
+                'function magnitude or use mode="angle" instead.'
             )
         clamped = np.clip(values, -1.0, 1.0)
         return np.asarray(2.0 * np.arcsin(clamped), dtype=np.float64), False
@@ -294,13 +292,11 @@ class ArbitraryFunction(_FunctionalPauliRotation):
         self._mode = _validate_mode(mode)
         values_arr = _validate_values_sequence(values, self._num_state_qubits)
         self._values = np.asarray(values_arr.copy(), dtype=np.float64)
-        alpha_table, oversized = _compute_arbitrary_alpha(
-            self._values, self._mode
-        )
+        alpha_table, oversized = _compute_arbitrary_alpha(self._values, self._mode)
         if oversized:
             warnings.warn(
                 "One or more raw function values passed to "
-                "ArbitraryFunction (mode=\"angle\") exceed 2*pi in "
+                'ArbitraryFunction (mode="angle") exceed 2*pi in '
                 "absolute value.  Stored angles have been folded into "
                 "[0, 2*pi); this may cause silent aliasing if the input "
                 "was intended to be small.",

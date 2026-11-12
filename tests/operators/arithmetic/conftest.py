@@ -55,16 +55,14 @@ def _sanity_check_cqlib() -> str | None:
     """
 
     try:
-        from cqlib.qis.state import Statevector
-
         from cqlib import Circuit
+        from cqlib.qis.state import Statevector
     except (ImportError, AttributeError, TypeError, ValueError, RuntimeError) as exc:
         return f"cqlib import failed: {exc!r}"
 
     try:
-        from cqlib.qis.state import Statevector
-
         from cqlib import Circuit
+        from cqlib.qis.state import Statevector
 
         c = Circuit(1)
         c.h(0)

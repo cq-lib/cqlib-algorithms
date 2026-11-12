@@ -65,7 +65,6 @@ import warnings
 from collections.abc import Sequence
 
 import numpy as np
-
 from cqlib import Circuit
 from cqlib.circuit import StandardGate, ValueOperation
 from cqlib.qis import Hamiltonian, PauliString, Phase
@@ -315,7 +314,9 @@ class _QseEstimator(Estimator):
         r"""Build the projected matrices and return the mitigated estimate."""
         circuit, _ = strip_measurements(request.circuit)
         observable = _as_hamiltonian(request.observable)
-        _validate_widths(circuit, observable, self._code_hamiltonian, self._check_operators)
+        _validate_widths(
+            circuit, observable, self._code_hamiltonian, self._check_operators
+        )
         seed = self._seed if self._seed is not None else request.seed
 
         dimension = len(self._basis)
@@ -331,7 +332,9 @@ class _QseEstimator(Estimator):
             for column in range(dimension):
                 left = self._basis[row]
                 right = self._basis[column]
-                overlap[row, column] = self._overlap_entry(circuit, left, right, cache, seed)
+                overlap[row, column] = self._overlap_entry(
+                    circuit, left, right, cache, seed
+                )
                 hamiltonian[row, column] = self._operator_entry(
                     circuit, left, self._code_hamiltonian, right, cache, seed
                 )
@@ -387,7 +390,9 @@ class _QseEstimator(Estimator):
         for pauli, coefficient in operator.terms:
             product = left * pauli * right
             omega, free = _phase_free(product)
-            value = self._expectation(circuit, free, sampled=False, cache=cache, seed=seed)
+            value = self._expectation(
+                circuit, free, sampled=False, cache=cache, seed=seed
+            )
             total += complex(coefficient) * omega * value
         return total
 
@@ -549,16 +554,12 @@ def _rotate_into_basis(circuit: Circuit, pauli: PauliString) -> Circuit:
         x_bit = (pauli.x_mask >> index) & 1
         z_bit = (pauli.z_mask >> index) & 1
         if x_bit and not z_bit:
-            rotations.append(
-                ValueOperation.from_standard_gate(StandardGate.H, [qubit])
-            )
+            rotations.append(ValueOperation.from_standard_gate(StandardGate.H, [qubit]))
         elif x_bit and z_bit:
             rotations.append(
                 ValueOperation.from_standard_gate(StandardGate.SDG, [qubit])
             )
-            rotations.append(
-                ValueOperation.from_standard_gate(StandardGate.H, [qubit])
-            )
+            rotations.append(ValueOperation.from_standard_gate(StandardGate.H, [qubit]))
     return rebuild(circuit, [*circuit.operations, *rotations])
 
 

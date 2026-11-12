@@ -26,7 +26,6 @@ import math
 from collections.abc import Sequence
 
 import numpy as np
-
 from cqlib import Circuit
 
 from ...oracle.block_encoding import BlockEncoding
@@ -311,7 +310,7 @@ class RealValuedQSVT:
         """
 
         coeffs = np.asarray(coefficients, dtype=np.float64).reshape(-1)
-        degree = int(len(coeffs)) - 1
+        degree = len(coeffs) - 1
 
         if degree == 0:
             return cls(

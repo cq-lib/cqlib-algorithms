@@ -16,8 +16,8 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
-
 from cqlib import Circuit, Parameter
+
 from cqlib_algorithms.error_mitigation.scaling import scale_parameters
 
 

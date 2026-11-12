@@ -98,9 +98,7 @@ class _BiasedSampler(Sampler):
             template = Circuit(request.circuit.num_qubits)
             template.ry(0, self._theta)
             tilt = template.operations[0]
-            circuit = rebuild(
-                request.circuit, [*request.circuit.operations, tilt]
-            )
+            circuit = rebuild(request.circuit, [*request.circuit.operations, tilt])
             biased.append(
                 SamplerRequest(
                     circuit=circuit,
@@ -225,9 +223,7 @@ def test_sharpening_output_lies_in_the_sample_value_set() -> None:
         _result({"00": 1, "01": 2}, shots, 2),
     ]
 
-    value = combine_results(
-        variants, mode="sharpening", observable=_ZZ, shots=shots
-    )
+    value = combine_results(variants, mode="sharpening", observable=_ZZ, shots=shots)
 
     # Majority voting keeps one "00" and two "01" records, so the sharpened
     # estimate is the convex combination 1/3 - 2/3 = -1/3, a realisable value.
@@ -242,9 +238,7 @@ def test_sharpening_requires_equal_shot_counts() -> None:
     ]
 
     with pytest.raises(ValueError, match="same shot count"):
-        combine_results(
-            variants, mode="sharpening", observable=_ZZ, shots=4
-        )
+        combine_results(variants, mode="sharpening", observable=_ZZ, shots=4)
 
 
 def test_sharpening_discards_a_tie() -> None:
@@ -255,9 +249,7 @@ def test_sharpening_discards_a_tie() -> None:
         _result({"00": 1, "10": 1}, shots, 2),
     ]
 
-    value = combine_results(
-        variants, mode="sharpening", observable=_ZZ, shots=shots
-    )
+    value = combine_results(variants, mode="sharpening", observable=_ZZ, shots=shots)
 
     # The second shot draws three different records, so its vote ties and the
     # shot is dropped; the estimate is built from the surviving "00" alone.
@@ -293,9 +285,7 @@ def test_combine_results_uses_the_original_observable(
     )
     results = exact_executor.sample(
         [
-            SamplerRequest(
-                circuit=variant, qubits=tuple(variant.qubits), shots=shots
-            )
+            SamplerRequest(circuit=variant, qubits=tuple(variant.qubits), shots=shots)
             for variant in circuits
         ]
     )
@@ -328,9 +318,7 @@ def test_the_permutations_are_statistically_independent() -> None:
     circuit = Circuit(2)
     circuit.x(0)
     observable = PauliString.from_str("ZI")
-    request = EstimatorRequest(
-        circuit=circuit, observable=observable, shots=shots
-    )
+    request = EstimatorRequest(circuit=circuit, observable=observable, shots=shots)
 
     def run_seeds(run_seed: int) -> list[int]:
         recorder.requests.clear()

@@ -18,7 +18,6 @@ from collections.abc import Sequence
 from typing import Any
 
 import numpy as np
-
 from cqlib import Circuit
 
 from ._synthesis import _UCRBase

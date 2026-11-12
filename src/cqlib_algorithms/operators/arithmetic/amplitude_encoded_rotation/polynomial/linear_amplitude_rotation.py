@@ -127,8 +127,7 @@ def _validate_order(order: int) -> Literal[1, 3, 5]:
         raise TypeError(f"order must be an int, got {order!r}.")
     if order not in _VALID_ORDERS:
         raise ValueError(
-            f"Unsupported order {order!r}.  Valid choices are "
-            f"{sorted(_VALID_ORDERS)}."
+            f"Unsupported order {order!r}.  Valid choices are {sorted(_VALID_ORDERS)}."
         )
     return order  # type: ignore[return-value]
 
@@ -346,17 +345,13 @@ class LinearAmplitudeRotation:
         axis: Literal["x", "y", "z"] = "y",
         name: str | None = None,
     ) -> None:
-        if isinstance(num_state_qubits, bool) or not isinstance(
-            num_state_qubits, int
-        ):
+        if isinstance(num_state_qubits, bool) or not isinstance(num_state_qubits, int):
             raise TypeError(
-                "num_state_qubits must be an int, got "
-                f"{num_state_qubits!r}."
+                f"num_state_qubits must be an int, got {num_state_qubits!r}."
             )
         if num_state_qubits < 1:
             raise ValueError(
-                "num_state_qubits must be >= 1, got "
-                f"{num_state_qubits!r}."
+                f"num_state_qubits must be >= 1, got {num_state_qubits!r}."
             )
 
         if isinstance(slope, bool) or not isinstance(slope, (int, float)):

@@ -40,10 +40,7 @@ _ATOL = 1e-9
 
 def _twirl_offsets(num_randomizations: int, /) -> list[tuple[int, int]]:
     """Return the twirled and calibration offsets sharing one Pauli draw."""
-    return [
-        (index, index + num_randomizations)
-        for index in range(num_randomizations)
-    ]
+    return [(index, index + num_randomizations) for index in range(num_randomizations)]
 
 
 def _twirl_mask(circuit: Circuit, body_length: int = 0, /) -> tuple[int, ...]:
@@ -87,9 +84,7 @@ class _ConfusedSampler(Sampler):
     ) -> list[ExecutionResult]:
         """Return one confused count record per request, in input order."""
         results: list[ExecutionResult] = []
-        for request, exact in zip(
-            requests, self._inner.run(requests), strict=True
-        ):
+        for request, exact in zip(requests, self._inner.run(requests), strict=True):
             width = exact.num_qubits
             ideal = np.zeros(1 << width, dtype=float)
             for key, count in exact.counts.items():
@@ -141,10 +136,7 @@ def _bell_circuit() -> Circuit:
 def _zz_parity(counts: dict[str, int], shots: int, /) -> float:
     """Return the Z-basis parity of a count record as an expectation value."""
     return (
-        sum(
-            (-1) ** bitstring.count("1") * count
-            for bitstring, count in counts.items()
-        )
+        sum((-1) ** bitstring.count("1") * count for bitstring, count in counts.items())
         / shots
     )
 
@@ -164,9 +156,9 @@ def test_construct_circuits_returns_two_times_num_randomizations_flat() -> None:
         # their calibration partners, each calibration circuit holding nothing
         # but the Paulis of its own draw.
         assert len(circuits[calibration].operations) <= circuit.num_qubits
-        assert len(circuits[twirled].operations) == len(
-            circuit.operations
-        ) + len(circuits[calibration].operations)
+        assert len(circuits[twirled].operations) == len(circuit.operations) + len(
+            circuits[calibration].operations
+        )
 
     with pytest.raises(ValueError, match="at least one"):
         construct_circuits(circuit, num_randomizations=0)
@@ -181,14 +173,12 @@ def test_the_two_halves_share_the_pauli_draw_of_their_offset() -> None:
     )
 
     for twirled, calibration in _twirl_offsets(num_randomizations):
-        assert _twirl_mask(
-            circuits[twirled], len(circuit.operations)
-        ) == _twirl_mask(circuits[calibration])
+        assert _twirl_mask(circuits[twirled], len(circuit.operations)) == _twirl_mask(
+            circuits[calibration]
+        )
 
 
-def test_the_reconstruction_recovers_the_ideal_value_under_a_known_confusion() -> (
-    None
-):
+def test_the_reconstruction_recovers_the_ideal_value_under_a_known_confusion() -> None:
     shots, num_randomizations = 20000, 16
     p0 = p1 = 0.05
     circuit = _bell_circuit()
@@ -241,9 +231,7 @@ def test_identity_readout_is_a_no_op() -> None:
         }
         calibration = {format(mask, "02b"): shots}
         twirled_results.append(
-            ExecutionResult.from_counts(
-                f"twirled-{index}", [0, 1], shots, 2, twirled
-            )
+            ExecutionResult.from_counts(f"twirled-{index}", [0, 1], shots, 2, twirled)
         )
         calibration_results.append(
             ExecutionResult.from_counts(

@@ -104,8 +104,7 @@ _TWIRLING_TABLES: dict[StandardGate, tuple[_TwirlRow, ...]] = {
 
 
 def _validate_twirl_tables() -> None:
-    r"""Validate the gate-twirling tables.
-    """
+    r"""Validate the gate-twirling tables."""
     for gate, table in _TWIRLING_TABLES.items():
         matrix = gate.matrix()
         for p, q, r, s in table:
@@ -227,9 +226,7 @@ def combine_results(results: Sequence[EstimatorResult], /) -> float:
 
     """
     if not results:
-        raise ValueError(
-            "pauli twirling needs at least one result to average."
-        )
+        raise ValueError("pauli twirling needs at least one result to average.")
     return float(np.mean([result.expectation for result in results]))
 
 
@@ -454,14 +451,11 @@ def _twirl_operation(
 
 def _validate_num_randomizations(num_randomizations: int, /) -> None:
     r"""Validate a positive randomization count."""
-    if isinstance(num_randomizations, bool) or not isinstance(
-        num_randomizations, int
-    ):
+    if isinstance(num_randomizations, bool) or not isinstance(num_randomizations, int):
         raise TypeError("num_randomizations must be an integer")
     if num_randomizations < 1:
         raise ValueError(
-            "num_randomizations must be at least one, but was "
-            f"{num_randomizations!r}."
+            f"num_randomizations must be at least one, but was {num_randomizations!r}."
         )
 
 

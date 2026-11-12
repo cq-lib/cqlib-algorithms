@@ -41,7 +41,6 @@ References
 from __future__ import annotations
 
 import numpy as np
-
 from cqlib import Circuit, Parameter
 from cqlib.circuit import StandardGate, ValueOperation
 

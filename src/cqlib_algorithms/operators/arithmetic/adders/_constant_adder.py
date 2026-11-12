@@ -52,9 +52,7 @@ def build_draper_constant_adder(
         angle = 0.0
         for const_bit in range(target_bit + 1):
             if (value >> const_bit) & 1:
-                angle += (2.0 * math.pi) / (
-                    2 ** (target_bit - const_bit + 1)
-                )
+                angle += (2.0 * math.pi) / (2 ** (target_bit - const_bit + 1))
         if angle != 0.0:
             circuit.phase(qubit, angle)
 

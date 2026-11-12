@@ -30,22 +30,17 @@ from ._hrs_cumulative_multiplier import (
 
 MultiplierSynthesis = str
 
-_VALID_SYNTHESIS: frozenset[str] = frozenset(
-    {"hrs_cumulative", "draper_qft"}
-)
+_VALID_SYNTHESIS: frozenset[str] = frozenset({"hrs_cumulative", "draper_qft"})
 
 
 def _validate_num_state_qubits(num_state_qubits: int) -> int:
     """Validate and normalize the multiplier register width."""
     if not isinstance(num_state_qubits, int):
         raise TypeError(
-            "num_state_qubits must be an integer, got "
-            f"{num_state_qubits!r}."
+            f"num_state_qubits must be an integer, got {num_state_qubits!r}."
         )
     if num_state_qubits < 1:
-        raise ValueError(
-            f"num_state_qubits must be >= 1, got {num_state_qubits!r}."
-        )
+        raise ValueError(f"num_state_qubits must be >= 1, got {num_state_qubits!r}.")
     return int(num_state_qubits)
 
 
@@ -74,8 +69,7 @@ def _validate_approximation_degree(
     if synthesis != "draper_qft":
         if approximation_degree is not None:
             raise ValueError(
-                "approximation_degree is only supported when "
-                "synthesis='draper_qft'."
+                "approximation_degree is only supported when synthesis='draper_qft'."
             )
         return None
 

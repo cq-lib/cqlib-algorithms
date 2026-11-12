@@ -182,8 +182,7 @@ def fit_linear_regression(
     y = _as_float_array(ideal, "ideal")
     if x.size != y.size:
         raise ValueError(
-            "noisy and ideal must have the same length, but got "
-            f"{x.size} and {y.size}"
+            f"noisy and ideal must have the same length, but got {x.size} and {y.size}"
         )
 
     # A fit consumes one training point per parameter it estimates, so the
@@ -549,8 +548,7 @@ def _as_float_array(values: Sequence[float], name: str, /) -> np.ndarray:
 
 
 def _validate_num_training_circuits(num_training_circuits: int, /) -> None:
-    r"""Validate the training-circuit count.
-    """
+    r"""Validate the training-circuit count."""
     if isinstance(num_training_circuits, bool) or not isinstance(
         num_training_circuits, int
     ):
@@ -564,8 +562,7 @@ def _validate_num_training_circuits(num_training_circuits: int, /) -> None:
 
 
 def _validate_fraction_non_clifford(fraction_non_clifford: float, /) -> None:
-    r"""Validate a near-Clifford snap probability.
-    """
+    r"""Validate a near-Clifford snap probability."""
     if isinstance(fraction_non_clifford, bool) or not isinstance(
         fraction_non_clifford, Real
     ):

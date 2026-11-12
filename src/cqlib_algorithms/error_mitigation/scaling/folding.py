@@ -46,7 +46,6 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 import numpy as np
-
 from cqlib import Circuit
 from cqlib.circuit import (
     Instruction,
@@ -220,8 +219,7 @@ def _fold_operations(
 
 
 def _fold_integer_blocks(body: Circuit, num_folds: int, /) -> Circuit:
-    r"""Apply the :math:`U (U^\dagger U)^{n}` pattern to every gate.
-    """
+    r"""Apply the :math:`U (U^\dagger U)^{n}` pattern to every gate."""
     folded = ZNEMitigation(body, [num_folds]).fold_circuits()[0]
 
     # The folded circuit is rebuilt from the bare qubit list, so the global
@@ -268,9 +266,7 @@ def _create_fold_mask(
     """
     num_uniform_folds = int((scale_factor - 1.0) / 2.0)
     odd_integer_scale_factor = 2 * num_uniform_folds + 1
-    mask = [
-        0 if np.isclose(weight, 0.0) else num_uniform_folds for weight in weights
-    ]
+    mask = [0 if np.isclose(weight, 0.0) else num_uniform_folds for weight in weights]
     if np.isclose(odd_integer_scale_factor, scale_factor):
         return mask
 

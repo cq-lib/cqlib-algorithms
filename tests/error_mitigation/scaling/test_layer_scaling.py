@@ -16,8 +16,8 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
-
 from cqlib import Circuit
+
 from cqlib_algorithms.error_mitigation.scaling import fold_layers
 
 

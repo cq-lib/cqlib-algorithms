@@ -46,7 +46,6 @@ from typing import Any, ClassVar, Literal
 
 import numpy as np
 import numpy.typing as npt
-
 from cqlib import Circuit
 
 # ---------------------------------------------------------------------------
@@ -115,9 +114,7 @@ def gray_code_sequence(num_controls: int) -> list[int]:
     """
 
     if isinstance(num_controls, bool) or not isinstance(num_controls, int):
-        raise TypeError(
-            f"num_controls must be an int, got {num_controls!r}."
-        )
+        raise TypeError(f"num_controls must be an int, got {num_controls!r}.")
     if num_controls < 0:
         raise ValueError("num_controls must be non-negative.")
     return [gray_code(index) for index in range(2**num_controls)]
@@ -148,9 +145,7 @@ def gray_control_positions(num_controls: int) -> list[int]:
     """
 
     if isinstance(num_controls, bool) or not isinstance(num_controls, int):
-        raise TypeError(
-            f"num_controls must be an int, got {num_controls!r}."
-        )
+        raise TypeError(f"num_controls must be an int, got {num_controls!r}.")
     if num_controls < 0:
         raise ValueError("num_controls must be non-negative.")
     if num_controls == 0:
@@ -210,9 +205,7 @@ def gray_matrix(num_controls: int) -> np.ndarray[Any, Any]:
     """
 
     if isinstance(num_controls, bool) or not isinstance(num_controls, int):
-        raise TypeError(
-            f"num_controls must be an int, got {num_controls!r}."
-        )
+        raise TypeError(f"num_controls must be an int, got {num_controls!r}.")
     if num_controls < 0:
         raise ValueError("num_controls must be non-negative.")
 
@@ -251,12 +244,9 @@ def solve_theta_from_alpha(
         of two.
     """
 
-    if isinstance(alpha, (str, bytes)) or not isinstance(
-        alpha, (Sequence, np.ndarray)
-    ):
+    if isinstance(alpha, (str, bytes)) or not isinstance(alpha, (Sequence, np.ndarray)):
         raise TypeError(
-            "alpha must be a sequence of floats, got "
-            f"{type(alpha).__name__}."
+            f"alpha must be a sequence of floats, got {type(alpha).__name__}."
         )
     if isinstance(alpha, np.ndarray):
         alpha_arr = np.asarray(alpha, dtype=np.float64)
@@ -399,16 +389,12 @@ def _synthesize_ucr_circuit_impl(
         # [Y, CX-control] or [Z, CX-control]).
         circuit.h(target_list)
         for angle, control in zip(theta_arr, controls_list):
-            _append_axis_rotation(
-                circuit, target_list, float(angle), axis="z"
-            )
+            _append_axis_rotation(circuit, target_list, float(angle), axis="z")
             circuit.cx(control, target_list)
         circuit.h(target_list)
     else:
         for angle, control in zip(theta_arr, controls_list):
-            _append_axis_rotation(
-                circuit, target_list, float(angle), axis=axis
-            )
+            _append_axis_rotation(circuit, target_list, float(angle), axis=axis)
             circuit.cx(control, target_list)
     return circuit
 
@@ -452,20 +438,15 @@ class _UCRBase:
         name: str | None = None,
     ) -> None:
         if isinstance(num_controls, bool) or not isinstance(num_controls, int):
-            raise TypeError(
-                f"num_controls must be an int, got {num_controls!r}."
-            )
+            raise TypeError(f"num_controls must be an int, got {num_controls!r}.")
         if num_controls < 0:
-            raise ValueError(
-                f"num_controls must be >= 0, got {num_controls!r}."
-            )
+            raise ValueError(f"num_controls must be >= 0, got {num_controls!r}.")
 
         if isinstance(alpha, (str, bytes)) or not isinstance(
             alpha, (Sequence, np.ndarray)
         ):
             raise TypeError(
-                "alpha must be a sequence of floats, got "
-                f"{type(alpha).__name__}."
+                f"alpha must be a sequence of floats, got {type(alpha).__name__}."
             )
         if isinstance(alpha, np.ndarray):
             alpha_snapshot = np.asarray(alpha, dtype=np.float64)
@@ -484,12 +465,9 @@ class _UCRBase:
 
         if not hasattr(self, "_ROTATION_AXIS"):
             raise TypeError(
-                f"{type(self).__name__} must define a _ROTATION_AXIS class "
-                "attribute."
+                f"{type(self).__name__} must define a _ROTATION_AXIS class attribute."
             )
-        self._axis: Literal["x", "y", "z"] = _validate_ucr_axis(
-            self._ROTATION_AXIS
-        )
+        self._axis: Literal["x", "y", "z"] = _validate_ucr_axis(self._ROTATION_AXIS)
 
         if name is not None and not isinstance(name, str):
             raise TypeError(f"name must be a string or None, got {name!r}.")
@@ -627,17 +605,13 @@ class _FunctionalPauliRotation:
         axis: Literal["x", "y", "z"] = "y",
         name: str | None = None,
     ) -> None:
-        if isinstance(num_state_qubits, bool) or not isinstance(
-            num_state_qubits, int
-        ):
+        if isinstance(num_state_qubits, bool) or not isinstance(num_state_qubits, int):
             raise TypeError(
-                "num_state_qubits must be an int, got "
-                f"{num_state_qubits!r}."
+                f"num_state_qubits must be an int, got {num_state_qubits!r}."
             )
         if num_state_qubits < 1:
             raise ValueError(
-                "num_state_qubits must be >= 1, got "
-                f"{num_state_qubits!r}."
+                f"num_state_qubits must be >= 1, got {num_state_qubits!r}."
             )
 
         self._axis: Literal["x", "y", "z"] = _validate_ucr_axis(axis)

@@ -29,8 +29,7 @@ def _long_reference(num_qubits: int, phase: float) -> np.ndarray:
     uniform = np.ones((dimension, 1), dtype=np.complex128) / np.sqrt(dimension)
     projector = uniform @ uniform.conj().T
     return (
-        np.eye(dimension, dtype=np.complex128)
-        + (np.exp(1j * phase) - 1.0) * projector
+        np.eye(dimension, dtype=np.complex128) + (np.exp(1j * phase) - 1.0) * projector
     )
 
 

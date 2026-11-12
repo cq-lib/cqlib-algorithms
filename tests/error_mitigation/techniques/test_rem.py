@@ -55,9 +55,7 @@ def _probs_to_counts(
     /,
 ) -> dict[str, int]:
     """Turn a basis distribution into integer counts over ``shots`` draws."""
-    return {
-        key: int(round(value * shots)) for key, value in probabilities.items()
-    }
+    return {key: round(value * shots) for key, value in probabilities.items()}
 
 
 class _ReadoutNoiseSampler(Sampler):
@@ -83,9 +81,7 @@ class _ReadoutNoiseSampler(Sampler):
     ) -> list[ExecutionResult]:
         """Return one flipped count record per request, in input order."""
         results: list[ExecutionResult] = []
-        for request, exact in zip(
-            requests, self._inner.run(requests), strict=True
-        ):
+        for request, exact in zip(requests, self._inner.run(requests), strict=True):
             width = exact.num_qubits
             ideal = np.zeros(1 << width, dtype=float)
             for key, count in exact.counts.items():
@@ -131,8 +127,7 @@ def test_mitigate_counts_recovers_a_known_distribution() -> None:
     local = np.array([[0.9, 0.2], [0.1, 0.8]])
     observed = reduce(np.kron, [local, local]) @ truth
     counts = {
-        format(index, "02b"): int(round(1.0e6 * observed[index]))
-        for index in range(4)
+        format(index, "02b"): round(1.0e6 * observed[index]) for index in range(4)
     }
 
     recovered = mitigate_counts(counts, confusion)
@@ -150,9 +145,7 @@ def test_mitigate_counts_is_the_identity_for_a_unit_confusion() -> None:
     recovered = mitigate_counts(counts, confusion)
 
     # A = I, so the corrected vector is the observed distribution unchanged.
-    expected = np.array(
-        [probabilities[key] for key in ("00", "01", "10", "11")]
-    )
+    expected = np.array([probabilities[key] for key in ("00", "01", "10", "11")])
     assert np.allclose(recovered, expected, atol=_ATOL)
 
 
@@ -206,9 +199,7 @@ def test_calibrate_readout_returns_one_readout_error_per_qubit(
     confusion = calibrate_readout(exact_executor, 3, shots=1024, seed=0)
 
     assert len(confusion.per_qubit) == 3
-    assert all(
-        isinstance(error, ReadoutError) for error in confusion.per_qubit
-    )
+    assert all(isinstance(error, ReadoutError) for error in confusion.per_qubit)
     # A noiseless backend reports no flips.
     assert confusion.p0 == (0.0, 0.0, 0.0)
     assert confusion.p1 == (0.0, 0.0, 0.0)
@@ -250,10 +241,13 @@ def test_execute_with_rem_reproduces_the_analytic_bit_flip_example(
             )
         ]
     )[0]
-    noisy = sum(
-        (1.0 if key == "0" else -1.0) * count
-        for key, count in sampled.counts.items()
-    ) / shots
+    noisy = (
+        sum(
+            (1.0 if key == "0" else -1.0) * count
+            for key, count in sampled.counts.items()
+        )
+        / shots
+    )
 
     mitigated = execute_with_rem(
         target,

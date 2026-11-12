@@ -72,7 +72,7 @@ function = BooleanFunction.from_marked_states(3, [5])
 algorithm = Grover(StatevectorSampler())
 result = algorithm.run([GroverRequest(function, shots=1024, seed=7)])[0]
 
-print(result.iterations)            # 2
-print(result.modal_states)          # 通常为 (5,)
-print(result.success_probability)   # 理想值约 0.945
+print(result.iterations)  # 2
+print(result.modal_states)  # 通常为 (5,)
+print(result.success_probability)  # 理想值约 0.945
 ```

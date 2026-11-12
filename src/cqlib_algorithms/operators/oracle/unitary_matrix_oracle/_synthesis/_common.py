@@ -34,9 +34,7 @@ def is_unitary(
     """Return whether ``matrix`` is unitary within ``atol``."""
 
     identity = np.eye(matrix.shape[0], dtype=np.complex128)
-    return bool(
-        np.allclose(matrix.conj().T @ matrix, identity, atol=atol, rtol=0.0)
-    )
+    return bool(np.allclose(matrix.conj().T @ matrix, identity, atol=atol, rtol=0.0))
 
 
 def is_diagonal(
@@ -154,8 +152,7 @@ def safe_project_subunitary(
 
     deviation = float(
         np.linalg.norm(
-            matrix.conj().T @ matrix
-            - np.eye(matrix.shape[0], dtype=np.complex128),
+            matrix.conj().T @ matrix - np.eye(matrix.shape[0], dtype=np.complex128),
             ord=2,
         )
     )
@@ -207,9 +204,9 @@ def unitary_eigendecomposition(
         np.asarray(raw_eigenvectors, dtype=np.complex128),
         atol=atol,
     )
-    diagonal_matrix = (
-        unitary_vectors.conj().T @ matrix @ unitary_vectors
-    ).astype(np.complex128)
+    diagonal_matrix = (unitary_vectors.conj().T @ matrix @ unitary_vectors).astype(
+        np.complex128
+    )
     if not is_diagonal(
         diagonal_matrix,
         atol=max(atol, _DEMUX_DIAGONALIZATION_ATOL_FLOOR),

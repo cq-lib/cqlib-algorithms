@@ -33,9 +33,7 @@ WeightedSumSynthesis = Literal["qft", "carry"]
 _VALID_SYNTHESIS: frozenset[str] = frozenset({"qft", "carry"})
 
 
-def _expand_weights(
-    weights: list[int], num_inputs: list[int]
-) -> list[int]:
+def _expand_weights(weights: list[int], num_inputs: list[int]) -> list[int]:
     """Return the flat per-qubit weight list.
 
     ``weights`` and ``num_inputs`` share the same length ``K``; for each
@@ -53,9 +51,7 @@ def _expand_weights(
     return flat
 
 
-def _compute_sum_register_width(
-    weights: list[int], num_inputs: list[int]
-) -> int:
+def _compute_sum_register_width(weights: list[int], num_inputs: list[int]) -> int:
     """Return ``s``, the required sum-register bit width.
 
     The width is chosen so that the worst-case value (every qubit of every
@@ -140,13 +136,9 @@ class WeightedSum:
         name: str | None = None,
     ) -> None:
         if not isinstance(weights, list):
-            raise TypeError(
-                f"weights must be a list, got {weights!r}."
-            )
+            raise TypeError(f"weights must be a list, got {weights!r}.")
         if not isinstance(num_inputs, list):
-            raise TypeError(
-                f"num_inputs must be a list, got {num_inputs!r}."
-            )
+            raise TypeError(f"num_inputs must be a list, got {num_inputs!r}.")
         if len(weights) == 0:
             raise ValueError("weights must be a non-empty list.")
         if len(num_inputs) == 0:
@@ -166,9 +158,7 @@ class WeightedSum:
                 )
         for index, entry in enumerate(weights):
             if entry < 0:
-                raise ValueError(
-                    f"weights[{index}] must be >= 0, got {entry!r}."
-                )
+                raise ValueError(f"weights[{index}] must be >= 0, got {entry!r}.")
         for index, entry in enumerate(num_inputs):
             if isinstance(entry, bool) or not isinstance(entry, int):
                 raise TypeError(
@@ -177,9 +167,7 @@ class WeightedSum:
                 )
         for index, entry in enumerate(num_inputs):
             if entry < 1:
-                raise ValueError(
-                    f"num_inputs[{index}] must be >= 1, got {entry!r}."
-                )
+                raise ValueError(f"num_inputs[{index}] must be >= 1, got {entry!r}.")
 
         if synthesis not in _VALID_SYNTHESIS:
             raise ValueError(
@@ -191,8 +179,7 @@ class WeightedSum:
         if synthesis != "qft":
             if approximation_degree is not None:
                 raise ValueError(
-                    "approximation_degree is only supported when "
-                    "synthesis='qft'."
+                    "approximation_degree is only supported when synthesis='qft'."
                 )
             self._approximation_degree: int | None = None
         elif approximation_degree is None:
@@ -213,9 +200,7 @@ class WeightedSum:
             self._approximation_degree = int(approximation_degree)
 
         if name is not None and not isinstance(name, str):
-            raise TypeError(
-                f"name must be a string or None, got {name!r}."
-            )
+            raise TypeError(f"name must be a string or None, got {name!r}.")
 
         self._weights = list(weights)
         self._num_inputs = list(num_inputs)
@@ -350,18 +335,14 @@ class WeightedSum:
                 approximation_degree=self._approximation_degree,
             )
             qft_mapping = [
-                idx
-                for block in self._input_register_indices
-                for idx in block
+                idx for block in self._input_register_indices for idx in block
             ] + list(self._sum_register_indices)
             circuit.compose(sub, qft_mapping)
             return circuit
 
         sub = build_carry_weighted_sum(self._flat_weights)
         carry_mapping = [
-            idx
-            for block in self._input_register_indices
-            for idx in block
+            idx for block in self._input_register_indices for idx in block
         ] + list(self._sum_register_indices)
         if self._carry_register_indices is not None:
             carry_mapping.extend(self._carry_register_indices)

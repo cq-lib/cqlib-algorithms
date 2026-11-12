@@ -315,9 +315,7 @@ def _hermitian_unitary(operator: object, alpha: float) -> Circuit:
         circuit.append_unitary_gate(gate, list(reversed(circuit.qubits)))
         return circuit
     if isinstance(operator, Hamiltonian):
-        snapshot = snapshot_nonzero_hermitian_hamiltonian(
-            operator, name="operator"
-        )
+        snapshot = snapshot_nonzero_hermitian_hamiltonian(operator, name="operator")
         snapshot.scale(1.0 / alpha)
         # Core synthesizes exp(-i*t*H); t = -2*pi yields exp(+2*pi*i*H).
         return snapshot.to_evolution_circuit(
@@ -709,10 +707,7 @@ def _reduce_counts(
             observed[index] = observed.get(index, 0) + count
 
     probabilities = (
-        {
-            index: value / success_count
-            for index, value in observed.items()
-        }
+        {index: value / success_count for index, value in observed.items()}
         if success_count
         else {}
     )
@@ -839,7 +834,9 @@ class HHL:
         sampler_requests: list[SamplerRequest] = []
         for request, circuit, _ in assembled:
             block_width = request.num_evaluation_qubits + request.problem.num_qubits
-            measured = tuple(circuit.qubits[request.num_evaluation_qubits : block_width + 1])
+            measured = tuple(
+                circuit.qubits[request.num_evaluation_qubits : block_width + 1]
+            )
             sampler_requests.append(
                 SamplerRequest(circuit, measured, request.shots, request.seed)
             )
@@ -851,7 +848,5 @@ class HHL:
 
         results: list[HHLResult] = []
         for (request, _circuit, alpha), sample in zip(assembled, sampled):
-            results.append(
-                _reduce_counts(request, alpha, sample.counts, sample.shots)
-            )
+            results.append(_reduce_counts(request, alpha, sample.counts, sample.shots))
         return results

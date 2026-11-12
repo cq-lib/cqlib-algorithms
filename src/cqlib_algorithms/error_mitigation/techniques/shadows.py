@@ -63,7 +63,6 @@ import math
 from collections.abc import Sequence
 
 import numpy as np
-
 from cqlib import Circuit
 from cqlib.circuit import StandardGate, ValueOperation
 from cqlib.qis import Hamiltonian, PauliString
@@ -410,8 +409,7 @@ def _snapshot_average(
     observable: PauliString,
     readout_fidelities: Sequence[float] | None,
 ) -> float:
-    r"""Return the phase-free shot-averaged snapshot estimator.
-    """
+    r"""Return the phase-free shot-averaged snapshot estimator."""
     targets: list[tuple[int, str]] = []
     scale = 1.0
     for index in observable.support():

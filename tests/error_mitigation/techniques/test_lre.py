@@ -75,9 +75,7 @@ def test_all_layers_at_one_scale_reduce_to_standard_zne(
     assert [vector[0] for vector in scale_points] == [1.0, 3.0, 5.0]
     for circuit, scale in zip(circuits, (1.0, 3.0, 5.0), strict=True):
         reference = fold_global(wide_circuit, scale)
-        assert np.allclose(
-            circuit.to_matrix(), reference.to_matrix(), atol=_ATOL
-        )
+        assert np.allclose(circuit.to_matrix(), reference.to_matrix(), atol=_ATOL)
 
 
 def test_layerwise_scaling_is_invariant_without_noise(

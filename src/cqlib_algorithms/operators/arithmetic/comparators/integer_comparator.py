@@ -43,9 +43,9 @@ from __future__ import annotations
 
 from typing import Literal
 
+from cqlib import Circuit
 from cqlib.circuit.gates import StandardGate
 
-from cqlib import Circuit
 from cqlib_algorithms.operators.arithmetic.adders.constant_adder import (
     DraperConstantAdder,
 )
@@ -108,9 +108,7 @@ def _build_ripple_geq_comparator(
     """Build the ripple branch for x >= value."""
     n = len(x_indices)
     negative_controls = [
-        x_indices[bit]
-        for bit in range(n)
-        if ((value >> bit) & 1) == 0
+        x_indices[bit] for bit in range(n) if ((value >> bit) & 1) == 0
     ]
     for qubit in negative_controls:
         circuit.x(qubit)
@@ -128,9 +126,7 @@ def _build_ripple_geq_comparator(
         controls = [x_indices[idx] for idx in range(n - 1, bit, -1)]
         controls.append(x_indices[bit])
         open_controls = [
-            x_indices[idx]
-            for idx in range(n - 1, bit, -1)
-            if ((value >> idx) & 1) == 0
+            x_indices[idx] for idx in range(n - 1, bit, -1) if ((value >> idx) & 1) == 0
         ]
         for qubit in open_controls:
             circuit.x(qubit)
@@ -158,9 +154,7 @@ def _build_ripple_lt_comparator(
         controls = [x_indices[idx] for idx in range(n - 1, bit, -1)]
         controls.append(x_indices[bit])
         open_controls = [
-            x_indices[idx]
-            for idx in range(n - 1, bit, -1)
-            if ((value >> idx) & 1) == 0
+            x_indices[idx] for idx in range(n - 1, bit, -1) if ((value >> idx) & 1) == 0
         ]
         open_controls.append(x_indices[bit])
         for qubit in open_controls:
@@ -189,8 +183,7 @@ class IntegerComparator:
     ) -> None:
         if not isinstance(num_state_qubits, int):
             raise TypeError(
-                "num_state_qubits must be an integer, got "
-                f"{num_state_qubits!r}."
+                f"num_state_qubits must be an integer, got {num_state_qubits!r}."
             )
         if num_state_qubits < 1:
             raise ValueError(
@@ -209,10 +202,7 @@ class IntegerComparator:
                 f"Expected one of {sorted(_VALID_SYNTHESIS)}."
             )
         if name is not None and not isinstance(name, str):
-            raise TypeError(
-                "name must be a string or None, got "
-                f"{name!r}."
-            )
+            raise TypeError(f"name must be a string or None, got {name!r}.")
 
         modulus = 1 << int(num_state_qubits)
         if not 0 <= value < modulus:
@@ -299,9 +289,7 @@ class IntegerComparator:
                     helper_index,
                     self._value,
                 )
-            raise RuntimeError(
-                f"Unsupported comparator relation {self._relation!r}."
-            )
+            raise RuntimeError(f"Unsupported comparator relation {self._relation!r}.")
 
         if self._synthesis == "ripple_carry":
             if self._relation == "geq":
@@ -320,11 +308,6 @@ class IntegerComparator:
                     self._value,
                 )
 
-            raise RuntimeError(
-                f"Unsupported comparator relation {self._relation!r}."
-            )
+            raise RuntimeError(f"Unsupported comparator relation {self._relation!r}.")
 
-        raise RuntimeError(
-            f"Unsupported comparator synthesis {self._synthesis!r}."
-        )
-
+        raise RuntimeError(f"Unsupported comparator synthesis {self._synthesis!r}.")

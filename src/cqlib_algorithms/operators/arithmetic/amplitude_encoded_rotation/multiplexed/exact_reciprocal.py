@@ -39,7 +39,6 @@ from typing import Any, Literal
 
 import numpy as np
 import numpy.typing as npt
-
 from cqlib import Circuit
 
 from ._synthesis import _FunctionalPauliRotation
@@ -112,21 +111,13 @@ def _compute_reciprocal_alpha(
         Alpha table of length ``2**num_state_qubits`` with dtype float64.
     """
 
-    if isinstance(num_state_qubits, bool) or not isinstance(
-        num_state_qubits, int
-    ):
-        raise TypeError(
-            f"num_state_qubits must be an int, got {num_state_qubits!r}."
-        )
+    if isinstance(num_state_qubits, bool) or not isinstance(num_state_qubits, int):
+        raise TypeError(f"num_state_qubits must be an int, got {num_state_qubits!r}.")
     if num_state_qubits < 1:
-        raise ValueError(
-            f"num_state_qubits must be >= 1, got {num_state_qubits!r}."
-        )
+        raise ValueError(f"num_state_qubits must be >= 1, got {num_state_qubits!r}.")
 
     if isinstance(scaling, bool) or not isinstance(scaling, (int, float)):
-        raise TypeError(
-            f"scaling must be a finite float, got {scaling!r}."
-        )
+        raise TypeError(f"scaling must be a finite float, got {scaling!r}.")
     if not math.isfinite(float(scaling)):
         raise ValueError(f"scaling must be finite, got {scaling!r}.")
     s = float(scaling)

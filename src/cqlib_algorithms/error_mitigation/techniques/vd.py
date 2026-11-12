@@ -50,10 +50,9 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
+from cqlib import Circuit
 from cqlib.error_mitigation import VirtualDistillation
 from cqlib.qis import Hamiltonian, PauliString
-
-from cqlib import Circuit
 
 from ...protocols import Estimator, EstimatorRequest, EstimatorResult, spawn_seeds
 from ..core import QemExecutor, make_cqlib_estimator
@@ -272,7 +271,13 @@ class _VdEstimator(Estimator):
 
     """
 
-    __slots__ = ("_copies", "_executor", "_seed", "_shots_denominator", "_shots_numerator")
+    __slots__ = (
+        "_copies",
+        "_executor",
+        "_seed",
+        "_shots_denominator",
+        "_shots_numerator",
+    )
 
     _copies: int
     _executor: QemExecutor

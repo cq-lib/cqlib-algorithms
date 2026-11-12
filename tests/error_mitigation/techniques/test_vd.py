@@ -188,9 +188,7 @@ def test_virtual_distillation_matches_analytic_mixed_bit_flip_state() -> None:
     marginal = 0.1
     circuit = Circuit(1)
     raw_expectation = 1.0 - 2.0 * marginal
-    expected = raw_expectation / (
-        (1.0 - marginal) ** 2 + marginal**2
-    )
+    expected = raw_expectation / ((1.0 - marginal) ** 2 + marginal**2)
     executor = vd_executor(
         QemExecutor(estimator=_BitFlipDensityEstimator(marginal)),
         copies=2,
@@ -199,9 +197,9 @@ def test_virtual_distillation_matches_analytic_mixed_bit_flip_state() -> None:
         seed=19,
     )
 
-    result = executor.estimate(
-        [EstimatorRequest(circuit, PauliString.from_str("Z"))]
-    )[0]
+    result = executor.estimate([EstimatorRequest(circuit, PauliString.from_str("Z"))])[
+        0
+    ]
 
     assert result.expectation == pytest.approx(expected, abs=1e-12)
     assert abs(result.expectation - 1.0) < abs(raw_expectation - 1.0)
@@ -219,9 +217,9 @@ def test_virtual_distillation_forwards_cqlib_moment_observables() -> None:
         seed=23,
     )
 
-    result = executor.estimate(
-        [EstimatorRequest(circuit, PauliString.from_str("Z"))]
-    )[0]
+    result = executor.estimate([EstimatorRequest(circuit, PauliString.from_str("Z"))])[
+        0
+    ]
 
     assert result.expectation == pytest.approx(-1.0, abs=1e-12)
     assert len(estimator.requests) == 2

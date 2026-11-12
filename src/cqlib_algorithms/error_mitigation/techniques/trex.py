@@ -41,11 +41,10 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 import numpy as np
+from cqlib import Circuit
 from cqlib.circuit import StandardGate, ValueOperation
 from cqlib.device import ExecutionResult
 from cqlib.qis import Hamiltonian, PauliString, Phase
-
-from cqlib import Circuit
 
 from ...protocols import (
     Estimator,
@@ -161,9 +160,7 @@ def combine_results(
     _validate_z_diagonal(observable)
     num_randomizations = len(twirls)
     if num_randomizations < 1:
-        raise ValueError(
-            "trex needs at least one randomization to recombine."
-        )
+        raise ValueError("trex needs at least one randomization to recombine.")
     if len(results) != 2 * num_randomizations:
         raise ValueError(
             "trex needs one twirled and one calibration result per "
@@ -172,9 +169,7 @@ def combine_results(
         )
     for result in results:
         if not isinstance(result, ExecutionResult):
-            raise TypeError(
-                "results must contain cqlib.device.ExecutionResult values"
-            )
+            raise TypeError("results must contain cqlib.device.ExecutionResult values")
 
     hamiltonian = _as_hamiltonian(observable)
     num_qubits = hamiltonian.num_qubits
@@ -188,9 +183,7 @@ def combine_results(
         for i in range(num_randomizations)
     ]
     calibration_distributions = [
-        _xor_distribution(
-            results[num_randomizations + i], twirls[i], num_qubits
-        )
+        _xor_distribution(results[num_randomizations + i], twirls[i], num_qubits)
         for i in range(num_randomizations)
     ]
 
@@ -410,9 +403,7 @@ def _build_circuits(
 
     """
     num_qubits = circuit.num_qubits
-    twirled = [
-        _apply_twirl(circuit, row, num_qubits, twirl_pauli) for row in twirls
-    ]
+    twirled = [_apply_twirl(circuit, row, num_qubits, twirl_pauli) for row in twirls]
     # A calibration circuit is the same twirl applied to the all-zero state, so
     # the readout error can be read off without any state preparation.
     calibration = [
@@ -444,9 +435,7 @@ def _apply_twirl(
     for qubit in range(num_qubits):
         if int(row[qubit]) == 1:
             paulis.append(
-                ValueOperation.from_standard_gate(
-                    twirl_pauli, [circuit.qubits[qubit]]
-                )
+                ValueOperation.from_standard_gate(twirl_pauli, [circuit.qubits[qubit]])
             )
     return rebuild(circuit, [*circuit.operations, *paulis])
 
@@ -524,14 +513,11 @@ def _validate_twirls(twirls: Sequence[Sequence[int]], num_qubits: int) -> None:
 
 def _validate_num_randomizations(num_randomizations: int, /) -> None:
     r"""Validate a positive randomization count."""
-    if isinstance(num_randomizations, bool) or not isinstance(
-        num_randomizations, int
-    ):
+    if isinstance(num_randomizations, bool) or not isinstance(num_randomizations, int):
         raise TypeError("num_randomizations must be an integer")
     if num_randomizations < 1:
         raise ValueError(
-            "num_randomizations must be at least one, but was "
-            f"{num_randomizations!r}."
+            f"num_randomizations must be at least one, but was {num_randomizations!r}."
         )
 
 

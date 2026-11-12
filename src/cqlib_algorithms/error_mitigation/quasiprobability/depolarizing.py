@@ -52,7 +52,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
-
 from cqlib.circuit import (
     Circuit,
     CircuitGate,
@@ -437,10 +436,7 @@ def _pauli_instruction(factors: str, /) -> Instruction:
 
 def _pauli_basis_instructions(num_qubits: int, /) -> tuple[Instruction, ...]:
     """Return the corrections of the basis, identity first."""
-    return tuple(
-        _pauli_instruction(factors)
-        for factors in _pauli_strings(num_qubits)
-    )
+    return tuple(_pauli_instruction(factors) for factors in _pauli_strings(num_qubits))
 
 
 def _depolarizing_epsilon(num_qubits: int, noise_level: float, /) -> float:
@@ -459,8 +455,7 @@ def _depolarizing_epsilon(num_qubits: int, noise_level: float, /) -> float:
     """
     if not np.isfinite(noise_level) or noise_level < 0.0:
         raise ValueError(
-            f"noise_level must be finite and non-negative but was "
-            f"{noise_level!r}."
+            f"noise_level must be finite and non-negative but was {noise_level!r}."
         )
     if num_qubits == 1:
         epsilon = 4.0 / 3.0 * noise_level

@@ -34,7 +34,6 @@ from typing import Literal
 
 import numpy as np
 import numpy.typing as npt
-
 from cqlib import Circuit
 
 from ...comparators.integer_comparator import _build_ripple_geq_comparator
@@ -74,9 +73,7 @@ def _pad_coefficients(
             continue
         extra = target_degree - current
         pad = np.zeros(extra, dtype=np.float64)
-        padded.append(
-            np.concatenate([np.asarray(arr, dtype=np.float64), pad])
-        )
+        padded.append(np.concatenate([np.asarray(arr, dtype=np.float64), pad]))
     return padded
 
 
@@ -240,17 +237,13 @@ class PiecewisePolynomialPauliRotation:
         axis: Literal["x", "y", "z"] = "y",
         name: str | None = None,
     ) -> None:
-        if isinstance(num_state_qubits, bool) or not isinstance(
-            num_state_qubits, int
-        ):
+        if isinstance(num_state_qubits, bool) or not isinstance(num_state_qubits, int):
             raise TypeError(
-                "num_state_qubits must be an int, got "
-                f"{num_state_qubits!r}."
+                f"num_state_qubits must be an int, got {num_state_qubits!r}."
             )
         if num_state_qubits < 1:
             raise ValueError(
-                "num_state_qubits must be >= 1, got "
-                f"{num_state_qubits!r}."
+                f"num_state_qubits must be >= 1, got {num_state_qubits!r}."
             )
 
         bp_list = _shared_validate_breakpoints(breakpoints, num_state_qubits)
@@ -286,9 +279,7 @@ class PiecewisePolynomialPauliRotation:
         gammas_list: list[dict[frozenset[int], float]] = []
         any_degree_gt_n = False
         for j in range(num_segments):
-            const_term, gammas, degree_gt_n = _shared_expand_gammas(
-                n, delta_coeffs[j]
-            )
+            const_term, gammas, degree_gt_n = _shared_expand_gammas(n, delta_coeffs[j])
             const_terms.append(float(const_term))
             gammas_list.append(gammas)
             if degree_gt_n:
@@ -308,9 +299,7 @@ class PiecewisePolynomialPauliRotation:
                 stacklevel=2,
             )
 
-        alpha, oversized = _compute_piecewise_polynomial_alpha(
-            n, bp_list, self._coeffs
-        )
+        alpha, oversized = _compute_piecewise_polynomial_alpha(n, bp_list, self._coeffs)
         if oversized:
             warnings.warn(
                 "One or more raw piecewise-polynomial angles exceed "
@@ -349,9 +338,7 @@ class PiecewisePolynomialPauliRotation:
     @property
     def coeffs(self) -> list[npt.NDArray[np.float64]]:
         """Return defensive copies of the original per-segment coefficients."""
-        return [
-            np.asarray(arr.copy(), dtype=np.float64) for arr in self._coeffs
-        ]
+        return [np.asarray(arr.copy(), dtype=np.float64) for arr in self._coeffs]
 
     @property
     def max_degree(self) -> int:
@@ -469,9 +456,7 @@ class PiecewisePolynomialPauliRotation:
                 axis=axis,
             )
 
-            for controls_tuple, raw_angle in self._iter_segment_gamma_items(
-                j
-            ):
+            for controls_tuple, raw_angle in self._iter_segment_gamma_items(j):
                 ctrls = list(extra_ctrl) + list(controls_tuple)
                 _shared_append_segmented(
                     circuit,

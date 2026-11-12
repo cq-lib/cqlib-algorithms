@@ -43,22 +43,16 @@ class DraperConstantAdder:
     ) -> None:
         if not isinstance(num_state_qubits, int):
             raise TypeError(
-                "num_state_qubits must be an integer, got "
-                f"{num_state_qubits!r}."
+                f"num_state_qubits must be an integer, got {num_state_qubits!r}."
             )
         if num_state_qubits < 1:
             raise ValueError(
-                "num_state_qubits must be >= 1, got "
-                f"{num_state_qubits!r}."
+                f"num_state_qubits must be >= 1, got {num_state_qubits!r}."
             )
         if not isinstance(value, int):
-            raise TypeError(
-                f"value must be an integer, got {value!r}."
-            )
+            raise TypeError(f"value must be an integer, got {value!r}.")
         if name is not None and not isinstance(name, str):
-            raise TypeError(
-                f"name must be a string or None, got {name!r}."
-            )
+            raise TypeError(f"name must be a string or None, got {name!r}.")
 
         modulus = 1 << int(num_state_qubits)
         if not 0 <= value < modulus:
@@ -103,5 +97,3 @@ class DraperConstantAdder:
             self._num_state_qubits,
             self._value,
         )
-
-

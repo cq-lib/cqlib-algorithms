@@ -37,9 +37,9 @@ from itertools import pairwise
 
 import numpy as np
 import pytest
+from cqlib import Circuit
 from cqlib.qis import Statevector
 
-from cqlib import Circuit
 from cqlib_algorithms.operators.arithmetic import (
     QuadraticForm,
     build_quadratic_form,
@@ -107,9 +107,7 @@ def _apply_x_to_value(
     """Flip qubits at ``bit_indices`` to encode integer value LSB-first."""
     width = len(bit_indices)
     if not 0 <= value < (1 << width):
-        raise ValueError(
-            f"Value {value} does not fit into a {width}-bit register."
-        )
+        raise ValueError(f"Value {value} does not fit into a {width}-bit register.")
     for local_index, qubit in enumerate(bit_indices):
         if (value >> local_index) & 1:
             circuit.x(qubit)
@@ -145,12 +143,8 @@ def _run_quadratic_form_single_x(
     outcome = shots[0]
 
     return {
-        "input": _decode_register_from_outcome(
-            outcome, qf.input_register_indices
-        ),
-        "result": _decode_register_from_outcome(
-            outcome, qf.result_register_indices
-        ),
+        "input": _decode_register_from_outcome(outcome, qf.input_register_indices),
+        "result": _decode_register_from_outcome(outcome, qf.result_register_indices),
     }
 
 
@@ -259,8 +253,7 @@ def _assert_clean_register_layout(qf: QuadraticForm) -> None:
     assert len(flat) == len(set(flat)), (
         f"QuadraticForm register indices overlap: {flat}"
     )
-    assert all(0 <= idx < (qf.num_input_qubits + qf.num_result_qubits)
-               for idx in flat)
+    assert all(0 <= idx < (qf.num_input_qubits + qf.num_result_qubits) for idx in flat)
 
 
 # ===========================================================================
@@ -283,7 +276,9 @@ class TestQuadraticFormValidation:
     def test_val_001_num_input_qubits_bool_raises_typeerror(self) -> None:
         with pytest.raises(TypeError, match="num_input_qubits"):
             QuadraticForm(
-                [[0.0]], [0.0], 0.0,
+                [[0.0]],
+                [0.0],
+                0.0,
                 num_input_qubits=True,
                 num_result_qubits=1,
             )
@@ -293,12 +288,12 @@ class TestQuadraticFormValidation:
     # ------------------------------------------------------------------
 
     @pytest.mark.parametrize("bad", [1.5, "2", None, [1], (1,)])
-    def test_val_002_num_input_qubits_non_int_raises_typeerror(
-        self, bad
-    ) -> None:
+    def test_val_002_num_input_qubits_non_int_raises_typeerror(self, bad) -> None:
         with pytest.raises(TypeError, match="num_input_qubits"):
             QuadraticForm(
-                [[0.0]], [0.0], 0.0,
+                [[0.0]],
+                [0.0],
+                0.0,
                 num_input_qubits=bad,
                 num_result_qubits=1,
             )
@@ -310,7 +305,9 @@ class TestQuadraticFormValidation:
     def test_val_003_num_result_qubits_bool_raises_typeerror(self) -> None:
         with pytest.raises(TypeError, match="num_result_qubits"):
             QuadraticForm(
-                [[0.0]], [0.0], 0.0,
+                [[0.0]],
+                [0.0],
+                0.0,
                 num_input_qubits=1,
                 num_result_qubits=False,
             )
@@ -320,12 +317,12 @@ class TestQuadraticFormValidation:
     # ------------------------------------------------------------------
 
     @pytest.mark.parametrize("bad", [1.5, "2", None, [1], (1,)])
-    def test_val_004_num_result_qubits_non_int_raises_typeerror(
-        self, bad
-    ) -> None:
+    def test_val_004_num_result_qubits_non_int_raises_typeerror(self, bad) -> None:
         with pytest.raises(TypeError, match="num_result_qubits"):
             QuadraticForm(
-                [[0.0]], [0.0], 0.0,
+                [[0.0]],
+                [0.0],
+                0.0,
                 num_input_qubits=1,
                 num_result_qubits=bad,
             )
@@ -337,7 +334,9 @@ class TestQuadraticFormValidation:
     def test_val_005_A_non_numeric_raises_typeerror(self) -> None:
         with pytest.raises(TypeError, match="2-D"):
             QuadraticForm(
-                [["a", "b"], ["c", "d"]], [0.0, 0.0], 0.0,
+                [["a", "b"], ["c", "d"]],
+                [0.0, 0.0],
+                0.0,
                 num_input_qubits=2,
                 num_result_qubits=2,
             )
@@ -349,7 +348,9 @@ class TestQuadraticFormValidation:
     def test_val_006_A_1d_raises_typeerror(self) -> None:
         with pytest.raises(TypeError, match="2-D"):
             QuadraticForm(
-                [1.0, 2.0], [0.0, 0.0], 0.0,
+                [1.0, 2.0],
+                [0.0, 0.0],
+                0.0,
                 num_input_qubits=2,
                 num_result_qubits=2,
             )
@@ -357,7 +358,9 @@ class TestQuadraticFormValidation:
     def test_val_006_A_3d_raises_typeerror(self) -> None:
         with pytest.raises(TypeError, match="2-D"):
             QuadraticForm(
-                [[[1.0]]], [0.0], 0.0,
+                [[[1.0]]],
+                [0.0],
+                0.0,
                 num_input_qubits=1,
                 num_result_qubits=2,
             )
@@ -383,7 +386,9 @@ class TestQuadraticFormValidation:
     def test_val_008_b_non_numeric_raises_typeerror(self) -> None:
         with pytest.raises(TypeError, match="1-D"):
             QuadraticForm(
-                [[1.0]], ["bad"], 0.0,
+                [[1.0]],
+                ["bad"],
+                0.0,
                 num_input_qubits=1,
                 num_result_qubits=2,
             )
@@ -423,7 +428,9 @@ class TestQuadraticFormValidation:
     def test_val_011_c_non_numeric_raises_typeerror(self) -> None:
         with pytest.raises(TypeError, match="float"):
             QuadraticForm(
-                [[0.0]], [0.0], "not a float",
+                [[0.0]],
+                [0.0],
+                "not a float",
                 num_input_qubits=1,
                 num_result_qubits=2,
             )
@@ -435,7 +442,9 @@ class TestQuadraticFormValidation:
     def test_val_012_approximation_degree_bool_raises_typeerror(self) -> None:
         with pytest.raises(TypeError, match="approximation_degree"):
             QuadraticForm(
-                [[0.0]], [0.0], 0.0,
+                [[0.0]],
+                [0.0],
+                0.0,
                 num_input_qubits=1,
                 num_result_qubits=3,
                 approximation_degree=True,
@@ -444,7 +453,9 @@ class TestQuadraticFormValidation:
     def test_val_012_approximation_degree_float_raises_typeerror(self) -> None:
         with pytest.raises(TypeError, match="approximation_degree"):
             QuadraticForm(
-                [[0.0]], [0.0], 0.0,
+                [[0.0]],
+                [0.0],
+                0.0,
                 num_input_qubits=1,
                 num_result_qubits=3,
                 approximation_degree=1.5,
@@ -459,7 +470,9 @@ class TestQuadraticFormValidation:
     ) -> None:
         with pytest.raises(ValueError, match="non-negative"):
             QuadraticForm(
-                [[0.0]], [0.0], 0.0,
+                [[0.0]],
+                [0.0],
+                0.0,
                 num_input_qubits=1,
                 num_result_qubits=3,
                 approximation_degree=-1,
@@ -470,12 +483,12 @@ class TestQuadraticFormValidation:
     # ------------------------------------------------------------------
 
     @pytest.mark.parametrize("bad_name", [123, True, 1.0])
-    def test_val_014_name_non_string_or_none_raises_typeerror(
-        self, bad_name
-    ) -> None:
+    def test_val_014_name_non_string_or_none_raises_typeerror(self, bad_name) -> None:
         with pytest.raises(TypeError, match="name"):
             QuadraticForm(
-                [[0.0]], [0.0], 0.0,
+                [[0.0]],
+                [0.0],
+                0.0,
                 num_input_qubits=1,
                 num_result_qubits=2,
                 name=bad_name,
@@ -487,7 +500,9 @@ class TestQuadraticFormValidation:
 
     def test_val_015_name_none_defaults_to_class_name(self) -> None:
         op = QuadraticForm(
-            [[0.0]], [0.0], 0.0,
+            [[0.0]],
+            [0.0],
+            0.0,
             num_input_qubits=1,
             num_result_qubits=2,
             name=None,
@@ -508,7 +523,9 @@ class TestQuadraticFormAttributes:
         b = [0.5, -1.0, 2.0]
         c = 1.5
         return QuadraticForm(
-            A, b, c,
+            A,
+            b,
+            c,
             num_input_qubits=n,
             num_result_qubits=m,
             approximation_degree=1,
@@ -561,14 +578,18 @@ class TestQuadraticFormAttributes:
 
     def test_attr_006_approximation_degree_returns_user_value(self) -> None:
         qf = QuadraticForm(
-            [[0.0]], [0.0], 0.0,
+            [[0.0]],
+            [0.0],
+            0.0,
             num_input_qubits=1,
             num_result_qubits=3,
             approximation_degree=5,
         )
         assert qf.approximation_degree == 5
         qf_none = QuadraticForm(
-            [[0.0]], [0.0], 0.0,
+            [[0.0]],
+            [0.0],
+            0.0,
             num_input_qubits=1,
             num_result_qubits=3,
             approximation_degree=None,
@@ -616,8 +637,11 @@ class TestQuadraticFormFunctional:
     def test_func_001_all_zero_coefficients_yield_zero(self) -> None:
         n, m = 2, 3
         qf = QuadraticForm(
-            [[0.0] * n for _ in range(n)], [0.0] * n, 0.0,
-            num_input_qubits=n, num_result_qubits=m,
+            [[0.0] * n for _ in range(n)],
+            [0.0] * n,
+            0.0,
+            num_input_qubits=n,
+            num_result_qubits=m,
         )
         for x in range(1 << n):
             out = _run_quadratic_form_single_x(qf, x)
@@ -634,8 +658,11 @@ class TestQuadraticFormFunctional:
         A = [[0.0] * n for _ in range(n)]
         b = [0.0] * n
         qf = QuadraticForm(
-            A, b, c,
-            num_input_qubits=n, num_result_qubits=m,
+            A,
+            b,
+            c,
+            num_input_qubits=n,
+            num_result_qubits=m,
         )
         expected_encoding = _encode_twos_complement(c, m)
         for x in range(1 << n):
@@ -650,18 +677,21 @@ class TestQuadraticFormFunctional:
     @pytest.mark.parametrize(
         "b",
         [
-            [1, 0],   # sum x_0
-            [0, 3],   # 3 x_1
+            [1, 0],  # sum x_0
+            [0, 3],  # 3 x_1
             [2, -1],  # mixed
-            [0, 0],   # zero
+            [0, 0],  # zero
         ],
     )
     def test_func_003_linear_only(self, b: list[int]) -> None:
         n, m = 2, 4
         A = [[0.0] * n for _ in range(n)]
         qf = QuadraticForm(
-            A, list(map(float, b)), 0.0,
-            num_input_qubits=n, num_result_qubits=m,
+            A,
+            list(map(float, b)),
+            0.0,
+            num_input_qubits=n,
+            num_result_qubits=m,
         )
         for x in range(1 << n):
             out = _run_quadratic_form_single_x(qf, x)
@@ -688,8 +718,7 @@ class TestQuadraticFormFunctional:
         n, m = 2, 4
         A = np.diag(list(map(float, diag)))
         b = [0.0] * n
-        qf = QuadraticForm(A.tolist(), b, 0.0,
-                           num_input_qubits=n, num_result_qubits=m)
+        qf = QuadraticForm(A.tolist(), b, 0.0, num_input_qubits=n, num_result_qubits=m)
         for x in range(1 << n):
             out = _run_quadratic_form_single_x(qf, x)
             expected = _classical_Q(A, np.asarray(b), 0.0, x, n)
@@ -703,8 +732,7 @@ class TestQuadraticFormFunctional:
         n, m = 2, 4
         A = np.array([[0.0, 1.0], [1.0, 0.0]])
         b = [0.0, 0.0]
-        qf = QuadraticForm(A, b, 0.0,
-                           num_input_qubits=n, num_result_qubits=m)
+        qf = QuadraticForm(A, b, 0.0, num_input_qubits=n, num_result_qubits=m)
         for x in range(1 << n):
             out = _run_quadratic_form_single_x(qf, x)
             expected = _classical_Q(A, np.asarray(b), 0.0, x, n)
@@ -720,10 +748,8 @@ class TestQuadraticFormFunctional:
         A_sym = _symmetrise(A_nonsym)
         b = np.array([1.0, -2.0, 3.0])
         c = 2.0
-        qf1 = QuadraticForm(A_nonsym, b, c,
-                            num_input_qubits=n, num_result_qubits=m)
-        qf2 = QuadraticForm(A_sym, b, c,
-                            num_input_qubits=n, num_result_qubits=m)
+        qf1 = QuadraticForm(A_nonsym, b, c, num_input_qubits=n, num_result_qubits=m)
+        qf2 = QuadraticForm(A_sym, b, c, num_input_qubits=n, num_result_qubits=m)
         for x in range(1 << n):
             out1 = _run_quadratic_form_single_x(qf1, x)
             out2 = _run_quadratic_form_single_x(qf2, x)
@@ -735,9 +761,7 @@ class TestQuadraticFormFunctional:
     # ------------------------------------------------------------------
 
     @pytest.mark.parametrize("n,m", [(2, 4), (3, 5), (1, 3)])
-    def test_func_007_combined_integer_coefficients(
-        self, n: int, m: int
-    ) -> None:
+    def test_func_007_combined_integer_coefficients(self, n: int, m: int) -> None:
         A = np.zeros((n, n), dtype=np.float64)
         for j in range(n):
             for k in range(j, n):
@@ -746,8 +770,7 @@ class TestQuadraticFormFunctional:
                 A[k, j] = v
         b = np.array([(i + 1) % 4 - 1 for i in range(n)], dtype=np.float64)
         c = float((-1) ** n)
-        qf = QuadraticForm(A, b, c,
-                           num_input_qubits=n, num_result_qubits=m)
+        qf = QuadraticForm(A, b, c, num_input_qubits=n, num_result_qubits=m)
         for x in range(1 << n):
             out = _run_quadratic_form_single_x(qf, x)
             expected = _classical_Q(A, b, c, x, n)
@@ -761,8 +784,7 @@ class TestQuadraticFormFunctional:
         n, m = 3, 4
         A = np.ones((n, n), dtype=np.float64)
         b = np.arange(n, dtype=np.float64)
-        qf = QuadraticForm(A, b, 1.0,
-                           num_input_qubits=n, num_result_qubits=m)
+        qf = QuadraticForm(A, b, 1.0, num_input_qubits=n, num_result_qubits=m)
         for x in range(1 << n):
             out = _run_quadratic_form_single_x(qf, x)
             assert out["input"] == x
@@ -776,8 +798,7 @@ class TestQuadraticFormFunctional:
         A = [[0.0, 0.0], [0.0, 0.0]]
         b = [0.0, 0.0]
         c = -3
-        qf = QuadraticForm(A, b, c,
-                           num_input_qubits=n, num_result_qubits=m)
+        qf = QuadraticForm(A, b, c, num_input_qubits=n, num_result_qubits=m)
         expected = _encode_twos_complement(-3, m)
         for x in range(1 << n):
             out = _run_quadratic_form_single_x(qf, x)
@@ -792,8 +813,7 @@ class TestQuadraticFormFunctional:
         A = [[0.0, 0.0], [0.0, 0.0]]
         b = [0.0, 0.0]
         c = 9  # 9 in twos-complement 3-bit = (9+8) mod 8 = 1
-        qf = QuadraticForm(A, b, float(c),
-                           num_input_qubits=n, num_result_qubits=m)
+        qf = QuadraticForm(A, b, float(c), num_input_qubits=n, num_result_qubits=m)
         expected = _encode_twos_complement(c, m)
         for x in range(1 << n):
             out = _run_quadratic_form_single_x(qf, x)
@@ -810,17 +830,12 @@ class TestQuadraticFormFunctional:
             ([[1.0]], [1.0], 1.0),
         ],
     )
-    def test_func_011_minimal_dimensions_n1_m1(
-        self, A, b, c
-    ) -> None:
+    def test_func_011_minimal_dimensions_n1_m1(self, A, b, c) -> None:
         n, m = 1, 1
-        qf = QuadraticForm(A, b, c,
-                           num_input_qubits=n, num_result_qubits=m)
+        qf = QuadraticForm(A, b, c, num_input_qubits=n, num_result_qubits=m)
         for x in range(1 << n):
             out = _run_quadratic_form_single_x(qf, x)
-            expected = _classical_Q(
-                np.asarray(A), np.asarray(b), float(c), x, n
-            )
+            expected = _classical_Q(np.asarray(A), np.asarray(b), float(c), x, n)
             assert out["result"] == _encode_twos_complement(expected, m)
 
     # ------------------------------------------------------------------
@@ -837,8 +852,7 @@ class TestQuadraticFormFunctional:
                 A[k, j] = float(v)
         b = np.array([1, -2, 3, -1], dtype=np.float64)
         c = -1.0
-        qf = QuadraticForm(A, b, c,
-                           num_input_qubits=n, num_result_qubits=m)
+        qf = QuadraticForm(A, b, c, num_input_qubits=n, num_result_qubits=m)
         for x in range(1 << n):
             out = _run_quadratic_form_single_x(qf, x)
             expected = _classical_Q(A, b, c, x, n)
@@ -858,8 +872,7 @@ class TestQuadraticFormFunctional:
                 A[k, j] = float(v)
         b = (np.arange(n) % 5 - 2).astype(np.float64)
         c = float(((n + 1) % 3) - 1)
-        qf = QuadraticForm(A, b, c,
-                           num_input_qubits=n, num_result_qubits=m)
+        qf = QuadraticForm(A, b, c, num_input_qubits=n, num_result_qubits=m)
         for _ in range(RANDOM_SAMPLE_SIZE):
             x = int(np.random.randint(0, 1 << n))
             out = _run_quadratic_form_single_x(qf, x)
@@ -874,14 +887,15 @@ class TestQuadraticFormFunctional:
 
     def test_func_014_fractional_coefficients_fft_reference(self) -> None:
         n, m = 2, 3
-        A = np.array([
-            [0.25, 0.5],
-            [0.5, -0.75],
-        ])
+        A = np.array(
+            [
+                [0.25, 0.5],
+                [0.5, -0.75],
+            ]
+        )
         b = np.array([0.1, -0.3])
         c = 0.4
-        qf = QuadraticForm(A, b, c,
-                           num_input_qubits=n, num_result_qubits=m)
+        qf = QuadraticForm(A, b, c, num_input_qubits=n, num_result_qubits=m)
         reference = _independent_fft_probe(A, b, c, n, m)
 
         for x in range(1 << n):
@@ -927,14 +941,18 @@ class TestQuadraticFormApproximation:
         A = [[1.0, 0.5], [0.5, 2.0]]
         b = [1.0, -1.0]
         c = 0.5
-        op_none = QuadraticForm(A, b, c, num_input_qubits=n,
-                                num_result_qubits=m, approximation_degree=None)
-        op_big = QuadraticForm(A, b, c, num_input_qubits=n,
-                               num_result_qubits=m,
-                               approximation_degree=m - 1 + 3)
-        assert _circuits_unitary_equal(
-            op_none.build_circuit(), op_big.build_circuit()
+        op_none = QuadraticForm(
+            A, b, c, num_input_qubits=n, num_result_qubits=m, approximation_degree=None
         )
+        op_big = QuadraticForm(
+            A,
+            b,
+            c,
+            num_input_qubits=n,
+            num_result_qubits=m,
+            approximation_degree=m - 1 + 3,
+        )
+        assert _circuits_unitary_equal(op_none.build_circuit(), op_big.build_circuit())
 
     # ------------------------------------------------------------------
     # QF-APPR-002  d=0 produces a distinct, maximum-approximation circuit
@@ -945,11 +963,12 @@ class TestQuadraticFormApproximation:
         A = [[1.0, 2.0], [3.0, 4.0]]
         b = [-1.0, 5.0]
         c = 0.25
-        op_exact = QuadraticForm(A, b, c, num_input_qubits=n,
-                                 num_result_qubits=m,
-                                 approximation_degree=None)
-        op_d0 = QuadraticForm(A, b, c, num_input_qubits=n,
-                              num_result_qubits=m, approximation_degree=0)
+        op_exact = QuadraticForm(
+            A, b, c, num_input_qubits=n, num_result_qubits=m, approximation_degree=None
+        )
+        op_d0 = QuadraticForm(
+            A, b, c, num_input_qubits=n, num_result_qubits=m, approximation_degree=0
+        )
         assert not _circuits_unitary_equal(
             op_exact.build_circuit(), op_d0.build_circuit()
         )
@@ -959,9 +978,14 @@ class TestQuadraticFormApproximation:
     # ------------------------------------------------------------------
 
     def test_appr_003_stored_value_not_clamped(self) -> None:
-        op = QuadraticForm([[0.0]], [0.0], 0.0,
-                           num_input_qubits=1, num_result_qubits=2,
-                           approximation_degree=99)
+        op = QuadraticForm(
+            [[0.0]],
+            [0.0],
+            0.0,
+            num_input_qubits=1,
+            num_result_qubits=2,
+            approximation_degree=99,
+        )
         assert op.approximation_degree == 99
 
     # ------------------------------------------------------------------
@@ -970,9 +994,14 @@ class TestQuadraticFormApproximation:
 
     def test_appr_004_negative_raises_valueerror(self) -> None:
         with pytest.raises(ValueError, match="non-negative"):
-            QuadraticForm([[0.0]], [0.0], 0.0,
-                          num_input_qubits=1, num_result_qubits=2,
-                          approximation_degree=-1)
+            QuadraticForm(
+                [[0.0]],
+                [0.0],
+                0.0,
+                num_input_qubits=1,
+                num_result_qubits=2,
+                approximation_degree=-1,
+            )
 
     # ------------------------------------------------------------------
     # QF-APPR-005  Frob distance to exact (compared to exact) is monotonic
@@ -1003,16 +1032,16 @@ class TestQuadraticFormApproximation:
         b = [1.0, -3.0]
         c = 0.5
         ops = {
-            d: QuadraticForm(A, b, c, num_input_qubits=n,
-                             num_result_qubits=m, approximation_degree=d)
+            d: QuadraticForm(
+                A, b, c, num_input_qubits=n, num_result_qubits=m, approximation_degree=d
+            )
             for d in range(m)
         }
-        op_exact = QuadraticForm(A, b, c, num_input_qubits=n,
-                                 num_result_qubits=m,
-                                 approximation_degree=None).build_circuit()
+        op_exact = QuadraticForm(
+            A, b, c, num_input_qubits=n, num_result_qubits=m, approximation_degree=None
+        ).build_circuit()
         distances = [
-            self._frob_distance(ops[d].build_circuit(), op_exact)
-            for d in range(m)
+            self._frob_distance(ops[d].build_circuit(), op_exact) for d in range(m)
         ]
         for prev, nxt in pairwise(distances):
             assert nxt <= prev + 1e-12
@@ -1064,8 +1093,9 @@ class TestQuadraticFormStructure:
         n, m = 3, 4
         A = -np.eye(n, dtype=np.float64)
         b = np.ones(n, dtype=np.float64)
-        A_off = np.tril(np.ones((n, n), dtype=np.float64), -1) + \
-            np.triu(np.ones((n, n), dtype=np.float64), 1)
+        A_off = np.tril(np.ones((n, n), dtype=np.float64), -1) + np.triu(
+            np.ones((n, n), dtype=np.float64), 1
+        )
         A = A + A_off
         c = 1.0
         qf = QuadraticForm(A, b, c, num_input_qubits=n, num_result_qubits=m)
@@ -1092,8 +1122,11 @@ class TestQuadraticFormStructure:
     @pytest.mark.parametrize("n,m", [(1, 1), (3, 5), (6, 2)])
     def test_struct_005_registers_no_overlap(self, n: int, m: int) -> None:
         qf = QuadraticForm(
-            [[0.0] * n for _ in range(n)], [0.0] * n, 0.0,
-            num_input_qubits=n, num_result_qubits=m,
+            [[0.0] * n for _ in range(n)],
+            [0.0] * n,
+            0.0,
+            num_input_qubits=n,
+            num_result_qubits=m,
         )
         _assert_clean_register_layout(qf)
 
@@ -1107,10 +1140,12 @@ class TestQuadraticFormStructure:
         A_sym = _symmetrise(A_nonsym)
         b = np.array([1.0, -2.0, 3.0])
         c = 2.0
-        circ1 = QuadraticForm(A_nonsym, b, c, num_input_qubits=n,
-                              num_result_qubits=m).build_circuit()
-        circ2 = QuadraticForm(A_sym, b, c, num_input_qubits=n,
-                              num_result_qubits=m).build_circuit()
+        circ1 = QuadraticForm(
+            A_nonsym, b, c, num_input_qubits=n, num_result_qubits=m
+        ).build_circuit()
+        circ2 = QuadraticForm(
+            A_sym, b, c, num_input_qubits=n, num_result_qubits=m
+        ).build_circuit()
         assert _circuits_unitary_equal(circ1, circ2)
 
     # ------------------------------------------------------------------
@@ -1165,11 +1200,19 @@ class TestQuadraticFormWrapper:
         c = 0.25
         n, m = 2, 4
         circ_wrap = build_quadratic_form(
-            A, b, c, num_input_qubits=n, num_result_qubits=m,
+            A,
+            b,
+            c,
+            num_input_qubits=n,
+            num_result_qubits=m,
             approximation_degree=1,
         )
         circ_class = QuadraticForm(
-            A, b, c, num_input_qubits=n, num_result_qubits=m,
+            A,
+            b,
+            c,
+            num_input_qubits=n,
+            num_result_qubits=m,
             approximation_degree=1,
         ).build_circuit()
         assert _circuits_unitary_equal(circ_wrap, circ_class)
@@ -1190,8 +1233,11 @@ class TestQuadraticFormRobustness:
 
     def test_robust_001_repeated_builds_independent_objects(self) -> None:
         qf = QuadraticForm(
-            [[1.0, 2.0], [2.0, 3.0]], [0.0, 0.0], 1.0,
-            num_input_qubits=2, num_result_qubits=4,
+            [[1.0, 2.0], [2.0, 3.0]],
+            [0.0, 0.0],
+            1.0,
+            num_input_qubits=2,
+            num_result_qubits=4,
         )
         c1 = qf.build_circuit()
         c2 = qf.build_circuit()
@@ -1216,8 +1262,11 @@ class TestQuadraticFormRobustness:
 
         def _build(A_in, b_in, c_in) -> Circuit:
             return QuadraticForm(
-                A_in, b_in, c_in,
-                num_input_qubits=n, num_result_qubits=m,
+                A_in,
+                b_in,
+                c_in,
+                num_input_qubits=n,
+                num_result_qubits=m,
             ).build_circuit()
 
         circs = [
@@ -1239,7 +1288,11 @@ class TestQuadraticFormRobustness:
         A = [[1.0, 0.0], [0.0, 2.0]]
         b = [1.0, -1.0]
         qf = QuadraticForm(
-            A, b, 0.0, num_input_qubits=2, num_result_qubits=4,
+            A,
+            b,
+            0.0,
+            num_input_qubits=2,
+            num_result_qubits=4,
         )
         A[0][0] = 9999.0
         A[0][1] = -9999.0
@@ -1259,8 +1312,11 @@ class TestQuadraticFormRobustness:
         b_int = [-3, 4]
         c_int = 2
         qf = QuadraticForm(
-            A_int, b_int, c_int,
-            num_input_qubits=n, num_result_qubits=m,
+            A_int,
+            b_int,
+            c_int,
+            num_input_qubits=n,
+            num_result_qubits=m,
         )
         assert np.asarray(qf.A).dtype.kind == "f"
         assert np.asarray(qf.b).dtype.kind == "f"

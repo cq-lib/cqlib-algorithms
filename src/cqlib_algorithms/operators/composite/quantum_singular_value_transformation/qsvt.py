@@ -29,12 +29,13 @@ from typing import Literal
 
 import numpy as np
 import numpy.typing as npt
-
 from cqlib import Circuit
 
 from ...oracle.block_encoding import BlockEncoding
 from ._phase_solver import (
     convert_qsp_phases as _convert_qsp_phases,
+)
+from ._phase_solver import (
     polynomial_to_chebyshev,
     solve_haah_phases,
 )
@@ -254,7 +255,7 @@ class QuantumSingularValueTransformation:
         """
 
         coeffs = np.asarray(coefficients, dtype=np.float64).reshape(-1)
-        degree = int(len(coeffs)) - 1
+        degree = len(coeffs) - 1
 
         if degree == 0:
             return cls(
@@ -356,7 +357,7 @@ class QuantumSingularValueTransformation:
 
         """
         coeffs = np.asarray(coefficients).reshape(-1)
-        degree = int(len(coeffs)) - 1
+        degree = len(coeffs) - 1
 
         if degree == 0:
             return cls(

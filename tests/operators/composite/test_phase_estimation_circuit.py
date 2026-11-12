@@ -162,9 +162,7 @@ def test_inverse_configuration_builds_the_adjoint_of_the_forward_circuit() -> No
     unitary.rx(0, 0.7)
 
     forward = PhaseEstimationCircuit(unitary, 3, approximation_degree=1)
-    adjoint = PhaseEstimationCircuit(
-        unitary, 3, approximation_degree=1, inverse=True
-    )
+    adjoint = PhaseEstimationCircuit(unitary, 3, approximation_degree=1, inverse=True)
 
     np.testing.assert_allclose(
         adjoint.build_circuit().to_matrix(),

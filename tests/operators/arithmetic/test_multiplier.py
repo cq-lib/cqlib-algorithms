@@ -29,9 +29,9 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+from cqlib import Circuit
 from cqlib.qis import Statevector
 
-from cqlib import Circuit
 from cqlib_algorithms.operators.arithmetic import (
     Multiplier,
 )
@@ -58,9 +58,7 @@ def _apply_x_to_value(
     """Flip qubits at bit_indices on circuit to encode integer value LSB first."""
     width = len(bit_indices)
     if not 0 <= value < (1 << width):
-        raise ValueError(
-            f"Value {value} does not fit into a {width}-bit register."
-        )
+        raise ValueError(f"Value {value} does not fit into a {width}-bit register.")
     for local_index, qubit in enumerate(bit_indices):
         if (value >> local_index) & 1:
             circuit.x(qubit)
@@ -95,9 +93,7 @@ def _run_multiplier(
     n = multiplier.num_state_qubits
     modulus = 1 << n
     if not 0 <= a < modulus or not 0 <= b < modulus:
-        raise ValueError(
-            f"Operands a={a}, b={b} out of range for {n}-bit multiplier."
-        )
+        raise ValueError(f"Operands a={a}, b={b} out of range for {n}-bit multiplier.")
 
     circuit = Circuit(multiplier.num_qubits)
     _apply_x_to_value(circuit, a, multiplier.a_register_indices)
@@ -112,12 +108,8 @@ def _run_multiplier(
     outcome = shots[0]
 
     decoded: dict[str, int] = {
-        "a": _decode_register_from_outcome(
-            outcome, multiplier.a_register_indices
-        ),
-        "b": _decode_register_from_outcome(
-            outcome, multiplier.b_register_indices
-        ),
+        "a": _decode_register_from_outcome(outcome, multiplier.a_register_indices),
+        "b": _decode_register_from_outcome(outcome, multiplier.b_register_indices),
         "product": _decode_register_from_outcome(
             outcome, multiplier.product_register_indices
         ),
@@ -339,9 +331,7 @@ def test_multiplier_approximation_degree_negative_raises_valueerror() -> None:
         ),
     ],
 )
-def test_multiplier_invalid_types_raise_typeerror(
-    case: str, callable_wrapper
-) -> None:
+def test_multiplier_invalid_types_raise_typeerror(case: str, callable_wrapper) -> None:
     """MUL-06. Invalid construction input types raise TypeError."""
     with pytest.raises(TypeError):
         callable_wrapper()

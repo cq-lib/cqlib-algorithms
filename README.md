@@ -48,7 +48,7 @@ Windows、Linux 和 macOS 平台提供二进制 wheel。
 如需运行测试、类型检查、代码检查和构建，再安装开发工具：
 
 ```bash
-uv pip install "build>=1.2.2,<2" "mypy==1.20.2" "pytest==9.1.1" "ruff==0.16.8"
+uv pip install "build>=1.2.2,<2" "mypy==1.20.2" "pytest==9.1.1" "ruff>=0.16.8,<1"
 ```
 
 量子机器学习和量子化学参考功能使用可选依赖组安装：

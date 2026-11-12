@@ -46,7 +46,6 @@ References
 from __future__ import annotations
 
 import numpy as np
-
 from cqlib.circuit import Instruction
 
 from .depolarizing import (
@@ -117,13 +116,11 @@ def _amplified_noise_level(
     """
     if not np.isfinite(noise_level) or noise_level < 0.0:
         raise ValueError(
-            f"noise_level must be finite and non-negative but was "
-            f"{noise_level!r}."
+            f"noise_level must be finite and non-negative but was {noise_level!r}."
         )
     if not np.isfinite(scale_factor) or scale_factor <= 0.0:
         raise ValueError(
-            f"scale_factor must be finite and positive but was "
-            f"{scale_factor!r}."
+            f"scale_factor must be finite and positive but was {scale_factor!r}."
         )
     return scale_factor * noise_level
 

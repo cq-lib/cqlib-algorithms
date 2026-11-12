@@ -196,9 +196,9 @@ def test_split_cycle_shift_rejects_invalid_value_ranges(
 def test_weight_distribution_block_matches_hypergeometric_reference(
     num_qubits: int, left_width: int, k: int
 ) -> None:
-    matrix = WeightDistributionBlock(
-        num_qubits, left_width, k
-    ).build_circuit().to_matrix()
+    matrix = (
+        WeightDistributionBlock(num_qubits, left_width, k).build_circuit().to_matrix()
+    )
 
     for ell in range(k + 1):
         source_index = _unary_index(num_qubits, ell)

@@ -21,14 +21,14 @@ from dataclasses import is_dataclass
 
 import numpy as np
 import pytest
+from cqlib import Circuit, Qubit
 from numpy.polynomial.chebyshev import chebfit, chebval
 
-from cqlib import Circuit, Qubit
 from cqlib_algorithms.operators.composite import QuantumSignalProcessing
-from cqlib_algorithms.operators.composite.quantum_singular_value_transformation._phase_solver import (  # noqa: E501
+from cqlib_algorithms.operators.composite.quantum_singular_value_transformation._phase_solver import (
     solve_haah_phases,
 )
-from cqlib_algorithms.operators.composite.quantum_singular_value_transformation._phase_solver._haah_solver import (  # noqa: E501
+from cqlib_algorithms.operators.composite.quantum_singular_value_transformation._phase_solver._haah_solver import (
     _CONJUGATE_PAIRING_DEGREE_LIMIT,
     _decompose_product,
     _evaluate_laurent,
@@ -89,10 +89,14 @@ def test_build_circuit_matches_independent_su2_reference() -> None:
 
 
 def test_built_qsp_matrix_has_expected_su2_structure() -> None:
-    matrix = QuantumSignalProcessing(
-        [0.4, -0.2, 0.1],
-        signal_value=0.3,
-    ).build_circuit().to_matrix()
+    matrix = (
+        QuantumSignalProcessing(
+            [0.4, -0.2, 0.1],
+            signal_value=0.3,
+        )
+        .build_circuit()
+        .to_matrix()
+    )
 
     _assert_su2_structure(matrix)
 
@@ -173,7 +177,7 @@ def test_build_circuit_uses_expected_gate_sequence_and_angles() -> None:
         "RX",
         "RZ",
     ]
-    assert [list(operation.qubits)[0].index for operation in circuit.operations] == [
+    assert [next(iter(operation.qubits)).index for operation in circuit.operations] == [
         0
     ] * 7
     assert [
@@ -275,10 +279,14 @@ def test_qsp_matches_reference_at_closed_interval_endpoints(
 def test_qsp_remains_finite_and_unitary_near_interval_endpoints(
     signal_value: float,
 ) -> None:
-    matrix = QuantumSignalProcessing(
-        [0.4, -0.2, 0.1],
-        signal_value=signal_value,
-    ).build_circuit().to_matrix()
+    matrix = (
+        QuantumSignalProcessing(
+            [0.4, -0.2, 0.1],
+            signal_value=signal_value,
+        )
+        .build_circuit()
+        .to_matrix()
+    )
 
     assert np.all(np.isfinite(matrix))
     _assert_su2_structure(matrix)
@@ -453,10 +461,7 @@ def _complex_solver_response(
     phases = solver(coefficients)
     grid = np.linspace(-1.0, 1.0, samples, dtype=np.float64)
     response = np.asarray(
-        [
-            _qsp_reference(float(x), tuple(float(p) for p in phases))[0, 0]
-            for x in grid
-        ],
+        [_qsp_reference(float(x), tuple(float(p) for p in phases))[0, 0] for x in grid],
         dtype=np.complex128,
     )
     return phases, grid, response
@@ -716,9 +721,7 @@ def _is_high_degree_haah_rejection(error: BaseException) -> bool:
     if not isinstance(error, RuntimeError):
         return False
     message = str(error)
-    return (
-        "spectral factorisation failed" in message or "QSP-decomposable" in message
-    )
+    return "spectral factorisation failed" in message or "QSP-decomposable" in message
 
 
 def _assert_haah_high_degree_smoke(degree: int, seed: int, *, atol: float) -> None:
@@ -753,6 +756,15 @@ def test_solve_haah_phases_high_degree_smoke_stays_finite_and_accurate(
         _assert_haah_high_degree_smoke(degree, seed, atol=1e-10)
 
 
+def _assert_haah_high_degree_rejection_is_expected(degree: int, seed: int) -> None:
+    """Accept only the documented high-degree numerical rejection."""
+    try:
+        _assert_haah_high_degree_smoke(degree, seed, atol=1e-10)
+    except RuntimeError as error:
+        if not _is_high_degree_haah_rejection(error):
+            raise
+
+
 @pytest.mark.parametrize(
     ("degree", "seed"),
     _HAH_HIGH_DEGREE_REJECTED_CASES,
@@ -763,11 +775,7 @@ def test_solve_haah_phases_high_degree_breakdown_is_reported(
     seed: int,
 ) -> None:
     with pytest.warns(UserWarning, match="numerically unreliable"):
-        try:
-            _assert_haah_high_degree_smoke(degree, seed, atol=1e-10)
-        except RuntimeError as error:
-            if not _is_high_degree_haah_rejection(error):
-                raise
+        _assert_haah_high_degree_rejection_is_expected(degree, seed)
 
 
 _HAH_DECOMPOSITION_CASES: list[tuple[int, int]] = [

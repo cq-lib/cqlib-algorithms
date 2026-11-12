@@ -61,9 +61,9 @@ def _gram_entry(
     phase = complex(product.phase.to_complex())
     free = product.copy()
     free.phase = Phase.plus()
-    value = executor.estimate(
-        [EstimatorRequest(circuit=circuit, observable=free)]
-    )[0].expectation
+    value = executor.estimate([EstimatorRequest(circuit=circuit, observable=free)])[
+        0
+    ].expectation
     return phase * value
 
 
@@ -118,10 +118,7 @@ def test_the_overlap_matrix_is_hermitian_and_positive_definite(
     # is Hermitian and its spectrum is non-negative for independent vectors.
     overlap = np.array(
         [
-            [
-                _gram_entry(exact_executor, circuit, left, right)
-                for right in basis
-            ]
+            [_gram_entry(exact_executor, circuit, left, right) for right in basis]
             for left in basis
         ]
     )

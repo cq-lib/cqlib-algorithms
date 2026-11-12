@@ -23,9 +23,9 @@ from cqlib import Circuit
 from cqlib.circuit import StandardGate
 
 from cqlib_algorithms.error_mitigation.techniques.pt import (
-    PauliTwirling,
     _CNOT_TWIRLINGS,
     _TWIRLING_TABLES,
+    PauliTwirling,
     combine_results,
     construct_circuits,
 )
@@ -56,9 +56,7 @@ def _pauli_pair_instructions(
     table: Sequence[tuple[StandardGate, StandardGate, StandardGate, StandardGate]],
 ) -> list[tuple[str, str, str, str]]:
     """Return every row of ``table`` as four bare Pauli labels."""
-    return [
-        (_label(p), _label(q), _label(r), _label(s)) for p, q, r, s in table
-    ]
+    return [(_label(p), _label(q), _label(r), _label(s)) for p, q, r, s in table]
 
 
 def _allclose_up_to_global_phase(
@@ -97,14 +95,10 @@ def _twirled_pauli_transfer_matrix(
         channel_image = np.zeros((4, 4), dtype=complex)
         for first, second in pairs:
             unitary = np.kron(_PAULI_MATRICES[first], _PAULI_MATRICES[second])
-            channel_image += (
-                unitary.conj().T @ error @ left @ error.conj().T @ unitary
-            )
+            channel_image += unitary.conj().T @ error @ left @ error.conj().T @ unitary
         channel_image /= len(pairs)
         for column, (_, _, right) in enumerate(_TWO_QUBIT_BASIS):
-            matrix[row, column] = float(
-                np.real(np.trace(right @ channel_image)) / 4.0
-            )
+            matrix[row, column] = float(np.real(np.trace(right @ channel_image)) / 4.0)
     return matrix
 
 

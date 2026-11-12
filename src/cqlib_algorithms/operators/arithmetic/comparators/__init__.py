@@ -1,4 +1,4 @@
-﻿# This code is part of Cqlib.
+# This code is part of Cqlib.
 #
 # (C) Copyright China Telecom Quantum Group 2026
 #
@@ -27,4 +27,3 @@ __all__ = [
     "ComparatorSynthesis",
     "IntegerComparator",
 ]
-

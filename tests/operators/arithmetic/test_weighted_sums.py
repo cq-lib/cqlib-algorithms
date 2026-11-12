@@ -29,9 +29,9 @@ import itertools
 
 import numpy as np
 import pytest
+from cqlib import Circuit
 from cqlib.qis.state import Statevector
 
-from cqlib import Circuit
 from cqlib_algorithms.operators.arithmetic import WeightedSum
 
 RANDOM_SEED = 20260917
@@ -112,9 +112,7 @@ def _run_weighted_sum(
     """
 
     if len(input_values) != len(operator.num_inputs):
-        raise AssertionError(
-            "input_values length must match num_inputs length."
-        )
+        raise AssertionError("input_values length must match num_inputs length.")
 
     circuit = Circuit(operator.num_qubits)
     for value, qubits in zip(
@@ -131,9 +129,7 @@ def _run_weighted_sum(
     sum_out = _decode_value(bitstring, operator.sum_register_indices)
 
     expected = 0
-    for weight, value in zip(
-        operator.weights, input_values, strict=True
-    ):
+    for weight, value in zip(operator.weights, input_values, strict=True):
         expected += weight * value
 
     return {
@@ -181,9 +177,7 @@ def test_weighted_sum_ws01_basic_correctness_hand_picked(
 ) -> None:
     """WS-01. Hand-picked case: 2*2 + 3*3 = 13 (two 2-bit inputs)."""
 
-    operator = WeightedSum(
-        BASIC_WEIGHTS, BASIC_NUM_INPUTS, synthesis=synthesis
-    )
+    operator = WeightedSum(BASIC_WEIGHTS, BASIC_NUM_INPUTS, synthesis=synthesis)
     result = _run_weighted_sum(operator, [2, 3])
     assert result["inputs"] == [2, 3]
     assert result["sum"] == result["expected"]
@@ -270,14 +264,9 @@ def test_weighted_sum_ws01_random_sampling(synthesis: str) -> None:
         ]
         if all(w == 0 for w in weights):
             weights[0] = 1
-        input_values = [
-            int(np.random.randint(0, 1 << width))
-            for width in num_inputs
-        ]
+        input_values = [int(np.random.randint(0, 1 << width)) for width in num_inputs]
 
-        operator = WeightedSum(
-            weights, num_inputs, synthesis=synthesis
-        )
+        operator = WeightedSum(weights, num_inputs, synthesis=synthesis)
         result = _run_weighted_sum(operator, input_values)
         assert result["inputs"] == input_values
         assert result["sum"] == result["expected"], (
@@ -410,13 +399,9 @@ def test_weighted_sum_ws05_invalid_inputs_raise_valueerror() -> None:
     with pytest.raises(ValueError):
         WeightedSum([1], [-2])
     with pytest.raises(ValueError):
-        WeightedSum(
-            [1], [1], synthesis="carry", approximation_degree=0
-        )
+        WeightedSum([1], [1], synthesis="carry", approximation_degree=0)
     with pytest.raises(ValueError):
-        WeightedSum(
-            [1], [1], synthesis="qft", approximation_degree=-1
-        )
+        WeightedSum([1], [1], synthesis="qft", approximation_degree=-1)
 
 
 # ---------------------------------------------------------------------------
@@ -457,15 +442,11 @@ def test_weighted_sum_ws05_invalid_inputs_raise_valueerror() -> None:
         ),
         (
             "approximation_degree_float_qft",
-            lambda: WeightedSum(
-                [1], [1], synthesis="qft", approximation_degree=1.5
-            ),
+            lambda: WeightedSum([1], [1], synthesis="qft", approximation_degree=1.5),
         ),
         (
             "approximation_degree_bool_qft",
-            lambda: WeightedSum(
-                [1], [1], synthesis="qft", approximation_degree=True
-            ),
+            lambda: WeightedSum([1], [1], synthesis="qft", approximation_degree=True),
         ),
     ],
 )

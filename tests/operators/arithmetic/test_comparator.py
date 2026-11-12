@@ -21,9 +21,9 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+from cqlib import Circuit
 from cqlib.qis.state import Statevector
 
-from cqlib import Circuit
 from cqlib_algorithms.operators.arithmetic import (
     IntegerComparator,
 )
@@ -203,4 +203,3 @@ def test_integer_comparator_invalid_types_raise_typeerror(
     """CMP-07. Invalid construction input types raise TypeError."""
     with pytest.raises(TypeError):
         callable_wrapper()
-

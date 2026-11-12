@@ -395,9 +395,7 @@ class AdaExpFactory(Factory):
             )
         minimum_steps = 3 + int(asymptote is None)
         if steps < minimum_steps:
-            raise ValueError(
-                f"steps must be >= {minimum_steps} but was {steps!r}."
-            )
+            raise ValueError(f"steps must be >= {minimum_steps} but was {steps!r}.")
         self._steps = steps
         self._scale_factor = float(scale_factor)
         self._asymptote = None if asymptote is None else float(asymptote)
@@ -524,9 +522,7 @@ def _fit_polynomial(
             "close together or too few for the requested degree."
         ) from error
     if not np.all(np.isfinite(coefficients)):
-        raise ExtrapolationError(
-            "The polynomial fit produced non-finite coefficients."
-        )
+        raise ExtrapolationError("The polynomial fit produced non-finite coefficients.")
     return coefficients
 
 

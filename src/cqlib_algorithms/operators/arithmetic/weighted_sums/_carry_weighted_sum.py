@@ -132,9 +132,7 @@ def build_carry_weighted_sum(weights: list[int]) -> Circuit:
         carry_indices = list(range(n + s, n + s + num_carries))
     else:
         carry_indices = []
-    control_index: int | None = (
-        n + s + num_carries if need_ctrl else None
-    )
+    control_index: int | None = n + s + num_carries if need_ctrl else None
 
     for i in range(n):
         w_i = weights[i]

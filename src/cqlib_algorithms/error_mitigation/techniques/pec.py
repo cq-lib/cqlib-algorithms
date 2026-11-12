@@ -58,7 +58,6 @@ from collections.abc import Sequence
 from numbers import Real
 
 import numpy as np
-
 from cqlib import Circuit
 from cqlib.circuit import ValueOperation
 from cqlib.qis import Hamiltonian, PauliString
@@ -506,9 +505,7 @@ def _validate_precision(precision: float, /) -> None:
     if isinstance(precision, bool) or not isinstance(precision, Real):
         raise TypeError("precision must be a real number")
     if not 0.0 < float(precision) <= 1.0:
-        raise ValueError(
-            f"precision must be within (0, 1] but was {precision!r}."
-        )
+        raise ValueError(f"precision must be within (0, 1] but was {precision!r}.")
 
 
 def _validate_seed(seed: int | None, /) -> None:
@@ -543,9 +540,7 @@ def _validate_representations(
 ) -> None:
     r"""Validate circuit quasi-probability representations."""
     if not representations:
-        raise ValueError(
-            "quasiprobabilities must contain at least one representation."
-        )
+        raise ValueError("quasiprobabilities must contain at least one representation.")
     expected = sum(
         1 for operation in circuit.operations if not is_measurement(operation)
     )
@@ -559,8 +554,7 @@ def _validate_representations(
         coefficients = np.asarray(representation.coefficients, dtype=float)
         if not bool(np.all(np.isfinite(coefficients))):
             raise ValueError(
-                "a quasi-probability representation has a non-finite "
-                "coefficient."
+                "a quasi-probability representation has a non-finite coefficient."
             )
         if float(np.sum(np.abs(coefficients))) <= 0.0:
             raise ValueError(

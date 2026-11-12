@@ -37,9 +37,8 @@ from typing import Literal, cast
 
 import numpy as np
 import numpy.typing as npt
-from cqlib.circuit.gates import MCGate, StandardGate
-
 from cqlib import Circuit
+from cqlib.circuit.gates import MCGate, StandardGate
 
 # ---------------------------------------------------------------------------
 # Axis & coefficient validation ------------------------------------------------
@@ -58,14 +57,10 @@ def _validate_axis(axis: str) -> Literal["x", "y", "z"]:
     """
 
     if isinstance(axis, bool) or not isinstance(axis, str):
-        raise TypeError(
-            f"axis must be a string ('x'/'y'/'z'), got {axis!r}."
-        )
+        raise TypeError(f"axis must be a string ('x'/'y'/'z'), got {axis!r}.")
     axis = axis.lower()
     if axis not in {"x", "y", "z"}:
-        raise ValueError(
-            f"axis must be one of 'x', 'y', 'z', got {axis!r}."
-        )
+        raise ValueError(f"axis must be one of 'x', 'y', 'z', got {axis!r}.")
     return axis  # type: ignore[return-value]
 
 
@@ -95,8 +90,7 @@ def _validate_coefficients(
         for element in coefficients:
             if isinstance(element, bool):
                 raise TypeError(
-                    "coefficients must not contain bool values; got "
-                    f"{element!r}."
+                    f"coefficients must not contain bool values; got {element!r}."
                 )
         arr = np.asarray(coefficients, dtype=np.float64, order="C")
         if arr.ndim != 1:
@@ -106,8 +100,7 @@ def _validate_coefficients(
             )
     if arr.size == 0:
         raise ValueError(
-            "coefficients must not be empty; at least one constant term "
-            "is required."
+            "coefficients must not be empty; at least one constant term is required."
         )
     if not np.all(np.isfinite(arr)):
         raise ValueError("coefficients must contain only finite floats.")
@@ -185,13 +178,9 @@ def _build_mc_pauli_rotation(
     """
 
     if isinstance(num_controls, bool) or not isinstance(num_controls, int):
-        raise TypeError(
-            f"num_controls must be an int, got {num_controls!r}."
-        )
+        raise TypeError(f"num_controls must be an int, got {num_controls!r}.")
     if num_controls < 0:
-        raise ValueError(
-            f"num_controls must be >= 0, got {num_controls!r}."
-        )
+        raise ValueError(f"num_controls must be >= 0, got {num_controls!r}.")
     if axis == "x":
         base = StandardGate.RX(angle)
     elif axis == "y":
@@ -357,13 +346,12 @@ def _validate_piecewise_breakpoints(
     caller owns it.
     """
 
-    if isinstance(breakpoints, bool) or not isinstance(
-        breakpoints, Sequence
-    ) or isinstance(breakpoints, (str, bytes)):
-        raise TypeError(
-            "breakpoints must be a sequence of ints, got "
-            f"{breakpoints!r}."
-        )
+    if (
+        isinstance(breakpoints, bool)
+        or not isinstance(breakpoints, Sequence)
+        or isinstance(breakpoints, (str, bytes))
+    ):
+        raise TypeError(f"breakpoints must be a sequence of ints, got {breakpoints!r}.")
     bp_list = list(breakpoints)
     if len(bp_list) < 2:
         raise ValueError(
@@ -373,9 +361,7 @@ def _validate_piecewise_breakpoints(
         )
     for idx, value in enumerate(bp_list):
         if isinstance(value, bool) or not isinstance(value, int):
-            raise TypeError(
-                f"breakpoints[{idx}] must be an int, got {value!r}."
-            )
+            raise TypeError(f"breakpoints[{idx}] must be an int, got {value!r}.")
     for idx in range(len(bp_list) - 1):
         if not bp_list[idx + 1] > bp_list[idx]:
             raise ValueError(
@@ -410,12 +396,12 @@ def _validate_float_sequence(
     :class:`ValueError`.
     """
 
-    if isinstance(values, bool) or not isinstance(values, Sequence) or isinstance(
-        values, (str, bytes)
+    if (
+        isinstance(values, bool)
+        or not isinstance(values, Sequence)
+        or isinstance(values, (str, bytes))
     ):
-        raise TypeError(
-            f"{name} must be a sequence of floats, got {values!r}."
-        )
+        raise TypeError(f"{name} must be a sequence of floats, got {values!r}.")
     val_list = list(values)
     if expected_len is not None and len(val_list) != expected_len:
         raise ValueError(
@@ -424,13 +410,9 @@ def _validate_float_sequence(
         )
     for idx, value in enumerate(val_list):
         if isinstance(value, bool) or not isinstance(value, (int, float)):
-            raise TypeError(
-                f"{name}[{idx}] must be a float, got {value!r}."
-            )
+            raise TypeError(f"{name}[{idx}] must be a float, got {value!r}.")
         if not math.isfinite(float(value)):
-            raise ValueError(
-                f"{name}[{idx}] must be finite, got {value!r}."
-            )
+            raise ValueError(f"{name}[{idx}] must be finite, got {value!r}.")
     return [float(v) for v in val_list]
 
 
@@ -445,8 +427,10 @@ def _validate_nested_coefficients(
     at least one element.
     """
 
-    if isinstance(coeffs, bool) or not isinstance(coeffs, Sequence) or isinstance(
-        coeffs, (str, bytes)
+    if (
+        isinstance(coeffs, bool)
+        or not isinstance(coeffs, Sequence)
+        or isinstance(coeffs, (str, bytes))
     ):
         raise TypeError(
             "coeffs must be a sequence of coefficient sequences/arrays, "
@@ -464,27 +448,23 @@ def _validate_nested_coefficients(
             arr = np.asarray(segment, dtype=np.float64, order="C")
             if arr.ndim != 1:
                 raise ValueError(
-                    f"coeffs[{idx}] must be 1-D, got array of shape "
-                    f"{arr.shape!r}."
+                    f"coeffs[{idx}] must be 1-D, got array of shape {arr.shape!r}."
                 )
         else:
-            if isinstance(segment, bool) or not isinstance(
-                segment, Sequence
-            ) or isinstance(segment, (str, bytes)):
+            if (
+                isinstance(segment, bool)
+                or not isinstance(segment, Sequence)
+                or isinstance(segment, (str, bytes))
+            ):
                 raise TypeError(
-                    f"coeffs[{idx}] must be a sequence of floats, got "
-                    f"{segment!r}."
+                    f"coeffs[{idx}] must be a sequence of floats, got {segment!r}."
                 )
             seg_list = list(segment)
             for j, c in enumerate(seg_list):
                 if isinstance(c, bool) or not isinstance(c, (int, float)):
-                    raise TypeError(
-                        f"coeffs[{idx}][{j}] must be a float, got {c!r}."
-                    )
+                    raise TypeError(f"coeffs[{idx}][{j}] must be a float, got {c!r}.")
                 if not math.isfinite(float(c)):
-                    raise ValueError(
-                        f"coeffs[{idx}][{j}] must be finite, got {c!r}."
-                    )
+                    raise ValueError(f"coeffs[{idx}][{j}] must be finite, got {c!r}.")
             arr = np.asarray(seg_list, dtype=np.float64, order="C")
         if arr.size == 0:
             raise ValueError(

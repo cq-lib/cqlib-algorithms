@@ -21,9 +21,9 @@ import pytest
 from cqlib import Circuit
 
 from cqlib_algorithms.error_mitigation.techniques._ddd_rules import (
-    DDDRule,
     XX,
     XYXY,
+    DDDRule,
 )
 from cqlib_algorithms.error_mitigation.techniques._equivalence import (
     allclose_up_to_global_phase,

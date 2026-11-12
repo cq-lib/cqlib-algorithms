@@ -220,7 +220,9 @@ def test_duplicate_requests_in_one_batch_share_one_backend_call() -> None:
 
 def test_sample_returns_results_in_request_order() -> None:
     executor = QemExecutor(sampler=StatevectorSampler())
-    requests = [_sampler_request(_angled_circuit(theta), shots=10) for theta in (0.1, 1.1)]
+    requests = [
+        _sampler_request(_angled_circuit(theta), shots=10) for theta in (0.1, 1.1)
+    ]
 
     results = executor.sample(requests)
 

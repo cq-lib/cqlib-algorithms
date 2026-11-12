@@ -16,10 +16,10 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+from cqlib import Circuit
 from cqlib.circuit import Instruction, StandardGate
 from cqlib.device import NoiseModel, SingleQubitNoise, TwoQubitNoise
 
-from cqlib import Circuit
 from cqlib_algorithms.error_mitigation.quasiprobability import (
     QuasiprobabilityRepresentation,
     depolarizing_quasiprobability_of_circuit,

@@ -91,8 +91,7 @@ class Adder:
         # -- num_state_qubits ------------------------------------------------
         if not isinstance(num_state_qubits, int):
             raise TypeError(
-                "num_state_qubits must be an integer, got "
-                f"{num_state_qubits!r}."
+                f"num_state_qubits must be an integer, got {num_state_qubits!r}."
             )
         if num_state_qubits < 1:
             raise ValueError(
@@ -102,8 +101,7 @@ class Adder:
         # -- kind ------------------------------------------------------------
         if kind not in _VALID_KINDS:
             raise ValueError(
-                f"Unsupported Adder kind {kind!r}. "
-                "Expected one of full half modular."
+                f"Unsupported Adder kind {kind!r}. Expected one of full half modular."
             )
 
         # -- synthesis -------------------------------------------------------
@@ -141,9 +139,7 @@ class Adder:
         # -- name ------------------------------------------------------------
         default_name = f"Adder[{kind},{synthesis}]"
         if name is not None and not isinstance(name, str):
-            raise TypeError(
-                f"name must be a string or None, got {name!r}."
-            )
+            raise TypeError(f"name must be a string or None, got {name!r}.")
 
         # -- store & layout --------------------------------------------------
         self._num_state_qubits = int(num_state_qubits)
@@ -255,9 +251,6 @@ class Adder:
                 + [self._carry_out_index]
             )
         else:  # modular
-            mapping = (
-                list(self._a_register_indices)
-                + list(self._b_register_indices)
-            )
+            mapping = list(self._a_register_indices) + list(self._b_register_indices)
         circuit.compose(draper_circuit, mapping)
         return circuit

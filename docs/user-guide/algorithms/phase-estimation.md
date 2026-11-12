@@ -53,9 +53,9 @@ binary64 相位结果仍具有逐位分辨能力，并避免超大指数转换�
 
 ```python
 algorithm = PhaseEstimation(sampler)
-result = algorithm.run([
-    PhaseEstimationRequest(problem, num_evaluation_qubits=4, shots=1024)
-])[0]
+result = algorithm.run(
+    [PhaseEstimationRequest(problem, num_evaluation_qubits=4, shots=1024)]
+)[0]
 ```
 
 ## 迭代 QPE
@@ -71,9 +71,9 @@ result = algorithm.run([
 
 ```python
 algorithm = IterativePhaseEstimation(sampler)
-result = algorithm.run([
-    IterativePhaseEstimationRequest(problem, num_iterations=4, shots_per_iteration=32)
-])[0]
+result = algorithm.run(
+    [IterativePhaseEstimationRequest(problem, num_iterations=4, shots_per_iteration=32)]
+)[0]
 ```
 
 ## Hamiltonian 相位估计
@@ -99,16 +99,18 @@ Core 的演化约定为 <img src="../../assets/formulas/inline/inline-2637b6dd9f
 
 ```python
 algorithm = HamiltonianPhaseEstimation(sampler)
-result = algorithm.run([
-    HamiltonianPhaseEstimationRequest(
-        hamiltonian,
-        state_preparation,
-        num_evaluation_qubits=5,
-        shots=2048,
-        bound=energy_bound,
-        trotter_steps=4,
-    )
-])[0]
+result = algorithm.run(
+    [
+        HamiltonianPhaseEstimationRequest(
+            hamiltonian,
+            state_preparation,
+            num_evaluation_qubits=5,
+            shots=2048,
+            bound=energy_bound,
+            trotter_steps=4,
+        )
+    ]
+)[0]
 ```
 
 ## 能力边界

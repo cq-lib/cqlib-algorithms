@@ -417,9 +417,7 @@ def _complement_candidates(coefficients: np.ndarray) -> list[np.ndarray]:
     if degree % 2 == 0:
         nearest = int(np.argmin(np.abs(u_roots)))
         if abs(u_roots[nearest]) > 1e-6:
-            raise RuntimeError(
-                "spectral factorisation failed: h has no root at u = 0"
-            )
+            raise RuntimeError("spectral factorisation failed: h has no root at u = 0")
         u_roots = np.delete(u_roots, nearest)
 
     pairs = _conjugate_pairs(u_roots)
@@ -465,9 +463,7 @@ def _scalar_laurent_multiply(
     for left_exponent, left_value in left.items():
         for right_exponent, right_value in right.items():
             exponent = left_exponent + right_exponent
-            product[exponent] = (
-                product.get(exponent, 0.0) + left_value * right_value
-            )
+            product[exponent] = product.get(exponent, 0.0) + left_value * right_value
     return product
 
 

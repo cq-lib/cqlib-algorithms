@@ -1,4 +1,4 @@
-﻿# This code is part of Cqlib.
+# This code is part of Cqlib.
 #
 # (C) Copyright China Telecom Quantum Group 2026
 #
@@ -25,9 +25,9 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 import numpy as np
+from cqlib import Circuit
 from cqlib.qis.state import Statevector
 
-from cqlib import Circuit
 from cqlib_algorithms.operators.arithmetic import (
     FullAdder,
     HalfAdder,
@@ -52,9 +52,7 @@ def _apply_x_to_value(
     positions = list(bit_indices)
     width = len(positions)
     if not 0 <= value < (1 << width):
-        raise ValueError(
-            f"Value {value} does not fit into a {width}-bit register."
-        )
+        raise ValueError(f"Value {value} does not fit into a {width}-bit register.")
     for local_index, qubit in enumerate(positions):
         if (value >> local_index) & 1:
             circuit.x(qubit)
@@ -105,9 +103,7 @@ def _decode_adder_outcome(
     """Decode all registers of adder from a deterministic outcome integer."""
     decoded: dict[str, int] = {
         "a": _decode_subregister_bits(outcome_int, adder.a_register_indices),
-        "b_sum": _decode_subregister_bits(
-            outcome_int, adder.b_register_indices
-        ),
+        "b_sum": _decode_subregister_bits(outcome_int, adder.b_register_indices),
     }
     if isinstance(adder, (HalfAdder, FullAdder)):
         decoded["carry_out"] = (outcome_int >> adder.carry_out_index) & 1
@@ -170,4 +166,3 @@ def _expected_num_qubits(
     if adder_cls is ModularAdder:
         return 2 * n + 1
     raise TypeError(f"Unknown adder class: {adder_cls!r}")
-

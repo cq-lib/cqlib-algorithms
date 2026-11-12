@@ -55,11 +55,11 @@ request = QuantumTeleportationRequest(
 )
 result = QuantumTeleportation().run([request])[0]
 
-print(result.shots)               # 128
-print(sum(result.bell_counts))    # 128
+print(result.shots)  # 128
+print(sum(result.bell_counts))  # 128
 print(math.isclose(sum(result.bell_probabilities), 1.0))  # True
-print(result.minimum_fidelity)    # 1.0 within floating-point precision
-print(result.all_succeeded)       # True
+print(result.minimum_fidelity)  # 1.0 within floating-point precision
+print(result.all_succeeded)  # True
 ```
 
 `state_preparation` 必须是固定的一量子比特 Cqlib `Circuit`。算法通过

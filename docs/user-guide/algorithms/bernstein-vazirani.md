@@ -71,8 +71,8 @@ function = BooleanFunction.from_truth_table(
 result = BernsteinVazirani(StatevectorSampler()).run(
     [BernsteinVaziraniRequest(function, 16)]
 )[0]
-print(result.hidden_string)    # (True, False, True)
-print(result.hidden_integer)   # 5
-print(result.modal_strings)    # ((True, False, True),)
-print(result.support)          # 16
+print(result.hidden_string)  # (True, False, True)
+print(result.hidden_integer)  # 5
+print(result.modal_strings)  # ((True, False, True),)
+print(result.support)  # 16
 ```

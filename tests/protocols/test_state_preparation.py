@@ -191,4 +191,3 @@ def test_degenerate_pauli_feature_maps_keep_logical_parameter_slots(
 def test_core_validation_error_is_exposed_as_value_error():
     with pytest.raises(ValueError):
         BasisEncoding([]).validate()
-

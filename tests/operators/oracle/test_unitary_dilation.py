@@ -190,7 +190,9 @@ def test_unitary_dilation_build_adjoint_circuit_matches_conjugate_transpose():
     )
     component = UnitaryDilation(matrix, validate=False)
 
-    circuit_matrix = np.asarray(component.build_circuit().to_matrix(), dtype=np.complex128)
+    circuit_matrix = np.asarray(
+        component.build_circuit().to_matrix(), dtype=np.complex128
+    )
     adjoint_matrix = np.asarray(
         component.build_adjoint_circuit().to_matrix(),
         dtype=np.complex128,
@@ -214,7 +216,9 @@ def test_unitary_dilation_circuit_is_unitary_and_inverts_with_its_adjoint():
     )
     component = UnitaryDilation(matrix, validate=False)
 
-    circuit_matrix = np.asarray(component.build_circuit().to_matrix(), dtype=np.complex128)
+    circuit_matrix = np.asarray(
+        component.build_circuit().to_matrix(), dtype=np.complex128
+    )
     adjoint_matrix = np.asarray(
         component.build_adjoint_circuit().to_matrix(),
         dtype=np.complex128,

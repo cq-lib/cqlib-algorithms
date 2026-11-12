@@ -212,7 +212,9 @@ def gate_count() -> Callable[[Circuit], int]:
     """Return how many non-measurement operations a circuit carries."""
 
     def count(circuit: Circuit) -> int:
-        return sum(1 for operation in circuit.operations if not is_measurement(operation))
+        return sum(
+            1 for operation in circuit.operations if not is_measurement(operation)
+        )
 
     return count
 
@@ -231,10 +233,6 @@ def sample_from() -> Callable[[Mapping[str, float], int, int], dict[str, int]]:
         weights /= weights.sum()
         draws = np.random.default_rng(seed).choice(len(keys), size=shots, p=weights)
         tallies = np.bincount(draws, minlength=len(keys))
-        return {
-            key: int(count)
-            for key, count in zip(keys, tallies)
-            if count
-        }
+        return {key: int(count) for key, count in zip(keys, tallies) if count}
 
     return draw

@@ -57,9 +57,8 @@ from typing import Any, cast
 
 import numpy as np
 import numpy.typing as npt
-from numpy.polynomial import Chebyshev, Polynomial
-
 from cqlib import Circuit
+from numpy.polynomial import Chebyshev, Polynomial
 
 from ._mc_rotation import (
     _validate_piecewise_breakpoints as _shared_validate_breakpoints,
@@ -128,13 +127,9 @@ def _validate_and_normalize_degree(degree: Any) -> int:
     if degree is None:
         return 1
     if isinstance(degree, bool) or not isinstance(degree, int):
-        raise TypeError(
-            f"degree must be an int or None, got {degree!r}."
-        )
+        raise TypeError(f"degree must be an int or None, got {degree!r}.")
     if degree < 0:
-        raise ValueError(
-            f"degree must be >= 0, got {degree!r}."
-        )
+        raise ValueError(f"degree must be >= 0, got {degree!r}.")
     return int(degree)
 
 
@@ -155,15 +150,11 @@ def _validate_and_normalize_fx(
     """
 
     if isinstance(f_x, bool):
-        raise TypeError(
-            f"f_x must be a float or a callable, got bool {f_x!r}."
-        )
+        raise TypeError(f"f_x must be a float or a callable, got bool {f_x!r}.")
     if isinstance(f_x, (int, float)):
         const = float(f_x)
         if not math.isfinite(const):
-            raise ValueError(
-                f"f_x constant must be finite, got {const!r}."
-            )
+            raise ValueError(f"f_x constant must be finite, got {const!r}.")
         return cast(
             Callable[[float], float],
             lambda _x, _c=const: _c,
@@ -189,19 +180,18 @@ def _validate_and_normalize_breakpoints(
 
     if breakpoints is None:
         return [0]
-    if isinstance(breakpoints, bool) or not isinstance(
-        breakpoints, Sequence
-    ) or isinstance(breakpoints, (str, bytes)):
+    if (
+        isinstance(breakpoints, bool)
+        or not isinstance(breakpoints, Sequence)
+        or isinstance(breakpoints, (str, bytes))
+    ):
         raise TypeError(
-            "breakpoints must be a sequence of ints or None, got "
-            f"{breakpoints!r}."
+            f"breakpoints must be a sequence of ints or None, got {breakpoints!r}."
         )
     bp_list = list(breakpoints)
     for idx, value in enumerate(bp_list):
         if isinstance(value, bool) or not isinstance(value, int):
-            raise TypeError(
-                f"breakpoints[{idx}] must be an int, got {value!r}."
-            )
+            raise TypeError(f"breakpoints[{idx}] must be an int, got {value!r}.")
     for idx in range(len(bp_list) - 1):
         if not bp_list[idx + 1] > bp_list[idx]:
             raise ValueError(
@@ -242,8 +232,7 @@ def _interpolate_segment(
     segment_length = hi - lo
     if segment_length <= 0:
         raise ValueError(
-            f"Degenerate segment [{lo}, {hi}); hi must be strictly greater "
-            "than lo."
+            f"Degenerate segment [{lo}, {hi}); hi must be strictly greater than lo."
         )
 
     if degree == 0 or segment_length == 1:
@@ -258,9 +247,7 @@ def _interpolate_segment(
         return np.asarray([scaled], dtype=np.float64)
 
     num_nodes = degree + 1
-    zeros_ts = np.cos(
-        (2 * np.arange(num_nodes) + 1) * np.pi / (2 * num_nodes)
-    )
+    zeros_ts = np.cos((2 * np.arange(num_nodes) + 1) * np.pi / (2 * num_nodes))
     a = float(lo)
     b = float(hi - 1)
     xs = 0.5 * (a + b) + 0.5 * (b - a) * zeros_ts
@@ -473,9 +460,7 @@ class PiecewiseChebyshev:
         # 1. Validate & normalise all user inputs independently.
         # --------------------------------------------------------------
         if not isinstance(name, str):
-            raise TypeError(
-                f"name must be a string, got {name!r}."
-            )
+            raise TypeError(f"name must be a string, got {name!r}.")
         self._name = name
         self._degree = _validate_and_normalize_degree(degree)
         self._f_x = _validate_and_normalize_fx(f_x)
@@ -503,8 +488,7 @@ class PiecewiseChebyshev:
                 )
             if num_state_qubits < 1:
                 raise ValueError(
-                    "num_state_qubits must be >= 1, got "
-                    f"{num_state_qubits!r}."
+                    f"num_state_qubits must be >= 1, got {num_state_qubits!r}."
                 )
             self._num_state_qubits = int(num_state_qubits)
 
@@ -560,28 +544,18 @@ class PiecewiseChebyshev:
                 ub0 = int(user_breakpoints[0])
                 ub_last = int(user_breakpoints[-1])
                 is_head_identity = (j == 0) and (int(hi) <= ub0)
-                is_tail_identity = (
-                    j == num_segments - 1 and int(lo) >= ub_last
-                )
+                is_tail_identity = j == num_segments - 1 and int(lo) >= ub_last
             else:
                 is_head_identity = False
                 is_tail_identity = False
             if is_head_identity:
-                polynomials.append(
-                    np.asarray(identity_poly.copy(), dtype=np.float64)
-                )
+                polynomials.append(np.asarray(identity_poly.copy(), dtype=np.float64))
                 continue
             if is_tail_identity:
-                polynomials.append(
-                    np.asarray(identity_poly.copy(), dtype=np.float64)
-                )
+                polynomials.append(np.asarray(identity_poly.copy(), dtype=np.float64))
                 continue
-            seg_poly = _interpolate_segment(
-                self._f_x, self._degree, lo, hi
-            )
-            polynomials.append(
-                np.asarray(seg_poly.copy(), dtype=np.float64)
-            )
+            seg_poly = _interpolate_segment(self._f_x, self._degree, lo, hi)
+            polynomials.append(np.asarray(seg_poly.copy(), dtype=np.float64))
 
         _warn_if_any_coeff_oversized(polynomials, validated_bp, n)
 
@@ -635,10 +609,7 @@ class PiecewiseChebyshev:
         ``2``; this is exactly the format consumed by
         :class:`PiecewisePolynomialPauliRotation`.
         """
-        return [
-            np.asarray(arr.copy(), dtype=np.float64)
-            for arr in self._polynomials
-        ]
+        return [np.asarray(arr.copy(), dtype=np.float64) for arr in self._polynomials]
 
     @property
     def name(self) -> str:

@@ -56,7 +56,7 @@ algorithm = DeutschJozsa(StatevectorSampler())
 result = algorithm.run([DeutschJozsaRequest(balanced, shots=32)])[0]
 
 print(result.is_constant)  # False
-print(result.zero_count)   # 0 on the ideal statevector sampler
+print(result.zero_count)  # 0 on the ideal statevector sampler
 ```
 
 算法接受请求序列并返回等长结果序列。这里 `zero_count` 是全零测量结果的次数；在
@@ -94,8 +94,7 @@ hamiltonian = Hamiltonian.from_list(
 def solve(ansatz):
     circuit = ansatz.build_circuit("theta")
     initial_point = {
-        name: 0.1 * (index + 1)
-        for index, name in enumerate(circuit.used_symbols)
+        name: 0.1 * (index + 1) for index, name in enumerate(circuit.used_symbols)
     }
     algorithm = VQE(
         StatevectorEstimator(),

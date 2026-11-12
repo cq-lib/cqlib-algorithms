@@ -47,11 +47,10 @@ from collections import Counter
 from collections.abc import Sequence
 
 import numpy as np
+from cqlib import Circuit
 from cqlib.circuit import Qubit, ValueOperation
 from cqlib.device import ExecutionResult
 from cqlib.qis import Hamiltonian, PauliString
-
-from cqlib import Circuit
 
 from ...protocols import (
     Estimator,
@@ -127,9 +126,7 @@ def construct_circuits(
         )
     permutations = _draw_permutations(num_variants, circuit.num_qubits, seed)
     circuits = [_permute_circuit(circuit, row) for row in permutations]
-    observables = [
-        _permute_observable(observable, row) for row in permutations
-    ]
+    observables = [_permute_observable(observable, row) for row in permutations]
     return circuits, observables
 
 
@@ -504,9 +501,7 @@ def _average(
     total = 0.0
     for result in results:
         distribution = _normalised_distribution(result, num_qubits)
-        total += float(
-            hamiltonian.expectation_probs([(measurement, distribution)])
-        )
+        total += float(hamiltonian.expectation_probs([(measurement, distribution)]))
     return total / len(results)
 
 
@@ -644,9 +639,7 @@ def _validate_mode(mode: str, /) -> None:
     if not isinstance(mode, str):
         raise TypeError("mode must be a string")
     if mode not in _MODES:
-        raise ValueError(
-            f"mode must be one of {sorted(_MODES)}, but was {mode!r}."
-        )
+        raise ValueError(f"mode must be one of {sorted(_MODES)}, but was {mode!r}.")
 
 
 def _validate_variants(
@@ -659,9 +652,7 @@ def _validate_variants(
         raise ValueError("deb needs at least one variant to combine.")
     for result in results:
         if not isinstance(result, ExecutionResult):
-            raise TypeError(
-                "results must contain cqlib.device.ExecutionResult values"
-            )
+            raise TypeError("results must contain cqlib.device.ExecutionResult values")
         if result.shots != shots:
             raise ValueError(
                 "every variant must be sampled with the same shot count, "
@@ -675,8 +666,7 @@ def _validate_num_variants(num_variants: int, /) -> None:
         raise TypeError("num_variants must be an integer")
     if num_variants < 1:
         raise ValueError(
-            "num_variants must be at least one, but was "
-            f"{num_variants!r}."
+            f"num_variants must be at least one, but was {num_variants!r}."
         )
 
 

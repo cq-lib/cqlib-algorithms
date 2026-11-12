@@ -242,9 +242,7 @@ def _validate_approximation_degree(
     ):
         raise TypeError("approximation_degree must be an integer or None")
     if approximation_degree < 0:
-        raise ValueError(
-            "approximation_degree must be None or a non-negative integer"
-        )
+        raise ValueError("approximation_degree must be None or a non-negative integer")
     max_kept = int(approximation_degree)
     if m < 1:
         return 0
@@ -659,4 +657,3 @@ def build_quadratic_form(
         num_result_qubits=num_result_qubits,
         approximation_degree=approximation_degree,
     ).build_circuit()
-

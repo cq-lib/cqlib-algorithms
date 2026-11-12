@@ -74,7 +74,6 @@ from typing import Literal
 
 import numpy as np
 import numpy.typing as npt
-
 from cqlib import Circuit
 
 from ...comparators.integer_comparator import _build_ripple_geq_comparator
@@ -267,24 +266,18 @@ class PiecewiseLinearPauliRotation:
         axis: Literal["x", "y", "z"] = "y",
         name: str | None = None,
     ) -> None:
-        if isinstance(num_state_qubits, bool) or not isinstance(
-            num_state_qubits, int
-        ):
+        if isinstance(num_state_qubits, bool) or not isinstance(num_state_qubits, int):
             raise TypeError(
-                "num_state_qubits must be an int, got "
-                f"{num_state_qubits!r}."
+                f"num_state_qubits must be an int, got {num_state_qubits!r}."
             )
         if num_state_qubits < 1:
             raise ValueError(
-                "num_state_qubits must be >= 1, got "
-                f"{num_state_qubits!r}."
+                f"num_state_qubits must be >= 1, got {num_state_qubits!r}."
             )
 
         bp_list = _shared_validate_breakpoints(breakpoints, num_state_qubits)
         num_segments = len(bp_list) - 1
-        slope_list = _shared_validate_float(
-            slopes, "slopes", expected_len=num_segments
-        )
+        slope_list = _shared_validate_float(slopes, "slopes", expected_len=num_segments)
         offset_list = _shared_validate_float(
             offsets, "offsets", expected_len=num_segments
         )
@@ -304,12 +297,8 @@ class PiecewiseLinearPauliRotation:
         delta_slopes: list[float] = [float(slope_list[0])]
         delta_offsets: list[float] = [float(offset_list[0])]
         for j in range(1, num_segments):
-            delta_slopes.append(
-                float(slope_list[j]) - float(slope_list[j - 1])
-            )
-            delta_offsets.append(
-                float(offset_list[j]) - float(offset_list[j - 1])
-            )
+            delta_slopes.append(float(slope_list[j]) - float(slope_list[j - 1]))
+            delta_offsets.append(float(offset_list[j]) - float(offset_list[j - 1]))
         self._delta_slopes = delta_slopes
         self._delta_offsets = delta_offsets
 

@@ -140,9 +140,7 @@ class GroverLong:
         if self.num_qubits == 1:
             circuit.append_gate(StandardGate.Phase(self.phase), [0])
         else:
-            phase_gate = StandardGate.Phase(self.phase).control(
-                self.num_qubits - 1
-            )
+            phase_gate = StandardGate.Phase(self.phase).control(self.num_qubits - 1)
             circuit.append_mc_gate(phase_gate, list(range(self.num_qubits)))
 
         for qubit in range(self.num_qubits - 1, -1, -1):

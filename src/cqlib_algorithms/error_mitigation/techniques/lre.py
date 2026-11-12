@@ -57,9 +57,8 @@ import warnings
 from collections.abc import Sequence
 
 import numpy as np
-from cqlib.qis import Hamiltonian, PauliString
-
 from cqlib import Circuit
+from cqlib.qis import Hamiltonian, PauliString
 
 from ...protocols import Estimator, EstimatorRequest, EstimatorResult, spawn_seeds
 from .._circuits import strip_measurements

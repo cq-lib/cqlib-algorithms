@@ -188,9 +188,7 @@ def _validate_slack_length(slack_length: int, /) -> None:
     if isinstance(slack_length, bool) or not isinstance(slack_length, int):
         raise TypeError("slack_length must be an integer")
     if slack_length < 0:
-        raise ValueError(
-            f"slack_length must not be negative but was {slack_length!r}."
-        )
+        raise ValueError(f"slack_length must not be negative but was {slack_length!r}.")
 
 
 def _validate_pulse_identity(gates: Sequence[StandardGate], /) -> None:
@@ -215,9 +213,7 @@ def _validate_pulse_identity(gates: Sequence[StandardGate], /) -> None:
 XX = general_rule((StandardGate.X, StandardGate.X))
 
 # XY4: alternating axes cancel the first-order error term around every axis.
-XYXY = general_rule(
-    (StandardGate.X, StandardGate.Y, StandardGate.X, StandardGate.Y)
-)
+XYXY = general_rule((StandardGate.X, StandardGate.Y, StandardGate.X, StandardGate.Y))
 
 # Twin of XX around the other transverse axis.
 YY = general_rule((StandardGate.Y, StandardGate.Y))

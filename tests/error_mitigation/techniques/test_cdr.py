@@ -66,9 +66,7 @@ class _AffineNoiseEstimator(Estimator):
         """Return the affine response of the exact values, in input order."""
         exact = self._ideal.run(requests)
         return [
-            EstimatorResult(
-                expectation=self._scale * result.expectation + self._offset
-            )
+            EstimatorResult(expectation=self._scale * result.expectation + self._offset)
             for result in exact
         ]
 
@@ -110,12 +108,9 @@ def _clifford_training_cloud(
         The noisy and exact values, aligned by variant index.
     """
     rng = np.random.default_rng(seed)
-    cloud = [
-        near_clifford_circuit(circuit, 0.5, rng) for _ in range(num_points)
-    ]
+    cloud = [near_clifford_circuit(circuit, 0.5, rng) for _ in range(num_points)]
     requests = [
-        EstimatorRequest(circuit=variant, observable=observable)
-        for variant in cloud
+        EstimatorRequest(circuit=variant, observable=observable) for variant in cloud
     ]
     noisy = executor.estimate(requests)
     ideal = ideal_estimator.run(requests)
@@ -160,7 +155,7 @@ def test_near_clifford_keeps_the_original_rotation_gate_type() -> None:
     circuit.rx(0, 1.0)
 
     mapped = near_clifford_circuit(circuit, 1.0, np.random.default_rng(0))
-    operation = list(mapped.operations)[0]
+    operation = next(iter(mapped.operations))
 
     # Snapping changes the angle only; an RX stays an RX.
     assert operation.instruction.standard_gate == StandardGate.RX
@@ -173,26 +168,20 @@ def test_near_clifford_snaps_to_the_nearest_multiple_of_half_pi() -> None:
         circuit.rx(0, angle)
 
         mapped = near_clifford_circuit(circuit, 1.0, np.random.default_rng(0))
-        snapped = float(list(mapped.operations)[0].params[0])
+        snapped = float(next(iter(mapped.operations)).params[0])
 
         # Land on the grid and stay within half a step of the original angle.
-        assert snapped == pytest.approx(
-            _HALF_PI * round(snapped / _HALF_PI), abs=_ATOL
-        )
+        assert snapped == pytest.approx(_HALF_PI * round(snapped / _HALF_PI), abs=_ATOL)
         assert abs(snapped - angle) <= _HALF_PI / 2.0 + _ATOL
 
 
 def test_near_clifford_returns_the_same_operation_when_already_on_grid() -> None:
     qubits = list(Circuit(1).qubits)
-    operation = ValueOperation.from_standard_gate(
-        StandardGate.RZ(_HALF_PI), qubits
-    )
+    operation = ValueOperation.from_standard_gate(StandardGate.RZ(_HALF_PI), qubits)
 
     # A rotation on the grid is returned bit-identical even when selected,
     # which keeps a Clifford circuit from being rebuilt into a near copy.
-    snapped = _near_clifford_operation(
-        operation, 1.0, np.random.default_rng(0)
-    )
+    snapped = _near_clifford_operation(operation, 1.0, np.random.default_rng(0))
     assert snapped is operation
 
 
@@ -200,9 +189,7 @@ def test_fit_linear_regression_recovers_a_known_line(
     exact_estimator: StatevectorEstimator,
     zz_observable: PauliString,
 ) -> None:
-    executor = QemExecutor(
-        estimator=_AffineNoiseEstimator(_CLOUD_SCALE, _CLOUD_OFFSET)
-    )
+    executor = QemExecutor(estimator=_AffineNoiseEstimator(_CLOUD_SCALE, _CLOUD_OFFSET))
     noisy, ideal = _clifford_training_cloud(
         _clifford_body(), zz_observable, executor, exact_estimator
     )
@@ -226,9 +213,7 @@ def test_execute_with_cdr_recovers_the_ideal_value_in_a_linear_regime(
 ) -> None:
     target = Circuit(1)
     target.rx(0, 0.7)
-    executor = QemExecutor(
-        estimator=_AffineNoiseEstimator(_CLOUD_SCALE, _CLOUD_OFFSET)
-    )
+    executor = QemExecutor(estimator=_AffineNoiseEstimator(_CLOUD_SCALE, _CLOUD_OFFSET))
 
     exact = exact_estimator.run(
         [EstimatorRequest(circuit=target, observable=z_observable)]
@@ -253,9 +238,7 @@ def test_cdr_rejects_a_non_z_diagonal_observable(
 ) -> None:
     target = Circuit(1)
     target.rx(0, 0.7)
-    executor = QemExecutor(
-        estimator=_AffineNoiseEstimator(_CLOUD_SCALE, _CLOUD_OFFSET)
-    )
+    executor = QemExecutor(estimator=_AffineNoiseEstimator(_CLOUD_SCALE, _CLOUD_OFFSET))
 
     with pytest.raises(ValueError, match="diagonal in the Z basis"):
         execute_with_cdr(

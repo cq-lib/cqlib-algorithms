@@ -118,9 +118,7 @@ def test_the_bit_flip_inverse_channel_has_the_closed_form_coefficients() -> None
     # terms survive and the one-norm is 1/(1 - 2p).
     assert coefficients[0] == pytest.approx((1.0 - p) / denominator, abs=_ATOL)
     assert coefficients[1] == pytest.approx(-p / denominator, abs=_ATOL)
-    assert all(
-        value == pytest.approx(0.0, abs=_ATOL) for value in coefficients[2:]
-    )
+    assert all(value == pytest.approx(0.0, abs=_ATOL) for value in coefficients[2:])
     assert representation.norm == pytest.approx(1.0 / denominator, abs=_ATOL)
 
 

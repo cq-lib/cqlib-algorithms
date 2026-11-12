@@ -50,7 +50,9 @@ def _collect(factory: Factory, sampler: Callable[[float], float]) -> list[float]
     return plan
 
 
-def test_richardson_coefficients_at_one_two_three_are_exactly_three_minus_three_one() -> None:
+def test_richardson_coefficients_at_one_two_three_are_exactly_three_minus_three_one() -> (
+    None
+):
     weights = _richardson_coefficients(_SEED_GRID)
 
     assert weights.tolist() == pytest.approx([3.0, -3.0, 1.0], abs=_ATOL)

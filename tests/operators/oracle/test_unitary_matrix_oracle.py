@@ -19,16 +19,16 @@ from typing import Any
 
 import numpy as np
 import pytest
-
 from cqlib import Circuit, Qubit
 from cqlib.compile import CompilerTransformError
 from cqlib.compile.transform.decompose.unitary import (
     synthesize_numeric_2q_unitary,
 )
-from cqlib_algorithms.operators.oracle import UnitaryDilation, UnitaryMatrixOracle
+
 from cqlib_algorithms.operators.composite.quantum_singular_value_transformation.real_qsvt import (
     RealValuedQSVT,
 )
+from cqlib_algorithms.operators.oracle import UnitaryDilation, UnitaryMatrixOracle
 from cqlib_algorithms.operators.oracle.unitary_matrix_oracle._synthesis import (
     _demultiplex as demultiplex_module,
 )
@@ -84,10 +84,14 @@ def _diagonal_phase_unitary(num_qubits: int) -> np.ndarray:
 
 
 def test_one_qubit_unitary_matrix_oracle_reconstructs_up_to_global_phase():
-    matrix = np.exp(0.37j) * np.array(
-        [[1.0, 1.0], [1.0, -1.0]],
-        dtype=np.complex128,
-    ) / np.sqrt(2.0)
+    matrix = (
+        np.exp(0.37j)
+        * np.array(
+            [[1.0, 1.0], [1.0, -1.0]],
+            dtype=np.complex128,
+        )
+        / np.sqrt(2.0)
+    )
 
     circuit = UnitaryMatrixOracle(matrix).build_circuit()
 
@@ -212,7 +216,9 @@ def _make_diagnostic_demultiplex_pair(original: Any) -> Any:
                     atol=atol,
                     label="diagnostic demultiplex eig product",
                 )
-                left_factor, eigenvalues = unitary_eigendecomposition(product, atol=atol)
+                left_factor, eigenvalues = unitary_eigendecomposition(
+                    product, atol=atol
+                )
                 diagonal_factor = (
                     np.diag(np.sign(eigenvalues))
                     if eigenvalues.dtype.kind in "biu"
@@ -269,7 +275,9 @@ def _make_diagnostic_demultiplex_pair(original: Any) -> Any:
                     eigenvalues, eigenvectors = np.linalg.eig(product)
                     order = np.argsort(np.angle(eigenvalues))
                     eigenvalues = eigenvalues[order]
-                    left_factor = np.asarray(eigenvectors[:, order], dtype=np.complex128)
+                    left_factor = np.asarray(
+                        eigenvectors[:, order], dtype=np.complex128
+                    )
                     left_factor, _ = np.linalg.qr(left_factor)
                 diagonal_matrix = left_factor.conj().T @ product @ left_factor
                 diagonal_matrix_abs = np.abs(diagonal_matrix)
@@ -294,8 +302,7 @@ def _make_diagnostic_demultiplex_pair(original: Any) -> Any:
                     np.max(np.abs(np.abs(eigenvalues) - 1.0))
                 )
                 print(
-                    "demux eigenvalue modulus max error="
-                    f"{eigenvalue_modulus_error:.6e}"
+                    f"demux eigenvalue modulus max error={eigenvalue_modulus_error:.6e}"
                 )
             raise
 
@@ -339,7 +346,9 @@ def _assert_dilation_oracle_reconstruction_with_diagnostics(
             "oracle reconstruction up to global phase mismatch",
             oracle_metrics,
         )
-        best_phase = float(np.angle(np.vdot(matrix.reshape(-1), circuit_matrix.reshape(-1))))
+        best_phase = float(
+            np.angle(np.vdot(matrix.reshape(-1), circuit_matrix.reshape(-1)))
+        )
         literal_aligned = np.asarray(
             circuit_matrix * np.exp(-1j * best_phase),
             dtype=np.complex128,
@@ -386,7 +395,10 @@ def test_block_diagonal_identity_controlled_unitary_reconstructs_up_to_global_ph
     dimension = core.shape[0]
     matrix = np.block(
         [
-            [np.eye(dimension, dtype=np.complex128), np.zeros((dimension, dimension), dtype=np.complex128)],
+            [
+                np.eye(dimension, dtype=np.complex128),
+                np.zeros((dimension, dimension), dtype=np.complex128),
+            ],
             [np.zeros((dimension, dimension), dtype=np.complex128), core],
         ]
     )
@@ -399,7 +411,7 @@ def test_block_diagonal_identity_controlled_unitary_reconstructs_up_to_global_ph
 @pytest.mark.parametrize(
     "matrix",
     [
-        #np.array([[0.3, 0.2j], [0.0, 0.7]], dtype=np.complex128),
+        # np.array([[0.3, 0.2j], [0.0, 0.7]], dtype=np.complex128),
         np.array([[0.3, 0.1j], [0.2j, 0.7]], dtype=np.complex128),
         np.array([[0.2, 0.3], [0.0, 0.5]], dtype=np.complex128),
         np.array([[0.1, 0.4j], [0.0, 0.9]], dtype=np.complex128),
@@ -456,7 +468,10 @@ def test_block_diagonal_qsvt_core_unitary_reconstructs_up_to_global_phase(matrix
     dimension = core.shape[0]
     controlled = np.block(
         [
-            [np.eye(dimension, dtype=np.complex128), np.zeros((dimension, dimension), dtype=np.complex128)],
+            [
+                np.eye(dimension, dtype=np.complex128),
+                np.zeros((dimension, dimension), dtype=np.complex128),
+            ],
             [np.zeros((dimension, dimension), dtype=np.complex128), core],
         ]
     )

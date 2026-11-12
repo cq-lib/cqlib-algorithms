@@ -16,9 +16,9 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+from cqlib import Circuit
 from cqlib.error_mitigation import ZNEMitigation
 
-from cqlib import Circuit
 from cqlib_algorithms.error_mitigation.scaling import (
     fold_gates_at_random,
     fold_global,
