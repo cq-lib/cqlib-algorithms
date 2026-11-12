@@ -17,7 +17,7 @@
 | `Optimizer` | 批量优化经典参数 |
 | `QuantumKernel`、`TrainableQuantumKernel` | 固定核求值与可训练核参数绑定 |
 | `KernelLoss` | 从核矩阵和目标向量计算标量损失 |
-| `ScalarMinimizer`、`ScalarMinimizerResult` | 经典标量目标搜索及结果 |
+| `ScalarMinimizer` | 经典标量目标搜索 |
 
 ## 组件
 

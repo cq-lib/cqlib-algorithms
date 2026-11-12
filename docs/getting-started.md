@@ -33,13 +33,30 @@ uv pip install -e .
 
 `uv pip install -e .` 安装当前仓库中的 `cqlib-algorithms`，并根据
 `pyproject.toml` 从 PyPI 自动安装兼容的 Cqlib、NumPy 和 SciPy；Cqlib 为主流
-Windows、Linux 和 macOS 平台提供二进制 wheel。需要执行仓库测试时，再安装
-`pytest==9.1.1`。
+Windows、Linux 和 macOS 平台提供二进制 wheel。
 
-量子机器学习功能使用 `uv pip install -e ".[machine-learning]"` 安装
-scikit-learn；量子化学参考功能使用 `uv pip install -e ".[chemistry]"` 安装
-PySCF。两个可选依赖组可以通过
-`uv pip install -e ".[chemistry,machine-learning]"` 同时安装。
+如需运行测试、类型检查、代码检查和构建，再安装开发工具：
+
+```bash
+uv pip install "build>=1.2.2,<2" "mypy==1.20.2" "pytest==9.1.1" "ruff>=0.16.8,<1"
+```
+
+量子机器学习和量子化学参考功能使用可选依赖组安装：
+
+```bash
+# 量子机器学习：安装 scikit-learn
+uv pip install -e ".[machine-learning]"
+
+# 量子化学参考计算：安装 PySCF
+uv pip install -e ".[chemistry]"
+
+# 同时安装两个可选依赖组
+uv pip install -e ".[chemistry,machine-learning]"
+```
+
+运行完整测试套件前，至少需要安装 `machine-learning` 依赖组，否则依赖
+scikit-learn 的 QSVR 和量子核训练测试无法执行。若还需覆盖 PySCF 电子结构参考
+测试，请同时安装 `chemistry` 依赖组；推荐完整开发环境直接安装上述两个依赖组。
 
 ## 运行第一个算法
 
