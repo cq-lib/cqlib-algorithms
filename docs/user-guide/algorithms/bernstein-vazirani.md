@@ -5,16 +5,15 @@
 
 ## 数学定义
 
-给定承诺为线性的函数 $f(x)=s\cdot x\pmod 2$（隐藏字符串 $s$），算法线路为
+给定承诺为线性的函数 <img src="../../assets/formulas/inline/inline-bc7507eac5e25029.svg" alt="f(x)=s\cdot x\pmod 2" style="vertical-align: -4.000pt;">（隐藏字符串 <img src="../../assets/formulas/inline/inline-043a718774c572bd.svg" alt="s" style="vertical-align: -1.000pt;">），算法线路为
 
-$$
-H^{\otimes n}\, S_f\, H^{\otimes n}\, |0\ldots 0\rangle = |s\rangle,
-\qquad S_f|x\rangle = (-1)^{f(x)}|x\rangle .
-$$
+<p align="center">
+  <img src="../../assets/formulas/bv-phase-query.svg" alt="H⊗n Sf H⊗n |0…0⟩= |s⟩, Sf|x⟩= (-1)f(x)|x⟩.">
+</p>
 
 即一次相位 Oracle 查询夹在两层 Hadamard 之间，末态恰好是隐藏字符串对应的计算
-基态。理想执行下全寄存器测量以概率 1 得到 $s$，单次查询即恢复；经典确定算法
-需要 $n$ 次函数求值。
+基态。理想执行下全寄存器测量以概率 1 得到 <img src="../../assets/formulas/inline/inline-043a718774c572bd.svg" alt="s" style="vertical-align: -1.000pt;">，单次查询即恢复；经典确定算法
+需要 <img src="../../assets/formulas/inline/inline-1b16b1df538ba12d.svg" alt="n" style="vertical-align: -1.000pt;"> 次函数求值。
 
 理论依据为 Bernstein 与 Vazirani 的原始工作：
 [Quantum complexity theory](https://doi.org/10.1137/S0097539796300921)，
@@ -30,7 +29,7 @@ SIAM J. Comput. 26(5), 1411 (1997)；相位 Oracle 形式的推导参见 Cleve �
   （类型、`output_mask` 规则）最终委托该底层 Oracle。多输出函数按
   `output_mask` 奇偶归约为标量谓词，线性承诺作用于该奇偶函数；
 - `BernsteinVazirani.build_circuit(function, output_mask=None)` 构建未测量的
-  $H^{\otimes n}\rightarrow S_f\rightarrow H^{\otimes n}$ 查询线路（与 `DeutschJozsa` 共享同一查询线路构造），
+  <img src="../../assets/formulas/inline/inline-678b057a76c6a024.svg" alt="H^{\otimes n}\rightarrow S_f\rightarrow H^{\otimes n}" style="vertical-align: -5.000pt;"> 查询线路（与 `DeutschJozsa` 共享同一查询线路构造），
   末端测量由 Sampler 追加；
 - `run(requests)` 批量执行请求，结果按请求顺序返回。
 
@@ -38,7 +37,7 @@ SIAM J. Comput. 26(5), 1411 (1997)；相位 Oracle 形式的推导参见 Cleve �
 `BernsteinVaziraniResult(modal_strings, support, shots)` 保留所有并列的经验众数候选；
 每个候选的第 `q` 位对应量子比特 `q`
 （小端，采样位串最右字符是 `q0`）。唯一众数时 `hidden_string` 返回该候选，
-`hidden_integer` 返回等价整数（第 `q` 位权重 $2^q$）；发生平局时两者均为
+`hidden_integer` 返回等价整数（第 `q` 位权重 <img src="../../assets/formulas/inline/inline-4d38d3b7b31976c9.svg" alt="2^q" style="vertical-align: -0.000pt;">）；发生平局时两者均为
 `None`，调用方可从 `modal_strings` 查看全部候选。`support` 是每个众数候选的
 观测 shots 数。
 

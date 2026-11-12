@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg role="img" aria-labelledby="formula-inline-c4694f2e93d5c4e7" data-formula-sha256="faa21297589427db3502cc9ac67281488bde43c8102385efee072c29da1fcd29" data-formula-depth-pt="1.000" xmlns:xlink="http://www.w3.org/1999/xlink" width="11pt" height="11pt" viewBox="0 0 11 11" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <title id="formula-inline-c4694f2e93d5c4e7">O</title>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 11
+L 11 11
+L 11 0
+L 0 0
+L 0 11
+z
+" style="fill: none"/>
+  </g>
+  <g id="text_1">
+   <!-- $O$ -->
+   <g style="fill: #111827" transform="translate(0 10) scale(0.14 -0.14)">
+    <defs>
+     <path id="Cmmi10-4f" d="M 1947 -141
+Q 1466 -141 1094 79
+Q 722 300 520 692
+Q 319 1084 319 1563
+Q 319 2259 714 2950
+Q 1109 3641 1756 4077
+Q 2403 4513 3109 4513
+Q 3475 4513 3778 4381
+Q 4081 4250 4290 4017
+Q 4500 3784 4614 3471
+Q 4728 3159 4728 2791
+Q 4728 2263 4503 1739
+Q 4278 1216 3879 786
+Q 3481 356 2984 107
+Q 2488 -141 1947 -141
+z
+M 1997 50
+Q 2463 50 2866 345
+Q 3269 641 3553 1108
+Q 3838 1575 3989 2089
+Q 4141 2603 4141 3047
+Q 4141 3394 4022 3683
+Q 3903 3972 3656 4148
+Q 3409 4325 3066 4325
+Q 2728 4325 2409 4162
+Q 2091 4000 1831 3731
+Q 1566 3459 1359 3057
+Q 1153 2656 1047 2214
+Q 941 1772 941 1381
+Q 941 838 1208 444
+Q 1475 50 1997 50
+z
+" transform="scale(0.015625)"/>
+    </defs>
+    <use xlink:href="#Cmmi10-4f" transform="translate(0 0.484375)"/>
+   </g>
+  </g>
+ </g>
+</svg>

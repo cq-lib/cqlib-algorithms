@@ -3,13 +3,12 @@
 `VQE` 是一个完整算法组件，用参数化量子态在拟设可达子空间中最小化 Hermitian
 算子的期望值：
 
-$$
-E(\theta)=\langle\psi(\theta)|H|\psi(\theta)\rangle,
-\qquad |\psi(\theta)\rangle=A(\theta)|0\rangle.
-$$
+<p align="center">
+  <img src="../../assets/formulas/vqe-objective.svg" alt="E(θ)=⟨ψ(θ)|H|ψ(θ)⟩, |ψ(θ)⟩=A(θ)|0⟩.">
+</p>
 
 根据变分原理，归一化试探态满足
-$E(\theta)\geq E_0$，其中 $E_0$ 是 $H$ 的最小本征值。因此，优化结果是
+<img src="../../assets/formulas/inline/inline-443afc30c53fc541.svg" alt="E(\theta)\geq E_0" style="vertical-align: -4.000pt;">，其中 <img src="../../assets/formulas/inline/inline-535f17963fb5c472.svg" alt="E_0" style="vertical-align: -3.000pt;"> 是 <img src="../../assets/formulas/inline/inline-44bd7ae60f478fae.svg" alt="H" style="vertical-align: -0.000pt;"> 的最小本征值。因此，优化结果是
 拟设可达子空间中的能量上界；算法不保证所选拟设能够表示全局基态，也不保证所选
 经典优化器找到全局最优点。
 
@@ -56,7 +55,7 @@ Estimator 决定是否支持精确或有限-shot 模式。
 ## 示例
 
 下面使用现有精确 Estimator、参数移位梯度、梯度下降优化器和实振幅拟设，求
-单量子比特 $Z$ 的最小能量：
+单量子比特 <img src="../../assets/formulas/inline/inline-bbeebd879e1dff69.svg" alt="Z" style="vertical-align: -0.000pt;"> 的最小能量：
 
 ```python
 from cqlib.qis import PauliString

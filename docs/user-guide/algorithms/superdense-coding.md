@@ -13,25 +13,25 @@
 
 算法复用 `GHZStatePreparation(2)` 制备
 
-$$
-|\Phi^+\rangle=\frac{|00\rangle+|11\rangle}{\sqrt{2}}.
-$$
+<p align="center">
+  <img src="../../assets/formulas/bell-state.svg" alt="The Bell state |Φ+⟩ equals (|00⟩ + |11⟩)/√2.">
+</p>
 
-公开消息采用 $(\mathtt{bit\_flip\_bit},\mathtt{phase\_bit})=(x,z)$，严格为两个 Python 整数位。
+公开消息采用 <img src="../../assets/formulas/inline/inline-66e1b7a0e0122afe.svg" alt="(\mathtt{bit\_flip\_bit},\mathtt{phase\_bit})=(x,z)" style="vertical-align: -4.000pt;">，严格为两个 Python 整数位。
 Alice 施加
 
-$$
-X^xZ^z.
-$$
+<p align="center">
+  <img src="../../assets/formulas/superdense-encoding-gates.svg" alt="XxZz.">
+</p>
 
 在算符乘积中右侧先作用，因此线路按 `Z`、`X` 的时间顺序追加：
 
 | 消息 `(x,z)` | 编码操作 |
 | --- | --- |
-| $(0,0)$ | $I$ |
-| $(0,1)$ | $Z$ |
-| $(1,0)$ | $X$ |
-| $(1,1)$ | $XZ$ |
+| <img src="../../assets/formulas/inline/inline-a2c508f756fd5044.svg" alt="(0,0)" style="vertical-align: -4.000pt;"> | <img src="../../assets/formulas/inline/inline-a83dd0ccbffe39d0.svg" alt="I" style="vertical-align: -0.000pt;"> |
+| <img src="../../assets/formulas/inline/inline-2952887bc45642d0.svg" alt="(0,1)" style="vertical-align: -4.000pt;"> | <img src="../../assets/formulas/inline/inline-bbeebd879e1dff69.svg" alt="Z" style="vertical-align: -0.000pt;"> |
+| <img src="../../assets/formulas/inline/inline-5af86a98fe16ac5a.svg" alt="(1,0)" style="vertical-align: -4.000pt;"> | <img src="../../assets/formulas/inline/inline-4b68ab3847feda7d.svg" alt="X" style="vertical-align: -0.000pt;"> |
+| <img src="../../assets/formulas/inline/inline-182263cc64050084.svg" alt="(1,1)" style="vertical-align: -4.000pt;"> | <img src="../../assets/formulas/inline/inline-3c01374a220b9818.svg" alt="XZ" style="vertical-align: -0.000pt;"> |
 
 `XZ` 与其他常见的 Pauli 排列可能相差全局相位；全局相位不改变 Bell 基测量结果。
 Bob 收到 Alice 的量子比特后依次执行 `CX(0,1)`、`H(0)`，再按 `(0,1)` 的

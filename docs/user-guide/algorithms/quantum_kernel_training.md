@@ -6,7 +6,7 @@
 
 ## 使用示例
 
-以下示例训练 $R_Y(wx)$ 中的参数 $w$，并使用保真度核训练分类器。
+以下示例训练 <img src="../../assets/formulas/inline/inline-337ae63cc1dccdb4.svg" alt="R_Y(wx)" style="vertical-align: -4.000pt;"> 中的参数 <img src="../../assets/formulas/inline/inline-50e721e49c013f00.svg" alt="w" style="vertical-align: -1.000pt;">，并使用保真度核训练分类器。
 
 ```python
 from cqlib import Circuit, Parameter

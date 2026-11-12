@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg role="img" aria-labelledby="formula-inline-d2df50038d900c16" data-formula-sha256="35147b3b33098da19c687a27ea8365b47e20bdffbb4a81c97451e4462a620838" data-formula-depth-pt="4.000" xmlns:xlink="http://www.w3.org/1999/xlink" width="27pt" height="18pt" viewBox="0 0 27 18" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <title id="formula-inline-d2df50038d900c16">|-\rangle</title>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 18
+L 27 18
+L 27 0
+L 0 0
+L 0 18
+z
+" style="fill: none"/>
+  </g>
+  <g id="text_1">
+   <!-- $|-\rangle$ -->
+   <g style="fill: #111827" transform="translate(0 14) scale(0.14 -0.14)">
+    <defs>
+     <path id="Cmsy10-6a" d="M 763 -1484
+L 763 4684
+Q 763 4734 800 4767
+Q 838 4800 891 4800
+Q 938 4800 978 4767
+Q 1019 4734 1019 4684
+L 1019 -1484
+Q 1019 -1534 978 -1567
+Q 938 -1600 891 -1600
+Q 838 -1600 800 -1567
+Q 763 -1534 763 -1484
+z
+" transform="scale(0.015625)"/>
+     <path id="Cmsy10-a1" d="M 653 1472
+Q 600 1472 565 1512
+Q 531 1553 531 1600
+Q 531 1647 565 1687
+Q 600 1728 653 1728
+L 4325 1728
+Q 4375 1728 4408 1687
+Q 4441 1647 4441 1600
+Q 4441 1553 4408 1512
+Q 4375 1472 4325 1472
+L 653 1472
+z
+" transform="scale(0.015625)"/>
+     <path id="Cmex10-ae" d="M 500 -7297
+Q 500 -7263 513 -7250
+L 2119 -3584
+L 513 84
+Q 500 97 500 128
+Q 500 175 537 215
+Q 575 256 628 256
+Q 703 256 750 178
+L 2381 -3541
+Q 2388 -3553 2388 -3584
+Q 2388 -3616 2381 -3634
+L 750 -7347
+Q 700 -7425 628 -7425
+Q 575 -7425 537 -7384
+Q 500 -7344 500 -7297
+z
+" transform="scale(0.015625)"/>
+    </defs>
+    <use xlink:href="#Cmsy10-6a" transform="translate(0 0.658854)"/>
+    <use xlink:href="#Cmsy10-a1" transform="translate(45.244141 0.658854)"/>
+    <use xlink:href="#Cmex10-ae" transform="translate(140.488281 94)"/>
+   </g>
+  </g>
+ </g>
+</svg>

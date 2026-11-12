@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg role="img" aria-labelledby="formula-inline-2b4af44cb17349bb" data-formula-sha256="b82349eea22fe514f4f461e3c12b95003076172a154b0410bc10451a964d3e9a" data-formula-depth-pt="1.000" xmlns:xlink="http://www.w3.org/1999/xlink" width="7pt" height="11pt" viewBox="0 0 7 11" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <title id="formula-inline-2b4af44cb17349bb">\theta</title>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 11
+L 7 11
+L 7 0
+L 0 0
+L 0 11
+z
+" style="fill: none"/>
+  </g>
+  <g id="text_1">
+   <!-- $\theta$ -->
+   <g style="fill: #111827" transform="translate(0 10) scale(0.14 -0.14)">
+    <defs>
+     <path id="Cmmi10-b5" d="M 1031 -72
+Q 741 -72 566 140
+Q 391 353 323 653
+Q 256 953 256 1247
+L 256 1253
+Q 256 1572 317 1915
+Q 378 2259 493 2601
+Q 609 2944 744 3213
+Q 838 3400 986 3631
+Q 1134 3863 1317 4064
+Q 1500 4266 1711 4389
+Q 1922 4513 2138 4513
+L 2144 4513
+Q 2375 4513 2529 4384
+Q 2684 4256 2770 4056
+Q 2856 3856 2890 3628
+Q 2925 3400 2925 3194
+Q 2925 2709 2794 2204
+Q 2663 1700 2431 1228
+Q 2344 1050 2189 809
+Q 2034 569 1861 378
+Q 1688 188 1472 58
+Q 1256 -72 1038 -72
+L 1031 -72
+z
+M 1044 97
+Q 1256 97 1451 323
+Q 1647 550 1794 873
+Q 1941 1197 2052 1536
+Q 2163 1875 2216 2113
+L 909 2113
+Q 809 1709 753 1417
+Q 697 1125 697 844
+Q 697 97 1044 97
+z
+M 959 2338
+L 2272 2338
+Q 2341 2619 2381 2808
+Q 2422 2997 2450 3206
+Q 2478 3416 2478 3597
+Q 2478 4347 2138 4347
+Q 1731 4347 1436 3692
+Q 1141 3038 959 2338
+z
+" transform="scale(0.015625)"/>
+    </defs>
+    <use xlink:href="#Cmmi10-b5" transform="translate(0 0.484375)"/>
+   </g>
+  </g>
+ </g>
+</svg>

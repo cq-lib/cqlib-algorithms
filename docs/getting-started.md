@@ -68,8 +68,8 @@ print(result.zero_count)   # 0 on the ideal statevector sampler
 Ansatz，而无需重新实现算法主体。VQE 通过参数化 Ansatz 制备试探态，再由 Estimator
 计算能量、Optimizer 更新参数。
 下面求解两量子比特 Heisenberg Hamiltonian
-$H=X\otimes X+Y\otimes Y+Z\otimes Z$。其基态是纠缠态
-$\left(|01\rangle-|10\rangle\right)/\sqrt{2}$，最小本征值为 $-3$。
+<img src="assets/formulas/inline/inline-3158500ed308fe9d.svg" alt="H=X\otimes X+Y\otimes Y+Z\otimes Z" style="vertical-align: -2.000pt;">。其基态是纠缠态
+<img src="assets/formulas/inline/inline-9c26ee1cf8bd0388.svg" alt="\left(|01\rangle-|10\rangle\right)/\sqrt{2}" style="vertical-align: -4.000pt;">，最小本征值为 <img src="assets/formulas/inline/inline-615bdd17c2556f82.svg" alt="-3" style="vertical-align: -1.000pt;">。
 
 ```python
 from cqlib.qis import Hamiltonian, PauliString
@@ -118,7 +118,7 @@ print(su2_result.eigenvalue)
 两次求解使用相同的 Hamiltonian、Estimator、Optimizer 和 VQE 流程，只替换 Ansatz。
 `RealAmplitudesAnsatz` 使用 RY 旋转和 CNOT 纠缠层，本例有 4 个参数；
 `EfficientSU2Ansatz` 使用 RY/RZ 旋转和 CNOT 纠缠层，本例有 8 个参数。两条线路都能
-表示目标纠缠态，因此优化结果应接近 $-3$。替换 Ansatz 后必须根据新线路重新生成
+表示目标纠缠态，因此优化结果应接近 <img src="assets/formulas/inline/inline-615bdd17c2556f82.svg" alt="-3" style="vertical-align: -1.000pt;">。替换 Ansatz 后必须根据新线路重新生成
 初始参数，不能沿用参数数量或名称不匹配的旧参数映射。
 
 下一步可查看[能力清单](capabilities.md)，再按任务进入相应的算法或组件指南。

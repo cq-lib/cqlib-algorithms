@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg role="img" aria-labelledby="formula-inline-2e7d2c03a9507ae2" data-formula-sha256="c515fbcfc28065c199971c70cf759531e8fa295b64ecb9015928ce5f8c2c3539" data-formula-depth-pt="1.000" xmlns:xlink="http://www.w3.org/1999/xlink" width="7pt" height="8pt" viewBox="0 0 7 8" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <title id="formula-inline-2e7d2c03a9507ae2">c</title>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 8
+L 7 8
+L 7 0
+L 0 0
+L 0 8
+z
+" style="fill: none"/>
+  </g>
+  <g id="text_1">
+   <!-- $c$ -->
+   <g style="fill: #111827" transform="translate(0 7) scale(0.14 -0.14)">
+    <defs>
+     <path id="Cmmi10-63" d="M 750 763
+Q 750 484 892 290
+Q 1034 97 1300 97
+Q 1681 97 2032 272
+Q 2384 447 2606 756
+Q 2625 775 2656 775
+Q 2688 775 2720 739
+Q 2753 703 2753 672
+Q 2753 647 2741 634
+Q 2506 306 2109 117
+Q 1713 -72 1288 -72
+Q 981 -72 747 73
+Q 513 219 384 462
+Q 256 706 256 1013
+Q 256 1444 497 1869
+Q 738 2294 1138 2561
+Q 1538 2828 1978 2828
+Q 2266 2828 2495 2689
+Q 2725 2550 2725 2278
+Q 2725 2103 2623 1979
+Q 2522 1856 2350 1856
+Q 2247 1856 2176 1920
+Q 2106 1984 2106 2088
+Q 2106 2238 2215 2344
+Q 2325 2450 2472 2450
+L 2484 2450
+Q 2409 2559 2267 2611
+Q 2125 2663 1972 2663
+Q 1597 2663 1315 2342
+Q 1034 2022 892 1576
+Q 750 1131 750 763
+z
+" transform="scale(0.015625)"/>
+    </defs>
+    <use xlink:href="#Cmmi10-63" transform="translate(0 0.8125)"/>
+   </g>
+  </g>
+ </g>
+</svg>

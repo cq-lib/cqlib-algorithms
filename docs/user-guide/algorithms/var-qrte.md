@@ -2,37 +2,31 @@
 
 `VarQRTE` 用参数化量子态近似时间无关 Hamiltonian 生成的实时演化
 
-$$
-|\psi(t)\rangle=e^{-itH}|\psi(0)\rangle.
-$$
+<p align="center">
+  <img src="../../assets/formulas/var-qrte-state.svg" alt="|ψ(t)⟩=e-itH|ψ(0)⟩.">
+</p>
 
 本实现采用消除全局相位自由度后的 McLachlan 变分投影。对拟设态
-$|\psi(\theta)\rangle$，每一步计算相位规范不变的投影量子几何张量
+<img src="../../assets/formulas/inline/inline-b9e7cdacebca3407.svg" alt="|\psi(\theta)\rangle" style="vertical-align: -4.000pt;">，每一步计算相位规范不变的投影量子几何张量
 
-$$
-G_{ij}=\langle\partial_i\psi|\partial_j\psi\rangle-
-\langle\partial_i\psi|\psi\rangle
-\langle\psi|\partial_j\psi\rangle,
-$$
+<p align="center">
+  <img src="../../assets/formulas/var-qrte-metric.svg" alt="The projected quantum-geometric tensor used by VarQRTE.">
+</p>
 
-取实部得到度规 $g=\operatorname{Re}(G)$，并构造实时驱动力
+取实部得到度规 <img src="../../assets/formulas/inline/inline-f9345104fa8d555d.svg" alt="g=\operatorname{Re}(G)" style="vertical-align: -4.000pt;">，并构造实时驱动力
 
-$$
-b_i=\operatorname{Im}\left[
-\langle\partial_i\psi|H|\psi\rangle-
-\langle\partial_i\psi|\psi\rangle
-\langle\psi|H|\psi\rangle
-\right].
-$$
+<p align="center">
+  <img src="../../assets/formulas/var-qrte-force.svg" alt="The imaginary projected force vector used by VarQRTE.">
+</p>
 
 参数速度由
 
-$$
-g\dot{\theta}=b
-$$
+<p align="center">
+  <img src="../../assets/formulas/var-qrte-update.svg" alt="g θ̇=b">
+</p>
 
 确定，然后使用固定步长 Forward Euler 更新
-$\theta(t+\Delta t)=\theta(t)+\Delta t\,\dot\theta(t)$。这里的正号和驱动力虚部是实时
+<img src="../../assets/formulas/inline/inline-e19fe2d0ab0f9718.svg" alt="\theta(t+\Delta t)=\theta(t)+\Delta t\,\dot\theta(t)" style="vertical-align: -4.000pt;">。这里的正号和驱动力虚部是实时
 McLachlan 方程的组成部分，不能替换为虚时演化所使用的能量梯度方程。
 
 ## 组件与数值边界
@@ -44,7 +38,7 @@ QGT、Hamiltonian 作用和实时驱动力始终由态矢量精确计算：
   Estimator 的有限-shot 语义；参数轨迹保持不变；
 - `seed` 只派生轨迹观测请求的随机种子，不参与 QGT、驱动力或参数更新；
 - `regularization=0` 对奇异度规使用最小范数最小二乘解；正值则求解
-  $(g+\lambda I)\dot\theta=b$，其中 $\lambda$ 为 `regularization`。
+  <img src="../../assets/formulas/inline/inline-6ff742586e9ac2aa.svg" alt="(g+\lambda I)\dot\theta=b" style="vertical-align: -4.000pt;">，其中 <img src="../../assets/formulas/inline/inline-583cf6290785d72c.svg" alt="\lambda" style="vertical-align: -1.000pt;"> 为 `regularization`。
 
 算法复用 `StatevectorQGT` 的参数分析与态导数规则。活跃参数可出现在受支持的旋转、
 相位、受控旋转和 `U` 门的仿射表达式中。测量、重置、延迟、动态经典控制、嵌套
@@ -67,8 +61,8 @@ QGT、Hamiltonian 作用和实时驱动力始终由态矢量精确计算：
 
 ## 示例
 
-下面使用单量子比特 $R_Y(\theta)|0\rangle$ 拟设在 Pauli-Y Hamiltonian 下演化。该问题的
-投影方程给出 $\dot\theta=2$，因此总时间 $0.1$ 后参数从 $0.3$ 演化到约 $0.5$：
+下面使用单量子比特 <img src="../../assets/formulas/inline/inline-539b0cd8324ac982.svg" alt="R_Y(\theta)|0\rangle" style="vertical-align: -4.000pt;"> 拟设在 Pauli-Y Hamiltonian 下演化。该问题的
+投影方程给出 <img src="../../assets/formulas/inline/inline-a7ae2203b3346542.svg" alt="\dot\theta=2" style="vertical-align: -1.000pt;">，因此总时间 <img src="../../assets/formulas/inline/inline-14be4b45f18e0d8c.svg" alt="0.1" style="vertical-align: -1.000pt;"> 后参数从 <img src="../../assets/formulas/inline/inline-221764976efe0413.svg" alt="0.3" style="vertical-align: -1.000pt;"> 演化到约 <img src="../../assets/formulas/inline/inline-d2cbad71ff333de6.svg" alt="0.5" style="vertical-align: -1.000pt;">：
 
 ```python
 from cqlib.qis import PauliString

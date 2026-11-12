@@ -5,8 +5,8 @@
 
 ## 使用示例
 
-以下联合概率按 $\mathtt{index}=q+2e$ 排列。查询目标为证据 $e=1$ 条件下变量 $q$ 的分布，
-其理论值为 $P(q=1\mid e=1)=0.8$。
+以下联合概率按 <img src="../../assets/formulas/inline/inline-0143014bc65d8745.svg" alt="\mathtt{index}=q+2e" style="vertical-align: -3.000pt;"> 排列。查询目标为证据 <img src="../../assets/formulas/inline/inline-85d4a35736b4932f.svg" alt="e=1" style="vertical-align: -1.000pt;"> 条件下变量 <img src="../../assets/formulas/inline/inline-8e35c2cd3bf6641b.svg" alt="q" style="vertical-align: -3.000pt;"> 的分布，
+其理论值为 <img src="../../assets/formulas/inline/inline-956aa028cf649e50.svg" alt="P(q=1\mid e=1)=0.8" style="vertical-align: -4.000pt;">。
 
 ```python
 import math

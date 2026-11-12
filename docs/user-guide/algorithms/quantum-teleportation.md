@@ -8,15 +8,15 @@ Cqlib 的本地理想纯态模拟器中执行真实的中间测量与经典条�
 
 三个线路位置固定为：
 
-- $q_0=Q$：待传输的输入态；
-- $q_1=A$：Alice 持有的 Bell 对半边；
-- $q_2=B$：Bob 持有的 Bell 对半边。
+- <img src="../../assets/formulas/inline/inline-50fd1d8ab8308f74.svg" alt="q_0=Q" style="vertical-align: -3.000pt;">：待传输的输入态；
+- <img src="../../assets/formulas/inline/inline-798953044d932614.svg" alt="q_1=A" style="vertical-align: -3.000pt;">：Alice 持有的 Bell 对半边；
+- <img src="../../assets/formulas/inline/inline-93f6ac666b2a7475.svg" alt="q_2=B" style="vertical-align: -3.000pt;">：Bob 持有的 Bell 对半边。
 
 组件先复用 `GHZStatePreparation(2)` 在 `A, B` 上制备
 
-$$
-|\Phi^+\rangle=\frac{|00\rangle+|11\rangle}{\sqrt{2}}.
-$$
+<p align="center">
+  <img src="../../assets/formulas/bell-state.svg" alt="The Bell state |Φ+⟩ equals (|00⟩ + |11⟩)/√2.">
+</p>
 
 随后在 `Q, A` 上执行 `CX(Q, A)` 和 `H(Q)`，形成 Bell 基分析。每个 shot 都从同一
 预测量态的独立副本开始，并真实调用 Core 的 `Statevector.measure`：
@@ -27,7 +27,7 @@ $$
 4. 若 `phase_bit == 1`，Bob 对 `B` 施加 Z。
 
 测量二比特依固定 `(phase_bit, bit_flip_bit)` 顺序记录。理想协议中四种结果各以
-$1/4$ 概率出现，并且完成相应纠正后 Bob 的约化态与输入态相同。
+<img src="../../assets/formulas/inline/inline-f70b94aeb67de2a5.svg" alt="1/4" style="vertical-align: -4.000pt;"> 概率出现，并且完成相应纠正后 Bob 的约化态与输入态相同。
 
 该过程消耗一对预共享 Bell 纠缠（1 ebit）和由 Alice 发送给 Bob 的两个经典比特。
 Bob 必须收到经典结果后才能选择纠正，因此协议不允许超光速通信。Alice 的测量会破坏
@@ -87,7 +87,7 @@ Bell 分析门之后、尚未测量的独立三量子比特线路，便于线路
 - `bell_counts`、`bell_probabilities`：固定 `00, 01, 10, 11` 顺序的经验统计；
 - `minimum_fidelity`、`mean_fidelity`：逐 shot 保真度汇总；
 - `successful_shots`、`success_rate`、`all_succeeded`：以
-  $\mathtt{fidelity}\geq1-\mathtt{fidelity\_tolerance}$ 判断的数值验收结果。
+  <img src="../../assets/formulas/inline/inline-5b0ea5c6c9971bf8.svg" alt="\mathtt{fidelity}\geq1-\mathtt{fidelity\_tolerance}" style="vertical-align: -4.000pt;"> 判断的数值验收结果。
 
 每个 shot 完成测量和纠正后，组件把三量子比特纯态转换为 Core `DensityMatrix`，调用
 `partial_trace([2])` 取得 Bob 的一量子比特约化态，再通过

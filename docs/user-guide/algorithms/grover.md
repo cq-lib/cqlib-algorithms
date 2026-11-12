@@ -6,23 +6,23 @@
 
 ## 数学定义
 
-设 $N=2^n$，其中 $M$ 个输入满足布尔谓词。均匀初态中被标记子空间的初始
+设 <img src="../../assets/formulas/inline/inline-6b773b88adc395e8.svg" alt="N=2^n" style="vertical-align: -0.000pt;">，其中 <img src="../../assets/formulas/inline/inline-08f271887ce94707.svg" alt="M" style="vertical-align: -0.000pt;"> 个输入满足布尔谓词。均匀初态中被标记子空间的初始
 概率为
 
-$$
-a=\frac{M}{N}=\sin^2\theta .
-$$
+<p align="center">
+  <img src="../../assets/formulas/grover-amplitude-angle.svg" alt="a=M/N=sin2θ.">
+</p>
 
 相位 Oracle 对被标记状态施加负号，扩散反射随后把状态在好、坏两个子空间张成的
-平面内旋转。重复 $k$ 次后的总成功概率为
+平面内旋转。重复 <img src="../../assets/formulas/inline/inline-8254c329a92850f6.svg" alt="k" style="vertical-align: -1.000pt;"> 次后的总成功概率为
 
-$$
-P_k=\sin^2((2k+1)\theta).
-$$
+<p align="center">
+  <img src="../../assets/formulas/grover-success-probability.svg" alt="Pk=sin2((2k+1)θ).">
+</p>
 
 请求没有显式指定 `iterations` 时，组件在首个连续最大值附近比较相邻非负整数，
 选择成功概率最大且 Oracle 调用更少的整数。单解问题因而使用
-$O(\sqrt{N})$ 次抽象 Oracle 调用。理论依据见
+<img src="../../assets/formulas/inline/inline-7aca566ca6f41fd5.svg" alt="O(\sqrt{N})" style="vertical-align: -4.000pt;"> 次抽象 Oracle 调用。理论依据见
 [原始搜索算法](https://doi.org/10.1145/237814.237866)与
 [振幅放大的一般化](https://doi.org/10.1090/conm/305/05215)。
 
@@ -30,7 +30,7 @@ $O(\sqrt{N})$ 次抽象 Oracle 调用。理论依据见
 
 `Grover(sampler)` 接收任意实现公共 `Sampler` 协议的执行组件。算法内部复用：
 
-- `UniformSuperposition` 构造 $H^{\otimes n}|0\ldots0\rangle$；
+- `UniformSuperposition` 构造 <img src="../../assets/formulas/inline/inline-3f3908bec9bacf7a.svg" alt="H^{\otimes n}|0\ldots0\rangle" style="vertical-align: -4.000pt;">；
 - `PhaseOracle` 根据标量函数或选定的向量输出奇偶值标记状态；
 - `GroverOperator` 构造一次 Oracle 与扩散反射迭代；
 - `Sampler` 对完整搜索寄存器进行有限-shot 测量。
@@ -57,7 +57,7 @@ shots，并提供：
   最高频状态不是解，因此调用方应同时检查 `success_probability` 和
   `marked_modal_states`；
 - 当前布尔函数以完整真值表表示，Oracle 综合具有指数级经典输入和预处理成本。
-  $O(\sqrt{N})$ 是抽象黑盒查询复杂度，不包含该显式综合成本；
+  <img src="../../assets/formulas/inline/inline-7aca566ca6f41fd5.svg" alt="O(\sqrt{N})" style="vertical-align: -4.000pt;"> 是抽象黑盒查询复杂度，不包含该显式综合成本；
 - 每条线路包含 `iterations` 次 Oracle 调用；多个 shots 会重复执行整条线路，不能
   把多-shot 任务描述为总共只调用这些次数。
 

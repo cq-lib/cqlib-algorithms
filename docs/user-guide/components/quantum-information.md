@@ -1,13 +1,13 @@
 # 量子信息度量
 
 量子互信息衡量一个二分量子态的两个子系统之间包含的总相关性，包括经典相关和量子
-相关。对状态 $\rho_{AB}$，本库采用
+相关。对状态 <img src="../../assets/formulas/inline/inline-acbabae96acb9647.svg" alt="\rho_{AB}" style="vertical-align: -4.000pt;">，本库采用
 
-$$
-I(A:B)=S(\rho_A)+S(\rho_B)-S(\rho_{AB}).
-$$
+<p align="center">
+  <img src="../../assets/formulas/quantum-mutual-information.svg" alt="I(A:B)=S(ρA)+S(ρB)-S(ρAB).">
+</p>
 
-其中 $S$ 是 von Neumann 熵，$\rho_A$ 和 $\rho_B$ 由偏迹得到。默认以 2 为对数底，
+其中 <img src="../../assets/formulas/inline/inline-8de0b3c47f112c59.svg" alt="S" style="vertical-align: -1.000pt;"> 是 von Neumann 熵，<img src="../../assets/formulas/inline/inline-362dfb6c4b153cec.svg" alt="\rho_A" style="vertical-align: -4.000pt;"> 和 <img src="../../assets/formulas/inline/inline-c26fffae89b46f83.svg" alt="\rho_B" style="vertical-align: -4.000pt;"> 由偏迹得到。默认以 2 为对数底，
 结果单位为 bit。
 
 ## 计算互信息
@@ -41,7 +41,7 @@ print(information)  # approximately 2.0
 - Bell 纯态的两个单量子比特子系统在以 2 为底时互信息为 2；经典等概率相关态的互
   信息为 1。
 - 这是基于完整量子态的精确经典后处理，不是从有限-shot 测量直接估计互信息的协议。
-- `Statevector` 输入会先转换成密度矩阵。密度矩阵占用 $O(4^n)$ 空间，因此该接口
+- `Statevector` 输入会先转换成密度矩阵。密度矩阵占用 <img src="../../assets/formulas/inline/inline-3dd4e996933f0dee.svg" alt="O(4^n)" style="vertical-align: -4.000pt;"> 空间，因此该接口
   适合能够在内存中显式表示完整状态的小规模精确计算，不适合直接处理大规模硬件态。
 
 实现复用 Cqlib Core 的偏迹和 von Neumann 熵，并只在浮点舍入范围内把极小负结果

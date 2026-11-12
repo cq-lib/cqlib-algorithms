@@ -19,9 +19,9 @@ QWC 要求任意两个 Pauli 字符串在每个量子比特位置上相同，或
 
 对每个待测 Pauli 项，规划器使用以下基变换：
 
-- $X$：测量前施加 $H$；
-- $Y$：测量前依次施加 $S^\dagger$、$H$；
-- $Z$ 和 $I$：不施加基变换。
+- <img src="../../assets/formulas/inline/inline-4b68ab3847feda7d.svg" alt="X" style="vertical-align: -0.000pt;">：测量前施加 <img src="../../assets/formulas/inline/inline-44bd7ae60f478fae.svg" alt="H" style="vertical-align: -0.000pt;">；
+- <img src="../../assets/formulas/inline/inline-18f5384d58bcb1bb.svg" alt="Y" style="vertical-align: -0.000pt;">：测量前依次施加 <img src="../../assets/formulas/inline/inline-eb8d072dc7420869.svg" alt="S^\dagger" style="vertical-align: -1.000pt;">、<img src="../../assets/formulas/inline/inline-44bd7ae60f478fae.svg" alt="H" style="vertical-align: -0.000pt;">；
+- <img src="../../assets/formulas/inline/inline-bbeebd879e1dff69.svg" alt="Z" style="vertical-align: -0.000pt;"> 和 <img src="../../assets/formulas/inline/inline-a83dd0ccbffe39d0.svg" alt="I" style="vertical-align: -0.000pt;">：不施加基变换。
 
 `PauliString.get_pauli(q)` 按线路中量子比特的插入顺序对应
 `Circuit.qubits[q]`，量子比特的数值标识不作为位置。生成的线路不包含终端测量；

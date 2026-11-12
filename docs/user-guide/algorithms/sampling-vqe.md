@@ -1,12 +1,12 @@
 # 采样型变分量子本征求解器（Sampling VQE）
 
 `SamplingVQE` 用有限-shot 计算基联合采样最小化对角 Hermitian 目标。当前目标只能由
-$I$ 和 $Z$ Pauli 因子组成，因此每个比特串 $x$ 都有确定目标值 $C(x)$，一次
+<img src="../../assets/formulas/inline/inline-a83dd0ccbffe39d0.svg" alt="I" style="vertical-align: -0.000pt;"> 和 <img src="../../assets/formulas/inline/inline-bbeebd879e1dff69.svg" alt="Z" style="vertical-align: -0.000pt;"> Pauli 因子组成，因此每个比特串 <img src="../../assets/formulas/inline/inline-2d711642b726b044.svg" alt="x" style="vertical-align: -1.000pt;"> 都有确定目标值 <img src="../../assets/formulas/inline/inline-5a2552b096f278ae.svg" alt="C(x)" style="vertical-align: -4.000pt;">，一次
 全寄存器计数分布即可计算普通样本均值
 
-$$
-\widehat E=\frac{1}{N}\sum_x n_x C(x).
-$$
+<p align="center">
+  <img src="../../assets/formulas/sampling-vqe-energy.svg" alt="The sampled energy is the count-weighted average of the diagonal cost C(x).">
+</p>
 
 ## 联合采样语义
 
@@ -58,5 +58,5 @@ result = algorithm.compute_minimum_eigenvalue(
 print(result.best_measurement)
 ```
 
-该组件适合组合优化和其他计算基对角目标，不接受含 $X$ 或 $Y$ 的一般 Hamiltonian。
+该组件适合组合优化和其他计算基对角目标，不接受含 <img src="../../assets/formulas/inline/inline-4b68ab3847feda7d.svg" alt="X" style="vertical-align: -0.000pt;"> 或 <img src="../../assets/formulas/inline/inline-18f5384d58bcb1bb.svg" alt="Y" style="vertical-align: -0.000pt;"> 的一般 Hamiltonian。
 有限-shot 噪声会影响优化轨迹和最终估计，结果不保证达到全局最小值。

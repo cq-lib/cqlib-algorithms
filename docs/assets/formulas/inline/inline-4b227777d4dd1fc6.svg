@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg role="img" aria-labelledby="formula-inline-4b227777d4dd1fc6" data-formula-sha256="1d81e9714104c15fccedcff24d9bc12013d7219460b9d37b2a08a4ce4ebcab21" data-formula-depth-pt="0.000" xmlns:xlink="http://www.w3.org/1999/xlink" width="7pt" height="10pt" viewBox="0 0 7 10" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <title id="formula-inline-4b227777d4dd1fc6">4</title>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 10
+L 7 10
+L 7 0
+L 0 0
+L 0 10
+z
+" style="fill: none"/>
+  </g>
+  <g id="text_1">
+   <!-- $4$ -->
+   <g style="fill: #111827" transform="translate(0 10) scale(0.14 -0.14)">
+    <defs>
+     <path id="Cmr10-34" d="M 178 1056
+L 178 1281
+L 2156 4231
+Q 2178 4263 2222 4263
+L 2316 4263
+Q 2388 4263 2388 4191
+L 2388 1281
+L 3016 1281
+L 3016 1056
+L 2388 1056
+L 2388 428
+Q 2388 297 2575 261
+Q 2763 225 3009 225
+L 3009 0
+L 1247 0
+L 1247 225
+Q 1494 225 1681 261
+Q 1869 297 1869 428
+L 1869 1056
+L 178 1056
+z
+M 391 1281
+L 1906 1281
+L 1906 3547
+L 391 1281
+z
+" transform="scale(0.015625)"/>
+    </defs>
+    <use xlink:href="#Cmr10-34" transform="translate(0 0.390625)"/>
+   </g>
+  </g>
+ </g>
+</svg>

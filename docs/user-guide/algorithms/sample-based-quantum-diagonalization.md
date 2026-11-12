@@ -8,51 +8,46 @@ Ritz 问题”的量子—经典协同场景。已有硬件 counts 可以直接�
 
 ## 数学流程
 
-设 `state_preparation` 在 $M=2N_{\mathrm{orb}}$ 个 Jordan–Wigner 量子比特上制备
-$|\Psi\rangle$。计算基测量给出带噪声的 determinant 样本集合
+设 `state_preparation` 在 <img src="../../assets/formulas/inline/inline-1fb596ed05a06b95.svg" alt="M=2N_{\mathrm{orb}}" style="vertical-align: -3.000pt;"> 个 Jordan–Wigner 量子比特上制备
+<img src="../../assets/formulas/inline/inline-da161ad61c53f70f.svg" alt="|\Psi\rangle" style="vertical-align: -4.000pt;">。计算基测量给出带噪声的 determinant 样本集合
 
-$$
-\widetilde{\mathcal X}=\{x\mid x\sim\widetilde P_\Psi(x)\},
-\qquad x\in\{0,1\}^{M}.
-$$
+<p align="center">
+  <img src="../../assets/formulas/sqd-sampled-configurations.svg" alt="The SQD sampled configuration set contains bit strings drawn from the mitigated state distribution.">
+</p>
 
-本库电子结构采用交错自旋轨道顺序：位置 $2p$ 表示空间轨道 $p$ 的 alpha
-自旋，位置 $2p+1$ 表示 beta 自旋；Core 计数字符串按小端量子比特语义解释。
+本库电子结构采用交错自旋轨道顺序：位置 <img src="../../assets/formulas/inline/inline-a1a1a4171fba2d83.svg" alt="2p" style="vertical-align: -3.000pt;"> 表示空间轨道 <img src="../../assets/formulas/inline/inline-148de9c5a7a44d19.svg" alt="p" style="vertical-align: -3.000pt;"> 的 alpha
+自旋，位置 <img src="../../assets/formulas/inline/inline-290a91ea669c6a55.svg" alt="2p+1" style="vertical-align: -3.000pt;"> 表示 beta 自旋；Core 计数字符串按小端量子比特语义解释。
 alpha、beta 粒子数分别由偶数、奇数位置的 Hamming weight 得到。
 
 SQD 依次执行：
 
 1. 未提供 `initial_occupancies` 时，先从原始样本中后选择出满足目标
-   $(N_\alpha,N_\beta)$ 的配置，构造并求解首轮选定子空间，再按第 5 步从 Ritz 态
+   <img src="../../assets/formulas/inline/inline-07ee2dd87c5e1dc9.svg" alt="(N_\alpha,N_\beta)" style="vertical-align: -5.000pt;"> 的配置，构造并求解首轮选定子空间，再按第 5 步从 Ritz 态
    计算第一组占据数
-   $n_{p\sigma}$。这一步是论文定义的 setup round，而不是直接把原始样本频率当作
+   <img src="../../assets/formulas/inline/inline-46e4d4cb643e0955.svg" alt="n_{p\sigma}" style="vertical-align: -5.000pt;">。这一步是论文定义的 setup round，而不是直接把原始样本频率当作
    低能态占据数。若没有正确粒子扇区样本，调用方必须提供物理归一的
    `initial_occupancies`；提供后会跳过 setup round 并直接开始恢复。
 2. 对粒子数错误的每个自旋扇区翻转恰好
-   $|N_{x,\sigma}-N_\sigma|$ 个比特。候选位按当前比特与平均占据数的不一致程度赋权，
+   <img src="../../assets/formulas/inline/inline-d5ed2dc82249215a.svg" alt="|N_{x,\sigma}-N_\sigma|" style="vertical-align: -5.000pt;"> 个比特。候选位按当前比特与平均占据数的不一致程度赋权，
    因而低占据的错误 `1` 和高占据的错误 `0` 更容易被修复。正确扇区不被改变。
 3. 默认按恢复后 determinant 的经验频率无放回抽取 `num_batches` 个独立批次，每批
    至多 `samples_per_batch` 个唯一 determinant。启用 `symmetrize_spin=True` 时，改按
-   论文式 (11) 抽取约 $\sqrt{\mathtt{samples\_per\_batch}}/2$ 个完整配置，将每个配置的 alpha、
+   论文式 (11) 抽取约 <img src="../../assets/formulas/inline/inline-2b00581d4114694d.svg" alt="\sqrt{\mathtt{samples\_per\_batch}}/2" style="vertical-align: -4.000pt;"> 个完整配置，将每个配置的 alpha、
    beta 空间占据串收集到同一个集合，再取该集合与自身的笛卡尔积。这会自动加入
-   开壳层配置的自旋交换伙伴并促进总自旋守恒，但不等价于严格投影到某个 $S^2$ 本征值。
-4. 对每批 $\mathcal S^{(k)}$ 构造
+   开壳层配置的自旋交换伙伴并促进总自旋守恒，但不等价于严格投影到某个 <img src="../../assets/formulas/inline/inline-c8d0b37b4af3bfcc.svg" alt="S^2" style="vertical-align: -1.000pt;"> 本征值。
+4. 对每批 <img src="../../assets/formulas/inline/inline-2303f7138a96e14d.svg" alt="\mathcal S^{(k)}" style="vertical-align: -1.000pt;"> 构造
 
-   $$
-   H_{{\mathcal S}^{(k)}}=
-   P_{{\mathcal S}^{(k)}} H P_{{\mathcal S}^{(k)}},\qquad
-   P_{{\mathcal S}^{(k)}}=
-   \sum_{x\in{\mathcal S}^{(k)}}|x\rangle\langle x|,
-   $$
+   <p align="center">
+     <img src="../../assets/formulas/sqd-projected-hamiltonian.svg" alt="The SQD subspace Hamiltonian and its projector onto sampled configurations.">
+   </p>
 
-   并求其最低 Ritz 对 $(E^{(k)},|\psi^{(k)}\rangle)$。投影采用 Pauli 位掩码稀疏
-   作用，不生成完整 $2^M\times2^M$ Hamiltonian。
+   并求其最低 Ritz 对 <img src="../../assets/formulas/inline/inline-fe5337ac4a8a2be4.svg" alt="(E^{(k)},|\psi^{(k)}\rangle)" style="vertical-align: -4.000pt;">。投影采用 Pauli 位掩码稀疏
+   作用，不生成完整 <img src="../../assets/formulas/inline/inline-475b25de70e1d3e8.svg" alt="2^M\times2^M" style="vertical-align: -0.000pt;"> Hamiltonian。
 5. 按论文定义对所有批次等权平均新占据数：
 
-   $$
-   n_{p\sigma}=\frac{1}{K}\sum_{k=1}^{K}
-   \langle\psi^{(k)}|\hat n_{p\sigma}|\psi^{(k)}\rangle.
-   $$
+   <p align="center">
+     <img src="../../assets/formulas/sqd-orbital-occupation.svg" alt="The orbital occupation is averaged over K reconstructed SQD states.">
+   </p>
 
 6. 当相邻轮最低能量变化不超过 `energy_tolerance`，且最大轨道占据数变化不超过
    `occupancy_tolerance` 时收敛；否则继续恢复，最多执行 `max_iterations` 轮。
@@ -62,7 +57,7 @@ SQD 依次执行：
 复用与可观测性提供的扩展接口，不是论文式 (1)--(4) 所定义的必要数学步骤。它们不改变
 配置恢复、选定子空间投影和批次占据数平均的核心定义。
 
-每个 $E^{(k)}$ 都是对应选定子空间中的变分上界。增加有物理贡献的 determinant
+每个 <img src="../../assets/formulas/inline/inline-1d33f76fdc5df3f6.svg" alt="E^{(k)}" style="vertical-align: -0.000pt;"> 都是对应选定子空间中的变分上界。增加有物理贡献的 determinant
 通常会降低该上界，但有限-shot 样本、随机分批与恢复过程不保证每轮能量单调下降。
 返回的 `ground_state` 因而取所有已完成轮次中最低的 Ritz 结果。
 
@@ -190,12 +185,12 @@ result = SQD().compute_from_counts(
 
 若样本包含开壳层 determinant，该模式会把 alpha、beta 空间占据串重组为闭包子空间。
 它为 singlet/triplet 线性组合提供所需 determinant 支撑，但没有加入论文式 (12) 的
-$S^2$ 软约束，因此调用方不能仅凭该开关声称结果是严格的总自旋本征态。
+<img src="../../assets/formulas/inline/inline-c8d0b37b4af3bfcc.svg" alt="S^2" style="vertical-align: -1.000pt;"> 软约束，因此调用方不能仅凭该开关声称结果是严格的总自旋本征态。
 
 ## 适用边界与资源
 
 - 当前公开算法实现电子结构 SQD，并可选提供论文式 (11) 的自旋配置闭包；不包含式 (12)
-  的 $S^2$ 罚函数、Pauli-only 通用 SQD、轨道优化、Trim SQD、分布式调度或
+  的 <img src="../../assets/formulas/inline/inline-c8d0b37b4af3bfcc.svg" alt="S^2" style="vertical-align: -1.000pt;"> 罚函数、Pauli-only 通用 SQD、轨道优化、Trim SQD、分布式调度或
   excited-state targeting。外部求解器可以替换单批对角化，但批次调度仍由当前进程
   串行执行。
 - 内置求解器为单进程参考实现。投影组装约为“子空间维数 × Pauli 项数”，稀疏

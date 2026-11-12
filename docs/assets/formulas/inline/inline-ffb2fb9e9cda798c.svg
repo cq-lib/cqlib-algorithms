@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg role="img" aria-labelledby="formula-inline-ffb2fb9e9cda798c" data-formula-sha256="3a1f12ca2ff904d31b49c6e2af466643b37a5506c72ea383207800868758bea5" data-formula-depth-pt="0.000" xmlns:xlink="http://www.w3.org/1999/xlink" width="18pt" height="10pt" viewBox="0 0 18 10" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <title id="formula-inline-ffb2fb9e9cda798c">\pm1</title>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 10
+L 18 10
+L 18 0
+L 0 0
+L 0 10
+z
+" style="fill: none"/>
+  </g>
+  <g id="text_1">
+   <!-- $\pm1$ -->
+   <g style="fill: #111827" transform="translate(0 10) scale(0.14 -0.14)">
+    <defs>
+     <path id="Cmsy10-a7" d="M 481 0
+Q 428 0 393 37
+Q 359 75 359 128
+Q 359 175 393 215
+Q 428 256 481 256
+L 2363 256
+L 2363 2003
+L 481 2003
+Q 428 2003 393 2043
+Q 359 2084 359 2131
+Q 359 2178 393 2218
+Q 428 2259 481 2259
+L 2363 2259
+L 2363 4147
+Q 2363 4197 2400 4230
+Q 2438 4263 2491 4263
+Q 2534 4263 2576 4230
+Q 2619 4197 2619 4147
+L 2619 2259
+L 4500 2259
+Q 4547 2259 4581 2218
+Q 4616 2178 4616 2131
+Q 4616 2084 4581 2043
+Q 4547 2003 4500 2003
+L 2619 2003
+L 2619 256
+L 4500 256
+Q 4547 256 4581 215
+Q 4616 175 4616 128
+Q 4616 75 4581 37
+Q 4547 0 4500 0
+L 481 0
+z
+" transform="scale(0.015625)"/>
+     <path id="Cmr10-31" d="M 594 0
+L 594 225
+Q 1394 225 1394 428
+L 1394 3788
+Q 1063 3628 556 3628
+L 556 3853
+Q 1341 3853 1741 4263
+L 1831 4263
+Q 1853 4263 1873 4245
+Q 1894 4228 1894 4206
+L 1894 428
+Q 1894 225 2694 225
+L 2694 0
+L 594 0
+z
+" transform="scale(0.015625)"/>
+    </defs>
+    <use xlink:href="#Cmsy10-a7" transform="translate(0 0.390625)"/>
+    <use xlink:href="#Cmr10-31" transform="translate(77.685547 0.390625)"/>
+   </g>
+  </g>
+ </g>
+</svg>
