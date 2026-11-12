@@ -24,10 +24,11 @@ class FormulaEntry(TypedDict):
     placement: str
 
 
-DOCS_DIR = Path(__file__).resolve().parent
+SOURCE_DIR = Path(__file__).resolve().parent
+OUTPUT_DIR = SOURCE_DIR.parent
+DOCS_DIR = OUTPUT_DIR.parent.parent
 REPOSITORY_ROOT = DOCS_DIR.parent
-MANIFEST_PATH = DOCS_DIR / "formulas.toml"
-OUTPUT_DIR = DOCS_DIR / "assets" / "formulas"
+MANIFEST_PATH = SOURCE_DIR / "formulas.toml"
 SVG_METADATA_PATTERN = re.compile(r"\s*<metadata>.*?</metadata>", re.DOTALL)
 SVG_HASH_PATTERN = re.compile(r'data-formula-sha256="([0-9a-f]{64})"')
 SVG_DEPTH_PATTERN = re.compile(r'data-formula-depth-pt="([0-9.]+)"')

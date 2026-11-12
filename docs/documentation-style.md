@@ -159,15 +159,15 @@ Markdown 文档必须能在代码托管页面直接阅读，不依赖额外的 M
 标记，也不要使用页面会原样显示的 `$...$`、`$$...$$`、`\(...\)` 或 `\[...\]`
 分隔符。
 
-公式的可编辑源统一维护在 `docs/formulas.toml`，Markdown 通过相对路径引用生成的 SVG，
-并提供能够独立表达公式含义的 `alt` 文本。SVG 使用透明背景、统一的 TeX 数学字体和
-14 pt 基准字号。行内公式不得设置固定图片高度，以免不同公式被分别放大或压缩；生成器
-依据每个公式的真实数学基线写入垂直对齐量，使同一符号跨公式保持相同字级。不要手工
-编辑生成文件。维护公式时使用：
+公式的可编辑源统一维护在 `docs/assets/formulas/_source/formulas.toml`，Markdown 通过
+相对路径引用生成的 SVG，并提供能够独立表达公式含义的 `alt` 文本。SVG 使用透明背景、
+统一的 TeX 数学字体和 14 pt 基准字号。行内公式不得设置固定图片高度，以免不同公式被
+分别放大或压缩；生成器依据每个公式的真实数学基线写入垂直对齐量，使同一符号跨公式
+保持相同字级。不要手工编辑生成文件。维护公式时使用：
 
 ```bash
-python docs/render_formulas.py
-python docs/render_formulas.py --check
+python docs/assets/formulas/_source/render_formulas.py
+python docs/assets/formulas/_source/render_formulas.py --check
 ```
 
 生成器只写入内容发生变化的 SVG；`--check` 验证公式源、生成文件和 Markdown 引用
