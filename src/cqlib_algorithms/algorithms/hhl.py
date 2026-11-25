@@ -38,24 +38,29 @@ from __future__ import annotations
 import math
 import warnings
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from types import MappingProxyType
-from typing import final
+from typing import cast, final, overload
 
 import numpy as np
 import numpy.typing as npt
 from cqlib import Circuit
-from cqlib.circuit.gates import UnitaryGate
 from cqlib.qis import Hamiltonian, TrotterMode
 
 from .._utils.hamiltonian import snapshot_nonzero_hermitian_hamiltonian
 from .._utils.numeric import normalize_positive_integer, validate_optional_seed
 from .._utils.phase_estimation import (
+    circuit_from_unitary_matrix,
     normalize_evaluation_qubits,
     normalize_shots,
-    snapshot_static_unitary_circuit,
+    snapshot_phase_preparation,
+    validate_static_unitary_circuit,
 )
-from ..operators import AmplitudeEncoding, PhaseEstimationCircuit
+from ..operators import (
+    AmplitudeEncoding,
+    PhaseEstimationCircuit,
+    UserCircuitPreparation,
+)
 from ..operators.arithmetic import ExactReciprocal
 from ..operators.state_preparation._state_synthesis import (
     copy_complex_vector,
@@ -153,7 +158,7 @@ def _rhs_amplitudes(rhs: object) -> tuple[complex, ...]:
     if isinstance(rhs, np.ndarray):
         values: Sequence[complex] = rhs.tolist()
     elif isinstance(rhs, (str, bytes)) or not isinstance(rhs, Sequence):
-        raise TypeError("rhs must be a sequence or a Circuit")
+        raise TypeError("rhs must be a sequence or a StatePreparation")
     else:
         values = rhs
 
@@ -162,25 +167,13 @@ def _rhs_amplitudes(rhs: object) -> tuple[complex, ...]:
     return copied
 
 
-def _validate_rhs(rhs: object, *, num_qubits: int) -> None:
-    """Validate a right-hand side against the system-register width."""
+def _validate_rhs_width(rhs: Sequence[complex] | Circuit, *, num_qubits: int) -> None:
+    """Check the vector length or preparation width against the system register."""
     if isinstance(rhs, Circuit):
-        snapshot = snapshot_static_unitary_circuit(rhs, "rhs")
-        if snapshot.num_qubits != num_qubits:
+        if rhs.num_qubits != num_qubits:
             raise ValueError("rhs circuit width must equal the system width")
-        return
-
-    amplitudes = _rhs_amplitudes(rhs)
-    if len(amplitudes) != 1 << num_qubits:
+    elif len(rhs) != 1 << num_qubits:
         raise ValueError("rhs must have length 2**num_qubits")
-
-
-def _snapshot_rhs(rhs: object, *, num_qubits: int) -> tuple[complex, ...] | Circuit:
-    """Return a validated, independent snapshot of the right-hand side."""
-    _validate_rhs(rhs, num_qubits=num_qubits)
-    if isinstance(rhs, Circuit):
-        return snapshot_static_unitary_circuit(rhs, "rhs")
-    return _rhs_amplitudes(rhs)
 
 
 def _hermitian_spectrum(operator: object) -> npt.NDArray[np.float64]:
@@ -307,13 +300,7 @@ def _hermitian_unitary(operator: object, alpha: float) -> Circuit:
             (vectors * phases) @ vectors.conj().T,
             dtype=np.complex128,
         )
-        num_qubits = unitary.shape[0].bit_length() - 1
-        circuit = Circuit(num_qubits)
-        gate = UnitaryGate(_UNITARY_LABEL, num_qubits).with_matrix(unitary)
-        # Core reads a numeric gate matrix as big-endian, so the reversed
-        # target list restores little-endian basis order.
-        circuit.append_unitary_gate(gate, list(reversed(circuit.qubits)))
-        return circuit
+        return circuit_from_unitary_matrix(unitary, _UNITARY_LABEL)
     if isinstance(operator, Hamiltonian):
         snapshot = snapshot_nonzero_hermitian_hamiltonian(operator, name="operator")
         snapshot.scale(1.0 / alpha)
@@ -326,7 +313,7 @@ def _hermitian_unitary(operator: object, alpha: float) -> Circuit:
     raise TypeError("operator must be a numpy.ndarray or a Hamiltonian")
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, init=False)
 class LinearSystemProblem:
     """Semantic definition of the linear system ``A x = b``.
 
@@ -336,15 +323,15 @@ class LinearSystemProblem:
     (HHL's Hermitian positive-definiteness) are attached by the algorithm.
 
     ``operator`` is normalized to ``complex128`` and ``rhs`` is copied, so the
-    stored fields are an independent snapshot. A ``Circuit`` ``rhs`` is
-    deep-copied and validated as a fully bound static unitary circuit of width
+    stored fields are an independent snapshot. A preparation component is
+    built and validated as a fully bound static unitary circuit of width
     ``n`` preparing ``|b>`` from ``|0>``.
 
     Args:
         operator: Finite, square, non-singular operator ``A`` of dimension
             ``2**n``, or a Hamiltonian.
-        rhs: Finite, non-zero vector ``b`` of length ``2**n``, or a static
-            unitary circuit of width ``n`` preparing ``|b>``.
+        rhs: Finite nonzero vector of length ``2**n``, or a StatePreparation
+            preparing ``|b>`` on ``n`` qubits.
 
     Raises:
         TypeError: If a field has the wrong type.
@@ -354,18 +341,41 @@ class LinearSystemProblem:
     """
 
     operator: npt.NDArray[np.complex128] | Hamiltonian
-    rhs: Sequence[complex] | Circuit
+    rhs: Sequence[complex] | StatePreparation
+    _rhs_circuit: Circuit | None = field(init=False, repr=False)
 
     __hash__ = None  # type: ignore[assignment]
 
-    def __post_init__(self) -> None:
-        operator = _snapshot_operator(self.operator)
+    def __init__(
+        self,
+        operator: npt.NDArray[np.generic] | Hamiltonian,
+        rhs: Sequence[complex] | npt.NDArray[np.generic] | StatePreparation,
+    ) -> None:
+        operator = _snapshot_operator(operator)
+        stored_rhs = (
+            snapshot_phase_preparation(rhs, "rhs")
+            if isinstance(rhs, StatePreparation)
+            else _rhs_amplitudes(rhs)
+        )
+        _validate_rhs_width(stored_rhs, num_qubits=_operator_width(operator))
         object.__setattr__(self, "operator", operator)
         object.__setattr__(
             self,
             "rhs",
-            _snapshot_rhs(self.rhs, num_qubits=_operator_width(operator)),
+            UserCircuitPreparation(stored_rhs)
+            if isinstance(stored_rhs, Circuit)
+            else stored_rhs,
         )
+        object.__setattr__(
+            self,
+            "_rhs_circuit",
+            stored_rhs if isinstance(stored_rhs, Circuit) else None,
+        )
+
+    @property
+    def rhs_circuit(self) -> Circuit | None:
+        """Return the stored preparation snapshot, or None for vector input."""
+        return self._rhs_circuit
 
     @property
     def num_qubits(self) -> int:
@@ -375,7 +385,13 @@ class LinearSystemProblem:
     def validate(self) -> None:
         """Revalidate the shallowly frozen problem before execution."""
         _validate_operator(self.operator)
-        _validate_rhs(self.rhs, num_qubits=_operator_width(self.operator))
+        if isinstance(self.rhs, StatePreparation):
+            if self._rhs_circuit is None:
+                raise ValueError("rhs preparation snapshot is missing")
+            validate_static_unitary_circuit(self._rhs_circuit, "rhs")
+            _validate_rhs_width(self._rhs_circuit, num_qubits=self.num_qubits)
+        else:
+            _validate_rhs_width(self.rhs, num_qubits=self.num_qubits)
 
 
 @dataclass(frozen=True, slots=True)
@@ -388,16 +404,15 @@ class HHLComponents:
     adaptation is intrinsic to the algorithm and is not a component.
 
     Args:
-        state_preparation: State-preparation constructor used to prepare
-            ``|b>`` from a feature vector.
+        state_preparation: StatePreparation subclass whose constructor accepts
+            the right-hand-side feature vector. Used when the problem supplies a
+            vector; a supplied preparation component is used directly.
         phase_estimation: Phase-estimation class used for the forward and the
             adjoint block.
         eigenvalue_inversion: Controlled reciprocal-rotation class.
     """
 
-    state_preparation: Callable[[Sequence[complex]], StatePreparation] = (
-        AmplitudeEncoding
-    )
+    state_preparation: type[StatePreparation] = AmplitudeEncoding
     phase_estimation: type[PhaseEstimationCircuit] = PhaseEstimationCircuit
     eigenvalue_inversion: type[ExactReciprocal] = ExactReciprocal
 
@@ -651,12 +666,20 @@ def _assemble(
         num_evaluation_qubits=num_evaluation_qubits,
     )
     unitary = _hermitian_unitary(problem.operator, alpha)
-    if isinstance(problem.rhs, Circuit):
-        state_preparation = snapshot_static_unitary_circuit(problem.rhs, "rhs")
+    if isinstance(problem.rhs, StatePreparation):
+        state_preparation = problem.rhs_circuit
+        if state_preparation is None:
+            raise ValueError("rhs preparation snapshot is missing")
     else:
-        state_preparation = components.state_preparation(problem.rhs).build_circuit(
-            "rhs"
+        # The registered class accepts a vector; the base ABC leaves init unspecified.
+        preparation_constructor = cast(
+            Callable[[Sequence[complex]], StatePreparation],
+            components.state_preparation,
         )
+        state_preparation = snapshot_phase_preparation(
+            preparation_constructor(problem.rhs), "rhs"
+        )
+        _validate_rhs_width(state_preparation, num_qubits=problem.num_qubits)
     inversion = components.eigenvalue_inversion(
         num_evaluation_qubits, scaling
     ).build_circuit()
@@ -801,7 +824,25 @@ class HHL:
         bound: float | None = None,
         components: HHLComponents | None = None,
     ) -> Circuit:
-        """Build a fresh, unmeasured HHL circuit."""
+        """Build a fresh HHL circuit from a linear-system problem and operator classes.
+
+        Args:
+            problem: LinearSystemProblem containing the operator and a right-hand
+                vector or fixed StatePreparation.
+            num_evaluation_qubits: Positive phase-register width.
+            scaling: Reciprocal rotation scale in ``(0, 2**-num_evaluation_qubits]``.
+            approximation_degree: Inverse-QFT approximation used in both phase blocks.
+            bound: Optional positive spectral bound for eigenvalue encoding.
+            components: Registered operator classes, or None for the defaults.
+
+        Returns:
+            An unmeasured circuit with evaluation, system, and reciprocal-flag
+            registers in that order. Sampling and postselection are separate.
+
+        Raises:
+            TypeError: If the problem, settings, or registered classes have wrong types.
+            ValueError: If the system, bindings, spectral scaling, or widths are invalid.
+        """
         circuit, _ = _assemble(
             problem,
             num_evaluation_qubits=num_evaluation_qubits,
@@ -812,8 +853,84 @@ class HHL:
         )
         return circuit
 
-    def run(self, requests: Sequence[HHLRequest], /) -> list[HHLResult]:
-        """Execute a validated request batch with one Sampler call."""
+    @overload
+    def run(
+        self,
+        problem: LinearSystemProblem,
+        *,
+        num_evaluation_qubits: int,
+        scaling: float,
+        shots: int,
+        approximation_degree: int = 0,
+        bound: float | None = None,
+        seed: int | None = None,
+    ) -> HHLResult: ...
+
+    @overload
+    def run(self, requests: Sequence[HHLRequest], /) -> list[HHLResult]: ...
+
+    def run(
+        self,
+        problem: LinearSystemProblem | Sequence[HHLRequest],
+        *,
+        num_evaluation_qubits: int | None = None,
+        scaling: float | None = None,
+        shots: int | None = None,
+        approximation_degree: int | None = None,
+        bound: float | None = None,
+        seed: int | None = None,
+    ) -> HHLResult | list[HHLResult]:
+        """Sample one post-selected solution distribution or an ordered batch.
+
+        Args:
+            problem: Linear system or positional batch with per-request settings.
+            num_evaluation_qubits: Phase-register width for one system.
+            scaling: Reciprocal rotation scale in (0, 2**-num_evaluation_qubits].
+            shots: Total samples before post-selection.
+            approximation_degree: Small-angle QFT layers to omit in both phase blocks.
+            bound: Optional spectral bound used to encode eigenvalues.
+            seed: Optional sampler seed for the single system.
+
+        Returns:
+            Success probability and conditional basis probabilities, or a list in batch order.
+
+        Raises:
+            TypeError: If inputs or single/batch options are incompatible.
+            ValueError: If the system, spectral settings or sampler result is invalid.
+        """
+        if isinstance(problem, LinearSystemProblem):
+            if num_evaluation_qubits is None or scaling is None or shots is None:
+                raise TypeError(
+                    "a single problem requires num_evaluation_qubits, scaling and shots"
+                )
+            requests: Sequence[HHLRequest] = (
+                HHLRequest(
+                    problem,
+                    num_evaluation_qubits,
+                    scaling,
+                    shots,
+                    approximation_degree=0
+                    if approximation_degree is None
+                    else approximation_degree,
+                    bound=bound,
+                    seed=seed,
+                ),
+            )
+        else:
+            if any(
+                value is not None
+                for value in (
+                    num_evaluation_qubits,
+                    scaling,
+                    shots,
+                    approximation_degree,
+                    bound,
+                    seed,
+                )
+            ):
+                raise TypeError("batch requests specify their own HHL settings")
+            requests = problem
+
         assembled: list[tuple[HHLRequest, Circuit, float]] = []
         for request in requests:
             if not isinstance(request, HHLRequest):
@@ -849,4 +966,4 @@ class HHL:
         results: list[HHLResult] = []
         for (request, _circuit, alpha), sample in zip(assembled, sampled):
             results.append(_reduce_counts(request, alpha, sample.counts, sample.shots))
-        return results
+        return results[0] if isinstance(problem, LinearSystemProblem) else results

@@ -23,10 +23,11 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import final
+from typing import final, overload
 
 from cqlib import Circuit
 
+from .._utils.circuit import validate_bound_static_unitary_circuit
 from ..operators.composite import HadamardPhaseQuery
 from ..operators.oracle import (
     BooleanFunction,
@@ -185,10 +186,51 @@ class DeutschJozsa:
             output_mask=output_mask,
         ).build_circuit()
 
+    @overload
+    def run(
+        self, requests: Sequence[DeutschJozsaRequest], /
+    ) -> list[DeutschJozsaResult]: ...
+
+    @overload
+    def run(
+        self, query: HadamardPhaseQuery, /, *, shots: int
+    ) -> DeutschJozsaResult: ...
+
     def run(
         self,
-        requests: Sequence[DeutschJozsaRequest],
+        query: HadamardPhaseQuery | Sequence[DeutschJozsaRequest],
         /,
+        *,
+        shots: int | None = None,
+    ) -> DeutschJozsaResult | list[DeutschJozsaResult]:
+        """Sample a composed Hadamard phase query or an ordered request batch.
+
+        Args:
+            query: HadamardPhaseQuery component, or a sequence of
+                DeutschJozsaRequest objects in output order.
+            shots: Positive samples for one query component.
+
+        Returns:
+            One interpreted result for a component, or a list for a batch.
+
+        Raises:
+            TypeError: For invalid types, missing shots, or mixed invocation styles.
+            ValueError: For invalid shots, query circuits, or sampler responses.
+        """
+        if isinstance(query, HadamardPhaseQuery):
+            if shots is None:
+                raise TypeError("single query requires shots")
+            request = DeutschJozsaRequest(query.function, shots, query.output_mask)
+            return self._run_batch([request], query=query)[0]
+        if shots is not None:
+            raise TypeError("batch requests cannot be combined with shots")
+        return self._run_batch(query)
+
+    def _run_batch(
+        self,
+        requests: Sequence[DeutschJozsaRequest],
+        *,
+        query: HadamardPhaseQuery | None = None,
     ) -> list[DeutschJozsaResult]:
         """Evaluate a complete batch in input order with one Sampler call."""
         sampler_requests: list[SamplerRequest] = []
@@ -196,9 +238,19 @@ class DeutschJozsa:
             if not isinstance(request, DeutschJozsaRequest):
                 raise TypeError("requests must contain DeutschJozsaRequest instances")
             request.validate()
-            circuit = self.build_circuit(
-                request.function, output_mask=request.output_mask
+            circuit = (
+                query.build_circuit()
+                if query is not None
+                else self.build_circuit(
+                    request.function, output_mask=request.output_mask
+                )
             )
+            if query is not None:
+                if not isinstance(circuit, Circuit):
+                    raise TypeError("query component must build a Circuit")
+                if circuit.num_qubits != request.function.num_variables:
+                    raise ValueError("query circuit width must match the function")
+                validate_bound_static_unitary_circuit(circuit, "query circuit")
             sampler_requests.append(
                 SamplerRequest(circuit, tuple(circuit.qubits), request.shots)
             )

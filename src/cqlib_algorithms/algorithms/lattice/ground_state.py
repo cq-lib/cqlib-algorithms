@@ -295,7 +295,7 @@ class LatticeGroundState:
         """Return the ansatz parameter prefix."""
         return self._prefix
 
-    def compute(
+    def run(
         self,
         system: LatticeSystem,
         initial_point: Mapping[str, float] | None = None,
@@ -363,7 +363,7 @@ class LatticeGroundState:
             selected_ansatz,
             self._optimizer,
             prefix=self._prefix,
-        ).compute_minimum_eigenvalue(
+        ).run(
             hamiltonian,
             point,
             shots=shots,
@@ -399,6 +399,26 @@ class LatticeGroundState:
                 correlation_keys,
             )
         return LatticeGroundStateResult(system, vqe_result, measurements)
+
+    def compute(
+        self,
+        system: LatticeSystem,
+        initial_point: Mapping[str, float] | None = None,
+        *,
+        configuration: LatticeConfiguration | None = None,
+        ansatz: Ansatz | None = None,
+        reps: int = 1,
+        shots: int | None = None,
+    ) -> LatticeGroundStateResult:
+        """Solve the ground state with the same inputs and result as :meth:`run`."""
+        return self.run(
+            system,
+            initial_point,
+            configuration=configuration,
+            ansatz=ansatz,
+            reps=reps,
+            shots=shots,
+        )
 
 
 __all__ = ["LatticeGroundState"]

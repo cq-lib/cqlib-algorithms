@@ -51,15 +51,17 @@ from cqlib_algorithms.operators import (
 algorithm = AdaptVQE(
     StatevectorEstimator(),
     LBFGSBOptimizer(),
-    [PauliString.from_str("Y")],
+    [PauliString.from_str("Z"), PauliString.from_str("Y")],
     initial_state=UniformSuperposition(1),
     gradient_threshold=1e-7,
 )
-result = algorithm.compute_minimum_eigenvalue(PauliString.from_str("Z"))
+result = algorithm.run(PauliString.from_str("Z"), seed=7)
 
 assert abs(result.eigenvalue + 1.0) < 1e-8
-assert result.selected_operator_indices == (0,)
+assert result.selected_operator_indices == (1,)
 ```
+
+在该例中，池中的 Z 与目标 Z 对易，梯度为零。算法选择索引 1 的 Y，并用 VQE 优化其旋转角。`compute_minimum_eigenvalue(...)` 与 `run(...)` 使用相同的输入和结果类型。
 
 有限-shot 梯度是统计估计。使用 `shots` 时可通过 `seed` 指定整个运行的主种子；算法
 会为参考能量、梯度和内部优化请求派生独立子种子。相同主种子、相同优化调用轨迹以及

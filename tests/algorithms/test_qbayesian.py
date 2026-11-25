@@ -29,7 +29,11 @@ from cqlib_algorithms.algorithms.machine_learning.qbayesian import (
     QBayesianStatus,
 )
 from cqlib_algorithms.operators.sampler import StatevectorSampler
-from cqlib_algorithms.operators.state_preparation import ArbitraryStatePreparation
+from cqlib_algorithms.operators.state_preparation import (
+    AmplitudeEncoding,
+    ArbitraryStatePreparation,
+    UserCircuitPreparation,
+)
 from cqlib_algorithms.protocols import Sampler
 
 
@@ -55,10 +59,49 @@ class ScriptedSampler(Sampler):
 
 def model(sampler=None, circuit=None):
     return QBayesian(
-        Circuit(2) if circuit is None else circuit,
+        UserCircuitPreparation(Circuit(2) if circuit is None else circuit),
         {"q": 0, "e": 1},
         ScriptedSampler([]) if sampler is None else sampler,
     )
+
+
+@pytest.mark.reference
+def test_component_run_and_infer_have_same_posterior():
+    preparation = AmplitudeEncoding([3, 0, 0, 1])
+    rounds = [{"00": 9, "11": 1}, {"00": 3, "11": 7}]
+    variables = {"a": 0, "b": 1}
+    algorithm = QBayesian(preparation, variables, ScriptedSampler(rounds))
+    inference = QBayesian(preparation, variables, ScriptedSampler(rounds))
+    actual, previous = (
+        infer(
+            ["b"],
+            {"a": 1},
+            target_accepted=7,
+            shots_per_round=10,
+            amplification_powers=(0, 1),
+        )
+        for infer in (algorithm.run, inference.infer)
+    )
+    assert actual == previous
+    assert actual.probabilities == {(1,): 1.0}
+    assert [row.accepted for row in actual.rounds] == [1, 7]
+    for power in (0, 1, 2):
+        state = algorithm.build_circuit({"a": 1}, grover_power=power).to_matrix()[:, 0]
+        expected = math.sin((2 * power + 1) * math.asin(math.sqrt(0.1))) ** 2
+        np.testing.assert_allclose(abs(state[[1, 3]]) ** 2, [0, expected], atol=1e-12)
+
+
+def test_compact_evidence_does_not_enumerate_free_qubits(monkeypatch):
+    from cqlib_algorithms.operators import BitPatternPhaseOracle, UniformSuperposition
+
+    def forbid_enumeration(_):
+        pytest.fail("amplification only needs the phase-marking circuit")
+
+    monkeypatch.setattr(
+        BitPatternPhaseOracle, "marked_states", property(forbid_enumeration)
+    )
+    model = QBayesian(UniformSuperposition(32), {"q": 0, "e": 31}, ScriptedSampler([]))
+    assert model.build_circuit({"e": 0}, grover_power=1).num_qubits == 32
 
 
 @pytest.mark.reference
@@ -67,7 +110,9 @@ def test_one_qubit_amplification_matches_independent_full_matrix(power):
     angle = math.pi / 3
     preparation = Circuit(1)
     preparation.ry(0, angle)
-    algorithm = QBayesian(preparation, {"x": 0}, ScriptedSampler([]))
+    algorithm = QBayesian(
+        UserCircuitPreparation(preparation), {"x": 0}, ScriptedSampler([])
+    )
     a = np.array(
         [
             [math.cos(angle / 2), -math.sin(angle / 2)],
@@ -93,7 +138,9 @@ def test_complex_joint_conjunction_hidden_marginal_and_noncontiguous_positions(p
     synthesized = ArbitraryStatePreparation(psi.tolist()).build_circuit("")
     original = Circuit([7, 2, 11, 4])
     original.compose(synthesized, original.qubits)
-    algorithm = QBayesian(original, {"a": 0, "b": 1, "c": 3}, ScriptedSampler([]))
+    algorithm = QBayesian(
+        UserCircuitPreparation(original), {"a": 0, "b": 1, "c": 3}, ScriptedSampler([])
+    )
     good = np.array([bool(index & 2) and not bool(index & 8) for index in range(16)])
     oracle = np.diag(np.where(good, -1, 1))
     reflection = 2 * np.outer(psi, psi.conj()) - np.eye(16)
@@ -113,7 +160,11 @@ def test_complex_joint_conjunction_hidden_marginal_and_noncontiguous_positions(p
 
 def test_decode_query_order_evidence_overlap_and_unmeasured_hidden_qubit():
     sampler = ScriptedSampler([{"001": 2, "011": 3, "101": 4, "111": 1}])
-    algorithm = QBayesian(Circuit([7, 2, 11, 4]), {"a": 0, "b": 1, "c": 3}, sampler)
+    algorithm = QBayesian(
+        UserCircuitPreparation(Circuit([7, 2, 11, 4])),
+        {"a": 0, "b": 1, "c": 3},
+        sampler,
+    )
     result = algorithm.infer(
         ["c", "a", "b"],
         {"b": 1, "c": 0},
@@ -297,7 +348,7 @@ def test_invalid_queries_and_evidence_do_not_execute(query, evidence):
 )
 def test_invalid_variable_mapping(mapping):
     with pytest.raises((TypeError, ValueError)):
-        QBayesian(Circuit(2), mapping, ScriptedSampler([]))
+        QBayesian(UserCircuitPreparation(Circuit(2)), mapping, ScriptedSampler([]))
 
 
 @pytest.mark.parametrize("kind", ["symbol", "measure", "reset", "delay", "nested"])
@@ -316,14 +367,14 @@ def test_invalid_static_preparation_envelope(kind):
         inner.measure(0)
         circuit.compose(inner, circuit.qubits)
     with pytest.raises(ValueError):
-        QBayesian(circuit, {"q": 0}, ScriptedSampler([]))
+        QBayesian(UserCircuitPreparation(circuit), {"q": 0}, ScriptedSampler([]))
 
 
 def test_snapshot_mutation_isolation_and_barriers():
     source = Circuit(2)
     source.barrier([0, 1])
     mapping = {"q": 0, "e": 1}
-    algorithm = QBayesian(source, mapping, ScriptedSampler([]))
+    algorithm = QBayesian(UserCircuitPreparation(source), mapping, ScriptedSampler([]))
     source.x(0)
     mapping["q"] = 1
     exposed = algorithm.state_preparation

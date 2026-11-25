@@ -274,7 +274,7 @@ class VarQRTE:
         """The ansatz parameter-name prefix."""
         return self._prefix
 
-    def evolve(
+    def run(
         self,
         hamiltonian: Hamiltonian | PauliString,
         initial_parameters: Mapping[str, float],
@@ -285,10 +285,10 @@ class VarQRTE:
         auxiliary_operators: Mapping[str, Hamiltonian | PauliString] | None = None,
         seed: int | None = None,
     ) -> VarQRTEResult:
-        """Evolve a time-independent Hamiltonian over equal positive steps.
+        """Evolve the ansatz in real time on a uniform time grid.
 
         Args:
-            hamiltonian: Finite Hermitian Hamiltonian, including the zero
+            hamiltonian: Finite time-independent Hermitian operator, including the zero
                 Hamiltonian for a stationary trajectory.
             initial_parameters: Exact finite bindings for active ansatz symbols.
             time: Positive total real time.
@@ -300,7 +300,8 @@ class VarQRTE:
             seed: Optional master seed for trajectory-observation requests.
 
         Returns:
-            The parameter, energy, circuit, and auxiliary-observable trajectory.
+            Time, parameter, energy and observable histories, and the final
+            bound ansatz circuit.
 
         Raises:
             TypeError: If an input or component response has the wrong type.
@@ -399,4 +400,26 @@ class VarQRTE:
             energies,
             circuit_history[-1],
             observables,
+        )
+
+    def evolve(
+        self,
+        hamiltonian: Hamiltonian | PauliString,
+        initial_parameters: Mapping[str, float],
+        time: float,
+        *,
+        num_timesteps: int,
+        observable_shots: int | None = None,
+        auxiliary_operators: Mapping[str, Hamiltonian | PauliString] | None = None,
+        seed: int | None = None,
+    ) -> VarQRTEResult:
+        """Evolve with the same inputs and trajectory semantics as :meth:`run`."""
+        return self.run(
+            hamiltonian,
+            initial_parameters,
+            time,
+            num_timesteps=num_timesteps,
+            observable_shots=observable_shots,
+            auxiliary_operators=auxiliary_operators,
+            seed=seed,
         )

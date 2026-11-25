@@ -32,7 +32,40 @@
 - 函数旋转类均把控制寄存器解释为无符号小端整数。角度编码与振幅编码不是同一合同：
   振幅模式会把函数值转换为 <img src="../../assets/formulas/inline/inline-9c4cc7cf87d630fa.svg" alt="2\arcsin(f(x))" style="vertical-align: -4.000pt;">，并要求值位于 <img src="../../assets/formulas/inline/inline-471610700dbccc74.svg" alt="[-1,1]" style="vertical-align: -4.000pt;">。
 
-## 使用示例
+## 接入算法
+
+算术组件通过 `build_circuit()` 提供可逆运算线路，可交给相位估计、酉重叠或自定义调度。
+用于制备初态时，使用 `UserCircuitPreparation(circuit)` 明确表达状态制备角色，再交给
+算法、保真度或测量规划。输入位、结果位、进位和辅助位均保留，局部布局沿用各算子的公开属性。
+
+下面把单比特加一算子作为相位估计目标。它等价于 X，负叠加态的本征值为 -1，因此
+相位为 `0.5`。待估计目标是加法器线路，初态直接使用状态制备组件：
+
+```python
+import math
+from cqlib_algorithms import PhaseEstimation, PhaseEstimationProblem
+from cqlib_algorithms.operators import (
+    ArbitraryStatePreparation,
+    StatevectorSampler,
+)
+from cqlib_algorithms.operators.arithmetic import DraperConstantAdder
+
+unitary = DraperConstantAdder(1, 1).build_circuit()
+initial = ArbitraryStatePreparation([1 / math.sqrt(2), -1 / math.sqrt(2)])
+problem = PhaseEstimationProblem(unitary, initial)
+result = PhaseEstimation(StatevectorSampler()).run(
+    problem,
+    num_evaluation_qubits=2,
+    shots=64,
+)
+print(result.phase)  # 0.5
+```
+
+相位估计针对完整酉的本征相位，保真度针对完整酉作用于全零态后制备的纯态。输入、标志
+及辅助位的准备条件仍遵循各算术组件的约定。`UserCircuitPreparation.from_component`
+用于固定已有状态制备或拟设组件的参数；自定义算术制备线路使用原构造函数包装。
+
+## 检查算术线路与布局
 
 ```python
 from cqlib_algorithms.operators.arithmetic import (

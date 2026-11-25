@@ -22,10 +22,11 @@ References
 from __future__ import annotations
 
 import math
-from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, field
+from collections.abc import Iterable, Mapping, Sequence
+from copy import deepcopy
+from dataclasses import dataclass
 from numbers import Real
-from typing import final
+from typing import final, overload
 
 from cqlib import Circuit
 from cqlib.circuit import CircuitError
@@ -33,13 +34,16 @@ from cqlib.circuit import CircuitError
 from ..._utils.circuit import (
     validate_static_unitary_structure,
 )
-from ..._utils.parameters import snapshot_parameter_bindings
+from ..._utils.parameters import snapshot_parameter_bindings, validate_parameter_prefix
+from ..._utils.state_preparation import build_component_circuit
+from ...protocols.ansatz import Ansatz
 from ...protocols.sampler import (
     Sampler,
     SamplerRequest,
     require_sampler_results,
 )
 from ...protocols.state_fidelity import StateFidelity
+from ...protocols.state_preparation import StatePreparation
 
 
 def _validate_exact_bindings(
@@ -87,7 +91,7 @@ def _bound_circuit_and_inverse(
     return bound, inverse
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, init=False)
 class CircuitFidelityRequest:
     """Request the squared overlap of two pure states prepared by circuits.
 
@@ -97,18 +101,22 @@ class CircuitFidelityRequest:
     operations. Each binding mapping must cover exactly the corresponding
     circuit's currently used symbols.
 
-    The dataclass is only shallowly frozen: Core circuits remain mutable.
-    Callers must not modify them during the request lifetime, and execution
-    revalidates all detectable invariants immediately before use. Parameter
-    bindings are defensively copied into immutable mappings.
+    Components are built once and their circuits are independently copied.
+    Existing Circuit inputs retain reference semantics and must remain unchanged
+    during the request lifetime. Execution revalidates both circuits. Bindings
+    are copied into separate immutable mappings, even when symbol names overlap.
+    All preparation qubits, including any ancillas, participate in the comparison.
 
     Args:
-        circuit_a: Circuit preparing the first pure state.
-        circuit_b: Circuit preparing the second pure state.
+        circuit_a: Preparation, ansatz, or circuit preparing the first state from zero.
+        circuit_b: Preparation, ansatz, or circuit preparing the second state from zero.
         shots: Positive number of compute-uncompute samples.
         parameter_bindings_a: Exact finite bindings for ``circuit_a``.
         parameter_bindings_b: Exact finite bindings for ``circuit_b``.
         seed: Non-negative sampler seed, or ``None`` for fresh randomness.
+        prefix_a: Symbol prefix used to build the first component.
+        prefix_b: Symbol prefix used to build the second component.
+            Both prefixes leave existing Circuit symbols unchanged.
 
     Raises:
         TypeError: If an argument has the wrong type.
@@ -119,18 +127,43 @@ class CircuitFidelityRequest:
     circuit_a: Circuit
     circuit_b: Circuit
     shots: int
-    parameter_bindings_a: Mapping[str, float] = field(default_factory=dict)
-    parameter_bindings_b: Mapping[str, float] = field(default_factory=dict)
+    parameter_bindings_a: Mapping[str, float]
+    parameter_bindings_b: Mapping[str, float]
     seed: int | None = None
 
     __hash__ = None  # type: ignore[assignment]
 
-    def __post_init__(self) -> None:
+    def __init__(
+        self,
+        circuit_a: StatePreparation | Ansatz | Circuit,
+        circuit_b: StatePreparation | Ansatz | Circuit,
+        shots: int,
+        parameter_bindings_a: Mapping[str, float] | None = None,
+        parameter_bindings_b: Mapping[str, float] | None = None,
+        seed: int | None = None,
+        *,
+        prefix_a: str = "a",
+        prefix_b: str = "b",
+    ) -> None:
+        validate_parameter_prefix(prefix_a)
+        validate_parameter_prefix(prefix_b)
+        if not isinstance(circuit_a, (StatePreparation, Ansatz, Circuit)):
+            raise TypeError("circuit_a must be a StatePreparation, Ansatz, or Circuit")
+        if not isinstance(circuit_b, (StatePreparation, Ansatz, Circuit)):
+            raise TypeError("circuit_b must be a StatePreparation, Ansatz, or Circuit")
+        if not isinstance(circuit_a, Circuit):
+            circuit_a = deepcopy(build_component_circuit(circuit_a, prefix=prefix_a))
+        if not isinstance(circuit_b, Circuit):
+            circuit_b = deepcopy(build_component_circuit(circuit_b, prefix=prefix_b))
+        object.__setattr__(self, "circuit_a", circuit_a)
+        object.__setattr__(self, "circuit_b", circuit_b)
+        object.__setattr__(self, "shots", shots)
+        object.__setattr__(self, "seed", seed)
         object.__setattr__(
             self,
             "parameter_bindings_a",
             snapshot_parameter_bindings(
-                self.parameter_bindings_a,
+                {} if parameter_bindings_a is None else parameter_bindings_a,
                 name="parameter bindings",
             ),
         )
@@ -138,7 +171,7 @@ class CircuitFidelityRequest:
             self,
             "parameter_bindings_b",
             snapshot_parameter_bindings(
-                self.parameter_bindings_b,
+                {} if parameter_bindings_b is None else parameter_bindings_b,
                 name="parameter bindings",
             ),
         )
@@ -264,7 +297,97 @@ class ComputeUncomputeFidelity(
             raise TypeError("sampler must be a Sampler instance")
         self._sampler = sampler
 
+    @overload
     def run(
+        self,
+        requests: Sequence[CircuitFidelityRequest],
+        /,
+    ) -> list[CircuitFidelityResult]: ...
+
+    @overload
+    def run(
+        self,
+        requests: StatePreparation | Ansatz | Circuit,
+        state_b: StatePreparation | Ansatz | Circuit,
+        /,
+        *,
+        shots: int,
+        parameter_bindings_a: Mapping[str, float] | None = None,
+        parameter_bindings_b: Mapping[str, float] | None = None,
+        seed: int | None = None,
+        prefix_a: str = "a",
+        prefix_b: str = "b",
+    ) -> CircuitFidelityResult: ...
+
+    def run(
+        self,
+        requests: Sequence[CircuitFidelityRequest]
+        | StatePreparation
+        | Ansatz
+        | Circuit,
+        state_b: StatePreparation | Ansatz | Circuit | None = None,
+        /,
+        *,
+        shots: int | None = None,
+        parameter_bindings_a: Mapping[str, float] | None = None,
+        parameter_bindings_b: Mapping[str, float] | None = None,
+        seed: int | None = None,
+        prefix_a: str = "a",
+        prefix_b: str = "b",
+    ) -> CircuitFidelityResult | list[CircuitFidelityResult]:
+        """Estimate one pair of components or an ordered request batch.
+
+        Args:
+            requests: First preparation, ansatz, circuit, or an ordered request batch.
+            state_b: Second preparation, ansatz, or circuit preparing a state from zero.
+            shots: Required sample count for a single comparison.
+            parameter_bindings_a: Exact bindings for the first component's symbols.
+            parameter_bindings_b: Exact bindings for the second component's symbols.
+                None uses an empty mapping on either side and requires no active symbols.
+            seed: Optional single-comparison sampler seed.
+            prefix_a: First component's symbol prefix.
+            prefix_b: Second component's symbol prefix.
+
+        Returns:
+            One result for a component pair, or an ordered list for a batch.
+
+        Raises:
+            TypeError: If component or request types are invalid.
+            ValueError: If inputs are incompatible or single and batch options mix.
+        """
+        if isinstance(requests, (StatePreparation, Ansatz, Circuit)):
+            if state_b is None or shots is None:
+                raise ValueError(
+                    "a single fidelity comparison requires state_b and shots"
+                )
+            request = CircuitFidelityRequest(
+                requests,
+                state_b,
+                shots,
+                parameter_bindings_a,
+                parameter_bindings_b,
+                seed,
+                prefix_a=prefix_a,
+                prefix_b=prefix_b,
+            )
+            return self._run_batch([request])[0]
+        if not isinstance(requests, Iterable):
+            raise TypeError(
+                "requests must be a StatePreparation, Ansatz, Circuit, or request batch"
+            )
+        if (
+            state_b is not None
+            or shots is not None
+            or parameter_bindings_a is not None
+            or parameter_bindings_b is not None
+            or seed is not None
+            or prefix_a != "a"
+            or prefix_b != "b"
+        ):
+            raise ValueError("batch requests own their fidelity execution options")
+        return self._run_batch(requests)
+
+    def _run_batch(
         self,
         requests: Sequence[CircuitFidelityRequest],
         /,

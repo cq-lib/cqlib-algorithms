@@ -25,21 +25,23 @@ from __future__ import annotations
 import copy
 import math
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from numbers import Real
-from typing import ClassVar
+from typing import ClassVar, overload
 
 from cqlib import Circuit
 from cqlib.qis import Hamiltonian, Pauli, PauliString
 
 from .._utils.circuit import validate_unitary_state_preparation
 from .._utils.numeric import validate_optional_positive_integer
-from ..operators.state_preparation import GHZStatePreparation
+from .._utils.state_preparation import build_state_preparation_circuit
+from ..operators.state_preparation import GHZStatePreparation, UserCircuitPreparation
 from ..protocols.estimator import (
     Estimator,
     EstimatorRequest,
     require_estimator_results,
 )
+from ..protocols.state_preparation import StatePreparation
 
 _COEFFICIENT_TOLERANCE = 1e-15
 
@@ -83,7 +85,7 @@ def _normalize_pair(values: tuple[float, float], name: str) -> tuple[float, floa
     return (float(values[0]), float(values[1]))
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, init=False)
 class CHSHRequest:
     """A CHSH evaluation request.
 
@@ -92,12 +94,15 @@ class CHSHRequest:
     ``shots=None`` requests exact estimation; a positive value delegates
     finite-shot evaluation to the injected estimator.
 
-    The request is shallowly frozen. A caller-owned preparation circuit must
-    not be modified during the request lifetime, and :class:`CHSH` revalidates
-    it immediately before execution.
+    A StatePreparation is built once with prefix ``"chsh"``. The request
+    stores a fixed preparation component and an independent ``preparation_circuit``
+    snapshot; ``None`` selects the Bell preparation during execution.
+    The request is shallowly frozen: its stored circuit must remain unchanged
+    during its lifetime and is revalidated immediately before execution.
 
     Args:
-        state_preparation: Fixed two-qubit preparation, or ``None`` for Bell state.
+        state_preparation: Fixed two-qubit preparation component,
+            or ``None`` for the Bell state.
         alice_angles: Alice's two XZ-plane measurement angles.
         bob_angles: Bob's two XZ-plane measurement angles.
         shots: Samples per correlator, or ``None`` for exact estimation.
@@ -108,33 +113,61 @@ class CHSHRequest:
         ValueError: If circuit, angles, shots, or tolerance are invalid.
     """
 
-    state_preparation: Circuit | None = None
+    state_preparation: StatePreparation | None = None
     alice_angles: tuple[float, float] = (0.0, math.pi / 2.0)
     bob_angles: tuple[float, float] = (math.pi / 4.0, -math.pi / 4.0)
     shots: int | None = None
     tolerance: float = 1e-12
+    _preparation_circuit: Circuit | None = field(init=False, repr=False)
 
     __hash__ = None  # type: ignore[assignment]
 
-    def __post_init__(self) -> None:
+    def __init__(
+        self,
+        state_preparation: StatePreparation | None = None,
+        alice_angles: tuple[float, float] = (0.0, math.pi / 2.0),
+        bob_angles: tuple[float, float] = (math.pi / 4.0, -math.pi / 4.0),
+        shots: int | None = None,
+        tolerance: float = 1e-12,
+    ) -> None:
         object.__setattr__(
             self,
             "alice_angles",
-            _normalize_pair(self.alice_angles, "alice_angles"),
+            _normalize_pair(alice_angles, "alice_angles"),
         )
         object.__setattr__(
             self,
             "bob_angles",
-            _normalize_pair(self.bob_angles, "bob_angles"),
+            _normalize_pair(bob_angles, "bob_angles"),
         )
-        validate_optional_positive_integer(self.shots, "shots")
-        _validate_tolerance(self.tolerance)
-        object.__setattr__(self, "tolerance", float(self.tolerance))
-        _validate_state_preparation(self.state_preparation)
+        validate_optional_positive_integer(shots, "shots")
+        _validate_tolerance(tolerance)
+        preparation = (
+            None
+            if state_preparation is None
+            else copy.deepcopy(
+                build_state_preparation_circuit(state_preparation, prefix="chsh")
+            )
+        )
+        _validate_state_preparation(preparation)
+        component = None if preparation is None else UserCircuitPreparation(preparation)
+        object.__setattr__(self, "state_preparation", component)
+        object.__setattr__(
+            self,
+            "_preparation_circuit",
+            None if component is None else component.build_circuit("chsh"),
+        )
+        object.__setattr__(self, "shots", shots)
+        object.__setattr__(self, "tolerance", float(tolerance))
+
+    @property
+    def preparation_circuit(self) -> Circuit | None:
+        """Return the stored preparation snapshot, which must remain unchanged."""
+        return self._preparation_circuit
 
     def validate(self) -> None:
         """Revalidate this request and its mutable Core circuit."""
-        _validate_state_preparation(self.state_preparation)
+        _validate_state_preparation(self.preparation_circuit)
         _validate_angles(self.alice_angles, "alice_angles")
         _validate_angles(self.bob_angles, "bob_angles")
         validate_optional_positive_integer(self.shots, "shots")
@@ -329,8 +362,32 @@ class CHSH:
         """Return the injected estimator."""
         return self._estimator
 
-    def build_circuit(self, state_preparation: Circuit | None = None) -> Circuit:
-        """Return an independent, fixed two-qubit preparation circuit."""
+    def build_circuit(
+        self, state_preparation: StatePreparation | None = None
+    ) -> Circuit:
+        """Return an independent, fixed two-qubit preparation circuit.
+
+        Args:
+            state_preparation: Fully bound StatePreparation, built with prefix
+                ``"chsh"``, or ``None`` to prepare the Bell state.
+
+        Returns:
+            An unmeasured circuit with Alice at position zero and Bob at position one.
+
+        Raises:
+            TypeError: If the input is not a StatePreparation or None.
+            ValueError: If the preparation is invalid, parameterized, or not two-qubit.
+        """
+        preparation = (
+            None
+            if state_preparation is None
+            else build_state_preparation_circuit(state_preparation, prefix="chsh")
+        )
+        return self._build_from_snapshot(preparation)
+
+    @staticmethod
+    def _build_from_snapshot(state_preparation: Circuit | None) -> Circuit:
+        """Normalize a validated stored preparation for expectation evaluation."""
         _validate_state_preparation(state_preparation)
         if state_preparation is None:
             return GHZStatePreparation(2).build_circuit("chsh")
@@ -341,7 +398,69 @@ class CHSH:
         circuit.validate()
         return circuit
 
-    def run(self, requests: Sequence[CHSHRequest], /) -> list[CHSHResult]:
+    @overload
+    def run(self, requests: Sequence[CHSHRequest], /) -> list[CHSHResult]: ...
+
+    @overload
+    def run(
+        self,
+        state_preparation: StatePreparation | None = None,
+        *,
+        alice_angles: tuple[float, float] = (0.0, math.pi / 2),
+        bob_angles: tuple[float, float] = (math.pi / 4, -math.pi / 4),
+        shots: int | None = None,
+        tolerance: float = 1e-12,
+    ) -> CHSHResult: ...
+
+    def run(
+        self,
+        state_preparation: StatePreparation | Sequence[CHSHRequest] | None = None,
+        *,
+        alice_angles: tuple[float, float] | None = None,
+        bob_angles: tuple[float, float] | None = None,
+        shots: int | None = None,
+        tolerance: float | None = None,
+    ) -> CHSHResult | list[CHSHResult]:
+        """Evaluate one preparation or an ordered request batch.
+
+        Args:
+            state_preparation: Two-qubit preparation component,
+                ``None`` for the Bell state, or an existing request batch.
+            alice_angles: Alice's two XZ-plane measurement angles, defaulting
+                to zero and pi/2 for a single task.
+            bob_angles: Bob's two angles, defaulting to pi/4 and -pi/4.
+            shots: Samples per correlator, or ``None`` for exact estimation.
+            tolerance: Numeric comparison margin, defaulting to 1e-12.
+
+        Returns:
+            One witness result, or a list in the original batch order.
+
+        Raises:
+            TypeError: If input types are invalid or batch and single-task options are mixed.
+            ValueError: If preparation, measurement, or estimator contracts are invalid.
+        """
+        if isinstance(state_preparation, Circuit):
+            raise TypeError(
+                "state_preparation must be a StatePreparation or request batch"
+            )
+        if state_preparation is None or isinstance(state_preparation, StatePreparation):
+            request = CHSHRequest(
+                state_preparation,
+                (0.0, math.pi / 2) if alice_angles is None else alice_angles,
+                (math.pi / 4, -math.pi / 4) if bob_angles is None else bob_angles,
+                shots,
+                1e-12 if tolerance is None else tolerance,
+            )
+            return self._run_batch([request])[0]
+        if any(
+            value is not None for value in (alice_angles, bob_angles, shots, tolerance)
+        ):
+            raise TypeError(
+                "batch requests cannot be combined with single-task options"
+            )
+        return self._run_batch(state_preparation)
+
+    def _run_batch(self, requests: Sequence[CHSHRequest]) -> list[CHSHResult]:
         """Evaluate all requests in one flattened estimator call."""
         estimator_requests: list[EstimatorRequest] = []
         validated_requests: list[CHSHRequest] = []
@@ -349,7 +468,7 @@ class CHSH:
             if not isinstance(request, CHSHRequest):
                 raise TypeError("requests must contain CHSHRequest instances")
             request.validate()
-            circuit = self.build_circuit(request.state_preparation)
+            circuit = self._build_from_snapshot(request.preparation_circuit)
             observables = (
                 _product_observable(request.alice_angles[0], request.bob_angles[0]),
                 _product_observable(request.alice_angles[0], request.bob_angles[1]),

@@ -28,13 +28,14 @@ from cqlib_algorithms.algorithms.machine_learning.pegasos_qsvc import (
     _norm_squared,
 )
 from cqlib_algorithms.operators.quantum_kernel import FidelityQuantumKernel
+from cqlib_algorithms.operators.state_preparation import UserCircuitPreparation
 from cqlib_algorithms.protocols.sampler import Sampler
 
 
 def kernel(**kwargs):
     circuit = Circuit(1)
     circuit.ry(0, Parameter("x"))
-    return FidelityQuantumKernel(circuit, ["x"], **kwargs)
+    return FidelityQuantumKernel(UserCircuitPreparation(circuit), ["x"], **kwargs)
 
 
 def features(X):
@@ -108,7 +109,7 @@ class MatrixKernel(FidelityQuantumKernel):
     def __init__(self, matrix):
         circuit = Circuit(1)
         circuit.ry(0, Parameter("x"))
-        super().__init__(circuit, ["x"])
+        super().__init__(UserCircuitPreparation(circuit), ["x"])
         self.matrix = np.array(matrix)
         self.cross = None
 

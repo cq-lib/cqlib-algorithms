@@ -65,6 +65,8 @@ from ...protocols import (
     SamplerRequest,
     spawn_seeds,
 )
+from ...protocols.state_preparation import StatePreparation
+from .._circuits import bind_request_circuit, build_estimator_request
 from ..core import QemExecutor
 from ..inference import ConvergenceWarning
 
@@ -265,7 +267,7 @@ def mitigate_counts(
 
 
 def execute_with_rem(
-    circuit: Circuit,
+    circuit: StatePreparation | Circuit,
     executor: QemExecutor,
     observable: Hamiltonian | PauliString,
     /,
@@ -276,18 +278,16 @@ def execute_with_rem(
     p1: float = 0.01,
     post_select: bool = False,
     seed: int | None = None,
+    parameter_bindings: Mapping[str, float] | None = None,
+    prefix: str = "qem",
 ) -> float:
     r"""Estimate one observable on ``circuit`` with readout-error mitigation.
 
-    This is the immediate form of :func:`rem_executor`::
-
-        execute_with_rem(c, ex, obs, shots=s)
-        == rem_executor(ex, shots=s).estimate(
-               [EstimatorRequest(c, obs, shots=s)]
-           )[0].expectation
+    This is the immediate form of :func:`rem_executor`. The same task
+    can be evaluated by calling ``run()`` on that executor.
 
     Args:
-        circuit: Circuit whose expectation value is to be mitigated.
+        circuit: State-preparation component or circuit to evaluate.
         executor: Execution backend supplying the sampling surface.
         observable: Observable to estimate. It must be diagonal in the :math:`Z` basis,
             that is, a sum of :math:`Z` and identity products.
@@ -300,16 +300,20 @@ def execute_with_rem(
             ``confusion`` is ``None``.
         post_select: Repair strategy for a corrected vector that leaves the simplex.
         seed: Seed of the sampled circuit, or ``None`` for fresh randomness.
+        parameter_bindings: Finite values covering exactly all active symbols.
+            Values are bound before circuit transformations; None requires no symbols.
+        prefix: Build prefix for a preparation component, defaulting to ``qem``;
+            existing Circuit symbols keep their names.
 
     Returns:
         Mitigated expectation value.
 
     Raises:
-        TypeError: If ``seed`` is neither an integer nor ``None``.
-        ValueError: If ``observable`` is not diagonal in the :math:`Z` basis, if
+        TypeError: If an input or configuration argument has the wrong type.
+        ValueError: If bindings are non-finite or do not cover active symbols exactly,
+            or if ``observable`` is not diagonal in the :math:`Z` basis, if
             ``confusion`` does not cover the observable's qubits, or if the
             executor holds no sampling backend.
-
     """
     wrapped = rem_executor(
         executor,
@@ -320,7 +324,13 @@ def execute_with_rem(
         post_select=post_select,
         seed=seed,
     )
-    request = EstimatorRequest(circuit=circuit, observable=observable, shots=shots)
+    request = build_estimator_request(
+        circuit,
+        observable,
+        shots=shots,
+        parameter_bindings=parameter_bindings,
+        prefix=prefix,
+    )
     return wrapped.estimate([request])[0].expectation
 
 
@@ -445,6 +455,7 @@ class _RemEstimator(Estimator):
 
     def _mitigate(self, request: EstimatorRequest) -> EstimatorResult:
         r"""Measure one request's counts, correct them, and recombine."""
+        bound_circuit = bind_request_circuit(request)
         observable = request.observable
         _validate_z_diagonal(observable)
 
@@ -462,8 +473,8 @@ class _RemEstimator(Estimator):
         sampled = self._executor.sample(
             [
                 SamplerRequest(
-                    circuit=request.circuit,
-                    qubits=tuple(request.circuit.qubits),
+                    circuit=bound_circuit,
+                    qubits=tuple(bound_circuit.qubits),
                     shots=self._shots,
                     seed=self._seed if self._seed is not None else request.seed,
                 )

@@ -45,7 +45,7 @@ Proc. R. Soc. Lond. A 454, 339 (1998)。
   常/平衡承诺作用于 <img src="../../assets/formulas/inline/inline-cd0aa9856147b6c5.svg" alt="g" style="vertical-align: -3.000pt;">，而不是分别作用于每个输出位；
 - `DeutschJozsa.build_circuit(function, output_mask=None)` 构建未测量的
   <img src="../../assets/formulas/inline/inline-678b057a76c6a024.svg" alt="H^{\otimes n}\rightarrow S_f\rightarrow H^{\otimes n}" style="vertical-align: -5.000pt;"> 查询线路，末端测量由 Sampler 追加；
-- `run(requests)` 批量执行请求，结果按请求顺序返回。
+- `run(query, shots=...)` 接收组合后的查询组件并返回一个结果；`run(requests)` 按批次顺序返回结果列表。
 
 `DeutschJozsaRequest(function, shots, output_mask=None)` 中 `shots` 必须为正整数。
 `DeutschJozsaResult(is_constant, zero_count, shots)`
@@ -67,23 +67,16 @@ Proc. R. Soc. Lond. A 454, 339 (1998)。
 ## 可运行示例
 
 ```python
-from cqlib_algorithms import DeutschJozsa, DeutschJozsaRequest
-from cqlib_algorithms.operators.oracle import BooleanFunction
-from cqlib_algorithms.operators.sampler import StatevectorSampler
-
-algorithm = DeutschJozsa(StatevectorSampler())
-
-constant = BooleanFunction.from_truth_table([False] * 8)  # 常函数
-balanced = BooleanFunction.from_truth_table(  # 奇偶函数：平衡
-    [bin(x).count("1") % 2 == 1 for x in range(8)]
+from cqlib_algorithms import DeutschJozsa
+from cqlib_algorithms.operators import (
+    BooleanFunction,
+    HadamardPhaseQuery,
+    PhaseOracle,
+    StatevectorSampler,
 )
 
-results = algorithm.run(
-    [
-        DeutschJozsaRequest(constant, 16),
-        DeutschJozsaRequest(balanced, 16),
-    ]
-)
-print([r.is_constant for r in results])  # [True, False]
-print([r.zero_count for r in results])  # [16, 0]
+function = BooleanFunction.from_truth_table([False, True, True, False])
+query = HadamardPhaseQuery(PhaseOracle(function))
+result = DeutschJozsa(StatevectorSampler()).run(query, shots=16)
+print(result.is_constant, result.zero_count)  # False 0
 ```

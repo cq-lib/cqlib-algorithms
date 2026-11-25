@@ -60,7 +60,7 @@ References
 from __future__ import annotations
 
 import math
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 
 import numpy as np
 from cqlib import Circuit
@@ -74,7 +74,8 @@ from ...protocols import (
     SamplerRequest,
     spawn_seeds,
 )
-from .._circuits import rebuild
+from ...protocols.state_preparation import StatePreparation
+from .._circuits import bind_request_circuit, build_estimator_request, rebuild
 from ..core import QemExecutor
 
 # Measurement axes in the order the uniform draw indexes them.
@@ -150,29 +151,27 @@ def snapshot_expectation(
 
 
 def execute_with_shadows(
-    circuit: Circuit,
+    circuit: StatePreparation | Circuit,
     executor: QemExecutor,
     observable: Hamiltonian | PauliString,
     /,
     *,
     num_total_measurements_shadow: int,
     seed: int | None = None,
+    parameter_bindings: Mapping[str, float] | None = None,
+    prefix: str = "qem",
 ) -> float:
     r"""Estimate one observable on ``circuit`` with classical shadows.
 
-    This is the immediate form of :func:`shadows_executor`::
-
-        execute_with_shadows(c, ex, obs, num_total_measurements_shadow=n)
-        == shadows_executor(ex, num_total_measurements_shadow=n).estimate(
-               [EstimatorRequest(c, obs)]
-           )[0].expectation
+    This is the immediate form of :func:`shadows_executor`. The same task
+    can be evaluated by calling ``run()`` on that executor.
 
     A single-qubit :math:`Z` observable measured through the random-basis
     protocol converges to the same value as the direct
     :math:`Z`-basis mean of the shots.
 
     Args:
-        circuit: Circuit whose expectation value is estimated.
+        circuit: State-preparation component or circuit to evaluate.
         executor: Execution backend supplying the sampling surface.
         observable: Observable to estimate, any Hamiltonian or Pauli string. A bare Pauli
             string is wrapped to share the Hamiltonian code path, and every term is
@@ -180,25 +179,30 @@ def execute_with_shadows(
         num_total_measurements_shadow: Number of independent shadows :math:`N`, at least one.
         seed: Seed of the random basis draw and the shadow measurements, or ``None``
             for fresh randomness.
+        parameter_bindings: Finite values covering exactly all active symbols.
+            Values are bound before circuit transformations; None requires no symbols.
+        prefix: Build prefix for a preparation component, defaulting to ``qem``;
+            existing Circuit symbols keep their names.
 
     Returns:
         The shadow estimate of the observable's expectation value.
 
     Raises:
-        TypeError: If ``num_total_measurements_shadow`` is not an integer or ``seed`` is
-            neither an integer nor ``None``.
-        ValueError: If ``num_total_measurements_shadow`` is below one.
-
+        TypeError: If an input or configuration argument has the wrong type.
+        ValueError: If bindings are non-finite or do not cover active symbols exactly,
+            or if ``num_total_measurements_shadow`` is below one.
     """
     wrapped = shadows_executor(
         executor,
         num_total_measurements_shadow=num_total_measurements_shadow,
         seed=seed,
     )
-    request = EstimatorRequest(
-        circuit=circuit,
-        observable=observable,
+    request = build_estimator_request(
+        circuit,
+        observable,
         shots=num_total_measurements_shadow,
+        parameter_bindings=parameter_bindings,
+        prefix=prefix,
     )
     return wrapped.estimate([request])[0].expectation
 
@@ -286,13 +290,14 @@ class _ShadowsEstimator(Estimator):
 
     def _mitigate(self, request: EstimatorRequest) -> EstimatorResult:
         r"""Draw the shadow set and average every term's snapshot estimate."""
+        bound_circuit = bind_request_circuit(request)
         observable = _as_hamiltonian(request.observable)
         num_qubits = observable.num_qubits
 
         seed = self._seed if self._seed is not None else request.seed
         rng = np.random.default_rng(seed)
         assignments = rng.integers(0, len(_AXES), size=(self._num_shots, num_qubits))
-        outcomes, bases = self._collect_shadows(request.circuit, assignments, seed)
+        outcomes, bases = self._collect_shadows(bound_circuit, assignments, seed)
 
         # Every term reads the same shadow set; only the coefficient and the
         # term's global phase differ, and their product is real for the

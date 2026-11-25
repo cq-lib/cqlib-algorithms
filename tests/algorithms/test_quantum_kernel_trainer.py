@@ -34,13 +34,14 @@ from cqlib_algorithms.operators.quantum_kernel import FidelityQuantumKernel
 from cqlib_algorithms.operators.quantum_kernel.balanced_kernel_alignment_loss import (
     _alignment,
 )
+from cqlib_algorithms.operators.state_preparation import UserCircuitPreparation
 from cqlib_algorithms.protocols.sampler import Sampler
 
 
 def trainer(**kwargs):
     circuit = Circuit(1)
     circuit.ry(0, Parameter("w") * Parameter("x"))
-    return QuantumKernelTrainer(circuit, ["x"], ["w"], **kwargs)
+    return QuantumKernelTrainer(UserCircuitPreparation(circuit), ["x"], ["w"], **kwargs)
 
 
 def fixed_solver(monkeypatch, point=None, **changes):
@@ -78,6 +79,36 @@ def analytic_alignment(X, y, weight):
     return matrix, numerator / denominator
 
 
+def test_trainable_kernel_and_feature_component_match_downstream():
+    from cqlib.circuit.ansatz import ZZFeatureMap
+
+    from cqlib_algorithms.operators import (
+        FeatureMapPreparation,
+        TrainableFidelityQuantumKernel,
+    )
+
+    feature_map = FeatureMapPreparation(ZZFeatureMap(2))
+    data, labels = [[0.0], [1.0]], [-1.0, 1.0]
+    family = TrainableFidelityQuantumKernel(feature_map, ["x_0"], ["x_1"])
+    trained = QuantumKernelTrainer(quantum_kernel=family, max_evaluations=50).fit(
+        data, labels, initial_point={"x_1": 0.4}
+    )
+    from_features = QuantumKernelTrainer(
+        feature_map, ["x_0"], ["x_1"], max_evaluations=50
+    ).fit(data, labels, initial_point={"x_1": 0.4})
+    np.testing.assert_allclose(
+        trained.kernel_matrix_, from_features.kernel_matrix_, atol=1e-14
+    )
+    assert trained.loss_ < trained.initial_loss_
+    fixed = trained.quantum_kernel_
+    assert PegasosQSVC(fixed, seed=4).fit(data, labels).score(data, labels) == 1
+    np.testing.assert_allclose(
+        QSVR(fixed, C=10, epsilon=0).fit(data, [0.0, 1.0]).predict(data),
+        [0.0, 1.0],
+        atol=1e-6,
+    )
+
+
 @pytest.mark.reference
 def test_real_training_two_points_closed_form_and_downstream_composition():
     training = trainer(max_evaluations=120).fit(
@@ -106,7 +137,7 @@ def test_real_training_two_points_closed_form_and_downstream_composition():
     )
     assert classifier.score([[0.0], [1.0]], [-1.0, 1.0]) == 1.0
     rebuilt = FidelityQuantumKernel(
-        training.quantum_kernel_.feature_map,
+        UserCircuitPreparation(training.quantum_kernel_.feature_map),
         ["x"],
         parameter_bindings=dict(training.optimal_parameters_),
     )
@@ -134,7 +165,9 @@ def test_multiple_parameters_expression_order_and_snapshot(monkeypatch):
     circuit.ry(Qubit(9), Parameter("u") * Parameter("z") + Parameter("fixed"))
     circuit.ry(Qubit(3), Parameter("v") * Parameter("a"))
     inputs, weights, fixed = ["z", "a"], ["v", "u"], {"fixed": 0.2}
-    training = QuantumKernelTrainer(circuit, inputs, weights, parameter_bindings=fixed)
+    training = QuantumKernelTrainer(
+        UserCircuitPreparation(circuit), inputs, weights, parameter_bindings=fixed
+    )
     inputs.reverse()
     weights.reverse()
     fixed["fixed"] = 3.0
@@ -224,9 +257,9 @@ def test_flat_legal_objective_and_actual_parameter_rebinding():
     circuit = Circuit(1)
     circuit.ry(0, Parameter("x"))
     circuit.rz(0, Parameter("w"))
-    training = QuantumKernelTrainer(circuit, ["x"], ["w"], max_evaluations=40).fit(
-        [[0.0], [1.0]], [-1.0, 1.0], initial_point={"w": 0.4}
-    )
+    training = QuantumKernelTrainer(
+        UserCircuitPreparation(circuit), ["x"], ["w"], max_evaluations=40
+    ).fit([[0.0], [1.0]], [-1.0, 1.0], initial_point={"w": 0.4})
     assert training.alignment_ == pytest.approx(training.initial_alignment_, abs=1e-14)
     assert (
         training.quantum_kernel_.parameter_bindings["w"]
@@ -325,7 +358,7 @@ def test_unfitted_diagnostics(name):
 def test_nonzero_domain_singular_point_and_failed_refit(monkeypatch):
     circuit = Circuit(1)
     circuit.ry(0, 1 / Parameter("x") / Parameter("w"))
-    training = QuantumKernelTrainer(circuit, ["x"], ["w"])
+    training = QuantumKernelTrainer(UserCircuitPreparation(circuit), ["x"], ["w"])
     fixed_solver(monkeypatch)
     training.fit([[1.0], [2.0]], [-1.0, 1.0], initial_point={"w": 2.0})
     matrix = training.kernel_matrix_
@@ -455,14 +488,19 @@ def test_symbol_partition_validated(inputs, trainables, fixed):
     circuit = Circuit(1)
     circuit.ry(0, Parameter("w") * Parameter("x"))
     with pytest.raises((TypeError, ValueError)):
-        QuantumKernelTrainer(circuit, inputs, trainables, parameter_bindings=fixed)
+        QuantumKernelTrainer(
+            UserCircuitPreparation(circuit),
+            inputs,
+            trainables,
+            parameter_bindings=fixed,
+        )
 
 
 def test_parameter_overflow_rejected_even_for_duplicate_rows(monkeypatch):
     fixed_solver(monkeypatch)
     circuit = Circuit(1)
     circuit.ry(0, Parameter("x") * Parameter("w") * Parameter("w"))
-    training = QuantumKernelTrainer(circuit, ["x"], ["w"])
+    training = QuantumKernelTrainer(UserCircuitPreparation(circuit), ["x"], ["w"])
     with pytest.raises((ValueError, CircuitError)):
         training.fit([[1.0], [1.0]], [-1.0, 1.0], initial_point={"w": 1e308})
     assert not training.is_fitted
@@ -474,4 +512,4 @@ def test_nonunitary_structure_rejected(operation):
     circuit.ry(0, Parameter("w") * Parameter("x"))
     getattr(circuit, operation)(0)
     with pytest.raises((ValueError, CircuitError)):
-        QuantumKernelTrainer(circuit, ["x"], ["w"])
+        QuantumKernelTrainer(UserCircuitPreparation(circuit), ["x"], ["w"])

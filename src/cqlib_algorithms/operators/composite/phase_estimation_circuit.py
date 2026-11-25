@@ -21,8 +21,6 @@ References
 
 from __future__ import annotations
 
-from typing import final
-
 import numpy as np
 from cqlib import Circuit
 
@@ -36,7 +34,6 @@ from ..._utils.phase_estimation import (
 from .qft import QFT
 
 
-@final
 class PhaseEstimationCircuit:
     """Build the standard multi-qubit phase-estimation circuit.
 
@@ -54,7 +51,8 @@ class PhaseEstimationCircuit:
     memory limit.
 
     Args:
-        unitary: Positive-width, fully bound static unitary circuit.
+        unitary: Positive-width, fully bound static unitary circuit, including
+            the target operation's absolute global phase and all auxiliary qubits.
         num_evaluation_qubits: Positive phase-register width.
         approximation_degree: Small-angle inverse-QFT layers to omit.
         inverse: Whether to return the adjoint of the configured forward

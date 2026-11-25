@@ -272,3 +272,37 @@ def test_vector_phase_oracle_requires_explicit_in_range_nonzero_mask():
     for output_mask in (0, -1, 4):
         with pytest.raises(ValueError, match="select one or more existing outputs"):
             PhaseOracle(function, output_mask=output_mask)
+
+
+@pytest.mark.parametrize("bits", [{}, {0: 1}, {2: 0, 0: 1}, {1: 0, 2: 1, 0: 0}])
+def test_bit_pattern_exact_phase_and_marked_indices(bits):
+    from cqlib_algorithms.operators import BitPatternPhaseOracle, GroverOperator
+
+    oracle = BitPatternPhaseOracle(3, bits.copy())
+    marked = tuple(
+        i for i in range(8) if all((i >> q) & 1 == bit for q, bit in bits.items())
+    )
+    reference = np.diag([-1 if i in marked else 1 for i in range(8)])
+    np.testing.assert_allclose(
+        oracle.build_circuit().to_matrix(), reference, atol=1e-12
+    )
+    assert oracle.marked_states == GroverOperator(oracle).marked_states == marked
+
+
+@pytest.mark.parametrize(
+    "width,bits,error",
+    [
+        (0, {}, ValueError),
+        (True, {}, TypeError),
+        (1, [], TypeError),
+        (1, {1: 0}, ValueError),
+        (2, {True: 1}, TypeError),
+        (2, {1: 2}, ValueError),
+        (2, {1: 1.0}, TypeError),
+    ],
+)
+def test_invalid_bit_pattern(width, bits, error):
+    from cqlib_algorithms.operators import BitPatternPhaseOracle
+
+    with pytest.raises(error):
+        BitPatternPhaseOracle(width, bits)

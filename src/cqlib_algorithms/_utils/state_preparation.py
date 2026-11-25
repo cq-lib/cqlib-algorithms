@@ -10,13 +10,50 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Shared snapshots of fixed state-preparation components."""
+"""Build preparation and ansatz components and snapshot fixed initial states."""
 
 from __future__ import annotations
 
 from cqlib.circuit import Circuit, CircuitError
 
+from ..protocols.ansatz import Ansatz
 from ..protocols.state_preparation import StatePreparation
+from .numeric import validate_nonnegative_integer, validate_positive_integer
+
+
+def build_state_preparation_circuit(
+    state_preparation: StatePreparation, *, prefix: str
+) -> Circuit:
+    """Build a preparation and verify its declared width and parameter slots."""
+    if not isinstance(state_preparation, StatePreparation):
+        raise TypeError("state_preparation must be a StatePreparation")
+    return build_component_circuit(state_preparation, prefix=prefix)
+
+
+def build_component_circuit(
+    component: StatePreparation | Ansatz, *, prefix: str
+) -> Circuit:
+    """Build a preparation or ansatz and verify its width and parameter slots."""
+    if not isinstance(prefix, str):
+        raise TypeError("prefix must be a string")
+    if not isinstance(component, (StatePreparation, Ansatz)):
+        raise TypeError("component must be a StatePreparation or Ansatz")
+    role = "state_preparation" if isinstance(component, StatePreparation) else "ansatz"
+    component.validate()
+    num_qubits = component.num_qubits()
+    num_parameters = component.num_parameters()
+    validate_positive_integer(num_qubits, f"{role} num_qubits")
+    validate_nonnegative_integer(num_parameters, name=f"{role} num_parameters")
+    circuit = component.build_circuit(prefix)
+    if not isinstance(circuit, Circuit):
+        raise TypeError(f"{role} build_circuit must return a Circuit")
+    if circuit.num_qubits != num_qubits:
+        raise ValueError(f"built circuit qubit count must equal {role} num_qubits")
+    if len(circuit.used_symbols) > num_parameters:
+        raise ValueError(
+            "built circuit active symbol count must not exceed num_parameters"
+        )
+    return circuit
 
 
 def snapshot_fixed_initial_state(

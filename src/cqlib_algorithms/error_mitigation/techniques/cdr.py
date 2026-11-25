@@ -45,7 +45,7 @@ References
 from __future__ import annotations
 
 import math
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from numbers import Real
 
 import numpy as np
@@ -54,7 +54,8 @@ from cqlib.circuit import StandardGate, ValueOperation
 from cqlib.qis import Hamiltonian, PauliString
 
 from ...protocols import Estimator, EstimatorRequest, EstimatorResult, spawn_seeds
-from .._circuits import expand
+from ...protocols.state_preparation import StatePreparation
+from .._circuits import bind_request_circuit, build_estimator_request, expand
 from ..core import QemExecutor
 from .rem import _validate_z_diagonal
 
@@ -217,7 +218,7 @@ def fit_linear_regression(
 
 
 def execute_with_cdr(
-    circuit: Circuit,
+    circuit: StatePreparation | Circuit,
     executor: QemExecutor,
     observable: Hamiltonian | PauliString,
     /,
@@ -227,15 +228,13 @@ def execute_with_cdr(
     fraction_non_clifford: float = 0.1,
     shots: int | None = None,
     seed: int | None = None,
+    parameter_bindings: Mapping[str, float] | None = None,
+    prefix: str = "qem",
 ) -> float:
     r"""Estimate one observable on ``circuit`` with Clifford data regression.
 
-    This is the immediate form of :func:`cdr_executor`::
-
-        execute_with_cdr(c, ex, obs, **params)
-        == cdr_executor(ex, **params).estimate(
-               [EstimatorRequest(c, obs, shots=shots)]
-           )[0].expectation
+    This is the immediate form of :func:`cdr_executor`. The same task
+    can be evaluated by calling ``run()`` on that executor.
 
     The numeric work is not split into a circuit-construction and a
     result-combination piece, because the training set depends on the exact
@@ -243,7 +242,7 @@ def execute_with_cdr(
     inside the returned executor.
 
     Args:
-        circuit: Circuit whose expectation value is to be mitigated.
+        circuit: State-preparation component or circuit to evaluate.
         executor: Execution backend supplying the noisy expectation surface.
         observable: Observable to estimate. It must be diagonal in the :math:`Z` basis,
             that is, a sum of :math:`Z` and identity products.
@@ -256,17 +255,18 @@ def execute_with_cdr(
             exact evaluation.
         seed: Seed of the near-Clifford draws, or ``None`` to draw fresh randomness.
             It is threaded into a :class:`numpy.random.Generator`.
+        parameter_bindings: Finite values covering exactly all active symbols.
+            Values are bound before circuit transformations; None requires no symbols.
+        prefix: Build prefix for a preparation component, defaulting to ``qem``;
+            existing Circuit symbols keep their names.
 
     Returns:
         Mitigated expectation value.
 
     Raises:
-        TypeError: If ``ideal_estimator`` is not an
-            :class:`~cqlib_algorithms.protocols.Estimator`, if
-            ``num_training_circuits`` is not an integer, if
-            ``fraction_non_clifford`` is not a real number, or if ``seed`` is
-            neither an integer nor ``None``.
-        ValueError: If ``num_training_circuits`` is below two, if
+        TypeError: If an input or configuration argument has the wrong type.
+        ValueError: If bindings are non-finite or do not cover active symbols exactly,
+            or if ``num_training_circuits`` is below two, if
             ``fraction_non_clifford`` lies outside ``[0, 1]``, or if
             ``observable`` is not diagonal in the :math:`Z` basis.
     """
@@ -278,7 +278,13 @@ def execute_with_cdr(
         shots=shots,
         seed=seed,
     )
-    request = EstimatorRequest(circuit=circuit, observable=observable, shots=shots)
+    request = build_estimator_request(
+        circuit,
+        observable,
+        shots=shots,
+        parameter_bindings=parameter_bindings,
+        prefix=prefix,
+    )
     return wrapped.estimate([request])[0].expectation
 
 
@@ -400,6 +406,7 @@ class _CdrEstimator(Estimator):
 
     def _mitigate(self, request: EstimatorRequest) -> EstimatorResult:
         r"""Train on near-Clifford data, fit the line, and correct the target."""
+        bound_circuit = bind_request_circuit(request)
         observable = request.observable
         _validate_z_diagonal(observable)
         shots = self._shots if self._shots is not None else request.shots
@@ -410,7 +417,7 @@ class _CdrEstimator(Estimator):
         rng = np.random.default_rng(seed)
         training = [
             near_clifford_circuit(
-                request.circuit,
+                bound_circuit,
                 self._fraction_non_clifford,
                 rng,
             )
@@ -447,7 +454,7 @@ class _CdrEstimator(Estimator):
         target = self._executor.estimate(
             [
                 EstimatorRequest(
-                    circuit=request.circuit,
+                    circuit=bound_circuit,
                     observable=observable,
                     shots=shots,
                     seed=seeds[-1],

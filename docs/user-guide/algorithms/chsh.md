@@ -7,7 +7,7 @@ Clauser–Horne–Shimony–Holt（CHSH）见证量。组件默认制备 Bell �
   <img src="../../assets/formulas/bell-state.svg" alt="The Bell state |Φ+⟩ equals (|00⟩ + |11⟩)/√2.">
 </p>
 
-也接受调用方提供的固定二量子比特制备线路。它只负责构造可观测量、批量执行期望值
+也接受调用方提供的固定二量子比特状态制备组件。它负责构造可观测量、批量执行期望值
 估计和解释数值结果，不绑定模拟器或硬件后端。
 
 ## 数学定义
@@ -40,15 +40,13 @@ X–Z 平面的二值可观测量：
 ## 接口
 
 ```python
-from cqlib_algorithms import CHSH, CHSHRequest
-from cqlib_algorithms.operators.estimator import StatevectorEstimator
+from cqlib_algorithms import CHSH
+from cqlib_algorithms.operators import GHZStatePreparation, StatevectorEstimator
 
 algorithm = CHSH(StatevectorEstimator())
-result = algorithm.run([CHSHRequest()])[0]
-
-print(result.correlators)
-print(result.chsh_value)
-print(result.violates_classical_bound)
+result = algorithm.run(GHZStatePreparation(2))
+print(result.chsh_value)  # approximately 2.82842712
+print(result.violates_classical_bound)  # True
 ```
 
 精确估计的典型输出为：
@@ -60,13 +58,40 @@ print(result.violates_classical_bound)
 True
 ```
 
-`CHSHRequest` 参数如下：
+`run(state_preparation=None, *, alice_angles=None, bob_angles=None, shots=None, tolerance=None)`
+返回一个 `CHSHResult`。省略初态时制备 Bell 态，省略角度时使用上述设置，数值容差默认为 `1e-12`。
+可将示例中的制备组件替换为 `BasisStateInitialization(2, 0)`，比较乘积态与纠缠态的关联量。
+组件使用前缀 `chsh` 构建，生成的线路必须完全绑定且宽度为 2。
 
-- `state_preparation`：可选的固定二量子比特 `Circuit`。省略时复用
+批量入口 `run(requests)` 接收 `CHSHRequest`。其参数如下：
+
+- `state_preparation`：可选的固定二量子比特 `StatePreparation` 组件。省略时复用
   `GHZStatePreparation(2)` 制备 <img src="../../assets/formulas/inline/inline-305d42b86673cf8e.svg" alt="|\Phi^+\rangle" style="vertical-align: -4.000pt;">；
 - `alice_angles`、`bob_angles`：各自恰含两个有限实数的元组；
 - `shots`：`None` 表示请求精确估计，正整数表示把有限-shot 语义传给 Estimator；
 - `tolerance`：判断 <img src="../../assets/formulas/inline/inline-9a35eb7881a75d4c.svg" alt="|S|&gt;2+\mathtt{tolerance}" style="vertical-align: -4.000pt;"> 时使用的非负有限数值容差。
+
+批次中的每项请求都可以直接配置状态制备组件：
+
+```python
+from cqlib_algorithms import CHSH, CHSHRequest
+from cqlib_algorithms.operators import (
+    BasisStateInitialization,
+    GHZStatePreparation,
+    StatevectorEstimator,
+)
+
+requests = [
+    CHSHRequest(GHZStatePreparation(2)),
+    CHSHRequest(BasisStateInitialization(2, 0)),
+]
+results = CHSH(StatevectorEstimator()).run(requests)
+print([item.chsh_value for item in results])  # approximately [2.82842712, 1.41421356]
+```
+
+组件在请求构造时只构建一次，请求保存固定的 `StatePreparation` 和独立的
+`preparation_circuit` 快照。快照在请求存续期间应保持不变，执行前会重新校验。
+自定义制备线路通过 `UserCircuitPreparation(circuit)` 包装后传入。
 
 自定义制备线路必须恰有两个量子比特、通过 Core 线路校验、不含未绑定符号，并且是
 可展开的固定静态酉线路；直接或嵌套的测量、重置、延迟和经典控制都会在请求构造时
@@ -114,7 +139,7 @@ Core 量子比特位置 0 是 Alice，位置 1 是 Bob；在 Core 的小端态�
 
 ## 边界
 
-首版实现限定在 X–Z 平面的二设置 CHSH 见证量，不提供：
+实现限定在 X–Z 平面的二设置 CHSH 见证量，不提供：
 
 - 任意 Bloch 球三维测量轴或一般 Bell 不等式；
 - 状态层析、误差缓解或后端校准；

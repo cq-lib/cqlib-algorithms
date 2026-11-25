@@ -22,6 +22,10 @@ from cqlib.circuit import CircuitError
 from ..._utils.circuit import (
     validate_static_unitary_structure,
 )
+from ..._utils.parameters import validate_parameter_prefix
+from ..._utils.state_preparation import build_component_circuit
+from ...protocols.ansatz import Ansatz
+from ...protocols.state_preparation import StatePreparation
 
 
 class UnitaryOverlap:
@@ -32,11 +36,16 @@ class UnitaryOverlap:
     contain only statically invertible unitary operations; barriers are
     accepted. Active parameter names must be disjoint between the inputs so
     that the returned circuit never introduces implicit parameter sharing.
+    Preparations and ansatzes are built once with the corresponding prefix.
+    All inputs are copied; prefixes leave existing Circuit symbols unchanged.
+    Their complete register, including any ancillas, participates in the product.
 
     Args:
-        unitary1: Unitary circuit applied first, on the ket side.
-        unitary2: Unitary circuit whose adjoint is applied second.
+        unitary1: Preparation, ansatz, or circuit applied first.
+        unitary2: Preparation, ansatz, or circuit applied as an adjoint.
         insert_barrier: Whether to separate the two blocks with a barrier.
+        prefix_a: Naming prefix when building ``unitary1`` as a component.
+        prefix_b: Naming prefix when building ``unitary2`` as a component.
 
     Raises:
         TypeError: If an argument has the wrong type.
@@ -48,15 +57,23 @@ class UnitaryOverlap:
 
     def __init__(
         self,
-        unitary1: Circuit,
-        unitary2: Circuit,
+        unitary1: StatePreparation | Ansatz | Circuit,
+        unitary2: StatePreparation | Ansatz | Circuit,
         *,
         insert_barrier: bool = False,
+        prefix_a: str = "a",
+        prefix_b: str = "b",
     ) -> None:
+        validate_parameter_prefix(prefix_a)
+        validate_parameter_prefix(prefix_b)
+        if not isinstance(unitary1, (StatePreparation, Ansatz, Circuit)):
+            raise TypeError("unitary1 must be a StatePreparation, Ansatz, or Circuit")
+        if not isinstance(unitary2, (StatePreparation, Ansatz, Circuit)):
+            raise TypeError("unitary2 must be a StatePreparation, Ansatz, or Circuit")
         if not isinstance(unitary1, Circuit):
-            raise TypeError("unitary1 must be a cqlib.Circuit")
+            unitary1 = build_component_circuit(unitary1, prefix=prefix_a)
         if not isinstance(unitary2, Circuit):
-            raise TypeError("unitary2 must be a cqlib.Circuit")
+            unitary2 = build_component_circuit(unitary2, prefix=prefix_b)
         if not isinstance(insert_barrier, bool):
             raise TypeError("insert_barrier must be a boolean")
 

@@ -17,6 +17,7 @@ import pytest
 from cqlib import Circuit, Parameter
 
 from cqlib_algorithms.operators import TrainableFidelityQuantumKernel
+from cqlib_algorithms.operators.state_preparation import UserCircuitPreparation
 
 
 def test_fidelity_family_snapshot_and_fixed_result_after_new_bindings():
@@ -24,7 +25,9 @@ def test_fidelity_family_snapshot_and_fixed_result_after_new_bindings():
     circuit.ry(0, Parameter("w") * Parameter("x"))
     inputs = ["x"]
     names = ["w"]
-    family = TrainableFidelityQuantumKernel(circuit, inputs, names)
+    family = TrainableFidelityQuantumKernel(
+        UserCircuitPreparation(circuit), inputs, names
+    )
     first = family.bind_parameters({"w": 0.4})
     circuit.x(0)
     inputs[:] = ["other"]

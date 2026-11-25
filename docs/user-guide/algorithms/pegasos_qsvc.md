@@ -1,7 +1,7 @@
 # 量子核分类 PegasosQSVC
 
 `PegasosQSVC` 使用量子核构建无偏置二分类模型，通过 Pegasos 随机次梯度与球投影更新分类系数。
-训练输入为固定的 `FidelityQuantumKernel`，预测结果使用原始数值类别标签。
+训练输入为固定的 `QuantumKernel`，可直接传入核训练器返回的 `quantum_kernel_`，预测结果使用原始数值类别标签。
 
 ## 使用示例
 
@@ -9,14 +9,12 @@
 
 ```python
 import numpy as np
-from cqlib import Circuit, Parameter
+from cqlib.circuit.gates import StandardGate
 
 from cqlib_algorithms.algorithms import PegasosQSVC
-from cqlib_algorithms.operators import FidelityQuantumKernel
+from cqlib_algorithms.operators import AngleEncoding, FidelityQuantumKernel
 
-circuit = Circuit(1)
-circuit.ry(0, Parameter("x"))
-kernel = FidelityQuantumKernel(circuit, ["x"])
+kernel = FidelityQuantumKernel(AngleEncoding(1, StandardGate.RY), ["x_0"])
 X = [[-0.2], [0.0], [0.2], [np.pi - 0.2], [np.pi], [np.pi + 0.2]]
 y = [3, 3, 3, 8, 8, 8]
 model = PegasosQSVC(kernel, regularization=0.1, num_steps=400, seed=19)
@@ -38,7 +36,7 @@ score(X, y) -> float
 
 | 参数 | 含义 |
 | --- | --- |
-| `quantum_kernel` | `FidelityQuantumKernel` 实例，精确与采样配置见 [量子核使用说明](qsvr.md) |
+| `quantum_kernel` | 固定的 `QuantumKernel`。保真度核的精确与采样配置见 [量子核使用说明](qsvr.md) |
 | `regularization` | 正则化强度 λ，要求为正数 |
 | `num_steps` | 训练更新次数，要求为正整数 |
 | `seed` | 非负整数随机种子或 `None`，用于控制训练样本的抽取顺序 |

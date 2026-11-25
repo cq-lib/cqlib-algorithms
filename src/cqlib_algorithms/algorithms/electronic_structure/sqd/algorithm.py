@@ -21,19 +21,20 @@ References
 
 from __future__ import annotations
 
+import copy
 import math
 from collections import defaultdict
 from collections.abc import Callable, Mapping, Sequence
 
 import numpy as np
-from cqlib import Circuit
 from cqlib.qis import Hamiltonian
 
-from ...._utils.circuit import validate_unitary_state_preparation
+from ...._utils.circuit import validate_bound_static_unitary_circuit
 from ...._utils.numeric import (
     normalize_nonnegative_real,
     validate_positive_integer,
 )
+from ...._utils.state_preparation import build_state_preparation_circuit
 from ....extension.electronic_structure.electronic import (
     ElectronicEnergy,
     ElectronicSystem,
@@ -44,6 +45,7 @@ from ....protocols.sampler import (
     require_sampler_results,
     spawn_seeds,
 )
+from ....protocols.state_preparation import StatePreparation
 from .recovery import (
     _configuration_spin_strings,
     _has_target_particles,
@@ -236,7 +238,7 @@ class SQD:
 
     Args:
         sampler: Optional sampler used to obtain a raw determinant distribution.
-            It is required by :meth:`compute` but not by
+            It is required by :meth:`run` but not by
             :meth:`compute_from_counts`.
         subspace_solver: Optional solver receiving an electronic system and a
             sorted determinant tuple. It must return the lowest Ritz pair for
@@ -271,10 +273,10 @@ class SQD:
         """Return the custom selected-subspace solver, if present."""
         return self._subspace_solver
 
-    def compute(
+    def run(
         self,
         system: ElectronicSystem,
-        state_preparation: Circuit,
+        state_preparation: StatePreparation,
         *,
         shots: int,
         samples_per_batch: int,
@@ -300,8 +302,10 @@ class SQD:
 
         Args:
             system: Electronic Hamiltonian and target spin populations.
-            state_preparation: Fully bound unitary circuit in interleaved
-                Jordan--Wigner occupation order.
+            state_preparation: Fully bound preparation component in
+                interleaved Jordan--Wigner occupation order.
+                Components are built with prefix ``"sqd"``. The execution
+                circuit is copied independently of the caller's input.
             shots: Positive number of raw determinant samples.
             samples_per_batch: Maximum unique determinants in each subspace.
             num_batches: Number of independently sampled subspaces per round.
@@ -332,10 +336,9 @@ class SQD:
         """
         if not isinstance(system, ElectronicSystem):
             raise TypeError("system must be an ElectronicSystem")
-        if not isinstance(state_preparation, Circuit):
-            raise TypeError("state_preparation must be a cqlib.Circuit")
+        preparation = build_state_preparation_circuit(state_preparation, prefix="sqd")
         if self._sampler is None:
-            raise ValueError("compute requires an SQD sampler")
+            raise ValueError("run requires an SQD sampler")
         validate_positive_integer(shots, "shots")
         (
             energy_tolerance,
@@ -357,19 +360,21 @@ class SQD:
             callback=callback,
         )
 
-        state_preparation.validate()
-        if state_preparation.used_symbols:
+        preparation.validate()
+        if preparation.used_symbols:
             raise ValueError("state_preparation must be fully bound")
-        if state_preparation.num_qubits != system.num_spin_orbitals:
+        if preparation.num_qubits != system.num_spin_orbitals:
             raise ValueError(
                 "state_preparation width must equal the number of spin orbitals"
             )
-        validate_unitary_state_preparation(state_preparation)
+        # Occupation modes follow positions; preserve the backend qubit identifiers.
+        circuit = copy.deepcopy(preparation)
+        validate_bound_static_unitary_circuit(circuit, "state_preparation")
 
         sampler_seed, recovery_seed = spawn_seeds(seed, 2)
         request = SamplerRequest(
-            state_preparation,
-            tuple(state_preparation.qubits),
+            circuit,
+            tuple(circuit.qubits),
             shots,
             sampler_seed,
         )
@@ -396,6 +401,42 @@ class SQD:
             symmetrize_spin=symmetrize_spin,
             callback=callback,
             recovery_seed=recovery_seed,
+        )
+
+    def compute(
+        self,
+        system: ElectronicSystem,
+        state_preparation: StatePreparation,
+        *,
+        shots: int,
+        samples_per_batch: int,
+        num_batches: int = 1,
+        max_iterations: int = 5,
+        energy_tolerance: float = 1e-8,
+        occupancy_tolerance: float = 1e-5,
+        initial_occupancies: Sequence[float] | None = None,
+        include_configurations: Sequence[int] = (),
+        carryover_threshold: float | None = 1e-4,
+        symmetrize_spin: bool = False,
+        callback: SQDCallback | None = None,
+        seed: int | None = None,
+    ) -> SQDResult:
+        """Run SQD with the same inputs and result as :meth:`run`."""
+        return self.run(
+            system,
+            state_preparation,
+            shots=shots,
+            samples_per_batch=samples_per_batch,
+            num_batches=num_batches,
+            max_iterations=max_iterations,
+            energy_tolerance=energy_tolerance,
+            occupancy_tolerance=occupancy_tolerance,
+            initial_occupancies=initial_occupancies,
+            include_configurations=include_configurations,
+            carryover_threshold=carryover_threshold,
+            symmetrize_spin=symmetrize_spin,
+            callback=callback,
+            seed=seed,
         )
 
     def compute_from_counts(

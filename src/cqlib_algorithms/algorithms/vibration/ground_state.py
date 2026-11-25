@@ -152,7 +152,7 @@ class VibrationalGroundState:
         """Return the ansatz parameter prefix."""
         return self._prefix
 
-    def compute(
+    def run(
         self,
         system: VibrationalSystem,
         initial_point: Mapping[str, float] | None = None,
@@ -232,7 +232,7 @@ class VibrationalGroundState:
             selected_ansatz,
             self._optimizer,
             prefix=self._prefix,
-        ).compute_minimum_eigenvalue(
+        ).run(
             hamiltonian,
             point,
             shots=shots,
@@ -253,6 +253,26 @@ class VibrationalGroundState:
             system,
             vqe_result,
             _measurements(system, estimates),
+        )
+
+    def compute(
+        self,
+        system: VibrationalSystem,
+        initial_point: Mapping[str, float] | None = None,
+        *,
+        reference_modals: Sequence[int] | None = None,
+        ansatz: Ansatz | None = None,
+        reps: int = 1,
+        shots: int | None = None,
+    ) -> VibrationalGroundStateResult:
+        """Solve the ground state with the same inputs and result as :meth:`run`."""
+        return self.run(
+            system,
+            initial_point,
+            reference_modals=reference_modals,
+            ansatz=ansatz,
+            reps=reps,
+            shots=shots,
         )
 
 

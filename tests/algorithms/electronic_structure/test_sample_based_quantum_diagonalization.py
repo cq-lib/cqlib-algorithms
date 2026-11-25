@@ -49,9 +49,138 @@ from cqlib_algorithms.extension.electronic_structure import (
 )
 from cqlib_algorithms.operators.sampler import StatevectorSampler
 from cqlib_algorithms.operators.state_preparation import (
+    ArbitraryStatePreparation,
+    BasisStateInitialization,
     HartreeFockStatePreparation,
+    UserCircuitPreparation,
 )
-from cqlib_algorithms.protocols import Sampler, SamplerRequest
+from cqlib_algorithms.protocols import Sampler, SamplerRequest, StatePreparation
+
+
+def test_component_run_matches_circuit_entry_and_independent_eigenproblem() -> None:
+    system = _one_electron_system()
+    amplitudes = np.zeros(16, dtype=complex)
+    amplitudes[[1, 4]] = 1 / np.sqrt(2)
+    preparation = ArbitraryStatePreparation(amplitudes.tolist())
+    solved: list[tuple[int, ...]] = []
+
+    def solver(selected_system, configurations):
+        assert selected_system is system
+        solved.append(configurations)
+        return solve_sqd_subspace(selected_system, configurations)
+
+    algorithm = SQD(StatevectorSampler(), subspace_solver=solver)
+    options = {
+        "shots": 128,
+        "samples_per_batch": 2,
+        "num_batches": 2,
+        "max_iterations": 3,
+        "seed": 19,
+    }
+    result = algorithm.run(system, preparation, **options)
+    legacy = algorithm.compute(system, preparation, **options)
+    assert result == legacy
+    assert result.energy == pytest.approx(
+        0.2 + np.linalg.eigvalsh([[-1.0, -0.3], [-0.3, 0.5]])[0], abs=1e-12
+    )
+    assert all(configurations == (1, 4) for configurations in solved)
+    assert result.valid_raw_shots == 128
+    assert result.converged
+
+
+@pytest.mark.parametrize("index, energy", [(1, -0.8), (4, 0.7)])
+def test_component_run_executes_the_selected_preparation(index, energy) -> None:
+    result = SQD(StatevectorSampler()).run(
+        _one_electron_system(),
+        BasisStateInitialization(4, index),
+        shots=16,
+        samples_per_batch=1,
+        seed=7,
+    )
+    assert result.ground_state.configurations == (index,)
+    assert result.energy == pytest.approx(energy, abs=1e-12)
+
+
+class _SQDPreparation(StatePreparation):
+    def __init__(self, circuit, *, width=4, parameters=0):
+        self.circuit = circuit
+        self.width = width
+        self.parameters = parameters
+
+    def validate(self):
+        pass
+
+    def num_qubits(self):
+        return self.width
+
+    def num_parameters(self):
+        return self.parameters
+
+    def build_circuit(self, prefix):
+        assert prefix == "sqd"
+        return self.circuit
+
+
+def test_component_run_snapshots_preparation_before_backend_execution() -> None:
+    class MutatingSampler(Sampler):
+        def run(self, requests):
+            results = StatevectorSampler().run(requests)
+            for request in requests:
+                request.circuit.x(0)
+            return results
+
+    circuit = Circuit(4)
+    circuit.x(0)
+    original = circuit.to_matrix().copy()
+    source = _SQDPreparation(circuit)
+    algorithm = SQD(MutatingSampler())
+    results = [
+        algorithm.run(
+            _one_electron_system(), source, shots=16, samples_per_batch=1, seed=7
+        )
+        for _ in range(2)
+    ]
+    assert results[0] == results[1]
+    np.testing.assert_array_equal(circuit.to_matrix(), original)
+
+
+@pytest.mark.parametrize(
+    "width, parameters, output, error, message",
+    [
+        (True, 0, "bound", TypeError, "num_qubits"),
+        (0, 0, "bound", ValueError, "num_qubits"),
+        (4, -1, "bound", ValueError, "num_parameters"),
+        (4, True, "bound", TypeError, "num_parameters"),
+        (3, 0, "bound", ValueError, "qubit count"),
+        (4, 0, "object", TypeError, "return a Circuit"),
+        (4, 1, "symbolic", ValueError, "fully bound"),
+        (4, 0, "reset", ValueError, "unitary"),
+        (4, 0, "measurement", ValueError, "classical data"),
+        (4, 0, "wrong_width", ValueError, "qubit count"),
+        (3, 0, "wrong_width", ValueError, "width"),
+    ],
+)
+def test_component_run_rejects_invalid_preparations_before_sampling(
+    width, parameters, output, error, message
+) -> None:
+    circuit = Circuit(3 if output == "wrong_width" else 4)
+    if output == "symbolic":
+        circuit.rx(0, Parameter("theta"))
+    elif output == "reset":
+        circuit.reset(0)
+    elif output == "measurement":
+        circuit.measure(0)
+    component = _SQDPreparation(
+        object() if output == "object" else circuit,
+        width=width,
+        parameters=parameters,
+    )
+    sampler = _ScriptedSampler({"0001": 16})
+    with pytest.raises(error, match=message):
+        SQD(sampler).run(
+            _one_electron_system(), component, shots=16, samples_per_batch=1
+        )
+    assert sampler.calls == []
 
 
 def test_sqd_internal_modules_follow_one_way_dependency_order() -> None:
@@ -170,7 +299,7 @@ def _compute(
     shots = sum(counts.values())
     return SQD(_ScriptedSampler(counts)).compute(
         selected,
-        Circuit(selected.num_spin_orbitals),
+        UserCircuitPreparation(Circuit(selected.num_spin_orbitals)),
         shots=shots,
         samples_per_batch=shots,
         max_iterations=max_iterations,
@@ -390,7 +519,7 @@ def test_user_initial_occupancies_allow_recovery_without_valid_raw_shots() -> No
     system = _one_electron_system()
     result = SQD(_ScriptedSampler({"0000": 8})).compute(
         system,
-        Circuit(4),
+        UserCircuitPreparation(Circuit(4)),
         shots=8,
         samples_per_batch=8,
         max_iterations=1,
@@ -685,7 +814,7 @@ def test_seed_reproduces_recovery_batches_and_sampler_seed() -> None:
     second_sampler = _ScriptedSampler(counts)
     first = SQD(first_sampler).compute(
         _one_electron_system(),
-        Circuit(4),
+        UserCircuitPreparation(Circuit(4)),
         shots=16,
         samples_per_batch=1,
         num_batches=4,
@@ -694,7 +823,7 @@ def test_seed_reproduces_recovery_batches_and_sampler_seed() -> None:
     )
     second = SQD(second_sampler).compute(
         _one_electron_system(),
-        Circuit(4),
+        UserCircuitPreparation(Circuit(4)),
         shots=16,
         samples_per_batch=1,
         num_batches=4,
@@ -722,7 +851,7 @@ def test_statevector_sampler_and_hartree_fock_preparation_integrate() -> None:
 
     result = SQD(StatevectorSampler()).compute(
         system,
-        circuit,
+        UserCircuitPreparation(circuit),
         shots=32,
         samples_per_batch=8,
         max_iterations=2,
@@ -741,9 +870,9 @@ def test_noncontiguous_qubit_identifiers_preserve_position_semantics() -> None:
     circuit = Circuit([7, 2, 9, 4])
     sampler = _ScriptedSampler({"0001": 4, "0100": 4})
 
-    result = SQD(sampler).compute(
+    result = SQD(sampler).run(
         system,
-        circuit,
+        _SQDPreparation(circuit),
         shots=8,
         samples_per_batch=2,
         max_iterations=1,
@@ -844,7 +973,9 @@ def test_numeric_options_are_validated_before_sampling(changes, error, message) 
     }
     options.update(changes)
     with pytest.raises(error, match=message):
-        SQD(sampler).compute(_one_electron_system(), Circuit(4), **options)
+        SQD(sampler).compute(
+            _one_electron_system(), UserCircuitPreparation(Circuit(4)), **options
+        )
     assert sampler.calls == []
 
 
@@ -872,7 +1003,7 @@ def test_required_configurations_are_validated_before_sampling() -> None:
     with pytest.raises(ValueError, match="particle sector"):
         SQD(sampler).compute(
             _one_electron_system(),
-            Circuit(4),
+            UserCircuitPreparation(Circuit(4)),
             shots=2,
             samples_per_batch=1,
             include_configurations=(0b0011,),
@@ -880,7 +1011,7 @@ def test_required_configurations_are_validated_before_sampling() -> None:
     with pytest.raises(ValueError, match="cannot exceed"):
         SQD(sampler).compute(
             _one_electron_system(),
-            Circuit(4),
+            UserCircuitPreparation(Circuit(4)),
             shots=2,
             samples_per_batch=1,
             include_configurations=(0b0001, 0b0100),
@@ -983,7 +1114,7 @@ def test_initial_occupancies_are_physically_validated(
     with pytest.raises(error, match=message):
         SQD(sampler).compute(
             _one_electron_system(),
-            Circuit(4),
+            UserCircuitPreparation(Circuit(4)),
             shots=2,
             samples_per_batch=1,
             initial_occupancies=occupancies,
@@ -997,26 +1128,40 @@ def test_components_circuit_and_sampler_contract_are_validated() -> None:
         SQD(object())  # type: ignore[arg-type]
     algorithm = SQD(sampler)
     with pytest.raises(TypeError, match="ElectronicSystem"):
-        algorithm.compute(object(), Circuit(4), shots=2, samples_per_batch=1)  # type: ignore[arg-type]
-    with pytest.raises(TypeError, match="Circuit"):
         algorithm.compute(
-            _one_electron_system(), object(), shots=2, samples_per_batch=1
+            object(), UserCircuitPreparation(Circuit(4)), shots=2, samples_per_batch=1
         )  # type: ignore[arg-type]
+    for unsupported in (object(), Circuit(4)):
+        with pytest.raises(TypeError, match="StatePreparation"):
+            algorithm.compute(
+                _one_electron_system(), unsupported, shots=2, samples_per_batch=1
+            )  # type: ignore[arg-type]
     with pytest.raises(ValueError, match="width"):
         algorithm.compute(
-            _one_electron_system(), Circuit(3), shots=2, samples_per_batch=1
+            _one_electron_system(),
+            UserCircuitPreparation(Circuit(3)),
+            shots=2,
+            samples_per_batch=1,
         )
 
     symbolic = Circuit(4)
     symbolic.rx(0, Parameter("theta"))
     with pytest.raises(ValueError, match="fully bound"):
         algorithm.compute(
-            _one_electron_system(), symbolic, shots=2, samples_per_batch=1
+            _one_electron_system(),
+            UserCircuitPreparation(symbolic),
+            shots=2,
+            samples_per_batch=1,
         )
     dynamic = Circuit(4)
     dynamic.reset(0)
     with pytest.raises(ValueError, match="unitary"):
-        algorithm.compute(_one_electron_system(), dynamic, shots=2, samples_per_batch=1)
+        algorithm.compute(
+            _one_electron_system(),
+            _SQDPreparation(dynamic),
+            shots=2,
+            samples_per_batch=1,
+        )
     assert sampler.calls == []
 
 
@@ -1028,7 +1173,7 @@ def test_invalid_sampler_batch_is_rejected() -> None:
     with pytest.raises(ValueError, match="one result per request"):
         SQD(_MissingResultSampler()).compute(
             _one_electron_system(),
-            Circuit(4),
+            UserCircuitPreparation(Circuit(4)),
             shots=2,
             samples_per_batch=1,
         )

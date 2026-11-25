@@ -90,6 +90,24 @@ def test_multi_qubit_unitary_preserves_system_target_order(
     )
 
 
+@pytest.mark.reference
+def test_target_circuit_keeps_absolute_phase_and_system_bit_order() -> None:
+    unitary = Circuit(2)
+    unitary.phase(0, math.pi / 2)
+    unitary.set_global_phase(math.pi / 4)
+    component = PhaseEstimationCircuit(unitary, 3)
+    forward = component.build_circuit().to_matrix()
+    adjoint = (
+        PhaseEstimationCircuit(unitary, 3, inverse=True).build_circuit().to_matrix()
+    )
+    for system_index, grid_point in enumerate((1, 3, 1, 3)):
+        basis_in = system_index << 3
+        expected = np.zeros(32)
+        expected[basis_in + grid_point] = 1
+        np.testing.assert_allclose(abs(forward[:, basis_in]) ** 2, expected, atol=1e-12)
+    np.testing.assert_allclose(adjoint, forward.conj().T, rtol=0, atol=1e-12)
+
+
 def test_component_reports_register_widths_and_returns_fresh_circuits() -> None:
     unitary = Circuit(2)
     unitary.cx(0, 1)

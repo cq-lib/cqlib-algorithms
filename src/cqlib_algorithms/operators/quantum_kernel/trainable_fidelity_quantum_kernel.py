@@ -18,10 +18,10 @@ import math
 from collections.abc import Mapping, Sequence
 from numbers import Real
 
-from cqlib import Circuit
-
 from ...protocols.quantum_kernel import TrainableQuantumKernel
 from ...protocols.sampler import Sampler
+from ...protocols.state_preparation import StatePreparation
+from ..state_preparation import UserCircuitPreparation
 from .fidelity_quantum_kernel import FidelityQuantumKernel
 
 
@@ -37,7 +37,7 @@ def _names(values: Sequence[str], label: str) -> tuple[str, ...]:
 
 
 class TrainableFidelityQuantumKernel(TrainableQuantumKernel):
-    """Snapshot a circuit with input, trainable and fixed symbols.
+    """Snapshot a feature-map component with input, trainable and fixed symbols.
 
     The three groups are disjoint and cover all active symbols. Execution
     options follow FidelityQuantumKernel. Each complete finite real binding
@@ -47,7 +47,7 @@ class TrainableFidelityQuantumKernel(TrainableQuantumKernel):
 
     def __init__(
         self,
-        feature_map: Circuit,
+        feature_map: StatePreparation,
         input_parameters: Sequence[str],
         trainable_parameters: Sequence[str],
         *,
@@ -57,6 +57,23 @@ class TrainableFidelityQuantumKernel(TrainableQuantumKernel):
         max_statevector_qubits: int = 20,
         max_statevector_bytes: int = 268_435_456,
     ) -> None:
+        """Configure input, trainable, and fixed roles on one feature map.
+
+        Args:
+            feature_map: StatePreparation built once with prefix ``"x"`` and copied.
+            input_parameters: Ordered active symbols corresponding to data columns.
+            trainable_parameters: Ordered active symbols optimized across all samples.
+            parameter_bindings: Finite values for all remaining active symbols.
+            sampler: Optional Sampler for compute-uncompute evaluation.
+            shots: Positive samples per pair, required together with ``sampler``.
+            max_statevector_qubits: Maximum register width for exact evaluation.
+            max_statevector_bytes: Retained amplitude-storage budget for exact evaluation.
+
+        Raises:
+            TypeError: If the component or configuration types are invalid.
+            ValueError: If parameter groups overlap, fail to cover active symbols,
+                or violate the fixed kernel's execution constraints.
+        """
         self._inputs = _names(input_parameters, "input_parameters")
         self._trainables = _names(trainable_parameters, "trainable_parameters")
         if set(self._inputs) & set(self._trainables):
@@ -106,7 +123,7 @@ class TrainableFidelityQuantumKernel(TrainableQuantumKernel):
                 raise ValueError("parameter_bindings values must be finite")
             fixed[name] = float(value)
         return FidelityQuantumKernel(
-            self._feature_map,
+            UserCircuitPreparation(self._feature_map),
             self._inputs,
             parameter_bindings=fixed,
             sampler=self._sampler,

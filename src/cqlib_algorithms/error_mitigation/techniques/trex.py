@@ -38,7 +38,7 @@ References
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 
 import numpy as np
 from cqlib import Circuit
@@ -53,7 +53,8 @@ from ...protocols import (
     SamplerRequest,
     spawn_seeds,
 )
-from .._circuits import rebuild
+from ...protocols.state_preparation import StatePreparation
+from .._circuits import bind_request_circuit, build_estimator_request, rebuild
 from ..core import QemExecutor
 from .rem import _validate_z_diagonal
 
@@ -219,7 +220,7 @@ def combine_results(
 
 
 def execute_with_trex(
-    circuit: Circuit,
+    circuit: StatePreparation | Circuit,
     executor: QemExecutor,
     observable: Hamiltonian | PauliString,
     /,
@@ -227,34 +228,35 @@ def execute_with_trex(
     shots: int,
     num_randomizations: int = 32,
     seed: int | None = None,
+    parameter_bindings: Mapping[str, float] | None = None,
+    prefix: str = "qem",
 ) -> float:
     r"""Estimate one observable on ``circuit`` with readout twirling.
 
-    This is the immediate form of :func:`trex_executor`::
-
-        execute_with_trex(c, ex, obs, shots=s)
-        == trex_executor(ex, shots=s).estimate(
-               [EstimatorRequest(c, obs, shots=s)]
-           )[0].expectation
+    This is the immediate form of :func:`trex_executor`. The same task
+    can be evaluated by calling ``run()`` on that executor.
 
     Args:
-        circuit: Circuit whose expectation value is to be mitigated.
+        circuit: State-preparation component or circuit to evaluate.
         executor: Execution backend supplying the sampling surface.
         observable: Observable to estimate. It must be diagonal in the :math:`Z` basis.
         shots: Shot count for every twirled and calibration circuit.
         num_randomizations: Number of independent twirls to average over.
         seed: Seed of the twirl draw and the measurements, or ``None`` for fresh
             randomness.
+        parameter_bindings: Finite values covering exactly all active symbols.
+            Values are bound before circuit transformations; None requires no symbols.
+        prefix: Build prefix for a preparation component, defaulting to ``qem``;
+            existing Circuit symbols keep their names.
 
     Returns:
         Mitigated expectation value.
 
     Raises:
-        TypeError: If ``shots`` or ``num_randomizations`` is not an integer, or if
-            ``seed`` is neither an integer nor ``None``.
-        ValueError: If ``shots`` or ``num_randomizations`` is below one, or if
+        TypeError: If an input or configuration argument has the wrong type.
+        ValueError: If bindings are non-finite or do not cover active symbols exactly,
+            or if ``shots`` or ``num_randomizations`` is below one, or if
             ``observable`` is not diagonal in the :math:`Z` basis.
-
     """
     wrapped = trex_executor(
         executor,
@@ -262,7 +264,13 @@ def execute_with_trex(
         num_randomizations=num_randomizations,
         seed=seed,
     )
-    request = EstimatorRequest(circuit=circuit, observable=observable, shots=shots)
+    request = build_estimator_request(
+        circuit,
+        observable,
+        shots=shots,
+        parameter_bindings=parameter_bindings,
+        prefix=prefix,
+    )
     return wrapped.estimate([request])[0].expectation
 
 
@@ -357,15 +365,16 @@ class _TrexEstimator(Estimator):
 
     def _mitigate(self, request: EstimatorRequest) -> EstimatorResult:
         r"""Sample the twirled and calibration circuits and recombine."""
+        bound_circuit = bind_request_circuit(request)
         # Reject a non-diagonal observable before spending any shots on it.
         _validate_z_diagonal(request.observable)
-        num_qubits = request.circuit.num_qubits
+        num_qubits = bound_circuit.num_qubits
         seed = self._seed if self._seed is not None else request.seed
         # The table is drawn once and threaded through both stages, so the
         # circuits and the recombination always see the same twirl even when
         # the seed is None.
         twirls = _draw_twirls(self._num_randomizations, num_qubits, seed)
-        circuits = _build_circuits(request.circuit, twirls, _TWIRL_PAULI)
+        circuits = _build_circuits(bound_circuit, twirls, _TWIRL_PAULI)
         # Each twirled and calibration circuit is sampled independently, so it
         # takes its own child seed while one run seed still reproduces the
         # whole randomized estimate.

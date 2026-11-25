@@ -52,7 +52,7 @@ class VQE:
         estimator: Component used to evaluate the objective.
         ansatz: Parameterized state-preparation component.
         optimizer: Classical optimizer for active parameters.
-        prefix: Non-empty parameter-name prefix passed to the ansatz.
+        prefix: Parameter-name prefix passed to the ansatz.
 
     Raises:
         TypeError: If a dependency or input has the wrong type.
@@ -103,7 +103,7 @@ class VQE:
         """The prefix used to build ansatz symbols."""
         return self._prefix
 
-    def compute_minimum_eigenvalue(
+    def run(
         self,
         operator: Hamiltonian | PauliString,
         initial_point: Mapping[str, float],
@@ -112,11 +112,15 @@ class VQE:
     ) -> VQEResult:
         """Run one VQE minimization and return the final optimizer iterate.
 
-        The method delegates circuit construction, objective validation,
-        expectation evaluation, differentiation and parameter updates to the
-        configured public components. It performs no additional terminal
-        estimator call: ``eigenvalue`` is the optimizer's independently
-        evaluated ``optimal_value``.
+        Args:
+            operator: Hermitian observable on the ansatz register.
+            initial_point: Initial value of each active ansatz parameter,
+                keyed by its name.
+            shots: Optional sample count forwarded to the estimator.
+
+        Returns:
+            The optimizer's final energy, parameter bindings, bound circuit,
+            and optimization result.
 
         Raises:
             TypeError: If an input, dependency, or returned result has the
@@ -171,3 +175,13 @@ class VQE:
             optimal_circuit,
             optimizer_result,
         )
+
+    def compute_minimum_eigenvalue(
+        self,
+        operator: Hamiltonian | PauliString,
+        initial_point: Mapping[str, float],
+        *,
+        shots: int | None = None,
+    ) -> VQEResult:
+        """Run VQE with the same inputs and result as :meth:`run`."""
+        return self.run(operator, initial_point, shots=shots)

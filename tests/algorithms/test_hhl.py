@@ -33,10 +33,12 @@ from cqlib_algorithms.algorithms import (
 )
 from cqlib_algorithms.operators import (
     AmplitudeEncoding,
+    BasisStateInitialization,
     PhaseEstimationCircuit,
     StatevectorSampler,
 )
 from cqlib_algorithms.operators.arithmetic import ExactReciprocal
+from cqlib_algorithms.operators.state_preparation import UserCircuitPreparation
 from cqlib_algorithms.protocols import (
     Sampler,
     SamplerRequest,
@@ -346,12 +348,15 @@ def test_problem_rejects_single_entry_rhs():
 def test_problem_snapshots_rhs_circuit():
     preparation = Circuit(1)
     preparation.h(0)
-    problem = LinearSystemProblem(operator=np.diag([1.0, 0.5]), rhs=preparation)
+    problem = LinearSystemProblem(
+        operator=np.diag([1.0, 0.5]), rhs=UserCircuitPreparation(preparation)
+    )
 
     preparation.x(0)
 
-    assert problem.rhs.num_qubits == 1
-    assert problem.rhs.to_matrix()[0, 0] == pytest.approx(1.0 / math.sqrt(2.0))
+    assert isinstance(problem.rhs, UserCircuitPreparation)
+    assert problem.rhs_circuit.num_qubits == 1
+    assert problem.rhs_circuit.to_matrix()[0, 0] == pytest.approx(1.0 / math.sqrt(2.0))
 
 
 def test_problem_rejects_rhs_circuit_width():
@@ -360,7 +365,9 @@ def test_problem_rejects_rhs_circuit_width():
     with pytest.raises(
         ValueError, match="rhs circuit width must equal the system width"
     ):
-        LinearSystemProblem(operator=np.diag([1.0, 0.5]), rhs=preparation)
+        LinearSystemProblem(
+            operator=np.diag([1.0, 0.5]), rhs=UserCircuitPreparation(preparation)
+        )
 
 
 def test_problem_rejects_non_square_operator():
@@ -1529,11 +1536,80 @@ def test_statevector_sampling_is_close_to_the_exact_distribution():
 
 
 @pytest.mark.integration
+def test_component_rhs_single_matches_classical_solution_and_vector_batch():
+    operator = np.array([[1.5, 0.5j], [-0.5j, 1.5]], dtype=np.complex128)
+    rhs = [1.0, 0.5j]
+    problem = LinearSystemProblem(operator, AmplitudeEncoding(rhs))
+    settings = {
+        "num_evaluation_qubits": 2,
+        "scaling": 0.25,
+        "bound": 4.0,
+        "shots": 8192,
+        "seed": 7,
+    }
+    solver = HHL(
+        StatevectorSampler(),
+        components=HHLComponents(state_preparation=_RecordingEncoding),
+    )
+    _RECORDS.clear()
+    single = solver.run(problem, **settings)
+    assert _RECORDS == []
+    batch = solver.run(
+        [
+            HHLRequest(LinearSystemProblem(operator, rhs), **settings),
+            HHLRequest(
+                LinearSystemProblem(operator, AmplitudeEncoding(rhs)),
+                **settings,
+            ),
+        ]
+    )
+    assert batch == [single, single]
+    assert _RECORDS == ["state_preparation"]
+    expected = np.linalg.solve(operator, rhs)
+    expected /= np.linalg.norm(expected)
+    np.testing.assert_allclose(
+        [single.solution_probabilities.get(i, 0.0) for i in range(2)],
+        abs(expected) ** 2,
+        rtol=0,
+        atol=0.025,
+    )
+    # With grid-exact eigenvalues, uncomputation clears the phase register
+    # and the post-selected amplitudes retain the relative complex phase.
+    circuit = HHL.build_circuit(
+        problem, num_evaluation_qubits=2, scaling=0.25, bound=4.0
+    )
+    postselected = circuit.to_matrix()[:, 0].reshape(2, 2, 4)[1]
+    np.testing.assert_allclose(postselected[:, 1:], 0.0, atol=1e-12)
+    amplitudes = postselected[:, 0]
+    normalized = amplitudes / np.linalg.norm(amplitudes)
+    assert abs(np.vdot(expected, normalized)) == pytest.approx(1.0, abs=1e-12)
+    assert single.success_probability == pytest.approx(
+        _analytic_success(operator, rhs, 4.0, 0.25), abs=0.025
+    )
+
+
+def test_hhl_component_width_and_single_options_are_checked_before_sampling():
+    sampler = _ScriptedSampler([])
+    solver = HHL(sampler)
+    operator = np.diag([1.0, 2.0])
+    with pytest.raises(ValueError, match="rhs circuit width"):
+        LinearSystemProblem(operator, BasisStateInitialization(2, 1))
+    problem = LinearSystemProblem(operator, BasisStateInitialization(1, 0))
+    with pytest.raises(TypeError, match="requires"):
+        solver.run(problem, num_evaluation_qubits=2, shots=1)
+    with pytest.raises(TypeError, match="batch requests"):
+        solver.run([], scaling=0.25)
+    assert sampler.calls == 0
+
+
+@pytest.mark.integration
 def test_circuit_rhs_matches_the_equivalent_vector_rhs():
     operator = np.diag([1.0, 0.5])
     preparation = Circuit(1)
     preparation.h(0)
-    circuit_problem = LinearSystemProblem(operator=operator, rhs=preparation)
+    circuit_problem = LinearSystemProblem(
+        operator=operator, rhs=UserCircuitPreparation(preparation)
+    )
     vector_problem = _diag_problem([1.0, 0.5], [1.0, 1.0])
 
     from_circuit = HHL(StatevectorSampler()).run(

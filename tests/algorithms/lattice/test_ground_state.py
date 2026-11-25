@@ -38,7 +38,11 @@ from cqlib_algorithms.extension.lattice import (
     SpinLatticeConfiguration,
     SpinMagnetizationSector,
 )
-from cqlib_algorithms.operators.ansatz import EfficientSU2Ansatz
+from cqlib_algorithms.operators.ansatz import (
+    EfficientSU2Ansatz,
+    FermiHubbardAnsatz,
+    SpinExchangeAnsatz,
+)
 from cqlib_algorithms.operators.estimator import StatevectorEstimator
 from cqlib_algorithms.protocols import (
     Ansatz,
@@ -50,6 +54,24 @@ from cqlib_algorithms.protocols import (
     OptimizerResult,
     OptimizerStatus,
 )
+
+
+@pytest.mark.parametrize("kind", ["fermionic", "spin"])
+def test_component_run_executes_explicit_lattice_ansatz(kind):
+    factory, ansatz_factory = (
+        (_fermionic_system, FermiHubbardAnsatz)
+        if kind == "fermionic"
+        else (_spin_system, SpinExchangeAnsatz)
+    )
+    system, configuration, point, _, reference = factory()
+    saved_point = dict(point)
+    solver = LatticeGroundState(
+        StatevectorEstimator(), _FixedPointOptimizer(), prefix="lat"
+    )
+    result = solver.run(system, point, ansatz=ansatz_factory(system, configuration))
+    assert result.variational_energy == pytest.approx(reference, abs=1e-12)
+    assert result.system is system
+    assert point == saved_point
 
 
 class _FixedPointOptimizer(Optimizer):
@@ -109,14 +131,16 @@ def _fermionic_system() -> tuple[
 
 
 @pytest.mark.reference
-def test_fermi_hubbard_closure_matches_independent_sector_diagonalization():
+@pytest.mark.parametrize("entry", ["run", "compute"])
+def test_fermi_hubbard_closure_matches_independent_sector_diagonalization(entry):
     system, configuration, point, ground, exact_energy = _fermionic_system()
 
-    result = LatticeGroundState(
+    solver = LatticeGroundState(
         StatevectorEstimator(),
         _FixedPointOptimizer(),
         prefix="lat",
-    ).compute(
+    )
+    result = getattr(solver, entry)(
         system,
         point,
         configuration=configuration,
@@ -171,14 +195,16 @@ def _spin_system() -> tuple[
 
 
 @pytest.mark.reference
-def test_spin_closure_matches_independent_fixed_magnetization_block():
+@pytest.mark.parametrize("entry", ["run", "compute"])
+def test_spin_closure_matches_independent_fixed_magnetization_block(entry):
     system, configuration, point, ground, exact_energy = _spin_system()
 
-    result = LatticeGroundState(
+    solver = LatticeGroundState(
         StatevectorEstimator(),
         _FixedPointOptimizer(),
         prefix="lat",
-    ).compute(
+    )
+    result = getattr(solver, entry)(
         system,
         point,
         configuration=configuration,

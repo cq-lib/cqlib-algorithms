@@ -62,7 +62,7 @@ from __future__ import annotations
 
 import math
 import warnings
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 
 import numpy as np
 from cqlib import Circuit
@@ -70,7 +70,13 @@ from cqlib.circuit import StandardGate, ValueOperation
 from cqlib.qis import Hamiltonian, PauliString, Phase
 
 from ...protocols import Estimator, EstimatorRequest, EstimatorResult, SamplerRequest
-from .._circuits import rebuild, strip_measurements
+from ...protocols.state_preparation import StatePreparation
+from .._circuits import (
+    bind_request_circuit,
+    build_estimator_request,
+    rebuild,
+    strip_measurements,
+)
 from ..core import QemExecutor
 from ..inference import ConvergenceWarning
 
@@ -134,7 +140,7 @@ def generalized_eigenvalue(
 
 
 def execute_with_qse(
-    circuit: Circuit,
+    circuit: StatePreparation | Circuit,
     executor: QemExecutor,
     observable: Hamiltonian | PauliString,
     /,
@@ -143,23 +149,20 @@ def execute_with_qse(
     code_hamiltonian: Hamiltonian,
     shots: int | None = None,
     seed: int | None = None,
+    parameter_bindings: Mapping[str, float] | None = None,
+    prefix: str = "qem",
 ) -> float:
     r"""Estimate one observable on ``circuit`` with subspace expansion.
 
-    This is the immediate form of :func:`qse_executor`::
-
-        execute_with_qse(c, ex, obs, check_operators=ops,
-                         code_hamiltonian=h)
-        == qse_executor(ex, check_operators=ops, code_hamiltonian=h).estimate(
-               [EstimatorRequest(c, obs)]
-           )[0].expectation
+    This is the immediate form of :func:`qse_executor`. The same task
+    can be evaluated by calling ``run()`` on that executor.
 
     The returned value is the projected expectation
     :math:`(v^\dagger O_S v)/(v^\dagger S v)` of ``observable`` in the ground
     vector of the generalized problem built from ``code_hamiltonian``.
 
     Args:
-        circuit: Fully bound circuit preparing the noisy state :math:`|\psi\rangle`.
+        circuit: State-preparation component or circuit to evaluate.
             Any trailing measurements are stripped before evaluation.
         executor: Execution backend supplying the estimator and sampler surfaces.
         observable: Observable to estimate, a Hermitian Hamiltonian or Pauli string acting
@@ -173,20 +176,24 @@ def execute_with_qse(
         seed: Seed of the sampled overlap matrix, or ``None`` for fresh randomness.
             Every Pauli overlap in one run derives its draw from this value, so the
             run is reproducible.
+        parameter_bindings: Finite values covering exactly all active symbols.
+            Values are bound before circuit transformations; None requires no symbols.
+        prefix: Build prefix for a preparation component, defaulting to ``qem``;
+            existing Circuit symbols keep their names.
 
     Returns:
         The mitigated expectation value of ``observable``.
 
     Raises:
-        TypeError: If an argument has the wrong type.
-        ValueError: If ``check_operators`` is empty, if ``code_hamiltonian`` or a check
+        TypeError: If an input or configuration argument has the wrong type.
+        ValueError: If bindings are non-finite or do not cover active symbols exactly,
+            or if ``check_operators`` is empty, if ``code_hamiltonian`` or a check
             operator acts on a different width than the circuit, or if ``shots`` is
             not positive.
 
     Warns:
         ConvergenceWarning: If the sampled overlap matrix is not positive definite, in which case
             it is shifted before the generalized problem is solved.
-
     """
     wrapped = qse_executor(
         executor,
@@ -195,7 +202,9 @@ def execute_with_qse(
         shots=shots,
         seed=seed,
     )
-    request = EstimatorRequest(circuit=circuit, observable=observable)
+    request = build_estimator_request(
+        circuit, observable, parameter_bindings=parameter_bindings, prefix=prefix
+    )
     return wrapped.estimate([request])[0].expectation
 
 
@@ -312,7 +321,8 @@ class _QseEstimator(Estimator):
 
     def _mitigate(self, request: EstimatorRequest) -> EstimatorResult:
         r"""Build the projected matrices and return the mitigated estimate."""
-        circuit, _ = strip_measurements(request.circuit)
+        bound_circuit = bind_request_circuit(request)
+        circuit, _ = strip_measurements(bound_circuit)
         observable = _as_hamiltonian(request.observable)
         _validate_widths(
             circuit, observable, self._code_hamiltonian, self._check_operators

@@ -24,18 +24,21 @@ from cqlib import Circuit, Parameter
 from cqlib.circuit import ClassicalExpr
 
 from cqlib_algorithms.operators.oracle import GeneralStateReflection
+from cqlib_algorithms.operators.state_preparation import UserCircuitPreparation
 from cqlib_algorithms.protocols import StatePreparation
 
 
 def test_reflection_is_a_slotted_encapsulation_with_read_only_public_views():
-    reflection = GeneralStateReflection(Circuit(1))
+    reflection = GeneralStateReflection(UserCircuitPreparation(Circuit(1)))
     assert not is_dataclass(reflection)
     assert not hasattr(reflection, "__dict__")
     with pytest.raises(AttributeError):
         reflection.state_preparation = Circuit(2)
     with pytest.raises(AttributeError):
         reflection.num_qubits = 2
-    derived = GeneralStateReflection(reflection.state_preparation)
+    derived = GeneralStateReflection(
+        UserCircuitPreparation(reflection.state_preparation)
+    )
     np.testing.assert_allclose(
         derived.build_circuit().to_matrix(),
         reflection.build_circuit().to_matrix(),
@@ -118,7 +121,11 @@ def test_general_reflection_matches_independent_matrix_formula(kind):
         preparation.cx(0, 1)
 
     preparation_matrix = preparation.to_matrix()
-    actual = GeneralStateReflection(preparation).build_circuit().to_matrix()
+    actual = (
+        GeneralStateReflection(UserCircuitPreparation(preparation))
+        .build_circuit()
+        .to_matrix()
+    )
 
     np.testing.assert_allclose(
         actual,
@@ -135,8 +142,16 @@ def test_preparation_global_phase_cancels_without_changing_reflection():
     without_phase = Circuit(1)
     without_phase.ry(0, 0.4)
 
-    actual = GeneralStateReflection(with_phase).build_circuit().to_matrix()
-    expected = GeneralStateReflection(without_phase).build_circuit().to_matrix()
+    actual = (
+        GeneralStateReflection(UserCircuitPreparation(with_phase))
+        .build_circuit()
+        .to_matrix()
+    )
+    expected = (
+        GeneralStateReflection(UserCircuitPreparation(without_phase))
+        .build_circuit()
+        .to_matrix()
+    )
 
     np.testing.assert_allclose(actual, expected, rtol=0.0, atol=1e-12)
 
@@ -145,7 +160,9 @@ def test_parameterized_preparation_can_be_bound_after_building_reflection():
     theta = Parameter("theta")
     preparation = Circuit(1)
     preparation.ry(0, theta)
-    reflection = GeneralStateReflection(preparation).build_circuit()
+    reflection = GeneralStateReflection(
+        UserCircuitPreparation(preparation)
+    ).build_circuit()
 
     value = 0.623
     actual = reflection.assign_parameters({"theta": value}).to_matrix()
@@ -162,7 +179,7 @@ def test_non_contiguous_source_ids_are_normalized_by_insertion_order():
     preparation.cx(7, 2)
     source_matrix = preparation.to_matrix([7, 2])
 
-    reflection = GeneralStateReflection(preparation)
+    reflection = GeneralStateReflection(UserCircuitPreparation(preparation))
     actual = reflection.build_circuit().to_matrix([0, 1])
 
     assert [qubit.index for qubit in reflection.state_preparation.qubits] == [0, 1]
@@ -180,7 +197,7 @@ def test_constructor_defensively_copies_input_and_does_not_modify_it():
     snapshot = copy.deepcopy(preparation)
     expected = _general_reflection_reference(snapshot.to_matrix())
 
-    reflection = GeneralStateReflection(preparation)
+    reflection = GeneralStateReflection(UserCircuitPreparation(preparation))
     assert preparation == snapshot
     preparation.x(0)
 
@@ -192,7 +209,7 @@ def test_constructor_defensively_copies_input_and_does_not_modify_it():
 def test_exposed_preparation_and_build_results_are_independent_copies():
     preparation = Circuit(1)
     preparation.h(0)
-    reflection = GeneralStateReflection(preparation)
+    reflection = GeneralStateReflection(UserCircuitPreparation(preparation))
     exposed = reflection.state_preparation
     first = reflection.build_circuit()
     second = reflection.build_circuit()
@@ -210,7 +227,11 @@ def test_general_reflection_is_hermitian_unitary_and_involutory():
     preparation.ry(0, 0.2)
     preparation.rx(1, -0.7)
     preparation.cx(0, 1)
-    matrix = GeneralStateReflection(preparation).build_circuit().to_matrix()
+    matrix = (
+        GeneralStateReflection(UserCircuitPreparation(preparation))
+        .build_circuit()
+        .to_matrix()
+    )
     identity = np.eye(4)
 
     np.testing.assert_allclose(matrix, matrix.conj().T, rtol=0.0, atol=1e-12)
@@ -223,7 +244,9 @@ def test_barriers_are_allowed_and_preserved_through_inverse():
     preparation.h(0)
     preparation.barrier([0])
 
-    reflection = GeneralStateReflection(preparation).build_circuit()
+    reflection = GeneralStateReflection(
+        UserCircuitPreparation(preparation)
+    ).build_circuit()
 
     np.testing.assert_allclose(
         reflection.to_matrix(), np.array([[0.0, 1.0], [1.0, 0.0]]), rtol=0.0, atol=1e-12
@@ -244,7 +267,7 @@ def test_non_invertible_top_level_operations_are_rejected(operation):
         preparation.if_(ClassicalExpr.bool_literal(True), lambda body: body.x(0))
 
     with pytest.raises(ValueError, match="only valid invertible operations"):
-        GeneralStateReflection(preparation)
+        GeneralStateReflection(_Preparation(preparation))
 
 
 def test_non_invertible_nested_circuit_gate_is_rejected():
@@ -254,14 +277,14 @@ def test_non_invertible_nested_circuit_gate_is_rejected():
     preparation.append_circuit_gate(nested.to_gate("non_unitary"), [0])
 
     with pytest.raises(ValueError, match="only valid invertible operations"):
-        GeneralStateReflection(preparation)
+        GeneralStateReflection(_Preparation(preparation))
 
 
 def test_general_reflection_rejects_wrong_type_and_empty_circuit():
-    with pytest.raises(TypeError, match="state_preparation must be a Circuit"):
+    with pytest.raises(TypeError, match="StatePreparation or Ansatz"):
         GeneralStateReflection(object())  # type: ignore[arg-type]
     with pytest.raises(ValueError, match="at least one qubit"):
-        GeneralStateReflection(Circuit(0))
+        GeneralStateReflection(UserCircuitPreparation(Circuit(0)))
 
 
 @pytest.mark.parametrize("prefix", ["", "state"])

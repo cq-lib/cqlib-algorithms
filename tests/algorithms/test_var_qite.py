@@ -29,6 +29,7 @@ from scipy.linalg import expm  # type: ignore[import-untyped]
 from cqlib_algorithms.algorithms.time_evolution import VarQITE, VarQITEResult
 from cqlib_algorithms.operators import (
     NaturalGradient,
+    RealAmplitudesAnsatz,
     SamplingEstimator,
     StatevectorEstimator,
     StatevectorSampler,
@@ -239,11 +240,12 @@ def _two_qubit_hamiltonian_matrix() -> np.ndarray:
     identity = np.eye(2, dtype=np.complex128)
     pauli_x = np.array([[0.0, 1.0], [1.0, 0.0]], dtype=np.complex128)
     pauli_z = np.diag([1.0, -1.0]).astype(np.complex128)
-    return (
+    matrix: np.ndarray = (
         0.7 * np.kron(pauli_z, identity)
         + 0.3 * np.kron(pauli_x, pauli_x)
         - 0.2 * np.kron(identity, pauli_z)
     )
+    return matrix
 
 
 def _dense_reference_step(
@@ -290,10 +292,11 @@ def _dense_reference_step(
     return dict(zip(names, (float(value) for value in next_values), strict=True))
 
 
-def test_single_qubit_step_has_mclachlan_half_factor() -> None:
+@pytest.mark.parametrize("ansatz", [RYAnsatz(), RealAmplitudesAnsatz(1, reps=0)])
+def test_single_qubit_step_has_mclachlan_half_factor(ansatz: Ansatz) -> None:
     theta = 0.37
     time_step = 0.08
-    result = VarQITE(StatevectorEstimator(), RYAnsatz()).evolve(
+    result = VarQITE(StatevectorEstimator(), ansatz).run(
         _z_hamiltonian(),
         {"theta_0": theta},
         time_step,
@@ -469,17 +472,16 @@ def test_result_records_immutable_trajectory_and_auxiliary_observables() -> None
 def test_shots_and_child_seeds_are_forwarded_reproducibly() -> None:
     first_estimator = RecordingExactEstimator()
     second_estimator = RecordingExactEstimator()
-    arguments = {
-        "hamiltonian": _z_hamiltonian(),
-        "initial_parameters": {"theta_0": 0.2},
-        "time": 0.1,
-        "num_timesteps": 2,
-        "shots": 64,
-        "auxiliary_operators": {"x": PauliString.from_str("X")},
-        "seed": 37,
-    }
-    VarQITE(first_estimator, RYAnsatz()).evolve(**arguments)
-    VarQITE(second_estimator, RYAnsatz()).evolve(**arguments)
+    for estimator in (first_estimator, second_estimator):
+        VarQITE(estimator, RYAnsatz()).run(
+            _z_hamiltonian(),
+            {"theta_0": 0.2},
+            0.1,
+            num_timesteps=2,
+            shots=64,
+            auxiliary_operators={"x": PauliString.from_str("X")},
+            seed=37,
+        )
 
     expected_seeds = spawn_seeds(37, 8)
     assert len(first_estimator.batches) == 3
@@ -503,10 +505,11 @@ def test_shots_and_child_seeds_are_forwarded_reproducibly() -> None:
 
 
 @pytest.mark.integration
-def test_sampling_estimator_integration_is_seed_reproducible() -> None:
-    def run() -> VarQITEResult:
-        estimator = SamplingEstimator(StatevectorSampler())
-        return VarQITE(estimator, RYAnsatz()).evolve(
+def test_seeded_sampling_run_matches_evolve() -> None:
+    estimator = SamplingEstimator(StatevectorSampler())
+    algorithm = VarQITE(estimator, RealAmplitudesAnsatz(1, reps=0))
+    result, legacy = (
+        execute(
             _z_hamiltonian(),
             {"theta_0": 0.4},
             0.04,
@@ -515,15 +518,18 @@ def test_sampling_estimator_integration_is_seed_reproducible() -> None:
             auxiliary_operators={"x": PauliString.from_str("X")},
             seed=91,
         )
+        for execute in (algorithm.run, algorithm.evolve)
+    )
 
-    first = run()
-    repeated = run()
-
-    assert first.parameters == repeated.parameters
-    assert first.energies == repeated.energies
-    assert first.observables == repeated.observables
-    assert all(result.variance is not None for result in first.energies)
-    assert all(result.variance is not None for result in first.observables["x"])
+    assert result.times == legacy.times
+    assert result.parameters == legacy.parameters
+    assert result.energies == legacy.energies
+    assert result.observables == legacy.observables
+    np.testing.assert_array_equal(
+        result.evolved_circuit.to_matrix(), legacy.evolved_circuit.to_matrix()
+    )
+    assert all(item.variance is not None for item in result.energies)
+    assert all(item.variance is not None for item in result.observables["x"])
 
 
 def test_zero_hamiltonian_with_active_parameters_is_stationary() -> None:
@@ -617,7 +623,7 @@ def test_constructor_rejects_invalid_configuration(
         ),
     ],
 )
-def test_evolve_rejects_invalid_input(
+def test_run_rejects_invalid_input(
     overrides: dict[str, object],
     exception: type[Exception],
     message: str,
@@ -630,7 +636,7 @@ def test_evolve_rejects_invalid_input(
     }
     arguments.update(overrides)
     with pytest.raises(exception, match=message):
-        VarQITE(StatevectorEstimator(), RYAnsatz()).evolve(**arguments)  # type: ignore[arg-type]
+        VarQITE(StatevectorEstimator(), RYAnsatz()).run(**arguments)  # type: ignore[arg-type]
 
 
 def test_evolve_rejects_width_mismatch_and_unsupported_circuit() -> None:

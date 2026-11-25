@@ -24,8 +24,9 @@ from __future__ import annotations
 
 import math
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from numbers import Real
+from typing import overload
 
 from cqlib import Circuit
 from cqlib.qis import metrics
@@ -33,10 +34,12 @@ from cqlib.qis.state import DensityMatrix, Statevector
 
 from .._utils.circuit import validate_unitary_state_preparation
 from .._utils.numeric import validate_positive_integer
+from .._utils.state_preparation import build_state_preparation_circuit
 from ..operators.state_preparation import (
     GHZStatePreparation,
     UserCircuitPreparation,
 )
+from ..protocols.state_preparation import StatePreparation
 
 _NUMERICAL_TOLERANCE = 1e-12
 _BELL_OUTCOMES = ((0, 0), (0, 1), (1, 0), (1, 1))
@@ -52,9 +55,11 @@ def _validate_fidelity_tolerance(tolerance: float) -> None:
         raise ValueError("fidelity_tolerance must be between zero and one")
 
 
-def _snapshot_state_preparation(state_preparation: Circuit) -> Circuit:
+def _snapshot_state_preparation(
+    state_preparation: Circuit,
+) -> Circuit:
     if not isinstance(state_preparation, Circuit):
-        raise TypeError("state_preparation must be a Circuit")
+        raise TypeError("built state_preparation must be a Circuit")
     state_preparation.validate()
     if state_preparation.num_qubits != 1:
         raise ValueError("state_preparation must contain exactly one qubit")
@@ -107,16 +112,17 @@ def _copy_fidelities(values: tuple[float, ...]) -> tuple[float, ...]:
     return tuple(normalized)
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, init=False)
 class QuantumTeleportationRequest:
     """One ideal quantum teleportation experiment.
 
-    ``state_preparation`` must be a fixed one-qubit unitary circuit. The
-    request is shallowly frozen, so its mutable Core circuit must not be
-    changed during execution; the algorithm revalidates it before use.
+    A fixed one-qubit StatePreparation is built once with prefix
+    ``"teleportation_input"``. The request stores a fixed preparation component
+    and its independent ``preparation_circuit`` snapshot. The request is shallowly frozen: its stored circuit must
+    remain unchanged during its lifetime and is revalidated before execution.
 
     Args:
-        state_preparation: Fixed one-qubit unitary preparing the input state.
+        state_preparation: Fixed one-qubit preparation component.
         shots: Positive number of protocol trials.
         fidelity_tolerance: Numerical success margin below unit fidelity.
 
@@ -125,21 +131,45 @@ class QuantumTeleportationRequest:
         ValueError: If the circuit, shots, or tolerance are invalid.
     """
 
-    state_preparation: Circuit
+    state_preparation: StatePreparation
     shots: int
     fidelity_tolerance: float = 1e-12
+    _preparation_circuit: Circuit = field(init=False, repr=False)
 
     __hash__ = None  # type: ignore[assignment]
 
-    def __post_init__(self) -> None:
-        _snapshot_state_preparation(self.state_preparation)
-        validate_positive_integer(self.shots, "shots")
-        _validate_fidelity_tolerance(self.fidelity_tolerance)
-        object.__setattr__(self, "fidelity_tolerance", float(self.fidelity_tolerance))
+    def __init__(
+        self,
+        state_preparation: StatePreparation,
+        shots: int,
+        fidelity_tolerance: float = 1e-12,
+    ) -> None:
+        if not isinstance(state_preparation, StatePreparation):
+            raise TypeError("state_preparation must be a StatePreparation")
+        snapshot = _snapshot_state_preparation(
+            build_state_preparation_circuit(
+                state_preparation, prefix="teleportation_input"
+            )
+        )
+        validate_positive_integer(shots, "shots")
+        _validate_fidelity_tolerance(fidelity_tolerance)
+        object.__setattr__(
+            self,
+            "state_preparation",
+            UserCircuitPreparation(snapshot),
+        )
+        object.__setattr__(self, "_preparation_circuit", snapshot)
+        object.__setattr__(self, "shots", shots)
+        object.__setattr__(self, "fidelity_tolerance", float(fidelity_tolerance))
+
+    @property
+    def preparation_circuit(self) -> Circuit:
+        """Return the stored preparation snapshot, which must remain unchanged."""
+        return self._preparation_circuit
 
     def validate(self) -> None:
         """Revalidate this request, including its mutable Core circuit."""
-        _snapshot_state_preparation(self.state_preparation)
+        _snapshot_state_preparation(self.preparation_circuit)
         validate_positive_integer(self.shots, "shots")
         _validate_fidelity_tolerance(self.fidelity_tolerance)
 
@@ -238,9 +268,30 @@ class QuantumTeleportation:
         ValueError: If circuit validation or state reconstruction fails.
     """
 
-    def build_premeasurement_circuit(self, state_preparation: Circuit) -> Circuit:
-        """Build the three-qubit circuit immediately before Bell measurement."""
-        input_circuit = _snapshot_state_preparation(state_preparation)
+    def build_premeasurement_circuit(
+        self, state_preparation: StatePreparation
+    ) -> Circuit:
+        """Build the three-qubit circuit immediately before Bell measurement.
+
+        Args:
+            state_preparation: Fully bound one-qubit StatePreparation, built with
+                prefix ``"teleportation_input"``.
+
+        Returns:
+            A fresh circuit containing the input at position zero, the Bell pair,
+            and the input-to-Bell CNOT and Hadamard operations, without measurements.
+
+        Raises:
+            TypeError: If the input is not a StatePreparation.
+            ValueError: If its circuit is invalid, parameterized, or not one-qubit.
+        """
+        if not isinstance(state_preparation, StatePreparation):
+            raise TypeError("state_preparation must be a StatePreparation")
+        input_circuit = _snapshot_state_preparation(
+            build_state_preparation_circuit(
+                state_preparation, prefix="teleportation_input"
+            )
+        )
         return self._build_from_snapshot(input_circuit)
 
     @staticmethod
@@ -254,10 +305,65 @@ class QuantumTeleportation:
         circuit.validate()
         return circuit
 
+    @overload
+    def run(
+        self, requests: Sequence[QuantumTeleportationRequest], /
+    ) -> list[QuantumTeleportationResult]: ...
+
+    @overload
     def run(
         self,
+        state_preparation: StatePreparation,
+        *,
+        shots: int,
+        fidelity_tolerance: float = 1e-12,
+    ) -> QuantumTeleportationResult: ...
+
+    def run(
+        self,
+        state_preparation: StatePreparation | Sequence[QuantumTeleportationRequest],
+        *,
+        shots: int | None = None,
+        fidelity_tolerance: float | None = None,
+    ) -> QuantumTeleportationResult | list[QuantumTeleportationResult]:
+        """Teleport one prepared qubit or execute an ordered request batch locally.
+
+        Args:
+            state_preparation: Fixed one-qubit preparation component,
+                or an existing batch of teleportation requests.
+            shots: Positive number of trials for a single preparation.
+            fidelity_tolerance: Numerical success margin, defaulting to 1e-12.
+
+        Returns:
+            Bell-measurement outcomes and corrected-state fidelities for one
+            task, or one such result per batch item.
+
+        Raises:
+            TypeError: For invalid types, missing shots, or mixed invocation styles.
+            ValueError: For invalid preparations, shots, or fidelity tolerances.
+        """
+        if isinstance(state_preparation, Circuit):
+            raise TypeError(
+                "state_preparation must be a StatePreparation or request batch"
+            )
+        if isinstance(state_preparation, StatePreparation):
+            if shots is None:
+                raise TypeError("single teleportation requires shots")
+            request = QuantumTeleportationRequest(
+                state_preparation,
+                shots,
+                1e-12 if fidelity_tolerance is None else fidelity_tolerance,
+            )
+            return self._run_batch([request])[0]
+        if shots is not None or fidelity_tolerance is not None:
+            raise TypeError(
+                "batch requests cannot be combined with single-task options"
+            )
+        return self._run_batch(state_preparation)
+
+    def _run_batch(
+        self,
         requests: Sequence[QuantumTeleportationRequest],
-        /,
     ) -> list[QuantumTeleportationResult]:
         """Execute a validated batch of ideal local teleportation experiments."""
         prepared: list[
@@ -268,7 +374,7 @@ class QuantumTeleportation:
                 raise TypeError(
                     "requests must contain QuantumTeleportationRequest instances"
                 )
-            input_circuit = _snapshot_state_preparation(request.state_preparation)
+            input_circuit = _snapshot_state_preparation(request.preparation_circuit)
             validate_positive_integer(request.shots, "shots")
             _validate_fidelity_tolerance(request.fidelity_tolerance)
             target_state = Statevector.from_circuit(input_circuit)

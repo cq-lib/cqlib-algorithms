@@ -27,6 +27,8 @@ import copy
 from cqlib import Circuit
 from cqlib.circuit import CircuitError
 
+from ..._utils.state_preparation import build_component_circuit
+from ...protocols.ansatz import Ansatz
 from ...protocols.state_preparation import StatePreparation
 from .zero_state_reflection import ZeroStateReflection
 
@@ -39,17 +41,19 @@ class GeneralStateReflection:
     ``A†``, ``R0``, then ``A``. All preparation qubits participate in the
     reflection; no ancillas are added.
 
-    The input circuit is defensively copied at construction. Non-contiguous
+    The preparation or ansatz is built once with ``prefix`` and its circuit
+    is defensively copied at construction. Active symbols are preserved. Non-contiguous
     source-qubit IDs are mapped positionally, in ``Circuit.qubits`` order, to
     output qubits ``q0, q1, ...``. Barriers are allowed, but measurement,
     reset, delay, classical control, and any other non-invertible operation,
     including one nested in a circuit gate, are rejected.
 
     Args:
-        state_preparation: A non-empty, valid, symbolically invertible circuit.
+        state_preparation: Preparation or ansatz with a statically invertible circuit.
+        prefix: Naming prefix when building a component input.
 
     Raises:
-        TypeError: If ``state_preparation`` is not a Cqlib :class:`Circuit`.
+        TypeError: If ``state_preparation`` or ``prefix`` has an unsupported type.
         ValueError: If the circuit has no qubits, is invalid, or is not invertible.
     """
 
@@ -57,13 +61,19 @@ class GeneralStateReflection:
 
     _state_preparation: Circuit
 
-    def __init__(self, state_preparation: Circuit) -> None:
-        if not isinstance(state_preparation, Circuit):
-            raise TypeError("state_preparation must be a Circuit")
-        if state_preparation.num_qubits <= 0:
+    def __init__(
+        self,
+        state_preparation: StatePreparation | Ansatz,
+        *,
+        prefix: str = "reflection",
+    ) -> None:
+        if not isinstance(prefix, str):
+            raise TypeError("prefix must be a string")
+        circuit = build_component_circuit(state_preparation, prefix=prefix)
+        if circuit.num_qubits <= 0:
             raise ValueError("state_preparation must contain at least one qubit")
 
-        candidate = copy.deepcopy(state_preparation)
+        candidate = copy.deepcopy(circuit)
         try:
             candidate.validate()
             candidate.inverse()
@@ -87,37 +97,11 @@ class GeneralStateReflection:
 
         The component is validated before one circuit is built. Declared qubit
         and parameter-slot counts are checked against the built circuit before
-        the ordinary circuit constructor enforces static invertibility.
+        the reflection constructor enforces static invertibility.
         """
-        if not isinstance(prefix, str):
-            raise TypeError("prefix must be a string")
         if not isinstance(state_preparation, StatePreparation):
             raise TypeError("state_preparation must be a StatePreparation")
-
-        state_preparation.validate()
-        num_qubits = state_preparation.num_qubits()
-        num_parameters = state_preparation.num_parameters()
-        if isinstance(num_qubits, bool) or not isinstance(num_qubits, int):
-            raise TypeError("state_preparation num_qubits must be an integer")
-        if num_qubits <= 0:
-            raise ValueError("state_preparation num_qubits must be greater than zero")
-        if isinstance(num_parameters, bool) or not isinstance(num_parameters, int):
-            raise TypeError("state_preparation num_parameters must be an integer")
-        if num_parameters < 0:
-            raise ValueError("state_preparation num_parameters must be non-negative")
-
-        circuit = state_preparation.build_circuit(prefix)
-        if not isinstance(circuit, Circuit):
-            raise TypeError("state_preparation build_circuit must return a Circuit")
-        if circuit.num_qubits != num_qubits:
-            raise ValueError(
-                "built circuit qubit count must equal state_preparation num_qubits"
-            )
-        if len(circuit.used_symbols) > num_parameters:
-            raise ValueError(
-                "built circuit active symbol count must not exceed num_parameters"
-            )
-        return cls(circuit)
+        return cls(state_preparation, prefix=prefix)
 
     @property
     def num_qubits(self) -> int:

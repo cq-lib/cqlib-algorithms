@@ -446,3 +446,70 @@ def test_run_rejects_non_execution_results():
 
     with pytest.raises(TypeError, match="cqlib.device.ExecutionResult"):
         BernsteinVazirani(_DictSampler()).run([_request(2, 1, shots=4)])
+
+
+def test_single_query_component_recovers_two_bit_hidden_string():
+    from cqlib_algorithms.operators import HadamardPhaseQuery, PhaseOracle
+
+    function = BooleanFunction.from_truth_table([False, True, True, False])
+    query = HadamardPhaseQuery(PhaseOracle(function))
+    algorithm = BernsteinVazirani(StatevectorSampler())
+    result = algorithm.run(query, shots=32)
+    assert result == algorithm.run([BernsteinVaziraniRequest(function, 32)])[0]
+    assert result.modal_strings == ((True, True),)
+
+
+def test_single_query_uses_compact_oracle_and_preserves_mask():
+    from cqlib import Circuit
+
+    from cqlib_algorithms.operators import HadamardPhaseQuery, PhaseOracle
+
+    class CompactParity(PhaseOracle):
+        calls = 0
+
+        def build_circuit(self):
+            type(self).calls += 1
+            circuit = Circuit(2)
+            circuit.z(1)
+            return circuit
+
+    vector = BooleanVectorFunction.from_truth_table(
+        [(False, False), (True, False), (False, True), (True, True)]
+    )
+    query = HadamardPhaseQuery(CompactParity(vector, output_mask=2))
+    algorithm = BernsteinVazirani(StatevectorSampler())
+    result = algorithm.run(query, shots=32)
+    assert result.modal_strings == ((False, True),)
+    assert CompactParity.calls == 1
+    assert (
+        result
+        == algorithm.run([BernsteinVaziraniRequest(vector, 32, output_mask=2)])[0]
+    )
+    with pytest.raises(TypeError, match="shots"):
+        algorithm.run(query)
+    with pytest.raises(TypeError, match="batch"):
+        algorithm.run([], shots=32)
+
+
+@pytest.mark.parametrize("kind", ["type", "width", "measure"])
+def test_invalid_query_component_is_rejected_before_sampling(kind):
+    from cqlib import Circuit
+
+    from cqlib_algorithms.operators import HadamardPhaseQuery
+
+    class InvalidQuery(HadamardPhaseQuery):
+        def build_circuit(self):
+            if kind == "type":
+                return None
+            circuit = Circuit(1 if kind == "width" else 2)
+            if kind == "measure":
+                circuit.measure(0)
+            return circuit
+
+    class UnusedSampler(Sampler):
+        def run(self, requests):
+            pytest.fail("invalid query must be rejected before execution")
+
+    function = BooleanFunction.from_truth_table([False, True, True, False])
+    with pytest.raises((TypeError, ValueError)):
+        BernsteinVazirani(UnusedSampler()).run(InvalidQuery(function), shots=32)

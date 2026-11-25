@@ -33,6 +33,8 @@ from cqlib_algorithms.operators import (
     COBYLAOptimizer,
     GradientDescent,
     ParameterShiftGradient,
+    RealAmplitudesAnsatz,
+    SamplingEstimator,
     StatevectorEstimator,
     StatevectorSampler,
 )
@@ -457,7 +459,7 @@ def test_constructor_rejects_empty_prefix() -> None:
         ({"time": 5e-324, "num_timesteps": 2}, ValueError, "time step"),
     ],
 )
-def test_evolve_rejects_invalid_numeric_options(
+def test_run_rejects_invalid_numeric_options(
     kwargs: dict[str, object],
     error: type[Exception],
     message: str,
@@ -470,7 +472,7 @@ def test_evolve_rejects_invalid_numeric_options(
     arguments.update(kwargs)
     algorithm = _pvqd(RXAnsatz(), COBYLAOptimizer(maxiter=0))
     with pytest.raises(error, match=message):
-        algorithm.evolve(
+        algorithm.run(
             _x_hamiltonian(),
             {"theta_0": 0.0},
             **arguments,  # type: ignore[arg-type]
@@ -499,31 +501,28 @@ def test_evolve_rejects_operator_width_and_binding_mismatches() -> None:
         )
 
 
-def test_evolve_rejects_invalid_auxiliary_operators() -> None:
+@pytest.mark.parametrize(
+    ("auxiliaries", "error", "message"),
+    [
+        ([], TypeError, "mapping"),
+        ({1: _x_hamiltonian()}, TypeError, "names"),
+        ({"": _x_hamiltonian()}, ValueError, "must not be empty"),
+        ({"wide": PauliString.from_str("ZZ")}, ValueError, "match the evolution width"),
+        ({"energy": _x_hamiltonian()}, ValueError, "estimator is required"),
+    ],
+)
+def test_run_rejects_invalid_auxiliary_configuration(
+    auxiliaries: object, error: type[Exception], message: str
+) -> None:
     algorithm = _pvqd(RXAnsatz(), COBYLAOptimizer(maxiter=0))
-    common = {
-        "hamiltonian": _x_hamiltonian(),
-        "initial_parameters": {"theta_0": 0.0},
-        "time": 0.2,
-        "num_timesteps": 1,
-        "fidelity_shots": 10,
-    }
-
-    with pytest.raises(TypeError, match="mapping"):
-        algorithm.evolve(**common, auxiliary_operators=[])  # type: ignore[arg-type]
-    with pytest.raises(TypeError, match="names"):
-        algorithm.evolve(**common, auxiliary_operators={1: _x_hamiltonian()})  # type: ignore[dict-item]
-    with pytest.raises(ValueError, match="must not be empty"):
-        algorithm.evolve(**common, auxiliary_operators={"": _x_hamiltonian()})
-    with pytest.raises(ValueError, match="match the evolution width"):
-        algorithm.evolve(
-            **common,
-            auxiliary_operators={"wide": PauliString.from_str("ZZ")},
-        )
-    with pytest.raises(ValueError, match="estimator is required"):
-        algorithm.evolve(
-            **common,
-            auxiliary_operators={"energy": _x_hamiltonian()},
+    with pytest.raises(error, match=message):
+        algorithm.run(
+            _x_hamiltonian(),
+            {"theta_0": 0.0},
+            0.2,
+            num_timesteps=1,
+            fidelity_shots=10,
+            auxiliary_operators=auxiliaries,  # type: ignore[arg-type]
         )
 
 
@@ -539,7 +538,7 @@ def test_parameter_shift_tracks_exact_x_evolution_and_observables() -> None:
         optimizer,
         estimator=StatevectorEstimator(),
     )
-    result = algorithm.evolve(
+    result = algorithm.run(
         _x_hamiltonian(),
         {"theta_0": 0.0},
         0.6,
@@ -739,6 +738,41 @@ def test_static_ansatz_returns_projection_fidelity_without_parameters() -> None:
     assert result.parameters == ({}, {})
     assert result.optimizer_results[0].status is OptimizerStatus.NO_PARAMETERS
     assert result.fidelities[0] == pytest.approx(math.cos(0.25) ** 2, abs=1e-6)
+
+
+def test_component_run_matches_evolve_with_separate_sampling_budgets() -> None:
+    sampler = StatevectorSampler()
+    algorithm = PVQD(
+        sampler,
+        RealAmplitudesAnsatz(1, reps=0),
+        COBYLAOptimizer(maxiter=60),
+        estimator=SamplingEstimator(sampler),
+    )
+    result, legacy = (
+        execute(
+            PauliString.from_str("Y"),
+            {"theta_0": 0.3},
+            0.1,
+            num_timesteps=2,
+            fidelity_shots=4096,
+            observable_shots=1024,
+            auxiliary_operators={"z": PauliString.from_str("Z")},
+            seed=7,
+        )
+        for execute in (algorithm.run, algorithm.evolve)
+    )
+
+    assert result.times == legacy.times == (0.0, 0.05, 0.1)
+    assert result.parameters == legacy.parameters
+    assert result.fidelities == legacy.fidelities
+    assert result.optimizer_results == legacy.optimizer_results
+    assert result.observables == legacy.observables
+    np.testing.assert_array_equal(
+        result.evolved_circuit.to_matrix(), legacy.evolved_circuit.to_matrix()
+    )
+    exact = np.array([math.cos(0.25), math.sin(0.25)])
+    state = np.asarray(Statevector.from_circuit(result.evolved_circuit).data)
+    assert abs(np.vdot(exact, state)) ** 2 > 0.99
 
 
 def test_master_seed_reproduces_and_independently_seeds_sampling_requests() -> None:

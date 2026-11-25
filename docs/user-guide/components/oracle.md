@@ -54,6 +54,12 @@
 XOR 的相位回踢与选择 <img src="../../assets/formulas/inline/inline-2995f7a6d64548fb.svg" alt="k=2^i" style="vertical-align: -1.000pt;"> 的 Phase Oracle 一致；多个被选位为 <img src="../../assets/formulas/inline/inline-d2df50038d900c16.svg" alt="|-\rangle" style="vertical-align: -4.000pt;">
 时得到相同的掩码奇偶相位。这不表示 Phase Oracle 持有或测量输出寄存器。
 
+### 按指定位标记
+
+`BitPatternPhaseOracle(3, {0: 1, 2: 0})` 翻转所有满足第 0 位为 1、第 2 位为 0 的基态相位。
+第 1 位自由，因此匹配的基态索引为 1 和 3。`GroverOperator` 和 `QBayesian` 可用同一标记方式。
+构建线路只需在指定位上作用门。显式读取 `marked_states` 才枚举所有匹配索引，索引数随自由位数指数增长。
+
 ## 精确反射
 
 `ZeroStateReflection(n)` 要求正整数 `n`，返回
@@ -61,18 +67,18 @@ XOR 的相位回踢与选择 <img src="../../assets/formulas/inline/inline-2995f
 <img src="../../assets/formulas/inline/inline-3b7347d72dc0df56.svg" alt="D=H^{\otimes n}R_0H^{\otimes n}=2|s\rangle\langle s|-I" style="vertical-align: -4.000pt;">，其中
 <img src="../../assets/formulas/inline/inline-32cdd5e02494ec4d.svg" alt="|s\rangle=2^{-n/2}\sum_x|x\rangle" style="vertical-align: -13.000pt;">；它本身不包含标记 Oracle。
 
-`GeneralStateReflection(A)` 要求非空、Core 可静态求逆的 Cqlib 线路
+`GeneralStateReflection(A, prefix="reflection")` 接收 StatePreparation 或 Ansatz 组件。
+组件在内部构建并复制，结果要求非空且可由 Core 静态求逆。对应线路
 <img src="../../assets/formulas/inline/inline-559aead08264d579.svg" alt="A" style="vertical-align: -0.000pt;">，并返回 <img src="../../assets/formulas/inline/inline-0fbcc5c0d72b22c4.svg" alt="AR_0A^\dagger=2|\psi\rangle\langle\psi|-I" style="vertical-align: -4.000pt;">，
 <img src="../../assets/formulas/inline/inline-ad835ea3642254bc.svg" alt="|\psi\rangle=A|0\rangle" style="vertical-align: -4.000pt;">。实际线路时间顺序为
 <img src="../../assets/formulas/inline/inline-de2ab7158fa3a095.svg" alt="A^\dagger\rightarrow R_0\rightarrow A" style="vertical-align: -3.000pt;">。非连续源量子比特 ID 按 `Circuit.qubits` 的位置映射到
 <img src="../../assets/formulas/inline/inline-80df05cab2d1ce42.svg" alt="0,\ldots,n-1" style="vertical-align: -3.000pt;">。测量、重置、延时、动态控制等不能静态求逆的操作被拒绝。
-参数化线路可先构建反射，再通过 Core 的 `assign_parameters` 绑定。
+需要固定参数初态时，先通过 `UserCircuitPreparation.from_component(component, bindings, prefix=...)`
+得到固定组件，再交给反射或 Grover；独立符号反射也保留参数化构建能力。
 
-`GeneralStateReflection.from_state_preparation(component, prefix=...)` 也接受
-显式继承本库 `StatePreparation` 抽象基类的组件：先调用 `validate()`，再核验
-声明的量子比特数量、参数槽数量及构建线路的可逆性。结构相似但未继承该基类
-的对象不满足此入口合同。这是本功能对已有状态制备公共接口的唯一依赖，
-不涉及 `Ansatz`。
+`GeneralStateReflection.from_state_preparation(component, prefix=...)` 接收
+StatePreparation，并执行相同的构造与检查。组件必须继承对应公共协议；
+声明宽度、参数槽数量及生成线路的可逆性都会检查。
 
 `GroverLong(n, phase=phi)` 构建 Long 搜索使用的相位匹配扩散算子
 <img src="../../assets/formulas/inline/inline-04ffe08e2cc4809d.svg" alt="H^{\otimes n}S_0(\phi)H^{\otimes n}" style="vertical-align: -4.000pt;">。当 <img src="../../assets/formulas/inline/inline-102f538e6177b98b.svg" alt="\phi=\pi" style="vertical-align: -3.000pt;"> 时，它得到
@@ -105,6 +111,7 @@ KAK 分解，Core 对 Weyl chamber 边界 <img src="../../assets/formulas/inline
 
 ```python
 from cqlib import Circuit
+
 from cqlib_algorithms.operators.oracle import (
     BitFlipOracle,
     BooleanFunction,
@@ -113,6 +120,7 @@ from cqlib_algorithms.operators.oracle import (
     GroverDiffusion,
     PhaseOracle,
 )
+from cqlib_algorithms.operators.state_preparation import UserCircuitPreparation
 
 scalar = BooleanFunction.from_expression("low & ~high", variable_order=("low", "high"))
 assert scalar.marked_states == (1,)
@@ -130,7 +138,7 @@ assert vector_phase.num_qubits == 2
 preparation = Circuit(2)
 preparation.h(0)
 preparation.cx(0, 1)
-reflection = GeneralStateReflection(preparation).build_circuit()
+reflection = GeneralStateReflection(UserCircuitPreparation(preparation)).build_circuit()
 diffusion = GroverDiffusion(2).build_circuit()
 assert reflection.num_qubits == diffusion.num_qubits == 2
 ```

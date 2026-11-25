@@ -24,8 +24,11 @@ References
 
 from __future__ import annotations
 
+import copy
+
 from cqlib import Circuit
 
+from ..._utils.circuit import validate_bound_static_unitary_circuit
 from ..oracle import BooleanFunction, BooleanVectorFunction, PhaseOracle
 
 
@@ -39,9 +42,10 @@ class HadamardPhaseQuery:
     algorithm based on this query transform.
 
     Args:
-        function: Immutable scalar or vector Boolean function to query.
+        function: Immutable scalar or vector Boolean function, or a phase-oracle
+            component implementing that function.
         output_mask: Selected output bits for vector functions, as in
-            :class:`PhaseOracle`.
+            :class:`PhaseOracle`. An explicit mask must match a supplied oracle.
 
     Raises:
         TypeError: If the function or mask has the wrong type.
@@ -52,11 +56,21 @@ class HadamardPhaseQuery:
 
     def __init__(
         self,
-        function: BooleanFunction | BooleanVectorFunction,
+        function: BooleanFunction | BooleanVectorFunction | PhaseOracle,
         *,
         output_mask: int | None = None,
     ) -> None:
-        self._oracle = PhaseOracle(function, output_mask=output_mask)
+        if isinstance(function, PhaseOracle):
+            if output_mask is not None:
+                if isinstance(output_mask, bool) or not isinstance(output_mask, int):
+                    raise TypeError("output_mask must be an integer")
+                if output_mask != function.output_mask:
+                    raise ValueError(
+                        "output_mask must match the configured phase oracle"
+                    )
+            self._oracle = copy.deepcopy(function)
+        else:
+            self._oracle = PhaseOracle(function, output_mask=output_mask)
 
     @property
     def function(self) -> BooleanFunction | BooleanVectorFunction:
@@ -74,11 +88,17 @@ class HadamardPhaseQuery:
         return self.function.num_variables
 
     def build_circuit(self) -> Circuit:
-        """Build and return a fresh unmeasured query circuit."""
+        """Build a fresh query from the snapshotted, fixed-width unitary oracle."""
+        oracle = self._oracle.build_circuit()
+        if not isinstance(oracle, Circuit):
+            raise TypeError("phase-oracle component must build a Circuit")
+        if oracle.num_qubits != self.num_qubits:
+            raise ValueError("phase-oracle circuit width must match its function")
+        validate_bound_static_unitary_circuit(oracle, "phase-oracle circuit")
         circuit = Circuit(self.num_qubits)
         for qubit in range(self.num_qubits):
             circuit.h(qubit)
-        circuit.compose(self._oracle.build_circuit(), circuit.qubits)
+        circuit.compose(oracle, circuit.qubits)
         for qubit in range(self.num_qubits):
             circuit.h(qubit)
         return circuit

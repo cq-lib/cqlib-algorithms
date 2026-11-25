@@ -23,18 +23,18 @@
 
 | 类别 | 已实现能力 |
 | --- | --- |
-| 状态制备 | 基态、均匀叠加、任意纯态、乘积态、GHZ、Dicke、稠密/稀疏幅度编码、角度/基编码、图像角度编码、BRQI、用户线路、Feature Map、Hartree–Fock、Slater、费米 Gaussian、晶格参考态与 VSCF |
+| 状态制备 | 基态、均匀叠加、任意纯态、乘积态、GHZ、Dicke、稠密/稀疏幅度编码、角度/基编码、图像角度编码、BRQI、用户线路、Feature Map、Hartree–Fock、Slater、费米 Gaussian、晶格参考态与 VSCF；通过 `UserCircuitPreparation.from_component` 将制备或拟设完整绑定为固定初态，自定义线路使用原构造函数包装 |
 | Ansatz | TwoLocal、RealAmplitudes、EfficientSU2、硬件高效、双量子比特参数化酉、PauliTwoDesign、算符演化、Hamiltonian 变分、激发保持、SimplifiedTwoDesign、随机层、MPS、TTN、MERA、UCC/UCCSD、PUCCD/PUCCSD、UVCC/UVCCSD、晶格守恒拟设、QAOA 成本/混合演化 |
 | Mixer | nearby-values、ring、fully-connected、null-swap、受控交换、排列交换、时间调度和有序组合 |
-| Oracle 与反射 | 布尔函数、位翻转/相位 Oracle、零态/一般态反射、Grover diffusion、`GroverLong` 相位匹配反射、任意酉矩阵综合、酉扩张块编码和 Dicke 权重分布组件 |
+| Oracle 与反射 | 布尔函数、位翻转/相位 Oracle、按指定位标记的 `BitPatternPhaseOracle`、零态/一般态反射、Grover diffusion、`GroverLong` 相位匹配反射、任意酉矩阵综合、酉扩张块编码和 Dicke 权重分布组件 |
 | 线路组合 | QFT、Hadamard 相位查询、隐藏线性函数电路、Grover 迭代单元、相位估计电路、QSP 与 QSVT |
-| 量子算术 | 半加器、全加器、模加器、Draper 常数加法器、整数比较器、乘法器、加权和、二次型、均匀受控旋转、任意函数/倒数/线性/分段多项式幅度旋转 |
-| 测量 | Pauli none/QWC 分组、全局对易分组、局域基测量规划 |
+| 量子算术 | 半加器、全加器、模加器、Draper 常数加法器、整数比较器、乘法器、加权和、二次型、均匀受控旋转、任意函数/倒数/线性/分段多项式幅度旋转；算术线路可接入相位估计与重叠，包装为状态制备后用于算法初态、保真度与测量规划 |
+| 测量 | Pauli none/QWC 分组、全局对易分组、局域基测量规划；直接接收状态制备、Ansatz 或线路，计划可绑定参数并批次采样 |
 | 执行 | 本地态矢量 Sampler、回调式后端 Sampler、精确态矢量 Estimator、采样 Estimator |
 | 微分与优化 | 参数移位、线性组合、有限差分、SPSA 梯度，QGT、QFI、自然梯度，GradientDescent、Adam、SPSA、COBYLA、L-BFGS-B 优化器 |
 | 量子信息 | 纯态或混态任意量子比特二分下的精确量子互信息 |
-| 保真度与重叠 | <img src="assets/formulas/inline/inline-76c9776168f71a5d.svg" alt="U_2^\dagger U_1" style="vertical-align: -4.000pt;"> 酉重叠线路、基于 compute–uncompute 的线路纯态保真度 |
-| 误差缓解基础组件 | `QemExecutor`、线路折叠/单位层插入/参数缩放、外推 Factory、拟概率表示、读出混淆矩阵、动态解耦与 Pauli twirling 线路变换 |
+| 保真度与重叠 | <img src="assets/formulas/inline/inline-76c9776168f71a5d.svg" alt="U_2^\dagger U_1" style="vertical-align: -4.000pt;"> 酉重叠和纯态保真度接收状态制备、Ansatz 或线路；保真度保留请求批次，自定义制备线路可通过用户状态制备组件复用 |
+| 误差缓解基础组件 | `QemExecutor`（组件式 `run`、Estimator 适配与批次执行）、线路折叠/单位层插入/参数缩放、外推 Factory、拟概率表示、读出混淆矩阵、动态解耦与 Pauli twirling 线路变换 |
 | 量子核 | `FidelityQuantumKernel`、`TrainableFidelityQuantumKernel`、`BalancedKernelAlignmentLoss` |
 
 ## 科研计算链

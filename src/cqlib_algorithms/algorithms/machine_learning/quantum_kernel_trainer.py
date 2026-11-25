@@ -22,13 +22,11 @@ from numbers import Real
 from types import MappingProxyType
 
 import numpy as np
-from cqlib import Circuit
 from numpy.typing import ArrayLike, NDArray
 
 from ..._utils.numeric import copy_finite_real_array, validate_positive_integer
 from ...operators.quantum_kernel import (
     BalancedKernelAlignmentLoss,
-    FidelityQuantumKernel,
     TrainableFidelityQuantumKernel,
 )
 from ...protocols.quantum_kernel import (
@@ -38,7 +36,8 @@ from ...protocols.quantum_kernel import (
 )
 from ...protocols.sampler import Sampler
 from ...protocols.scalar_minimizer import ScalarMinimizer, ScalarMinimizerResult
-from ._common import configuration, gram, minimize
+from ...protocols.state_preparation import StatePreparation
+from ._common import configuration, evaluate_kernel_matrix, minimize
 from ._validation import (
     _real_hyperparameter,
     _targets,
@@ -94,7 +93,8 @@ class QuantumKernelTrainerResult:
 class QuantumKernelTrainer:
     """Optimize a trainable kernel using a scalar loss and minimizer.
 
-    Supply ``quantum_kernel`` or a circuit with input/trainable names.
+    Supply ``quantum_kernel`` or a feature-map component with named
+    input and trainable parameters. Components use the build prefix ``"x"``.
     BalancedKernelAlignmentLoss and SciPy COBYLA are the defaults. A custom
     loss defines target semantics; a custom optimizer implements ScalarMinimizer.
     ``max_evaluations`` bounds optimization calls; initial and final diagnostic
@@ -104,7 +104,7 @@ class QuantumKernelTrainer:
 
     def __init__(
         self,
-        feature_map: Circuit | None = None,
+        feature_map: StatePreparation | None = None,
         input_parameters: Sequence[str] | None = None,
         trainable_parameters: Sequence[str] | None = None,
         *,
@@ -120,6 +120,31 @@ class QuantumKernelTrainer:
         tolerance: float = 1e-6,
         initial_step: float = 1.0,
     ) -> None:
+        """Configure kernel training from a trainable kernel or feature-map component.
+
+        Args:
+            feature_map: StatePreparation built with prefix ``"x"``, used together
+                with input and trainable names when ``quantum_kernel`` is omitted.
+            input_parameters: Ordered symbols corresponding to data columns.
+            trainable_parameters: Ordered symbols optimized across samples.
+            quantum_kernel: TrainableQuantumKernel implementing parameter binding.
+            loss: KernelLoss callable; defaults to BalancedKernelAlignmentLoss.
+            optimizer: ScalarMinimizer callable; defaults to SciPy COBYLA.
+            parameter_bindings: Fixed values for the feature map's remaining symbols.
+            sampler: Optional Sampler for feature-map fidelity evaluation.
+            shots: Positive samples per pair, required together with ``sampler``.
+            max_statevector_qubits: Optional exact feature-map width limit.
+            max_statevector_bytes: Optional exact feature-map amplitude-storage budget.
+            max_evaluations: Optimization evaluation budget, excluding the initial
+                and final diagnostic evaluations.
+            tolerance: Positive stopping scale for default COBYLA.
+            initial_step: Positive initial search scale for default COBYLA.
+
+        Raises:
+            TypeError: If component or configuration types are invalid.
+            ValueError: If kernel and feature-map configuration are mixed, or
+                parameter roles, resource limits, or optimization settings are invalid.
+        """
         if quantum_kernel is None:
             if (
                 feature_map is None
@@ -308,17 +333,7 @@ class QuantumKernelTrainer:
                 raise ValueError(
                     "bound kernel feature width must match trainable kernel"
                 )
-            values = kernel.evaluate(data.copy())
-            if isinstance(kernel, FidelityQuantumKernel):
-                matrix = gram(values, len(data))
-            else:
-                matrix = copy_finite_real_array(values, "kernel matrix", 2)
-                if matrix.shape != (len(data), len(data)) or not np.array_equal(
-                    matrix, matrix.T
-                ):
-                    raise ValueError(
-                        "kernel must return a symmetric square training matrix"
-                    )
+            matrix = evaluate_kernel_matrix(kernel, data)
             value = self._loss(matrix.copy(), targets.copy())
             if isinstance(value, bool) or not isinstance(value, Real):
                 raise TypeError("loss must return a real number")

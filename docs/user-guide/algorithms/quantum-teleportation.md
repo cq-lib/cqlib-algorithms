@@ -38,36 +38,38 @@ Bob 必须收到经典结果后才能选择纠正，因此协议不允许超光�
 ```python
 import math
 
-from cqlib import Circuit
-from cqlib_algorithms import (
-    QuantumTeleportation,
-    QuantumTeleportationRequest,
-)
+from cqlib_algorithms import QuantumTeleportation
+from cqlib_algorithms.operators import ArbitraryStatePreparation
 
-unknown_state = Circuit(1)
-unknown_state.ry(0, 0.73)
-unknown_state.rz(0, -1.19)
-
-request = QuantumTeleportationRequest(
-    state_preparation=unknown_state,
-    shots=128,
-    fidelity_tolerance=1e-12,
-)
-result = QuantumTeleportation().run([request])[0]
-
-print(result.shots)  # 128
-print(sum(result.bell_counts))  # 128
-print(math.isclose(sum(result.bell_probabilities), 1.0))  # True
-print(result.minimum_fidelity)  # 1.0 within floating-point precision
+preparation = ArbitraryStatePreparation([1 / math.sqrt(3), 1j * math.sqrt(2 / 3)])
+result = QuantumTeleportation().run(preparation, shots=32)
+print(result.minimum_fidelity)  # approximately 1
 print(result.all_succeeded)  # True
 ```
 
-`state_preparation` 必须是固定的一量子比特 Cqlib `Circuit`。算法通过
+`run(state_preparation, *, shots, fidelity_tolerance=1e-12)` 接收 `StatePreparation` 组件，返回一个结果。组件使用前缀 `teleportation_input` 构建，其线路必须为固定的一量子比特 Cqlib `Circuit`。算法通过
 `UserCircuitPreparation` 对线路按插入位置进行快照和连续编号，因此支持非连续的原始
 量子比特标识，并保留全局相位。线路不得包含活跃参数、测量、reset、delay、经典控制
 或嵌套的动态操作，而且必须能被 Core 展开并静态求逆。
 
-调用方不应在请求执行期间修改输入线路。空批次返回空列表。
+批量入口 `run(requests)` 接收 `QuantumTeleportationRequest`，每项请求均可直接传入
+状态制备组件，按顺序返回结果列表。沿用上例的 `preparation`：
+
+```python
+from cqlib_algorithms import QuantumTeleportationRequest
+from cqlib_algorithms.operators import BasisStateInitialization
+
+requests = [
+    QuantumTeleportationRequest(preparation, shots=8),
+    QuantumTeleportationRequest(BasisStateInitialization(1, 1), shots=16),
+]
+results = QuantumTeleportation().run(requests)
+print([item.all_succeeded for item in results])  # [True, True]
+```
+
+组件在请求构造时只构建一次，请求保存固定的 `StatePreparation` 和独立的
+`preparation_circuit` 快照。自定义制备线路通过 `UserCircuitPreparation(circuit)` 包装后传入。
+调用方应在请求存续期间保持请求中保存的线路不变，执行前会重新校验。空批次返回空列表。
 
 这里的“未知”是协议语义：测量结果和 Bob 的纠正规则不读取、估计或传送输入态的经典
 振幅。由于本组件还要在模拟器内计算验证保真度，调用方仍须提供能够制备该态的线路，

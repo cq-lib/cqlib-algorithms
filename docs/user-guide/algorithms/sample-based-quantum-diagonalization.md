@@ -65,7 +65,8 @@ SQD 依次执行：
 
 - `ElectronicSystem` 可保存限制性或自旋分辨实积分；Hamiltonian 使用现有
   `ElectronicEnergy` 并按 Jordan–Wigner 映射。
-- `state_preparation` 必须完全绑定、静态、酉，宽度恰好为
+- `run(system, state_preparation, ...)` 直接接收 `StatePreparation`；算法内部以
+  `"sqd"` 为前缀构建线路，并复制执行对象。构建结果必须完全绑定、静态、酉，宽度恰好为
   `system.num_spin_orbitals`。线路位置 (i) 必须表示自旋轨道模式 (i)；不能把其他
   费米映射产生的量子比特直接当作 occupation bits。
 - `shots`、`samples_per_batch`、`num_batches` 和 `max_iterations` 必须为正整数。
@@ -137,11 +138,11 @@ system = ElectronicSystem(
     ),
     ElectronicOccupation(num_spatial_orbitals=2, num_alpha=1, num_beta=0),
 )
-circuit = HartreeFockStatePreparation(system.occupation).build_circuit("")
+preparation = HartreeFockStatePreparation(system.occupation)
 
-result = SQD(StatevectorSampler()).compute(
+result = SQD(StatevectorSampler()).run(
     system,
-    circuit,
+    preparation,
     shots=1024,
     samples_per_batch=128,
     num_batches=4,
@@ -153,6 +154,11 @@ print(result.energy)
 print(result.converged)
 print(result.ground_state.configurations)
 ```
+
+理想输出约为 `-0.5`、`True` 和 `(1,)`。替换 `preparation` 即可改变采样态，注入
+`subspace_solver` 可替换单批经典对角化求解器；两者均需遵守相同占据编码和结果约定。
+`compute()` 与 `run()` 使用相同的组件输入和计算流程。自定义制备线路通过
+`UserCircuitPreparation(circuit)` 包装为 `StatePreparation` 后传入。
 
 如果 counts 已经由设备生成，可以省略线路和 Sampler：
 

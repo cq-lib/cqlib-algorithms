@@ -25,7 +25,7 @@ import math
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from fractions import Fraction
-from typing import final
+from typing import final, overload
 
 from ..._utils.numeric import normalize_positive_integer
 from ...protocols.sampler import Sampler, SamplerRequest, require_sampler_results
@@ -38,6 +38,7 @@ from .problem import AmplitudeEstimationProblem, _validate_problem
 
 _MIN_BINARY64_EPSILON = math.pi * math.ulp(0.25)
 _MAX_BINARY64_CHERNOFF_SHOTS = (1 << 53) - 1
+_DEFAULT_MAX_ROUNDS = 50
 
 
 def _theoretical_rounds(epsilon: float) -> int:
@@ -79,7 +80,7 @@ class IterativeAmplitudeEstimationRequest:
     epsilon: float
     alpha: float
     shots: int
-    max_rounds: int = 50
+    max_rounds: int = _DEFAULT_MAX_ROUNDS
 
     __hash__ = None  # type: ignore[assignment]
 
@@ -336,8 +337,7 @@ class IterativeAmplitudeEstimation:
         sampler: Sampling implementation used for adaptive experiments.
 
     Raises:
-        TypeError: If the sampler or a request has the wrong type.
-        ValueError: If validation fails or the target interval is not reached.
+        TypeError: If the sampler has the wrong type.
     """
 
     __slots__ = ("_sampler",)
@@ -352,12 +352,72 @@ class IterativeAmplitudeEstimation:
         """Return the injected Sampler implementation."""
         return self._sampler
 
+    @overload
+    def run(
+        self,
+        problem: AmplitudeEstimationProblem,
+        *,
+        epsilon: float,
+        alpha: float,
+        shots: int,
+        max_rounds: int | None = None,
+    ) -> IterativeAmplitudeEstimationResult: ...
+
+    @overload
     def run(
         self,
         requests: Sequence[IterativeAmplitudeEstimationRequest],
         /,
+    ) -> list[IterativeAmplitudeEstimationResult]: ...
+
+    def run(
+        self,
+        problem: AmplitudeEstimationProblem
+        | Sequence[IterativeAmplitudeEstimationRequest],
+        *,
+        epsilon: float | None = None,
+        alpha: float | None = None,
+        shots: int | None = None,
+        max_rounds: int | None = None,
+    ) -> IterativeAmplitudeEstimationResult | list[IterativeAmplitudeEstimationResult]:
+        """Estimate one good-state probability or run an ordered batch.
+
+        Args:
+            problem: An amplitude-estimation problem, or a positional batch of requests.
+            epsilon: Target half-width of the final probability interval.
+            alpha: Total failure-probability budget for the interval.
+            shots: Maximum samples per round for a single problem.
+            max_rounds: Hard limit on sampling rounds. Defaults to 50 for a single problem.
+
+        Returns:
+            One result or a list in request order. Each result records the
+            powers, actual shots, and probability interval for each round.
+
+        Raises:
+            TypeError: If a required option is missing, argument types are invalid,
+                or single-problem options are supplied with a batch.
+            ValueError: If a request or sampling result fails validation.
+            RuntimeError: If convergence is not reached within the round limit.
+        """
+        if isinstance(problem, AmplitudeEstimationProblem):
+            if epsilon is None or alpha is None or shots is None:
+                raise TypeError("a single problem requires epsilon, alpha, and shots")
+            request = IterativeAmplitudeEstimationRequest(
+                problem,
+                epsilon,
+                alpha,
+                shots,
+                _DEFAULT_MAX_ROUNDS if max_rounds is None else max_rounds,
+            )
+            return self._run_batch((request,))[0]
+        if any(value is not None for value in (epsilon, alpha, shots, max_rounds)):
+            raise TypeError("batch requests specify their own estimation options")
+        return self._run_batch(problem)
+
+    def _run_batch(
+        self, requests: Sequence[IterativeAmplitudeEstimationRequest]
     ) -> list[IterativeAmplitudeEstimationResult]:
-        """Execute adaptive request rounds, batching all active problems."""
+        """Submit all active problems together once per adaptive round."""
         states: list[_IterativeState] = []
         for request in requests:
             if not isinstance(request, IterativeAmplitudeEstimationRequest):

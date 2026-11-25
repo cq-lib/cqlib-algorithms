@@ -403,7 +403,7 @@ class AdaptVQE:
             ansatz,
             self._optimizer,
             prefix=self._prefix,
-        ).compute_minimum_eigenvalue(target, initial_point, shots=shots)
+        ).run(target, initial_point, shots=shots)
 
     def _gradients(
         self,
@@ -426,7 +426,7 @@ class AdaptVQE:
                 values[index] = result.expectation
         return tuple(values)
 
-    def compute_minimum_eigenvalue(
+    def run(
         self,
         operator: Hamiltonian | PauliString,
         *,
@@ -537,6 +537,16 @@ class AdaptVQE:
             final_max_gradient=final_max_gradient,
             termination=termination,
         )
+
+    def compute_minimum_eigenvalue(
+        self,
+        operator: Hamiltonian | PauliString,
+        *,
+        shots: int | None = None,
+        seed: int | None = None,
+    ) -> AdaptVQEResult:
+        """Run the same adaptive minimization as :meth:`run`."""
+        return self.run(operator, shots=shots, seed=seed)
 
 
 __all__ = ["AdaptVQE", "AdaptVQEResult", "AdaptVQETermination"]

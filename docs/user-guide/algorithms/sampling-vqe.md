@@ -49,14 +49,16 @@ algorithm = SamplingVQE(
     RealAmplitudesAnsatz(1, reps=0),
     COBYLAOptimizer(maxiter=20),
 )
-result = algorithm.compute_minimum_eigenvalue(
+result = algorithm.run(
     PauliString.from_str("Z"),
     {"theta_0": 0.2},
     shots=4096,
     seed=7,
 )
-print(result.best_measurement)
+print(result.final_sample_value, result.best_measurement.bitstring)
 ```
+
+`compute_minimum_eigenvalue(...)` 与 `run(...)` 使用相同的输入和计算流程，返回同一类型的 `SamplingVQEResult`。
 
 该组件适合组合优化和其他计算基对角目标，不接受含 <img src="../../assets/formulas/inline/inline-4b68ab3847feda7d.svg" alt="X" style="vertical-align: -0.000pt;"> 或 <img src="../../assets/formulas/inline/inline-18f5384d58bcb1bb.svg" alt="Y" style="vertical-align: -0.000pt;"> 的一般 Hamiltonian。
 有限-shot 噪声会影响优化轨迹和最终估计，结果不保证达到全局最小值。

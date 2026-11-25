@@ -31,7 +31,7 @@ SIAM J. Comput. 26(5), 1411 (1997)；相位 Oracle 形式的推导参见 Cleve �
 - `BernsteinVazirani.build_circuit(function, output_mask=None)` 构建未测量的
   <img src="../../assets/formulas/inline/inline-678b057a76c6a024.svg" alt="H^{\otimes n}\rightarrow S_f\rightarrow H^{\otimes n}" style="vertical-align: -5.000pt;"> 查询线路（与 `DeutschJozsa` 共享同一查询线路构造），
   末端测量由 Sampler 追加；
-- `run(requests)` 批量执行请求，结果按请求顺序返回。
+- `run(query, shots=...)` 接收组合后的查询组件并返回一个结果；`run(requests)` 按批次顺序返回结果列表。
 
 `BernsteinVaziraniRequest(function, shots, output_mask=None)` 中 `shots` 必须为正整数。
 `BernsteinVaziraniResult(modal_strings, support, shots)` 保留所有并列的经验众数候选；
@@ -58,21 +58,19 @@ SIAM J. Comput. 26(5), 1411 (1997)；相位 Oracle 形式的推导参见 Cleve �
 ## 可运行示例
 
 ```python
-from cqlib_algorithms import BernsteinVazirani, BernsteinVaziraniRequest
-from cqlib_algorithms.operators.oracle import BooleanFunction
-from cqlib_algorithms.operators.sampler import StatevectorSampler
-
-# 隐藏字符串 s = 0b101：f(x) = x0 XOR x2
-hidden = 0b101
-function = BooleanFunction.from_truth_table(
-    [(x & hidden).bit_count() % 2 == 1 for x in range(8)]
+from cqlib_algorithms import BernsteinVazirani
+from cqlib_algorithms.operators import (
+    BooleanFunction,
+    HadamardPhaseQuery,
+    PhaseOracle,
+    StatevectorSampler,
 )
 
-result = BernsteinVazirani(StatevectorSampler()).run(
-    [BernsteinVaziraniRequest(function, 16)]
-)[0]
-print(result.hidden_string)  # (True, False, True)
-print(result.hidden_integer)  # 5
-print(result.modal_strings)  # ((True, False, True),)
-print(result.support)  # 16
+hidden = 0b101
+function = BooleanFunction.from_truth_table(
+    [(value & hidden).bit_count() % 2 == 1 for value in range(8)]
+)
+query = HadamardPhaseQuery(PhaseOracle(function))
+result = BernsteinVazirani(StatevectorSampler()).run(query, shots=16)
+print(result.hidden_integer, result.support)  # 5 16
 ```

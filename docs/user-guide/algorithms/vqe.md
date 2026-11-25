@@ -25,11 +25,10 @@
 - `Optimizer` 最小化 Estimator 目标。需要梯度的优化器自行持有 `Gradient`，VQE
   不重复实现或选择梯度规则。
 
-`compute_minimum_eigenvalue()` 只创建一个 `EstimatorRequest` 和一个
-`OptimizerRequest`，然后批量调用一次 `Optimizer.run()`。态矢量演化、期望值、
-梯度和参数更新均由已有组件负责。VQE 不强制使用 `StatevectorEstimator`、
-`GradientDescent` 或其他具体实现；`shots` 会原样传入 Estimator 请求，具体
-Estimator 决定是否支持精确或有限-shot 模式。
+`run(operator, initial_point, *, shots=None)` 用拟设生成参数化线路，将可观测量、
+初值和可选采样次数交给优化器。优化器通过注入的 Estimator 评估能量，决定参数更新与停止条件。
+VQE 将最终参数绑定到线路上，返回优化器在该点已求得的能量。`compute_minimum_eigenvalue`
+与 `run` 接受相同的参数并返回同一种结果。
 
 ## 参数与结果语义
 
@@ -69,16 +68,16 @@ from cqlib_algorithms.operators import (
 )
 
 algorithm = VQE(
-    StatevectorEstimator(),
-    RealAmplitudesAnsatz(1, reps=0),
-    GradientDescent(
+    estimator=StatevectorEstimator(),
+    ansatz=RealAmplitudesAnsatz(1, reps=0),
+    optimizer=GradientDescent(
         ParameterShiftGradient(),
         learning_rate=0.4,
         maxiter=80,
         tolerance=1e-10,
     ),
 )
-result = algorithm.compute_minimum_eigenvalue(
+result = algorithm.run(
     PauliString.from_str("Z"),
     {"theta_0": 0.4},
 )

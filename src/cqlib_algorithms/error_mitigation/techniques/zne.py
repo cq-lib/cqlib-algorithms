@@ -54,7 +54,7 @@ from __future__ import annotations
 
 import copy
 import warnings
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from enum import Enum
 
 import numpy as np
@@ -69,7 +69,12 @@ from ...protocols import (
     EstimatorResult,
     spawn_seeds,
 )
-from .._circuits import strip_measurements
+from ...protocols.state_preparation import StatePreparation
+from .._circuits import (
+    bind_request_circuit,
+    build_estimator_request,
+    strip_measurements,
+)
 from ..core import QemExecutor, make_cqlib_estimator
 from ..inference import (
     ConvergenceWarning,
@@ -203,7 +208,7 @@ def combine_results(
 
 
 def execute_with_zne(
-    circuit: Circuit,
+    circuit: StatePreparation | Circuit,
     executor: QemExecutor,
     observable: Hamiltonian | PauliString,
     /,
@@ -215,18 +220,16 @@ def execute_with_zne(
     shots: int | None = None,
     seed: int | None = None,
     num_chunks: int | None = None,
+    parameter_bindings: Mapping[str, float] | None = None,
+    prefix: str = "qem",
 ) -> float:
     r"""Estimate one observable on ``circuit`` with zero-noise extrapolation.
 
-    This is the immediate form of :func:`zne_executor`::
-
-        execute_with_zne(c, ex, obs, **params)
-        == zne_executor(ex, **params).estimate(
-               [EstimatorRequest(c, obs)]
-           )[0].expectation
+    This is the immediate form of :func:`zne_executor`. The same task
+    can be evaluated by calling ``run()`` on that executor.
 
     Args:
-        circuit: Circuit whose expectation value is to be mitigated.
+        circuit: State-preparation component or circuit to evaluate.
         executor: Execution backend supplying the expectation surface.
         observable: Observable to estimate. A bare Pauli string is interpreted as a
             Hamiltonian with unit coefficient.
@@ -243,13 +246,18 @@ def execute_with_zne(
         seed: Seed of the folding draw and the shot sampling, or ``None`` for fresh
             randomness. Pinning it reproduces the whole estimate.
         num_chunks: Number of contiguous chunks for :attr:`ScalingMethod.LOCAL`.
+        parameter_bindings: Finite values covering exactly all active symbols.
+            Values are bound before circuit transformations; None requires no symbols.
+        prefix: Build prefix for a preparation component, defaulting to ``qem``;
+            existing Circuit symbols keep their names.
 
     Returns:
         Mitigated expectation value.
 
     Raises:
-        TypeError: If ``seed`` is neither an integer nor ``None``.
-        ValueError: If the parameters describe an unusable configuration, such as a
+        TypeError: If an input or configuration argument has the wrong type.
+        ValueError: If bindings are non-finite or do not cover active symbols exactly,
+            or if the parameters describe an unusable configuration, such as a
             non-empty ``gate_set`` combined with a scale grid or factory that
             cqlib folding cannot reproduce.
         ExtrapolationError: If the extrapolation fit cannot be performed.
@@ -265,7 +273,13 @@ def execute_with_zne(
         seed=seed,
         num_chunks=num_chunks,
     )
-    request = EstimatorRequest(circuit=circuit, observable=observable, shots=shots)
+    request = build_estimator_request(
+        circuit,
+        observable,
+        shots=shots,
+        parameter_bindings=parameter_bindings,
+        prefix=prefix,
+    )
     return wrapped.estimate([request])[0].expectation
 
 
@@ -394,6 +408,7 @@ class _ZneEstimator(Estimator):
 
     def _mitigate(self, request: EstimatorRequest) -> EstimatorResult:
         r"""Estimate one request through the route its parameters select."""
+        bound_circuit = bind_request_circuit(request)
         _warn_if_ill_conditioned(self._scale_factors)
         shots = self._shots if self._shots is not None else request.shots
         seed = self._seed if self._seed is not None else request.seed
@@ -406,7 +421,7 @@ class _ZneEstimator(Estimator):
         if plan is not None:
             method, degree, fold_levels = plan
             expectation = _run_cqlib_zne(
-                request.circuit,
+                bound_circuit,
                 self._executor,
                 request.observable,
                 fold_levels=fold_levels,
@@ -419,7 +434,7 @@ class _ZneEstimator(Estimator):
             return EstimatorResult(expectation=expectation)
 
         circuits = construct_circuits(
-            request.circuit,
+            bound_circuit,
             scale_factors=self._scale_factors,
             scaling=self._scaling,
             seed=seed,

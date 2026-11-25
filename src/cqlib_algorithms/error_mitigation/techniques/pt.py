@@ -39,7 +39,7 @@ References
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
 import numpy as np
@@ -48,7 +48,8 @@ from cqlib.circuit import StandardGate, ValueOperation
 from cqlib.qis import Hamiltonian, PauliString
 
 from ...protocols import Estimator, EstimatorRequest, EstimatorResult, spawn_seeds
-from .._circuits import expand
+from ...protocols.state_preparation import StatePreparation
+from .._circuits import bind_request_circuit, build_estimator_request, expand
 from ..core import QemExecutor
 from ._equivalence import allclose_up_to_global_phase
 
@@ -231,7 +232,7 @@ def combine_results(results: Sequence[EstimatorResult], /) -> float:
 
 
 def execute_with_pt(
-    circuit: Circuit,
+    circuit: StatePreparation | Circuit,
     executor: QemExecutor,
     observable: Hamiltonian | PauliString,
     /,
@@ -239,18 +240,16 @@ def execute_with_pt(
     num_randomizations: int = 1,
     shots: int | None = None,
     seed: int | None = None,
+    parameter_bindings: Mapping[str, float] | None = None,
+    prefix: str = "qem",
 ) -> float:
     r"""Estimate one observable on ``circuit`` with Pauli twirling.
 
-    This is the immediate form of :func:`pt_executor`::
-
-        execute_with_pt(c, ex, obs, **params)
-        == pt_executor(ex, **params).estimate(
-               [EstimatorRequest(c, obs)]
-           )[0].expectation
+    This is the immediate form of :func:`pt_executor`. The same task
+    can be evaluated by calling ``run()`` on that executor.
 
     Args:
-        circuit: Circuit whose expectation value is to be mitigated.
+        circuit: State-preparation component or circuit to evaluate.
         executor: Execution backend supplying the expectation surface.
         observable: Observable to estimate. A bare Pauli string is interpreted as a
             Hamiltonian with unit coefficient.
@@ -259,14 +258,18 @@ def execute_with_pt(
             evaluation.
         seed: Seed of the Pauli draw and the shot sampling, or ``None`` for fresh
             randomness. Pinning it reproduces the whole estimate.
+        parameter_bindings: Finite values covering exactly all active symbols.
+            Values are bound before circuit transformations; None requires no symbols.
+        prefix: Build prefix for a preparation component, defaulting to ``qem``;
+            existing Circuit symbols keep their names.
 
     Returns:
         Mitigated expectation value.
 
     Raises:
-        TypeError: If ``num_randomizations`` is not an integer, or if ``seed`` is neither
-            an integer nor ``None``.
-        ValueError: If ``num_randomizations`` is below one.
+        TypeError: If an input or configuration argument has the wrong type.
+        ValueError: If bindings are non-finite or do not cover active symbols exactly,
+            or if ``num_randomizations`` is below one.
     """
     wrapped = pt_executor(
         executor,
@@ -274,7 +277,13 @@ def execute_with_pt(
         shots=shots,
         seed=seed,
     )
-    request = EstimatorRequest(circuit=circuit, observable=observable, shots=shots)
+    request = build_estimator_request(
+        circuit,
+        observable,
+        shots=shots,
+        parameter_bindings=parameter_bindings,
+        prefix=prefix,
+    )
     return wrapped.estimate([request])[0].expectation
 
 
@@ -368,10 +377,11 @@ class _PtEstimator(Estimator):
 
     def _mitigate(self, request: EstimatorRequest) -> EstimatorResult:
         r"""Estimate one request as the average over its dressed variants."""
+        bound_circuit = bind_request_circuit(request)
         shots = self._shots if self._shots is not None else request.shots
         seed = self._seed if self._seed is not None else request.seed
         circuits = construct_circuits(
-            request.circuit,
+            bound_circuit,
             num_randomizations=self._num_randomizations,
             seed=seed,
         )

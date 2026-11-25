@@ -14,8 +14,8 @@ r"""Circuit-rebuild primitives shared by error-mitigation techniques.
 
 Several techniques transform a circuit rather than only its parameters:
 folding, identity insertion, and layer splitting all rebuild the operation
-list. This module provides the primitives they share: classifying and
-stripping measurements, and rebuilding, expanding, or splicing circuits while
+list. Shared primitives bind estimation requests, classify and strip
+measurements, and rebuild, expand, or splice circuits while
 preserving the global phase that ``Circuit.from_operations`` does not carry
 over.
 """
@@ -23,11 +23,53 @@ over.
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping, Sequence
+from copy import deepcopy
 
 from cqlib import Circuit
 from cqlib.circuit import Qubit, ValueOperation
+from cqlib.qis import Hamiltonian, PauliString
+
+from .._utils.parameters import validate_parameter_prefix
+from .._utils.state_preparation import build_state_preparation_circuit
+from ..protocols.estimator import EstimatorRequest
+from ..protocols.state_preparation import StatePreparation
 
 _MEASUREMENT_NAMES = frozenset({"measure_bit", "measure_bits"})
+
+
+def build_estimator_request(
+    circuit: StatePreparation | Circuit,
+    observable: Hamiltonian | PauliString,
+    /,
+    *,
+    parameter_bindings: Mapping[str, float] | None = None,
+    shots: int | None = None,
+    seed: int | None = None,
+    prefix: str = "qem",
+) -> EstimatorRequest:
+    """Build a preparation and return an independently copied estimation request."""
+    validate_parameter_prefix(prefix)
+    if isinstance(circuit, StatePreparation):
+        circuit = build_state_preparation_circuit(circuit, prefix=prefix)
+    if not isinstance(circuit, Circuit):
+        raise TypeError("circuit must be a StatePreparation or cqlib.Circuit")
+    if not isinstance(observable, (Hamiltonian, PauliString)):
+        raise TypeError("observable must be a cqlib.qis.Hamiltonian or PauliString")
+    return EstimatorRequest(
+        deepcopy(circuit),
+        observable.copy(),
+        {} if parameter_bindings is None else parameter_bindings,
+        shots,
+        seed,
+    )
+
+
+def bind_request_circuit(request: EstimatorRequest, /) -> Circuit:
+    """Validate a request and return an independent circuit with bound parameters."""
+    if not isinstance(request, EstimatorRequest):
+        raise TypeError("request must be an EstimatorRequest")
+    request.validate()
+    return request.circuit.assign_parameters(dict(request.parameter_bindings))
 
 
 def is_measurement(operation: ValueOperation, /) -> bool:

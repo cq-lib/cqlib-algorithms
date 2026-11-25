@@ -27,6 +27,7 @@ from collections.abc import Sequence
 from dataclasses import KW_ONLY, dataclass
 from enum import Enum
 from numbers import Real
+from typing import cast, overload
 
 from cqlib import Circuit
 
@@ -421,7 +422,79 @@ class BB84:
         """Return the injected Sampler implementation."""
         return self._sampler
 
-    def run(self, requests: Sequence[BB84Request], /) -> list[BB84Result]:
+    @overload
+    def run(self, alice_bits: Sequence[BB84Request], /) -> list[BB84Result]: ...
+
+    @overload
+    def run(
+        self,
+        alice_bits: tuple[int, ...],
+        alice_bases: tuple[BB84Basis, ...],
+        bob_bases: tuple[BB84Basis, ...],
+        *,
+        max_qber: float,
+        parameter_estimation_indices: tuple[int, ...] = (),
+        intercept_resend_bases: tuple[BB84Basis | None, ...] | None = None,
+    ) -> BB84Result: ...
+
+    def run(
+        self,
+        alice_bits: tuple[int, ...] | Sequence[BB84Request],
+        alice_bases: tuple[BB84Basis, ...] | None = None,
+        bob_bases: tuple[BB84Basis, ...] | None = None,
+        *,
+        max_qber: float | None = None,
+        parameter_estimation_indices: tuple[int, ...] | None = None,
+        intercept_resend_bases: tuple[BB84Basis | None, ...] | None = None,
+    ) -> BB84Result | list[BB84Result]:
+        """Prepare, measure, and sift one signal sequence or an ordered request batch.
+
+        Args:
+            alice_bits: Prepared bits in transmission order, or a request batch.
+            alice_bases: Preparation basis of each signal for a single task.
+            bob_bases: Measurement basis of each signal for a single task.
+            max_qber: Accepted disclosed-sample error rate for a single task.
+            parameter_estimation_indices: Original matching-basis positions disclosed for testing.
+            intercept_resend_bases: Optional Eve measurement basis per signal.
+
+        Returns:
+            Sifted bits and disclosed-sample diagnostics for one task, or
+            results in the original batch order.
+
+        Raises:
+            TypeError: For invalid types or missing single-task settings.
+            ValueError: For inconsistent bits, bases, disclosure indices, or QBER.
+        """
+        if any(
+            value is not None
+            for value in (
+                alice_bases,
+                bob_bases,
+                max_qber,
+                parameter_estimation_indices,
+                intercept_resend_bases,
+            )
+        ):
+            if alice_bases is None or bob_bases is None or max_qber is None:
+                raise TypeError(
+                    "single BB84 requires alice_bases, bob_bases, and max_qber"
+                )
+            if not isinstance(alice_bits, tuple):
+                raise TypeError("alice_bits must be a tuple for a single task")
+            request = BB84Request(
+                cast(tuple[int, ...], alice_bits),
+                alice_bases,
+                bob_bases,
+                max_qber=max_qber,
+                parameter_estimation_indices=()
+                if parameter_estimation_indices is None
+                else parameter_estimation_indices,
+                intercept_resend_bases=intercept_resend_bases,
+            )
+            return self._run_batch([request])[0]
+        return self._run_batch(cast(Sequence[BB84Request], alice_bits))
+
+    def _run_batch(self, requests: Sequence[BB84Request]) -> list[BB84Result]:
         """Execute a request batch and return sifting results in input order."""
         validated: list[BB84Request] = []
         alice_circuits: list[list[Circuit]] = []

@@ -76,10 +76,11 @@ class QAOA:
     or as a one-parameter ``Ansatz`` following the layer's ``{prefix}_beta``
     naming contract.
 
-    The primary entry point minimizes H_C; compute_maximum explicitly
-    minimizes -H_C while preserving the original cost evolution. The
-    injected optimizer owns the update rule and any gradient implementation.
-    Subclasses may override build_circuit to construct related variants.
+    The optimizer minimizes the cost by default. To maximize it, the
+    optimizer receives the negated objective while the circuit evolves under
+    the original cost. The optimizer owns the update rule and any gradient
+    implementation. Subclasses may override ``build_circuit`` to construct
+    related variants.
 
     Args:
         estimator: Component used to evaluate the cost expectation.
@@ -258,49 +259,35 @@ class QAOA:
         circuit.validate()
         return circuit
 
-    def compute_minimum_eigenvalue(
+    def run(
         self,
         cost_operator: Hamiltonian,
         initial_point: Mapping[str, float],
         *,
         shots: int | None = None,
+        objective_sense: Literal["minimize", "maximize"] = "minimize",
     ) -> VQAResult:
-        """Minimize the original cost expectation and return the final iterate.
+        """Optimize the cost expectation with the configured components.
 
-        Initial bindings must exactly cover the built circuit's active symbols.
-        Shots and objective evaluation are delegated to the supplied components.
-        No global optimum or exact eigenstate is guaranteed.
+        Args:
+            cost_operator: Nonempty Hermitian cost diagonal in the computational basis.
+            initial_point: Initial values for all active layer parameters by name.
+            shots: Optional sample count forwarded to the estimator.
+            objective_sense: Minimize or maximize the original cost expectation.
+
+        Returns:
+            The original cost at the final iterate, its parameters and bound
+            circuit, and the optimizer result for the minimized objective.
 
         Raises:
             TypeError: If input types or the optimizer response are invalid.
-            ValueError: If the cost, bindings, shots or response violates its
-                component contract.
+            ValueError: If the direction, cost, bindings, shots, or optimizer
+                result is invalid.
         """
-        return self._compute(cost_operator, initial_point, shots, "minimize")
-
-    def compute_maximum(
-        self,
-        cost_operator: Hamiltonian,
-        initial_point: Mapping[str, float],
-        *,
-        shots: int | None = None,
-    ) -> VQAResult:
-        """Maximize original cost by minimizing its negative objective.
-
-        Cost evolution still uses the original Hamiltonian. The returned
-        value has the original sign, while optimizer metadata retains the
-        minimized negative value. Input constraints match the minimum entry
-        point. This preserves the previous maximum-solving operation.
-        """
-        return self._compute(cost_operator, initial_point, shots, "maximize")
-
-    def _compute(
-        self,
-        cost_operator: Hamiltonian,
-        initial_point: Mapping[str, float],
-        shots: int | None,
-        objective_sense: Literal["minimize", "maximize"],
-    ) -> VQAResult:
+        if not isinstance(objective_sense, str):
+            raise TypeError("objective_sense must be a string")
+        if objective_sense not in ("minimize", "maximize"):
+            raise ValueError("objective_sense must be 'minimize' or 'maximize'")
         cost = _copy_cost_operator(cost_operator)
         circuit = self.build_circuit(cost.copy())
         if not isinstance(circuit, Circuit):
@@ -339,4 +326,26 @@ class QAOA:
             optimal_circuit,
             result,
             objective_sense=objective_sense,
+        )
+
+    def compute_minimum_eigenvalue(
+        self,
+        cost_operator: Hamiltonian,
+        initial_point: Mapping[str, float],
+        *,
+        shots: int | None = None,
+    ) -> VQAResult:
+        """Minimize the original cost with :meth:`run`."""
+        return self.run(cost_operator, initial_point, shots=shots)
+
+    def compute_maximum(
+        self,
+        cost_operator: Hamiltonian,
+        initial_point: Mapping[str, float],
+        *,
+        shots: int | None = None,
+    ) -> VQAResult:
+        """Maximize the original cost with :meth:`run`."""
+        return self.run(
+            cost_operator, initial_point, shots=shots, objective_sense="maximize"
         )

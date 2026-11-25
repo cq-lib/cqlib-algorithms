@@ -6,28 +6,29 @@
 
 ## 使用示例
 
-以下示例训练 <img src="../../assets/formulas/inline/inline-337ae63cc1dccdb4.svg" alt="R_Y(wx)" style="vertical-align: -4.000pt;"> 中的参数 <img src="../../assets/formulas/inline/inline-50e721e49c013f00.svg" alt="w" style="vertical-align: -1.000pt;">，并使用保真度核训练分类器。
+下面用双比特 ZZ 特征映射训练一个保真度核。`x_0` 编码样本特征，`x_1` 是所有样本共用的训练参数。分类器和回归器直接使用同一个训练好的核。
 
 ```python
-from cqlib import Circuit, Parameter
-from cqlib_algorithms.algorithms import QuantumKernelTrainer, PegasosQSVC
-from cqlib_algorithms.operators import TrainableFidelityQuantumKernel
+from cqlib.circuit.ansatz import ZZFeatureMap
+from cqlib_algorithms import PegasosQSVC, QSVR, QuantumKernelTrainer
+from cqlib_algorithms.operators import (
+    FeatureMapPreparation,
+    TrainableFidelityQuantumKernel,
+)
 
-circuit = Circuit(1)
-circuit.ry(0, Parameter("w") * Parameter("x"))
-kernel = TrainableFidelityQuantumKernel(circuit, ["x"], ["w"])
-trainer = QuantumKernelTrainer(quantum_kernel=kernel, max_evaluations=120)
-trainer.fit([[0.0], [1.0]], [-1, 1], initial_point={"w": 0.2})
-result = trainer.result_
-print("Learned parameters:", dict(result.optimal_parameters))
-print("Final alignment:", trainer.alignment_)
-
-classifier = PegasosQSVC(result.quantum_kernel, num_steps=100, seed=4)
-classifier.fit([[0.0], [1.0]], [-1, 1])
-print("Predicted classes:", classifier.predict([[0.0], [1.0]]))
+features = FeatureMapPreparation(ZZFeatureMap(2))
+family = TrainableFidelityQuantumKernel(features, ["x_0"], ["x_1"])
+trainer = QuantumKernelTrainer(quantum_kernel=family, max_evaluations=50)
+X = [[0.0], [1.0]]
+trainer.fit(X, [-1, 1], initial_point={"x_1": 0.4})
+kernel = trainer.quantum_kernel_
+classifier = PegasosQSVC(kernel, seed=4).fit(X, [-1, 1])
+regressor = QSVR(kernel, C=10, epsilon=0).fit(X, [0.0, 1.0])
+print(classifier.predict(X), regressor.predict(X))
 ```
 
-也可直接使用线路入口：`QuantumKernelTrainer(circuit, ["x"], ["w"])`。
+自定义特征线路通过 `UserCircuitPreparation(circuit)` 包装，再交给
+`QuantumKernelTrainer(preparation, ["x"], ["w"])` 训练。内置保真度核的元素落在 [0, 1]。自定义固定核可有负值，训练矩阵须为有限实对称矩阵，预测矩阵的形状为（待预测样本数，训练样本数）。
 默认优化器使用的 SciPy 由 `cqlib-algorithms[machine-learning]` 可选依赖组提供。
 
 ## 接口与参数
@@ -46,19 +47,21 @@ fit(X, y, *, initial_point) -> self
 | `quantum_kernel` | 实现 `TrainableQuantumKernel` 的可训练核，通过 `bind_parameters()` 生成固定参数核 |
 | `loss` | 接收训练核矩阵和目标向量、返回有限实数的可调用对象；默认采用 `BalancedKernelAlignmentLoss` |
 | `optimizer` | 实现 `ScalarMinimizer` 调用约定的对象，返回 `ScalarMinimizerResult`；默认采用 COBYLA |
-| `feature_map`、`input_parameters`、`trainable_parameters` | 线路入口，分别指定 Cqlib 特征线路、有序数据参数与可训练参数 |
-| `parameter_bindings` | 线路入口中其余活跃参数的固定值 |
-| `sampler`、`shots` | 线路入口中同时提供时采用采样核计算；默认采用精确计算 |
-| `max_statevector_qubits`、`max_statevector_bytes` | 线路入口的精确计算预算，默认分别为 20 和 268,435,456，详见 [量子核参数](qsvr.md) |
+| `feature_map`、`input_parameters`、`trainable_parameters` | `StatePreparation` 特征映射组件、有序数据参数与可训练参数。组件使用前缀 `x` 构建 |
+| `parameter_bindings` | 特征映射组件入口中其余活跃参数的固定值 |
+| `sampler`、`shots` | 特征映射组件入口中同时提供时采用采样核计算；默认采用精确计算 |
+| `max_statevector_qubits`、`max_statevector_bytes` | 特征映射组件入口的精确计算预算，默认分别为 20 和 268,435,456，详见 [量子核参数](qsvr.md) |
 | `max_evaluations` | 优化期间目标评估次数上限；COBYLA 至少需要可训练参数数量加 2，其他优化器取正整数 |
 | `tolerance`、`initial_step` | COBYLA 的停止尺度和初始搜索步长，均为正数 |
 
-`quantum_kernel` 与线路配置分别构成两种入口。线路的输入、可训练和固定参数名称互斥，并共同覆盖全部活跃符号。
+`quantum_kernel` 与特征映射组件配置构成互斥的两种入口。组件生成线路的输入、可训练和固定参数名称互斥，并共同覆盖全部活跃符号。
 训练数据 `X` 为非空有限实数二维数组，列数等于核的 `num_features`；`y` 为同样本数的一维有限实数向量。
 默认损失使用两个不同类别值，自定义损失可定义分类或回归目标。
 `initial_point` 按名称指定全部可训练参数的初值。
 
 ## 自定义损失与优化器
+
+这个示例训练 <img src="../../assets/formulas/inline/inline-337ae63cc1dccdb4.svg" alt="R_Y(wx)" style="vertical-align: -4.000pt;"> 中的参数 <img src="../../assets/formulas/inline/inline-50e721e49c013f00.svg" alt="w" style="vertical-align: -1.000pt;">，并使用已有的参数化线路。
 
 损失函数接收 `(matrix, targets)`。标量优化器接收 `(objective, initial_point)`，调用目标函数后，
 返回选中的参数点、目标值、终止信息和实际评估次数。以下示例使用矩阵平方误差与三点搜索。
@@ -66,8 +69,10 @@ fit(X, y, *, initial_point) -> self
 ```python
 import numpy as np
 from cqlib import Circuit, Parameter
+
 from cqlib_algorithms.algorithms import QuantumKernelTrainer
 from cqlib_algorithms.operators import TrainableFidelityQuantumKernel
+from cqlib_algorithms.operators.state_preparation import UserCircuitPreparation
 from cqlib_algorithms.protocols import ScalarMinimizerResult
 
 
@@ -91,7 +96,7 @@ def search(objective, initial_point):
 
 circuit = Circuit(1)
 circuit.ry(0, Parameter("w") * Parameter("x"))
-kernel = TrainableFidelityQuantumKernel(circuit, ["x"], ["w"])
+kernel = TrainableFidelityQuantumKernel(UserCircuitPreparation(circuit), ["x"], ["w"])
 trainer = QuantumKernelTrainer(
     quantum_kernel=kernel,
     loss=loss,

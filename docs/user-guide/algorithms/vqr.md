@@ -10,33 +10,35 @@
 
 ```python
 import numpy as np
-from cqlib import Circuit, Parameter
+from cqlib.circuit.gates import StandardGate
 from cqlib.qis import PauliString
 
 from cqlib_algorithms import VQR
-from cqlib_algorithms.operators.estimator import StatevectorEstimator
+from cqlib_algorithms.operators import (
+    AngleEncoding,
+    RealAmplitudesAnsatz,
+    StatevectorEstimator,
+)
 
-circuit = Circuit(1)
-circuit.ry(0, Parameter("x"))
-circuit.ry(0, Parameter("theta"))
-model = VQR(
-    circuit,
-    ["x"],
-    ["theta"],
+model = VQR.from_components(
+    AngleEncoding(1, StandardGate.RY),
+    RealAmplitudesAnsatz(1, reps=0),
     PauliString.from_str("Z"),
     StatevectorEstimator(),
     max_evaluations=120,
 )
 X = np.linspace(-1.4, 1.5, 9)[:, None]
 y = np.cos(X[:, 0] + 0.43)
-model.fit(X, y, initial_point={"theta": -0.7})
+model.fit(X, y, initial_point={"theta_0": -0.7})
 print("Learned weights:", dict(model.optimal_parameters_))
 print("Training MSE:", model.training_loss_)
 print("Predictions:", model.predict([[-0.5], [0.2], [1.0]]))
 ```
 
 输入数据 `X` 为有限实数二维数组，每列按 `input_parameters` 绑定；目标 `y` 为同样本数的一维向量。
-数据、权重和固定参数名称共同覆盖线路活跃符号，`initial_point` 按名称指定全部权重的初值。
+组件入口先应用数据编码，再应用同宽的拟设。两者的活跃参数分别作为数据和权重，名称须互斥。
+`model.input_parameters` 给出数据列的绑定顺序，可通过 `input_parameters` 显式调整。
+`model.weight_parameters` 列出 `initial_point` 所需的名称。混合参数或交替编码线路可用 `VQR(circuit, input_parameters, weight_parameters, observable, estimator)` 指定各参数的角色。
 可观测量的量子比特位置按线路插入顺序解释，Pauli 字符串最右字符对应位置 0。
 
 `shots=None` 使用精确期望值。有限采样计算可传入 `SamplingEstimator(sampler)`，
@@ -49,11 +51,15 @@ print("Predictions:", model.predict([[-0.5], [0.2], [1.0]]))
 
 ```python
 import numpy as np
-from cqlib import Circuit, Parameter
+from cqlib.circuit.gates import StandardGate
 from cqlib.qis import PauliString
 
 from cqlib_algorithms import ScalarMinimizerResult, VQR
-from cqlib_algorithms.operators.estimator import StatevectorEstimator
+from cqlib_algorithms.operators import (
+    AngleEncoding,
+    RealAmplitudesAnsatz,
+    StatevectorEstimator,
+)
 
 
 def search(objective, initial_point):
@@ -70,21 +76,17 @@ def search(objective, initial_point):
     )
 
 
-circuit = Circuit(1)
-circuit.ry(0, Parameter("x"))
-circuit.ry(0, Parameter("theta"))
 X = np.array([[-0.8], [0.2], [1.0]])
 y = np.cos(X[:, 0] + 0.43)
-model = VQR(
-    circuit,
-    ["x"],
-    ["theta"],
+model = VQR.from_components(
+    AngleEncoding(1, StandardGate.RY),
+    RealAmplitudesAnsatz(1, reps=0),
     PauliString.from_str("Z"),
     StatevectorEstimator(),
     optimizer=search,
     max_evaluations=3,
 )
-model.fit(X, y, initial_point={"theta": -0.7})
+model.fit(X, y, initial_point={"theta_0": -0.7})
 print("Selected weights:", dict(model.optimal_parameters_))
 print("Training MSE:", model.training_loss_)
 ```

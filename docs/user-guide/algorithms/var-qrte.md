@@ -71,12 +71,11 @@ from cqlib_algorithms import VarQRTE
 from cqlib_algorithms.operators import RealAmplitudesAnsatz, StatevectorEstimator
 
 ansatz = RealAmplitudesAnsatz(1, reps=0)
-template = ansatz.build_circuit("theta")
-initial = {name: 0.3 for name in template.used_symbols}
+algorithm = VarQRTE(StatevectorEstimator(), ansatz)
 
-result = VarQRTE(StatevectorEstimator(), ansatz).evolve(
+result = algorithm.run(
     PauliString.from_str("Y"),
-    initial,
+    {"theta_0": 0.3},
     0.1,
     num_timesteps=10,
     auxiliary_operators={"z": PauliString.from_str("Z")},
@@ -87,6 +86,8 @@ print(result.final_parameters)
 print(result.final_energy.expectation)
 print([item.expectation for item in result.observables["z"]])
 ```
+
+该例的 10 个时间步对应 11 组参数和观测值，包含初始时刻。`evolve(...)` 接受与 `run(...)` 相同的参数。
 
 相位规范修正的 McLachlan 变分模拟方程见 Yuan 等人的
 [Theory of variational quantum simulation](https://doi.org/10.22331/q-2019-10-07-191)；

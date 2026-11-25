@@ -68,6 +68,65 @@ Gleinig 与 Hoefler 的
 该组件适合支持集远小于完整希尔伯特空间的输入；它执行显式线路综合，不提供 QRAM
 或数据加载加速。具体综合方法、输入约束和复杂度界见源码 docstring。
 
+## 固定参数后复用组件
+
+`UserCircuitPreparation.from_component(component, parameter_bindings, *, prefix="theta")`
+接收 `StatePreparation` 或 `Ansatz`。
+在指定参数点上构建一次、完整绑定并保存独立快照，返回同一个
+StatePreparation 协议下的固定组件。结果的 `num_parameters()` 为 `0`，可作为 Grover、
+振幅估计、QPE/HPE、QBayesian 或变分算法的固定初态。
+
+```python
+import math
+from cqlib_algorithms import Grover
+from cqlib_algorithms.operators import (
+    BooleanFunction,
+    GroverOperator,
+    PhaseOracle,
+    RealAmplitudesAnsatz,
+    StatevectorSampler,
+    UserCircuitPreparation,
+)
+
+preparation = UserCircuitPreparation.from_component(
+    RealAmplitudesAnsatz(2, reps=0),
+    {"theta_0": math.pi / 2, "theta_1": math.pi / 2},
+)
+oracle = PhaseOracle(BooleanFunction.from_marked_states(2, [2]))
+iteration = GroverOperator(oracle, state_preparation=preparation)
+algorithm = Grover(StatevectorSampler(), iteration=iteration)
+result = algorithm.run(iterations=1, shots=256, seed=7)
+print(result.counts)  # (0, 0, 256, 0), in basis-index order
+print(result.success_probability)  # 1.0
+```
+
+该例把两比特拟设固定为均匀叠加态，再直接交给 Grover 迭代组件。返回的 `counts` 按计算基
+整数索引排列，索引 `2` 对应位串 `10`。
+
+已有自定义制备线路时，用原构造函数包装为状态制备组件，再复用同一 Oracle 和 Grover 算法：
+
+```python
+from cqlib_algorithms.operators import QFT, BasisStateInitialization, UnitaryOverlap
+
+preparation = UserCircuitPreparation(
+    UnitaryOverlap(
+        QFT(2).build_circuit(), BasisStateInitialization(2, 0)
+    ).build_circuit()
+)
+iteration = GroverOperator(oracle, state_preparation=preparation)
+result = Grover(StatevectorSampler(), iteration=iteration).run(iterations=1, shots=256)
+print(result.counts)  # (0, 0, 256, 0)
+```
+
+对无符号组件传入空绑定 `{}`。固定制备描述完整酉作用于全零态的结果，输入位、结果位及
+辅助位均保留；将其用于其他算法时，仍需满足该算法的状态、宽度和寄存器角色要求。
+
+绑定映射必须恰好覆盖构建后实际使用的符号，数值须有限；逻辑参数槽位中未出现的符号无须填写。
+`prefix` 只影响源组件新建符号的名字，不重命名显式配置的符号。固定结果的后续构建前缀不改变
+参数值或线路。源量子比特按插入位置映射到连续编号，全局相位保留；源组件、绑定字典和输出
+线路互不共享可变状态。当前 Core 的静态求逆限制仍适用。
+
+
 ## Core 适配边界
 
 `BasisEncoding`、`AngleEncoding` 和 `FeatureMapPreparation` 保存输入快照并直接委托
@@ -75,9 +134,9 @@ Gleinig 与 Hoefler 的
 
 `UserCircuitPreparation` 将源线路的量子比特按插入位置映射到连续 <img src="../../assets/formulas/inline/inline-80df05cab2d1ce42.svg" alt="0,\ldots,n-1" style="vertical-align: -3.000pt;">，保留
 活跃符号和线路全局相位，且 `prefix` 不重命名用户符号。它要求线路可由 Core 静态
-求逆，因此拒绝测量、重置、动态控制等非幺正操作。当前 Core 也不能对三量子比特及
-以上的矩阵型 `UnitaryGate` 求逆，即使矩阵本身是幺正的；该限制会在构造时明确暴露，
-不能用稠密酉门绕过。
+求逆，因此拒绝测量、重置、动态控制等非幺正操作。当前 Core 对数值矩阵型
+`UnitaryGate` 存在静态求逆限制，构造时会检查该能力。自定义线路使用
+`UserCircuitPreparation(circuit)` 接入；`from_component` 只负责固定状态制备或拟设的参数。
 
 ## 物理参考态
 

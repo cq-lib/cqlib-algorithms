@@ -118,3 +118,61 @@ def test_vector_function_requires_a_valid_output_mask():
         HadamardPhaseQuery(function)
     with pytest.raises(ValueError, match="select one or more existing outputs"):
         HadamardPhaseQuery(function, output_mask=4)
+
+
+def test_injected_phase_oracle_is_used_and_snapshotted():
+    from cqlib import Circuit
+
+    from cqlib_algorithms.operators import PhaseOracle
+
+    class CompactParity(PhaseOracle):
+        calls = 0
+
+        def build_circuit(self):
+            type(self).calls += 1
+            circuit = Circuit(2)
+            circuit.z(0)
+            circuit.z(1)
+            return circuit
+
+    function = BooleanFunction.from_truth_table([False, True, True, False])
+    source = CompactParity(function)
+    query = HadamardPhaseQuery(source)
+    source._function = BooleanFunction.from_truth_table([False] * 4)
+    reference = HadamardPhaseQuery(function).build_circuit().to_matrix()
+    np.testing.assert_allclose(query.build_circuit().to_matrix(), reference, atol=1e-12)
+    assert query.function == function
+    assert CompactParity.calls == 1
+
+
+@pytest.mark.parametrize("kind", ["type", "width", "symbol", "measure"])
+def test_injected_phase_oracle_circuit_contract(kind):
+    from cqlib import Circuit, Parameter
+
+    from cqlib_algorithms.operators import PhaseOracle
+
+    class InvalidOracle(PhaseOracle):
+        def build_circuit(self):
+            if kind == "type":
+                return None
+            circuit = Circuit(1 if kind == "width" else 2)
+            if kind == "symbol":
+                circuit.rz(0, Parameter("x"))
+            elif kind == "measure":
+                circuit.measure(0)
+            return circuit
+
+    query = HadamardPhaseQuery(
+        InvalidOracle(BooleanFunction.from_truth_table([False, True, True, False]))
+    )
+    with pytest.raises((TypeError, ValueError)):
+        query.build_circuit()
+
+
+@pytest.mark.parametrize("mask", [True, 1.5, 2])
+def test_preconfigured_oracle_rejects_conflicting_or_invalid_mask(mask):
+    from cqlib_algorithms.operators import PhaseOracle
+
+    oracle = PhaseOracle(BooleanFunction.from_truth_table([False, True]))
+    with pytest.raises((TypeError, ValueError)):
+        HadamardPhaseQuery(oracle, output_mask=mask)

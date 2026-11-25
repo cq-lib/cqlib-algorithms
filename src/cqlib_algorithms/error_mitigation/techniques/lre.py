@@ -54,14 +54,19 @@ from __future__ import annotations
 
 import itertools
 import warnings
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 
 import numpy as np
 from cqlib import Circuit
 from cqlib.qis import Hamiltonian, PauliString
 
 from ...protocols import Estimator, EstimatorRequest, EstimatorResult, spawn_seeds
-from .._circuits import strip_measurements
+from ...protocols.state_preparation import StatePreparation
+from .._circuits import (
+    bind_request_circuit,
+    build_estimator_request,
+    strip_measurements,
+)
 from ..core import QemExecutor
 from ..inference import (
     ConvergenceWarning,
@@ -219,7 +224,7 @@ def combine_results(
 
 
 def execute_with_lre(
-    circuit: Circuit,
+    circuit: StatePreparation | Circuit,
     executor: QemExecutor,
     observable: Hamiltonian | PauliString,
     /,
@@ -229,18 +234,16 @@ def execute_with_lre(
     num_chunks: int,
     shots: int | None = None,
     seed: int | None = None,
+    parameter_bindings: Mapping[str, float] | None = None,
+    prefix: str = "qem",
 ) -> float:
     r"""Estimate one observable on ``circuit`` with layerwise extrapolation.
 
-    This is the immediate form of :func:`lre_executor`::
-
-        execute_with_lre(c, ex, obs, **params)
-        == lre_executor(ex, **params).estimate(
-               [EstimatorRequest(c, obs)]
-           )[0].expectation
+    This is the immediate form of :func:`lre_executor`. The same task
+    can be evaluated by calling ``run()`` on that executor.
 
     Args:
-        circuit: Circuit whose expectation value is to be mitigated.
+        circuit: State-preparation component or circuit to evaluate.
         executor: Execution backend supplying the expectation surface.
         observable: Observable to estimate.
         degree: Multivariate polynomial degree :math:`d \ge 1`.
@@ -250,14 +253,18 @@ def execute_with_lre(
         seed: Seed of the sampled scaled circuits, or ``None`` for fresh randomness.
             Every scaled circuit draws from its own child seed, so one value
             reproduces the whole family.
+        parameter_bindings: Finite values covering exactly all active symbols.
+            Values are bound before circuit transformations; None requires no symbols.
+        prefix: Build prefix for a preparation component, defaulting to ``qem``;
+            existing Circuit symbols keep their names.
 
     Returns:
         Mitigated expectation value.
 
     Raises:
-        TypeError: If ``degree``, ``fold_multiplier``, or ``num_chunks`` is not an
-            integer, or if ``seed`` is neither an integer nor ``None``.
-        ValueError: If ``degree < 1``, ``fold_multiplier < 1``, ``num_chunks < 1``, or
+        TypeError: If an input or configuration argument has the wrong type.
+        ValueError: If bindings are non-finite or do not cover active symbols exactly,
+            or if ``degree < 1``, ``fold_multiplier < 1``, ``num_chunks < 1``, or
             ``num_chunks`` exceeds the number of gate operations of ``circuit``.
 
     Note:
@@ -267,7 +274,6 @@ def execute_with_lre(
         scale choices. The count is exponential in ``num_chunks`` for a fixed
         ``degree``, so the number of executions grows quickly with the chunk
         count; keep ``num_chunks`` small.
-
     """
     wrapped = lre_executor(
         executor,
@@ -277,7 +283,13 @@ def execute_with_lre(
         shots=shots,
         seed=seed,
     )
-    request = EstimatorRequest(circuit=circuit, observable=observable, shots=shots)
+    request = build_estimator_request(
+        circuit,
+        observable,
+        shots=shots,
+        parameter_bindings=parameter_bindings,
+        prefix=prefix,
+    )
     return wrapped.estimate([request])[0].expectation
 
 
@@ -396,10 +408,11 @@ class _LreEstimator(Estimator):
 
     def _mitigate(self, request: EstimatorRequest) -> EstimatorResult:
         r"""Fold one request's circuit family, measure it, and combine it."""
+        bound_circuit = bind_request_circuit(request)
         shots = self._shots if self._shots is not None else request.shots
         seed = self._seed if self._seed is not None else request.seed
         circuits, scale_points = construct_circuits(
-            request.circuit,
+            bound_circuit,
             degree=self._degree,
             fold_multiplier=self._fold_multiplier,
             num_chunks=self._num_chunks,

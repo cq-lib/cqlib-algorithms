@@ -20,7 +20,7 @@ from .dicke_unitary import DickeUnitary
 from .general_state_reflection import GeneralStateReflection
 from .grover_diffusion import GroverDiffusion
 from .grover_long import GroverLong
-from .phase_oracle import PhaseOracle
+from .phase_oracle import BitPatternPhaseOracle, PhaseOracle
 from .split_cycle_shift import SplitCycleShift
 from .unitary_matrix_oracle import UnitaryMatrixOracle
 from .weight_distribution_block import WeightDistributionBlock
@@ -28,6 +28,7 @@ from .zero_state_reflection import ZeroStateReflection
 
 __all__ = [
     "BitFlipOracle",
+    "BitPatternPhaseOracle",
     "BlockEncoding",
     "BooleanFunction",
     "BooleanVectorFunction",

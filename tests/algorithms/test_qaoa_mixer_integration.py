@@ -22,9 +22,13 @@ from cqlib.qis import Hamiltonian, PauliString
 
 from cqlib_algorithms.algorithms import QAOA
 from cqlib_algorithms.operators import (
+    BasisStateInitialization,
+    COBYLAOptimizer,
+    FullyConnectedMixer,
     GradientDescent,
     ParameterShiftGradient,
     ParityRingMixer,
+    RingMixer,
     StatevectorEstimator,
 )
 from cqlib_algorithms.protocols import Ansatz
@@ -48,6 +52,22 @@ def test_qaoa_builds_each_custom_mixer_layer_with_the_layer_beta() -> None:
         "alt_1_gamma",
         "alt_1_beta",
     ]
+
+
+@pytest.mark.parametrize("mixer_type", [RingMixer, FullyConnectedMixer])
+def test_run_with_interchangeable_one_hot_mixers(mixer_type) -> None:
+    algorithm = QAOA(
+        StatevectorEstimator(),
+        COBYLAOptimizer(maxiter=15),
+        initial_state=BasisStateInitialization(4, 1),
+        mixer=mixer_type(4),
+    )
+    cost = Hamiltonian.from_pauli(PauliString.from_str("IZII"))
+    result = algorithm.run(cost, {"qaoa_0_gamma": 0.37, "qaoa_0_beta": -0.21})
+
+    probabilities = np.abs(result.optimal_circuit.to_matrix()[:, 0]) ** 2
+    assert sum(probabilities[[1, 2, 4, 8]]) == pytest.approx(1.0, abs=1e-12)
+    assert result.optimal_value == pytest.approx(1 - 2 * probabilities[4], abs=1e-12)
 
 
 @pytest.mark.reference

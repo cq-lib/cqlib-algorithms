@@ -527,3 +527,61 @@ def test_verdict_comes_from_counts_not_truth_table():
 
     assert result.is_constant
     assert result.zero_count == 8
+
+
+def test_single_query_component_matches_batch():
+    from cqlib_algorithms.operators import HadamardPhaseQuery, PhaseOracle
+
+    sampler = StatevectorSampler()
+    balanced = _parity_function(2)
+    component = HadamardPhaseQuery(PhaseOracle(balanced))
+    result = DeutschJozsa(sampler).run(component, shots=32)
+    assert result == DeutschJozsa(sampler).run([DeutschJozsaRequest(balanced, 32)])[0]
+    assert result.is_balanced
+
+
+def test_single_query_preserves_vector_output_mask():
+    from cqlib_algorithms.operators import HadamardPhaseQuery, PhaseOracle
+
+    vector = BooleanVectorFunction.from_truth_table(
+        [(False, False), (True, False), (False, True), (True, True)]
+    )
+    query = HadamardPhaseQuery(PhaseOracle(vector, output_mask=2))
+    algorithm = DeutschJozsa(StatevectorSampler())
+    assert (
+        algorithm.run(query, shots=32)
+        == algorithm.run([DeutschJozsaRequest(vector, 32, output_mask=2)])[0]
+    )
+
+
+def test_single_query_rejects_missing_shots_and_batch_options():
+    from cqlib_algorithms.operators import HadamardPhaseQuery
+
+    algorithm = DeutschJozsa(StatevectorSampler())
+    with pytest.raises(TypeError, match="shots"):
+        algorithm.run(HadamardPhaseQuery(_parity_function(2)))
+    with pytest.raises(TypeError, match="batch"):
+        algorithm.run([], shots=32)
+
+
+@pytest.mark.parametrize("kind", ["type", "width", "measure"])
+def test_invalid_query_component_is_rejected_before_sampling(kind):
+    from cqlib import Circuit
+
+    from cqlib_algorithms.operators import HadamardPhaseQuery
+
+    class InvalidQuery(HadamardPhaseQuery):
+        def build_circuit(self):
+            if kind == "type":
+                return None
+            circuit = Circuit(1 if kind == "width" else 2)
+            if kind == "measure":
+                circuit.measure(0)
+            return circuit
+
+    class UnusedSampler(Sampler):
+        def run(self, requests):
+            pytest.fail("invalid query must be rejected before execution")
+
+    with pytest.raises((TypeError, ValueError)):
+        DeutschJozsa(UnusedSampler()).run(InvalidQuery(_parity_function(2)), shots=32)

@@ -11,7 +11,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from cqlib_algorithms.algorithms import QuantumKernelTrainer
+from cqlib_algorithms.algorithms import QSVR, PegasosQSVC, QuantumKernelTrainer
 from cqlib_algorithms.algorithms.machine_learning import _common as common
 from cqlib_algorithms.algorithms.machine_learning import _validation as validation
 from cqlib_algorithms.protocols import (
@@ -50,6 +50,23 @@ class FeatureFamily(TrainableQuantumKernel):
 
 def square_loss(matrix, targets):
     return float(np.mean((matrix - np.outer(targets, targets)) ** 2))
+
+
+def test_trained_signed_kernel_feeds_classification_and_regression():
+    data = [[-2.0], [2.0]]
+    training = QuantumKernelTrainer(
+        quantum_kernel=FeatureFamily(),
+        loss=square_loss,
+        optimizer=GridSearch([0.0, 1.0]),
+        max_evaluations=2,
+    ).fit(data, [-2.0, 2.0], initial_point={"w": 0.2})
+    kernel = training.quantum_kernel_
+    np.testing.assert_allclose(training.kernel_matrix_, [[4.0, -4.0], [-4.0, 4.0]])
+    query = [[-1.0], [0.5]]
+    classifier = PegasosQSVC(kernel, num_steps=100, seed=4).fit(data, [-1, 1])
+    regressor = QSVR(kernel, C=10.0, epsilon=0.0).fit(data, [-2.0, 2.0])
+    np.testing.assert_array_equal(classifier.predict(query), [-1.0, 1.0])
+    np.testing.assert_allclose(regressor.predict(query), [-1.0, 0.5], atol=1e-10)
 
 
 class GridSearch:

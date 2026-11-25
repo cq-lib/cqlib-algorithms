@@ -32,9 +32,12 @@ from numpy.typing import ArrayLike, NDArray
 from ..._utils.circuit import validate_bound_static_unitary_circuit
 from ..._utils.hamiltonian import validate_hermitian_observable
 from ..._utils.numeric import (
+    validate_nonnegative_integer,
     validate_optional_positive_integer,
     validate_positive_integer,
 )
+from ..._utils.state_preparation import build_state_preparation_circuit
+from ...protocols.ansatz import Ansatz
 from ...protocols.estimator import (
     Estimator,
     EstimatorRequest,
@@ -42,6 +45,7 @@ from ...protocols.estimator import (
     require_estimator_results,
 )
 from ...protocols.scalar_minimizer import ScalarMinimizer, ScalarMinimizerResult
+from ...protocols.state_preparation import StatePreparation
 from ._common import configuration, minimize, mse
 from ._validation import (
     _real_hyperparameter,
@@ -71,6 +75,7 @@ class VQR:
     Each input row produces one Hermitian observable expectation [1]. Qubit
     positions follow the circuit's insertion order. Fit retains the minimizer's
     selected point and independently evaluates its training MSE.
+    Use :meth:`from_components` to supply a feature map and ansatz separately.
 
     Args:
         circuit: Static unitary data-and-weight circuit.
@@ -134,6 +139,96 @@ class VQR:
             self._initial_step = _real_hyperparameter(initial_step, "initial_step")
         self._max_evaluations = max_evaluations
         self._state: _State | None = None
+
+    @classmethod
+    def from_components(
+        cls,
+        feature_map: StatePreparation,
+        ansatz: Ansatz,
+        observable: Hamiltonian | PauliString,
+        estimator: Estimator,
+        *,
+        input_parameters: Sequence[str] | None = None,
+        shots: int | None = None,
+        optimizer: ScalarMinimizer | None = None,
+        max_evaluations: int = 200,
+        tolerance: float = 1e-6,
+        initial_step: float = 1.0,
+    ) -> VQR:
+        """Encode each data row, then apply a trainable ansatz on the same qubits.
+
+        Args:
+            feature_map: Data-encoding component, built with prefix ``"x"``.
+            ansatz: Trainable component, built with prefix ``"theta"``.
+            observable: Hermitian regression observable on the shared register.
+            estimator: Evaluator of the observable for each data row.
+            input_parameters: Column order for all active encoding symbols.
+                Defaults to their order in the encoding circuit's ``used_symbols``.
+            shots: Optional sample count per prediction.
+            optimizer: Scalar minimizer used during training, defaulting to COBYLA.
+            max_evaluations: Optimization objective evaluation budget.
+            tolerance: Search tolerance for the default minimizer.
+            initial_step: Initial search scale for the default minimizer.
+
+        Returns:
+            An unfitted regressor. Its ``weight_parameters`` name the initial bindings for fit.
+
+        Raises:
+            TypeError: For invalid component types or configuration types.
+            ValueError: For incompatible widths, parameter roles, or execution settings.
+        """
+        if not isinstance(ansatz, Ansatz):
+            raise TypeError("ansatz must be an Ansatz")
+        encoding = build_state_preparation_circuit(feature_map, prefix="x")
+        ansatz.validate()
+        width = ansatz.num_qubits()
+        slots = ansatz.num_parameters()
+        validate_positive_integer(width, "ansatz num_qubits")
+        validate_nonnegative_integer(slots, name="ansatz num_parameters")
+        if width != encoding.num_qubits:
+            raise ValueError("feature map and ansatz must have the same width")
+        layer = ansatz.build_circuit("theta")
+        if not isinstance(layer, Circuit):
+            raise TypeError("ansatz must build a Circuit")
+        if layer.num_qubits != width or len(layer.used_symbols) > slots:
+            raise ValueError(
+                "ansatz circuit must match its declared width and parameter slots"
+            )
+        inputs = (
+            tuple(encoding.used_symbols)
+            if input_parameters is None
+            else names(input_parameters, "input_parameters")
+        )
+        if set(inputs) != set(encoding.used_symbols):
+            raise ValueError(
+                "input_parameters must name exactly the active feature-map symbols"
+            )
+        weights = tuple(layer.used_symbols)
+        circuit = Circuit(width)
+        circuit.compose(encoding, circuit.qubits)
+        circuit.compose(layer, circuit.qubits)
+        return cls(
+            circuit,
+            inputs,
+            weights,
+            observable,
+            estimator,
+            shots=shots,
+            optimizer=optimizer,
+            max_evaluations=max_evaluations,
+            tolerance=tolerance,
+            initial_step=initial_step,
+        )
+
+    @property
+    def input_parameters(self) -> tuple[str, ...]:
+        """Return the parameter names in feature-column order."""
+        return self._inputs
+
+    @property
+    def weight_parameters(self) -> tuple[str, ...]:
+        """Return the active trainable names in optimizer order."""
+        return self._weights
 
     def _fitted(self) -> _State:
         if self._state is None:

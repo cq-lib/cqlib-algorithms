@@ -597,3 +597,76 @@ def test_invalid_sampler_contract_is_rejected(mode, error, message) -> None:
                 )
             ]
         )
+
+
+def test_single_run_and_legacy_batch_use_same_sifted_bits():
+    bases = (BB84Basis.Z, BB84Basis.X, BB84Basis.Z, BB84Basis.X)
+    bits = (0, 1, 1, 0)
+    algorithm = BB84(StatevectorSampler())
+    actual = algorithm.run(
+        bits, bases, bases, max_qber=0.11, parameter_estimation_indices=(0, 1)
+    )
+    expected = algorithm.run(
+        [
+            BB84Request(
+                bits, bases, bases, max_qber=0.11, parameter_estimation_indices=(0, 1)
+            )
+        ]
+    )[0]
+    assert actual == expected
+
+
+def test_single_intercept_resend_matches_batch_and_two_stage_submission():
+    sampler = _ScriptedSampler([(0, 1), (1, 0)])
+    actual = BB84(sampler).run(
+        (0, 1),
+        (BB84Basis.Z,) * 2,
+        (BB84Basis.Z,) * 2,
+        max_qber=0.11,
+        parameter_estimation_indices=(0, 1),
+        intercept_resend_bases=(BB84Basis.X,) * 2,
+    )
+    legacy_sampler = _ScriptedSampler([(0, 1), (1, 0)])
+    expected = BB84(legacy_sampler).run(
+        [
+            BB84Request(
+                (0, 1),
+                (BB84Basis.Z,) * 2,
+                (BB84Basis.Z,) * 2,
+                max_qber=0.11,
+                parameter_estimation_indices=(0, 1),
+                intercept_resend_bases=(BB84Basis.X,) * 2,
+            )
+        ]
+    )[0]
+    assert actual == expected
+    assert len(sampler.calls) == 2
+    for new_batch, old_batch in zip(sampler.calls, legacy_sampler.calls):
+        assert len(new_batch) == len(old_batch) == 2
+        for new, old in zip(new_batch, old_batch):
+            np.testing.assert_allclose(
+                new.circuit.to_matrix(), old.circuit.to_matrix(), atol=1e-12
+            )
+
+
+@pytest.mark.parametrize(
+    "case", ["missing_bob", "missing_qber", "mismatch", "bad_bit", "bad_index"]
+)
+def test_single_bb84_rejects_invalid_data_before_sampling(case):
+    sampler = _ScriptedSampler([])
+    algorithm = BB84(sampler)
+    bases = (BB84Basis.Z,) * 2
+    with pytest.raises((TypeError, ValueError)):
+        if case == "missing_bob":
+            algorithm.run((0, 1), bases, max_qber=0.1)
+        elif case == "missing_qber":
+            algorithm.run((0, 1), bases, bases)
+        elif case == "mismatch":
+            algorithm.run((0,), bases, bases, max_qber=0.1)
+        elif case == "bad_bit":
+            algorithm.run((0, 2), bases, bases, max_qber=0.1)
+        else:
+            algorithm.run(
+                (0, 1), bases, bases, max_qber=0.1, parameter_estimation_indices=(2,)
+            )
+    assert sampler.calls == []

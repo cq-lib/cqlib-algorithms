@@ -31,6 +31,7 @@ from cqlib_algorithms.extension.vibration import (
     VibrationalEnergy,
     VibrationalSystem,
 )
+from cqlib_algorithms.operators.ansatz import UVCCSDAnsatz
 from cqlib_algorithms.operators.estimator import StatevectorEstimator
 from cqlib_algorithms.protocols import (
     Ansatz,
@@ -116,16 +117,18 @@ class _FixedPointOptimizer(Optimizer):
 
 
 @pytest.mark.reference
-def test_ground_state_matches_independent_two_mode_projector_reference():
+@pytest.mark.parametrize("entry", ["run", "compute"])
+def test_ground_state_matches_independent_two_mode_projector_reference(entry):
     system, target, point = _projector_system()
     modal_matrix = 0.37 * np.eye(4) - np.outer(target, target.conj())
     eigenvalues = np.linalg.eigvalsh(modal_matrix)
 
-    result = VibrationalGroundState(
+    solver = VibrationalGroundState(
         StatevectorEstimator(),
         _FixedPointOptimizer(),
         prefix="exact",
-    ).compute(system, point)
+    )
+    result = getattr(solver, entry)(system, point)
 
     assert isinstance(result, VibrationalGroundStateResult)
     assert result.variational_energy == pytest.approx(eigenvalues[0], abs=1e-12)
@@ -338,6 +341,27 @@ class _VacuumAnsatz(Ansatz):
 
     def num_qubits(self) -> int:
         return self._num_qubits
+
+
+def test_component_run_accepts_explicit_ansatz_and_reports_its_physical_sector():
+    system, _, point = _projector_system()
+    saved_point = dict(point)
+    solver = VibrationalGroundState(
+        StatevectorEstimator(), _FixedPointOptimizer(), prefix="exact"
+    )
+    physical = solver.run(system, point, ansatz=UVCCSDAnsatz(system.modal_space))
+    vacuum = solver.run(system, ansatz=_VacuumAnsatz(system.num_qubits))
+    assert physical.variational_energy == pytest.approx(-0.63, abs=1e-12)
+    assert vacuum.variational_energy == pytest.approx(0.37, abs=1e-12)
+    assert all(
+        x.expectation == pytest.approx(0.0, abs=1e-12)
+        for x in physical.measurements.mode_leakages
+    )
+    assert all(
+        x.expectation == pytest.approx(1.0, abs=1e-12)
+        for x in vacuum.measurements.mode_leakages
+    )
+    assert point == saved_point
 
 
 class _ZeroAndDoubleHotSuperpositionAnsatz(Ansatz):

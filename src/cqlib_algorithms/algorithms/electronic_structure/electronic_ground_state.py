@@ -102,7 +102,7 @@ class ElectronicGroundState:
         """Return the ansatz parameter prefix."""
         return self._prefix
 
-    def compute(
+    def run(
         self,
         system: ElectronicSystem,
         initial_point: Mapping[str, float] | None = None,
@@ -156,7 +156,7 @@ class ElectronicGroundState:
             selected_ansatz,
             self._optimizer,
             prefix=self._prefix,
-        ).compute_minimum_eigenvalue(
+        ).run(
             hamiltonian,
             point,
             shots=shots,
@@ -192,6 +192,17 @@ class ElectronicGroundState:
             auxiliary,
             mapper=self._mapper,
         )
+
+    def compute(
+        self,
+        system: ElectronicSystem,
+        initial_point: Mapping[str, float] | None = None,
+        *,
+        ansatz: Ansatz | None = None,
+        shots: int | None = None,
+    ) -> ElectronicGroundStateResult:
+        """Solve the ground state with the same inputs and result as :meth:`run`."""
+        return self.run(system, initial_point, ansatz=ansatz, shots=shots)
 
 
 __all__ = ["ElectronicGroundState"]

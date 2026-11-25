@@ -19,7 +19,6 @@ not the paper's unbounded expected-query-complexity algorithm.
 
 from __future__ import annotations
 
-import copy
 import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
@@ -28,15 +27,16 @@ from numbers import Real
 from types import MappingProxyType
 
 from cqlib import Circuit
-from cqlib.circuit import CircuitError
-from cqlib.circuit.gates import StandardGate
 
-from ..._utils.circuit import (
-    snapshot_bound_static_unitary_circuit,
-    validate_bound_static_unitary_circuit,
-)
+from ..._utils.circuit import snapshot_bound_static_unitary_circuit
+from ..._utils.state_preparation import build_state_preparation_circuit
 from ...operators.composite import GroverOperator
+from ...operators.oracle.phase_oracle import BitPatternPhaseOracle
+from ...operators.state_preparation.user_circuit_preparation import (
+    UserCircuitPreparation,
+)
 from ...protocols.sampler import Sampler, SamplerRequest, require_sampler_results
+from ...protocols.state_preparation import StatePreparation
 
 
 def _integer(value: int, name: str, *, minimum: int = 1) -> None:
@@ -223,33 +223,41 @@ class QBayesianResult:
 class QBayesian:
     """Infer computational-basis marginals by bounded amplitude amplification.
 
-    ``state_preparation`` is a fully bound static invertible Circuit preparing
-    the desired joint distribution. ``variable_qubits`` maps nonempty names
+    ``state_preparation`` supplies the joint distribution as a preparation
+    component. Its circuit must be fully bound, static, and
+    invertible. ``variable_qubits`` maps nonempty names
     to distinct insertion positions, including when Core qubit IDs are not
     contiguous. Unnamed qubits are marginalized. Inputs are copied.
 
-    ``infer`` follows exactly its finite schedule until the accepted target
+    ``run`` follows exactly its finite schedule until the accepted target
     is reached or the schedule ends. The whole schedule must pass resource
     limits before execution. Ideal conditional probabilities are unchanged
     by amplification; noisy execution only yields empirical postselection.
-    TypeError/ValueError report invalid inputs and Sampler contract failures;
-    backend errors propagate. No Bayesian-network tables are compiled here.
+    Backend errors propagate.
+
+    Args:
+        state_preparation: Fully bound component encoding the joint
+            distribution. Components are built once with prefix ``"bayes"``.
+        variable_qubits: Variable names mapped to distinct qubit insertion positions.
+        sampler: Executor used by the finite amplification-and-sampling schedule.
+
+    Raises:
+        TypeError: If input types or component interfaces are invalid.
+        ValueError: If the preparation or variable positions are invalid.
     """
 
     __slots__ = ("_sampler", "_state_preparation", "_variable_qubits")
 
     def __init__(
         self,
-        state_preparation: Circuit,
+        state_preparation: StatePreparation,
         variable_qubits: Mapping[str, int],
         sampler: Sampler,
     ) -> None:
         if not isinstance(sampler, Sampler):
             raise TypeError("sampler must be a Sampler instance")
-        preparation = snapshot_bound_static_unitary_circuit(
-            state_preparation, "state_preparation"
-        )
-        self._require_inverse(preparation)
+        source = build_state_preparation_circuit(state_preparation, prefix="bayes")
+        preparation = snapshot_bound_static_unitary_circuit(source, "state_preparation")
         if not isinstance(variable_qubits, Mapping):
             raise TypeError("variable_qubits must be a mapping")
         if not variable_qubits:
@@ -262,23 +270,14 @@ class QBayesian:
                 raise ValueError("variable qubit positions must be in circuit range")
         if len(set(positions.values())) != len(positions):
             raise ValueError("variable qubit positions must be distinct")
-        self._state_preparation = preparation
+        self._state_preparation = UserCircuitPreparation(preparation)
         self._variable_qubits = MappingProxyType(positions)
         self._sampler = sampler
-
-    @staticmethod
-    def _require_inverse(circuit: Circuit) -> None:
-        try:
-            circuit.inverse()
-        except CircuitError as error:
-            raise ValueError(
-                "state_preparation must be statically invertible"
-            ) from error
 
     @property
     def state_preparation(self) -> Circuit:
         """Return an independent normalized preparation circuit."""
-        return copy.deepcopy(self._state_preparation)
+        return self._state_preparation.build_circuit("")
 
     @property
     def variable_qubits(self) -> Mapping[str, int]:
@@ -310,26 +309,13 @@ class QBayesian:
         if grover_power > max_grover_power:
             raise ValueError("grover_power exceeds max_grover_power")
         assignments = self._normalize_evidence(evidence)
-        validate_bound_static_unitary_circuit(
-            self._state_preparation, "state_preparation"
-        )
-        self._require_inverse(self._state_preparation)
-        circuit = copy.deepcopy(self._state_preparation)
+        circuit = self.state_preparation
         if not assignments or grover_power == 0:
             return circuit
-        oracle = Circuit(circuit.num_qubits)
-        positions = [self._variable_qubits[name] for name in assignments]
-        zeros = [
-            self._variable_qubits[name] for name, bit in assignments.items() if not bit
-        ]
-        for position in zeros:
-            oracle.x(position)
-        if len(positions) == 1:
-            oracle.z(positions[0])
-        else:
-            oracle.append_mc_gate(StandardGate.Z.control(len(positions) - 1), positions)
-        for position in zeros:
-            oracle.x(position)
+        oracle = BitPatternPhaseOracle(
+            circuit.num_qubits,
+            {self._variable_qubits[name]: bit for name, bit in assignments.items()},
+        )
         iteration = GroverOperator(
             oracle, state_preparation=self._state_preparation
         ).build_circuit()
@@ -337,7 +323,7 @@ class QBayesian:
             circuit.compose(iteration, circuit.qubits)
         return circuit
 
-    def infer(
+    def run(
         self,
         query: Sequence[str],
         evidence: Mapping[str, int | bool] | None = None,
@@ -356,6 +342,25 @@ class QBayesian:
         counts from the terminating round are retained, so the target can be
         exceeded. Limits reject the entire schedule rather than clipping it.
         A zero-acceptance result does not certify impossible evidence.
+
+        Args:
+            query: Variable names in the desired output-tuple order.
+            evidence: Known binary variable values, or ``None`` for a marginal.
+            target_accepted: Positive accepted-sample target.
+            shots_per_round: Positive samples requested in each round.
+            amplification_powers: Nonempty sequence of nonnegative Grover powers.
+            max_rounds: Upper bound on the supplied schedule length.
+            max_grover_power: Largest allowed individual amplification power.
+            max_total_shots: Upper bound on the schedule's total requested samples.
+            max_grover_queries: Upper bound on shot-weighted Grover iterations.
+
+        Returns:
+            Empirical conditional probabilities, accepted counts, per-round
+            observations, query counts, and the termination status.
+
+        Raises:
+            TypeError: If input types or returned sampler results are invalid.
+            ValueError: If names, budgets, or sampler results violate the contract.
         """
         names = _names(query, "query")
         if any(name not in self._variable_qubits for name in names):
@@ -440,6 +445,32 @@ class QBayesian:
             QBayesianStatus.TARGET_REACHED
             if accepted >= target_accepted
             else QBayesianStatus.BUDGET_EXHAUSTED,
+        )
+
+    def infer(
+        self,
+        query: Sequence[str],
+        evidence: Mapping[str, int | bool] | None = None,
+        *,
+        target_accepted: int = 256,
+        shots_per_round: int = 256,
+        amplification_powers: Sequence[int] = (0, 1, 2, 4, 8, 16, 32),
+        max_rounds: int = 128,
+        max_grover_power: int = 1024,
+        max_total_shots: int = 1_000_000,
+        max_grover_queries: int = 10_000_000,
+    ) -> QBayesianResult:
+        """Infer the posterior with the same schedule and result as :meth:`run`."""
+        return self.run(
+            query,
+            evidence,
+            target_accepted=target_accepted,
+            shots_per_round=shots_per_round,
+            amplification_powers=amplification_powers,
+            max_rounds=max_rounds,
+            max_grover_power=max_grover_power,
+            max_total_shots=max_total_shots,
+            max_grover_queries=max_grover_queries,
         )
 
 

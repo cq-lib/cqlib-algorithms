@@ -1,8 +1,7 @@
 # QAOA
 
 `QAOA` 组合既有的状态制备、成本演化、混合演化、期望值估计与经典优化组件，
-主入口用于最小化计算基对角的经典成本 Hamiltonian，另保留显式最大化入口。算法层不重新实现线路模拟、期望值、
-梯度、参数更新或参数绑定。
+通过 `run(cost, initial_point, ...)` 最小化或最大化计算基对角的成本 Hamiltonian。
 
 ## 数学约定
 
@@ -55,14 +54,15 @@ algorithm = QAOA(
     StatevectorEstimator(),
     GradientDescent(ParameterShiftGradient(), learning_rate=0.2),
 )
-cost.scale(-1.0)  # Minimize negative cut size.
-result = algorithm.compute_minimum_eigenvalue(
+result = algorithm.run(
     cost,
     {
-        "qaoa_0_gamma": -math.pi / 2,
+        "qaoa_0_gamma": math.pi / 2,
         "qaoa_0_beta": math.pi / 8,
     },
+    objective_sense="maximize",
 )
+assert math.isclose(result.optimal_value, 1.0, abs_tol=1e-10)
 ```
 
 `reps` 必须是非布尔正整数。参数严格按层交错排列：
@@ -88,15 +88,9 @@ result = algorithm.compute_minimum_eigenvalue(
 
 ## 最小化、最大化与结果语义
 
-原始 QAOA 论文常用最大化组合优化收益的表述，这并不要求算法接口只能最大化。
-本库统一以 `compute_minimum_eigenvalue(cost, initial_point, shots=None)` 为主入口，
-直接最小化原始 <img src="../../assets/formulas/inline/inline-e3112e17a0dd53f5.svg" alt="H_C" style="vertical-align: -3.000pt;">；不保证结果是精确本征态或全局最优解。
+`run` 默认最小化。最大化时传入原始收益 Hamiltonian 和 `objective_sense="maximize"`。两种方向的成本演化都使用原始 <img src="../../assets/formulas/inline/inline-e3112e17a0dd53f5.svg" alt="H_C" style="vertical-align: -3.000pt;">。最大化时优化器最小化 <img src="../../assets/formulas/inline/inline-0c8173812474d41a.svg" alt="-H_C" style="vertical-align: -3.000pt;"> 的期望值，对外返回原始收益的期望值。
 
-兼容入口 `compute_maximum` 仍最小化 <img src="../../assets/formulas/inline/inline-0c8173812474d41a.svg" alt="-H_C" style="vertical-align: -3.000pt;">，但成本演化线路使用原始 <img src="../../assets/formulas/inline/inline-e3112e17a0dd53f5.svg" alt="H_C" style="vertical-align: -3.000pt;">。
-不能仅改方法名称而保持隐藏负号。上方 MaxCut 示例显式编码负收益；原有调用
-`compute_maximum(positive_cut_cost, ...)` 则不需要自行取负。
-
-两种算法都返回 `VQAResult`：
+`compute_minimum_eigenvalue(...)` 和 `compute_maximum(...)` 分别对应上述两种方向，均返回 `VQAResult`。主要字段如下。
 
 - `optimal_value`：原始目标在最终优化迭代点的期望值，而非历史最佳值；
 - `objective_sense`：`"minimize"` 或 `"maximize"`，仅关键字参数；

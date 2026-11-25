@@ -29,13 +29,14 @@ from cqlib.device import ExecutionResult
 from cqlib_algorithms.algorithms.machine_learning.qsvr import QSVR
 from cqlib_algorithms.operators.quantum_kernel import FidelityQuantumKernel
 from cqlib_algorithms.operators.sampler import StatevectorSampler
+from cqlib_algorithms.operators.state_preparation import UserCircuitPreparation
 from cqlib_algorithms.protocols import Sampler
 
 
 def kernel(**kwargs):
     circuit = Circuit(1)
     circuit.ry(0, Parameter("x"))
-    return FidelityQuantumKernel(circuit, ["x"], **kwargs)
+    return FidelityQuantumKernel(UserCircuitPreparation(circuit), ["x"], **kwargs)
 
 
 def analytic(x, y):
@@ -277,7 +278,9 @@ def test_invalid_bound_training_data_rejected_and_failed_refit_is_atomic(
     )
     circuit.ry(0, angle)
     kwargs = {"sampler": StatevectorSampler(), "shots": 8} if sampled else {}
-    model = QSVR(FidelityQuantumKernel(circuit, ["x"], **kwargs))
+    model = QSVR(
+        FidelityQuantumKernel(UserCircuitPreparation(circuit), ["x"], **kwargs)
+    )
     invalid_data = [[value], [value]]
     with pytest.raises((CircuitError, ValueError)):
         model.fit(invalid_data, [0.0, 1.0])
@@ -339,12 +342,12 @@ class BlockSklearn(importlib.abc.MetaPathFinder):
 sys.meta_path.insert(0, BlockSklearn())
 import cqlib_algorithms
 from cqlib_algorithms.algorithms import QBayesian, QSVR
-from cqlib_algorithms.operators import FidelityQuantumKernel
+from cqlib_algorithms.operators import FidelityQuantumKernel, UserCircuitPreparation
 assert not any(name == "sklearn" or name.startswith("sklearn.") for name in sys.modules)
 from cqlib import Circuit, Parameter
 circuit = Circuit(1)
 circuit.ry(0, Parameter("x"))
-model = QSVR(FidelityQuantumKernel(circuit, ["x"]))
+model = QSVR(FidelityQuantumKernel(UserCircuitPreparation(circuit), ["x"]))
 try:
     model.fit([[0], [1]], [0, 1])
 except ImportError as error:

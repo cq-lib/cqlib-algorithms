@@ -51,9 +51,9 @@ def _build_grover_power_circuit(
     _validate_problem(problem)
     validate_nonnegative_integer(power, name="power")
     circuit = Circuit(problem.num_qubits)
-    circuit.compose(copy.deepcopy(problem.state_preparation), circuit.qubits)
+    circuit.compose(copy.deepcopy(problem.preparation_circuit), circuit.qubits)
     for _ in range(power):
-        circuit.compose(copy.deepcopy(problem.grover_operator), circuit.qubits)
+        circuit.compose(copy.deepcopy(problem.iteration_circuit), circuit.qubits)
     return circuit
 
 

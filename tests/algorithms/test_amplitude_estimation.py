@@ -30,15 +30,24 @@ from cqlib_algorithms import (
 from cqlib_algorithms.algorithms.amplitude_estimation._common import (
     _build_grover_power_circuit,
 )
-from cqlib_algorithms.operators import GroverOperator, StatevectorSampler
+from cqlib_algorithms.operators import (
+    AmplitudeEncoding,
+    BooleanFunction,
+    GroverOperator,
+    PhaseOracle,
+    StatevectorSampler,
+    UniformSuperposition,
+    UserCircuitPreparation,
+)
 from cqlib_algorithms.protocols import Sampler
 
 
 def _rotation_problem(theta: float) -> AmplitudeEstimationProblem:
-    preparation = Circuit(1)
-    preparation.ry(0, 2.0 * theta)
-    grover = Circuit(1)
-    grover.ry(0, 4.0 * theta)
+    preparation = AmplitudeEncoding([math.cos(theta), math.sin(theta)])
+    grover = GroverOperator(
+        PhaseOracle(BooleanFunction.from_marked_states(1, [1])),
+        state_preparation=preparation,
+    )
     return AmplitudeEstimationProblem(
         preparation,
         grover,
@@ -127,14 +136,26 @@ def test_physical_endpoints_map_to_the_exact_phase_grid(
 
 
 @pytest.mark.reference
-def test_non_grid_distribution_matches_independent_phase_estimation_formula() -> None:
+@pytest.mark.parametrize(
+    "complex_component", [False, True], ids=["raw-rotation", "complex-components"]
+)
+def test_non_grid_distribution_matches_independent_phase_estimation_formula(
+    complex_component: bool,
+) -> None:
     num_evaluation_qubits = 4
     dimension = 1 << num_evaluation_qubits
     theta = 0.271
     phase = theta / math.pi
-    circuit = StandardAmplitudeEstimation.build_circuit(
-        _rotation_problem(theta), num_evaluation_qubits
-    )
+    if complex_component:
+        preparation = AmplitudeEncoding((math.cos(theta), 1j * math.sin(theta)))
+        oracle = PhaseOracle(BooleanFunction.from_marked_states(1, [1]))
+        iteration = GroverOperator(oracle, state_preparation=preparation)
+        problem = AmplitudeEstimationProblem(
+            preparation, iteration, (0,), lambda bits: bits == "1"
+        )
+    else:
+        problem = _rotation_problem(theta)
+    circuit = StandardAmplitudeEstimation.build_circuit(problem, num_evaluation_qubits)
 
     expected = np.asarray(
         [
@@ -157,15 +178,20 @@ def test_grover_power_circuit_is_exact_q_power_times_preparation(power: int) -> 
     preparation.ry(Qubit(8), 0.21)
     preparation.cx(Qubit(8), Qubit(3))
     preparation.set_global_phase(-0.12)
-    grover = Circuit([4, 9])
-    grover.rx(Qubit(4), -0.31)
-    grover.cz(Qubit(4), Qubit(9))
-    grover.ry(Qubit(9), 0.47)
-    grover.set_global_phase(0.19)
     preparation_matrix = preparation.to_matrix([8, 3])
-    grover_matrix = grover.to_matrix([4, 9])
+    component = UserCircuitPreparation(preparation)
+    grover = GroverOperator(
+        PhaseOracle(BooleanFunction.from_marked_states(2, [2, 3])),
+        state_preparation=component,
+    )
+    state = preparation_matrix[:, 0]
+    reflection = 2 * np.outer(state, state.conj()) - np.eye(4)
+    grover_matrix = reflection @ np.diag([1, 1, -1, -1])
     problem = AmplitudeEstimationProblem(
-        preparation, grover, (1,), lambda bitstring: bitstring == "1"
+        UserCircuitPreparation(preparation),
+        grover,
+        (1,),
+        lambda bitstring: bitstring == "1",
     )
 
     actual = _build_grover_power_circuit(problem, power).to_matrix()
@@ -176,24 +202,48 @@ def test_grover_power_circuit_is_exact_q_power_times_preparation(power: int) -> 
 def test_problem_snapshots_sources_and_rejects_dynamic_or_unbound_circuits() -> None:
     preparation = Circuit(1)
     preparation.h(0)
-    grover = Circuit(1)
-    grover.z(0)
+    grover = GroverOperator(
+        PhaseOracle(BooleanFunction.from_marked_states(1, [1])),
+        state_preparation=UserCircuitPreparation(preparation),
+    )
+    expected_iteration = grover.build_circuit().to_matrix()
     problem = AmplitudeEstimationProblem(
-        preparation, grover, (0,), lambda bitstring: bitstring == "1"
+        UserCircuitPreparation(preparation),
+        grover,
+        (0,),
+        lambda bitstring: bitstring == "1",
     )
     preparation.x(0)
-    grover.x(0)
-    assert len(problem.state_preparation.operations) == 1
-    assert len(problem.grover_operator.operations) == 1
+    grover.oracle.x(0)
+    assert len(problem.preparation_circuit.operations) == 1
+    np.testing.assert_allclose(
+        problem.iteration_circuit.to_matrix(), expected_iteration, atol=1e-12
+    )
 
     measured = Circuit(1)
     measured.measure(0)
-    with pytest.raises(ValueError, match="classical data|static unitary"):
-        AmplitudeEstimationProblem(measured, Circuit(1), (0,), lambda _: True)
+    with pytest.raises(ValueError, match="classical data|static unitary|invertible"):
+        AmplitudeEstimationProblem(
+            UserCircuitPreparation(measured),
+            GroverOperator(
+                PhaseOracle(BooleanFunction.from_marked_states(1, [0])),
+                state_preparation=UserCircuitPreparation(Circuit(1)),
+            ),
+            (0,),
+            lambda _: True,
+        )
     symbolic = Circuit(1)
     symbolic.ry(0, Parameter("theta"))
     with pytest.raises(ValueError, match="fully bound"):
-        AmplitudeEstimationProblem(symbolic, Circuit(1), (0,), lambda _: True)
+        AmplitudeEstimationProblem(
+            UserCircuitPreparation(symbolic),
+            GroverOperator(
+                PhaseOracle(BooleanFunction.from_marked_states(1, [0])),
+                state_preparation=UserCircuitPreparation(Circuit(1)),
+            ),
+            (0,),
+            lambda _: True,
+        )
 
 
 def test_problem_rejects_width_and_objective_qubit_errors() -> None:
@@ -201,19 +251,75 @@ def test_problem_rejects_width_and_objective_qubit_errors() -> None:
         return bitstring == "1"
 
     with pytest.raises(ValueError, match="same qubit count"):
-        AmplitudeEstimationProblem(Circuit(1), Circuit(2), (0,), predicate)
+        AmplitudeEstimationProblem(
+            UserCircuitPreparation(Circuit(1)),
+            GroverOperator(
+                PhaseOracle(BooleanFunction.from_marked_states(2, [0])),
+                state_preparation=UserCircuitPreparation(Circuit(2)),
+            ),
+            (0,),
+            predicate,
+        )
     with pytest.raises(TypeError, match="must be a tuple"):
-        AmplitudeEstimationProblem(Circuit(1), Circuit(1), [0], predicate)
+        AmplitudeEstimationProblem(
+            UserCircuitPreparation(Circuit(1)),
+            GroverOperator(
+                PhaseOracle(BooleanFunction.from_marked_states(1, [0])),
+                state_preparation=UserCircuitPreparation(Circuit(1)),
+            ),
+            [0],
+            predicate,
+        )
     with pytest.raises(ValueError, match="must not be empty"):
-        AmplitudeEstimationProblem(Circuit(1), Circuit(1), (), predicate)
+        AmplitudeEstimationProblem(
+            UserCircuitPreparation(Circuit(1)),
+            GroverOperator(
+                PhaseOracle(BooleanFunction.from_marked_states(1, [0])),
+                state_preparation=UserCircuitPreparation(Circuit(1)),
+            ),
+            (),
+            predicate,
+        )
     with pytest.raises(ValueError, match="duplicates"):
-        AmplitudeEstimationProblem(Circuit(2), Circuit(2), (0, 0), predicate)
+        AmplitudeEstimationProblem(
+            UserCircuitPreparation(Circuit(2)),
+            GroverOperator(
+                PhaseOracle(BooleanFunction.from_marked_states(2, [0])),
+                state_preparation=UserCircuitPreparation(Circuit(2)),
+            ),
+            (0, 0),
+            predicate,
+        )
     with pytest.raises(ValueError, match="valid system positions"):
-        AmplitudeEstimationProblem(Circuit(1), Circuit(1), (1,), predicate)
+        AmplitudeEstimationProblem(
+            UserCircuitPreparation(Circuit(1)),
+            GroverOperator(
+                PhaseOracle(BooleanFunction.from_marked_states(1, [0])),
+                state_preparation=UserCircuitPreparation(Circuit(1)),
+            ),
+            (1,),
+            predicate,
+        )
     with pytest.raises(TypeError, match="only integers"):
-        AmplitudeEstimationProblem(Circuit(1), Circuit(1), (True,), predicate)
+        AmplitudeEstimationProblem(
+            UserCircuitPreparation(Circuit(1)),
+            GroverOperator(
+                PhaseOracle(BooleanFunction.from_marked_states(1, [0])),
+                state_preparation=UserCircuitPreparation(Circuit(1)),
+            ),
+            (True,),
+            predicate,
+        )
     with pytest.raises(TypeError, match="must be callable"):
-        AmplitudeEstimationProblem(Circuit(1), Circuit(1), (0,), None)
+        AmplitudeEstimationProblem(
+            UserCircuitPreparation(Circuit(1)),
+            GroverOperator(
+                PhaseOracle(BooleanFunction.from_marked_states(1, [0])),
+                state_preparation=UserCircuitPreparation(Circuit(1)),
+            ),
+            (0,),
+            None,
+        )
 
 
 def test_run_preserves_complete_distribution_and_uses_stable_tie_break() -> None:
@@ -263,34 +369,158 @@ def test_equal_canonical_bins_select_the_smallest_grid_point() -> None:
 
 
 @pytest.mark.integration
-def test_dense_unitary_circuit_executes_with_statevector_sampler() -> None:
+@pytest.mark.parametrize(("marked", "bin_index"), [(1, 1), (0, 3)])
+def test_component_search_predicate_selects_the_expected_amplitude(marked, bin_index):
     theta = math.pi / 8
-    preparation = Circuit(1)
-    preparation.ry(0, 2.0 * theta)
-    oracle = Circuit(1)
-    oracle.z(0)
+    preparation = AmplitudeEncoding((math.cos(theta), math.sin(theta)))
+    oracle = PhaseOracle(BooleanFunction.from_marked_states(1, [marked]))
+    iteration = GroverOperator(oracle, state_preparation=preparation)
     problem = AmplitudeEstimationProblem(
-        preparation,
-        GroverOperator(oracle, state_preparation=preparation).build_circuit(),
-        (0,),
-        lambda bitstring: bitstring == "1",
+        preparation, iteration, (0,), lambda bits: bits == str(marked)
     )
     result = StandardAmplitudeEstimation(StatevectorSampler()).run(
-        [StandardAmplitudeEstimationRequest(problem, 3, 64)]
-    )[0]
+        problem, num_evaluation_qubits=3, shots=64
+    )
 
-    observed = {
-        point
-        for point, probability in result.evaluation_probabilities.items()
-        if probability > 0.0
-    }
-    assert observed <= {1, 7}
-    assert result.estimation == pytest.approx(math.sin(theta) ** 2, abs=1e-12)
+    expected = np.zeros(8)
+    expected[[bin_index, 8 - bin_index]] = 0.5
+    circuit = StandardAmplitudeEstimation.build_circuit(problem, 3)
+    probabilities = _evaluation_probabilities(circuit, 3)
+    np.testing.assert_allclose(probabilities, expected, rtol=0, atol=1e-12)
+    reference = StandardAmplitudeEstimation.build_circuit(
+        _rotation_problem(bin_index * math.pi / 8), 3
+    )
+    np.testing.assert_allclose(
+        probabilities, _evaluation_probabilities(reference, 3), rtol=0, atol=1e-12
+    )
+    assert isinstance(result, StandardAmplitudeEstimationResult)
+    assert result.grid_point == bin_index
+    assert result.estimation == pytest.approx(
+        math.sin(theta) ** 2 if marked else math.cos(theta) ** 2
+    )
+    assert result.num_grover_queries == 7
+    assert result.num_oracle_queries == 7 * 64
+
+
+def test_component_inputs_preserve_the_controlled_global_phase():
+    preparation = UniformSuperposition(1)
+    oracle = PhaseOracle(BooleanFunction.from_marked_states(1, [0, 1]))
+    iteration = GroverOperator(oracle, state_preparation=preparation)
+    problem = AmplitudeEstimationProblem(
+        preparation,
+        iteration,
+        (0,),
+        lambda bits: True,
+    )
+    algorithm = StandardAmplitudeEstimation(StatevectorSampler())
+    single = algorithm.run(problem=problem, num_evaluation_qubits=3, shots=32)
+    batch = algorithm.run([StandardAmplitudeEstimationRequest(problem, 3, 32)])
+
+    assert isinstance(problem.preparation_circuit, Circuit)
+    assert isinstance(problem.iteration_circuit, Circuit)
+    assert batch == [single]
+    assert single.evaluation_probabilities[4] == 1.0
+    assert single.estimation == 1.0
+
+
+def test_component_problem_preserves_objective_positions_and_local_predicate():
+    preparation = UniformSuperposition(2)
+    oracle = PhaseOracle(BooleanFunction.from_marked_states(2, [2, 3]))
+    iteration = GroverOperator(oracle, state_preparation=preparation)
+
+    def upper_bit_is_one(bits):
+        assert len(bits) == 1
+        return bits == "1"
+
+    problem = AmplitudeEstimationProblem(preparation, iteration, (1,), upper_bit_is_one)
+    assert problem.objective_qubits == (1,)
+    assert problem.is_good_state is upper_bit_is_one
+    assert problem.is_good_state("1") and not problem.is_good_state("0")
+    result = StandardAmplitudeEstimation(StatevectorSampler()).run(
+        problem, num_evaluation_qubits=2, shots=64
+    )
+    assert result.estimation == pytest.approx(0.5)
+
+
+def test_problem_rejects_unbound_preparation_and_incompatible_component_widths():
+    symbolic = Circuit(1)
+    symbolic.ry(0, Parameter("x"))
+    oracle = PhaseOracle(BooleanFunction.from_marked_states(1, [1]))
+    iteration = GroverOperator(oracle)
+    with pytest.raises(ValueError, match="fully bound"):
+        AmplitudeEstimationProblem(
+            UserCircuitPreparation(symbolic), iteration, (0,), lambda bits: True
+        )
+    with pytest.raises(ValueError, match="same qubit count"):
+        AmplitudeEstimationProblem(
+            UniformSuperposition(2), iteration, (0,), lambda bits: True
+        )
+
+
+def test_problem_requires_components_in_their_declared_roles():
+    oracle = PhaseOracle(BooleanFunction.from_marked_states(1, [1]))
+    iteration = GroverOperator(oracle)
+    with pytest.raises(TypeError, match="state_preparation must be"):
+        AmplitudeEstimationProblem(iteration, iteration, (0,), lambda bits: True)
+    with pytest.raises(TypeError, match="grover_operator must be"):
+        AmplitudeEstimationProblem(
+            UniformSuperposition(1), oracle, (0,), lambda bits: True
+        )
+
+
+@pytest.mark.parametrize(
+    ("built", "error", "message"),
+    [(None, TypeError, "return a Circuit"), (Circuit(2), ValueError, "declared width")],
+)
+def test_problem_checks_the_circuit_returned_by_the_iteration(
+    monkeypatch, built, error, message
+):
+    iteration = GroverOperator(PhaseOracle(BooleanFunction.from_marked_states(1, [1])))
+    monkeypatch.setattr(GroverOperator, "build_circuit", lambda self: built)
+    with pytest.raises(error, match=message):
+        AmplitudeEstimationProblem(
+            UniformSuperposition(1), iteration, (0,), lambda bits: True
+        )
+
+
+def test_batch_still_submits_once_and_returns_results_in_request_order():
+    sampler = _ScriptedSampler([{"11": 8}, {"100": 12}])
+    problem = _rotation_problem(math.pi / 8)
+    results = StandardAmplitudeEstimation(sampler).run(
+        [
+            StandardAmplitudeEstimationRequest(problem, 2, 8),
+            StandardAmplitudeEstimationRequest(problem, 3, 12),
+        ]
+    )
+    assert sampler.calls == 1
+    assert [result.grid_point for result in results] == [1, 4]
+    assert [result.num_oracle_queries for result in results] == [3 * 8, 7 * 12]
+
+
+def test_single_and_batch_options_are_validated_before_sampling():
+    sampler = _ScriptedSampler([])
+    algorithm = StandardAmplitudeEstimation(sampler)
+    problem = _rotation_problem(0.2)
+    with pytest.raises(TypeError, match="num_evaluation_qubits and shots"):
+        algorithm.run(problem, shots=10)
+    with pytest.raises(TypeError, match="num_evaluation_qubits and shots"):
+        algorithm.run(problem, num_evaluation_qubits=3)
+    with pytest.raises(TypeError, match="batch"):
+        algorithm.run([], num_evaluation_qubits=3, shots=10)
+    with pytest.raises(ValueError, match="shots"):
+        algorithm.run(problem, num_evaluation_qubits=3, shots=0)
+    assert sampler.calls == 0
 
 
 def test_dense_control_limit_rejects_before_large_matrix_allocation() -> None:
     problem = AmplitudeEstimationProblem(
-        Circuit(11), Circuit(11), (0,), lambda bitstring: bitstring == "1"
+        UserCircuitPreparation(Circuit(11)),
+        GroverOperator(
+            PhaseOracle(BooleanFunction.from_marked_states(11, [0])),
+            state_preparation=UserCircuitPreparation(Circuit(11)),
+        ),
+        (0,),
+        lambda bitstring: bitstring == "1",
     )
 
     with pytest.raises(ValueError, match="dense controlled-matrix limit"):

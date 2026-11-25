@@ -54,7 +54,7 @@ from __future__ import annotations
 
 import math
 import warnings
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from numbers import Real
 
 import numpy as np
@@ -63,7 +63,13 @@ from cqlib.circuit import ValueOperation
 from cqlib.qis import Hamiltonian, PauliString
 
 from ...protocols import Estimator, EstimatorRequest, EstimatorResult, spawn_seeds
-from .._circuits import expand, is_measurement
+from ...protocols.state_preparation import StatePreparation
+from .._circuits import (
+    bind_request_circuit,
+    build_estimator_request,
+    expand,
+    is_measurement,
+)
 from ..core import QemExecutor
 from ..quasiprobability import QuasiprobabilityRepresentation
 
@@ -206,7 +212,7 @@ def combine_results(
 
 
 def execute_with_pec(
-    circuit: Circuit,
+    circuit: StatePreparation | Circuit,
     executor: QemExecutor,
     observable: Hamiltonian | PauliString,
     /,
@@ -215,18 +221,16 @@ def execute_with_pec(
     precision: float = 0.03,
     shots: int | None = None,
     seed: int | None = None,
+    parameter_bindings: Mapping[str, float] | None = None,
+    prefix: str = "qem",
 ) -> float:
     r"""Estimate one observable on ``circuit`` with probabilistic error cancellation.
 
-    This is the immediate form of :func:`pec_executor`::
-
-        execute_with_pec(c, ex, obs, **params)
-        == pec_executor(ex, **params).estimate(
-               [EstimatorRequest(c, obs)]
-           )[0].expectation
+    This is the immediate form of :func:`pec_executor`. The same task
+    can be evaluated by calling ``run()`` on that executor.
 
     Args:
-        circuit: Circuit whose expectation value is to be mitigated.
+        circuit: State-preparation component or circuit to evaluate.
         executor: Execution backend supplying the expectation surface.
         observable: Observable to estimate. A bare Pauli string is interpreted as a
             Hamiltonian with unit coefficient.
@@ -236,17 +240,20 @@ def execute_with_pec(
         shots: Shot count for every variant circuit, or ``None`` for exact
             evaluation.
         seed: Seed of the sampling stream, or ``None`` for fresh randomness.
+        parameter_bindings: Finite values covering exactly all active symbols.
+            Values are bound before circuit transformations; None requires no symbols.
+        prefix: Build prefix for a preparation component, defaulting to ``qem``;
+            existing Circuit symbols keep their names.
 
     Returns:
         Mitigated expectation value.
 
     Raises:
-        TypeError: If ``precision`` is not a real number or ``seed`` is neither an
-            integer nor ``None``.
-        ValueError: If a parameter describes an unusable configuration, such as a
+        TypeError: If an input or configuration argument has the wrong type.
+        ValueError: If bindings are non-finite or do not cover active symbols exactly,
+            or if a parameter describes an unusable configuration, such as a
             representation for a gate acting on more than two qubits or a
             one-norm above the ceiling.
-
     """
     wrapped = pec_executor(
         executor,
@@ -255,7 +262,13 @@ def execute_with_pec(
         shots=shots,
         seed=seed,
     )
-    request = EstimatorRequest(circuit=circuit, observable=observable, shots=shots)
+    request = build_estimator_request(
+        circuit,
+        observable,
+        shots=shots,
+        parameter_bindings=parameter_bindings,
+        prefix=prefix,
+    )
     return wrapped.estimate([request])[0].expectation
 
 
@@ -363,10 +376,11 @@ class _PecEstimator(Estimator):
 
     def _mitigate(self, request: EstimatorRequest) -> EstimatorResult:
         r"""Sample one request, measure every variant, and recombine."""
+        bound_circuit = bind_request_circuit(request)
         shots = self._shots if self._shots is not None else request.shots
         seed = self._seed if self._seed is not None else request.seed
         circuits, signs, norm = construct_circuits(
-            request.circuit,
+            bound_circuit,
             quasiprobabilities=self._quasiprobabilities,
             precision=self._precision,
             seed=seed,

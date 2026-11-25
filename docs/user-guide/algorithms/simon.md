@@ -50,25 +50,25 @@ Simon 问题承诺存在一个字符串 `s`，使得
 ## 公共接口
 
 ```python
-from cqlib_algorithms import Simon, SimonRequest
-from cqlib_algorithms.operators.oracle import BooleanVectorFunction
-from cqlib_algorithms.operators.sampler import StatevectorSampler
+from cqlib_algorithms import Simon
+from cqlib_algorithms.operators import (
+    BitFlipOracle,
+    BooleanVectorFunction,
+    StatevectorSampler,
+)
 
-# F(x) = min(x, x XOR 0b101) 给每个 XOR 对分配不同的 3 位输出。
 period = 0b101
 rows = []
 for value in range(8):
     representative = min(value, value ^ period)
     rows.append(tuple(bool((representative >> bit) & 1) for bit in range(3)))
-
-function = BooleanVectorFunction.from_truth_table(rows)
-result = Simon(StatevectorSampler()).run([SimonRequest(function, shots=64)])[0]
-
-if result.is_complete:
-    assert result.period_integer == period
+oracle = BitFlipOracle(BooleanVectorFunction.from_truth_table(rows))
+result = Simon(StatevectorSampler()).run(oracle, shots=128)
+print(result.period_integer, result.is_complete)  # 5 True
 ```
 
-`SimonRequest(function, shots)` 中 `shots` 必须为正整数。`run(requests)` 支持批量
+`run(oracle, *, shots)` 接收 `BitFlipOracle` 并返回一个结果。兼容实现可继承该类并重写 `build_circuit()`，其线路应计算同一个 `function`，且保留输入在前、输出在后的寄存器布局。
+批量请求 `SimonRequest(function, shots)` 中 `shots` 必须为正整数。`run(requests)` 支持批量
 执行，空批次返回空列表。
 
 `SimonResult` 保留：

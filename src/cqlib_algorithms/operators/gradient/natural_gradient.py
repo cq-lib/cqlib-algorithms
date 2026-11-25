@@ -22,12 +22,14 @@ References
 from __future__ import annotations
 
 import math
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from numbers import Real
 from typing import final
 
 import numpy as np
+from cqlib.qis import Hamiltonian, PauliString
 
+from ...protocols.ansatz import Ansatz
 from ...protocols.estimator import Estimator
 from ...protocols.gradient import GradientRequest, GradientResult
 from ._linear_system import solve_metric_system
@@ -77,6 +79,50 @@ class NaturalGradient:
     def regularization(self) -> float:
         """Return the ridge regularization strength."""
         return float(self._regularization)
+
+    def compute(
+        self,
+        estimator: Estimator,
+        ansatz: Ansatz,
+        observable: Hamiltonian | PauliString,
+        parameter_bindings: Mapping[str, float],
+        *,
+        parameter_names: tuple[str, ...] | None = None,
+        shots: int | None = None,
+        seed: int | None = None,
+        prefix: str = "theta",
+    ) -> GradientResult:
+        """Return one geometry-corrected direction from an ansatz objective.
+
+        Args:
+            estimator: Evaluator for parameter-shift expectation tasks.
+            ansatz: Trainable component built internally.
+            observable: Hermitian expectation objective.
+            parameter_bindings: Exact bindings for all active symbols.
+            parameter_names: Ordered subset; None uses all active symbols.
+            shots: Optional expectation sample count; the metric remains exact.
+            seed: Optional expectation sampler seed.
+            prefix: Naming prefix used to build the ansatz.
+
+        Returns:
+            Solution of the configured metric system, in parameter order.
+
+        Raises:
+            TypeError: If component or input types are invalid.
+            ValueError: If parameters or circuit support are invalid.
+        """
+        if not isinstance(observable, (Hamiltonian, PauliString)):
+            raise TypeError("observable must be a Hamiltonian or PauliString")
+        request = GradientRequest.from_ansatz(
+            ansatz,
+            observable,
+            parameter_bindings,
+            parameter_names=parameter_names,
+            shots=shots,
+            seed=seed,
+            prefix=prefix,
+        )
+        return self.run(estimator, [request])[0]
 
     def run(
         self,

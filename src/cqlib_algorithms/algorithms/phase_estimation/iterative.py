@@ -25,7 +25,7 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import final
+from typing import final, overload
 
 import numpy as np
 from cqlib import Circuit
@@ -150,7 +150,7 @@ def _build_iteration_circuit(
     circuit = Circuit(problem.num_qubits + 1)
     control = circuit.qubits[0]
     system_targets = tuple(circuit.qubits[1:])
-    circuit.compose(problem.state_preparation, list(system_targets))
+    circuit.compose(problem.preparation_circuit, list(system_targets))
     circuit.h(control)
     append_controlled_matrix(
         circuit,
@@ -196,19 +196,69 @@ class IterativePhaseEstimation:
         """Return the injected Sampler implementation."""
         return self._sampler
 
+    @overload
+    def run(
+        self,
+        problem: PhaseEstimationProblem,
+        *,
+        num_iterations: int,
+        shots_per_iteration: int = 1,
+    ) -> IterativePhaseEstimationResult: ...
+
+    @overload
     def run(
         self,
         requests: Sequence[IterativePhaseEstimationRequest],
         /,
-    ) -> list[IterativePhaseEstimationResult]:
-        """Execute adaptive requests in input order."""
-        results: list[IterativePhaseEstimationResult] = []
+    ) -> list[IterativePhaseEstimationResult]: ...
+
+    def run(
+        self,
+        problem: PhaseEstimationProblem | Sequence[IterativePhaseEstimationRequest],
+        *,
+        num_iterations: int | None = None,
+        shots_per_iteration: int | None = None,
+    ) -> IterativePhaseEstimationResult | list[IterativePhaseEstimationResult]:
+        """Estimate one eigenphase bit by bit or execute an ordered request batch.
+
+        Args:
+            problem: Eigenstate problem or positional batch with per-request settings.
+            num_iterations: Number of phase bits to extract for one problem.
+            shots_per_iteration: Samples per bit decision, defaulting to one.
+
+        Returns:
+            The inferred eigenphase and measured bits, or a list in batch order.
+
+        Raises:
+            TypeError: If inputs or single/batch options are incompatible.
+            ValueError: If problem validation or sampling checks fail.
+        """
+        if isinstance(problem, PhaseEstimationProblem):
+            if num_iterations is None:
+                raise TypeError("a single problem requires num_iterations")
+            requests: Sequence[IterativePhaseEstimationRequest] = (
+                IterativePhaseEstimationRequest(
+                    problem,
+                    num_iterations,
+                    1 if shots_per_iteration is None else shots_per_iteration,
+                ),
+            )
+        else:
+            if num_iterations is not None or shots_per_iteration is not None:
+                raise TypeError(
+                    "batch requests specify their own iterative phase-estimation settings"
+                )
+            requests = tuple(problem)
+
         for request in requests:
             if not isinstance(request, IterativePhaseEstimationRequest):
                 raise TypeError(
                     "requests must contain IterativePhaseEstimationRequest instances"
                 )
             request.validate()
+
+        results: list[IterativePhaseEstimationResult] = []
+        for request in requests:
             matrix = unitary_matrix(request.problem.unitary, 1)
             known_fraction = 0.0
             extracted_bits: list[int] = []
@@ -252,7 +302,7 @@ class IterativePhaseEstimation:
                     num_unitary_queries=(applications * request.shots_per_iteration),
                 )
             )
-        return results
+        return results[0] if isinstance(problem, PhaseEstimationProblem) else results
 
 
 __all__ = [

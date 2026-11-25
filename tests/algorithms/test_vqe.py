@@ -26,7 +26,7 @@ from cqlib_algorithms.algorithms import VQE, VQEResult
 from cqlib_algorithms.operators.ansatz import RealAmplitudesAnsatz
 from cqlib_algorithms.operators.estimator import StatevectorEstimator
 from cqlib_algorithms.operators.gradient import ParameterShiftGradient
-from cqlib_algorithms.operators.optimizer import GradientDescent
+from cqlib_algorithms.operators.optimizer import COBYLAOptimizer, GradientDescent
 from cqlib_algorithms.protocols import (
     Ansatz,
     Estimator,
@@ -123,13 +123,14 @@ def _recording_vqe() -> tuple[VQE, RecordingEstimator, RecordingOptimizer]:
     )
 
 
-def test_vqe_bridges_ansatz_estimator_and_optimizer_contracts_exactly() -> None:
+@pytest.mark.parametrize("entry_point", ["run", "compute_minimum_eigenvalue"])
+def test_vqe_bridges_ansatz_estimator_and_optimizer_contracts_exactly(
+    entry_point: str,
+) -> None:
     vqe, estimator, optimizer = _recording_vqe()
     initial = {"phi_beta": 0.1, "phi_alpha": -0.2}
 
-    result = vqe.compute_minimum_eigenvalue(
-        PauliString.from_str("ZI"), initial, shots=321
-    )
+    result = getattr(vqe, entry_point)(PauliString.from_str("ZI"), initial, shots=321)
 
     assert optimizer.estimator is estimator
     assert len(optimizer.batches) == 1
@@ -165,18 +166,28 @@ def test_result_parameters_are_immutable_and_circuit_is_independent_and_bound() 
     assert len(submitted.operations) == 2
 
 
-def test_one_qubit_real_components_reach_the_z_ground_energy() -> None:
-    vqe = VQE(
-        StatevectorEstimator(),
-        RealAmplitudesAnsatz(1, reps=0),
+@pytest.mark.parametrize(
+    "optimizer",
+    [
         GradientDescent(
             ParameterShiftGradient(),
             learning_rate=0.4,
             maxiter=80,
             tolerance=1e-10,
         ),
+        COBYLAOptimizer(maxiter=100),
+    ],
+    ids=["parameter-shift-gradient-descent", "derivative-free-cobyla"],
+)
+def test_one_qubit_real_components_reach_the_z_ground_energy(
+    optimizer: Optimizer,
+) -> None:
+    vqe = VQE(
+        estimator=StatevectorEstimator(),
+        ansatz=RealAmplitudesAnsatz(1, reps=0),
+        optimizer=optimizer,
     )
-    result = vqe.compute_minimum_eigenvalue(PauliString.from_str("Z"), {"theta_0": 0.4})
+    result = vqe.run(PauliString.from_str("Z"), {"theta_0": 0.4})
 
     assert result.eigenvalue == pytest.approx(-1.0, abs=1e-10)
     state = result.optimal_circuit.to_matrix()[:, 0]
@@ -215,7 +226,7 @@ def test_parameter_free_ansatz_uses_optimizer_no_parameters_path() -> None:
         StatevectorEstimator(),
         StaticAnsatz(),
         GradientDescent(ParameterShiftGradient()),
-    ).compute_minimum_eigenvalue(PauliString.from_str("Z"), {})
+    ).run(PauliString.from_str("Z"), {})
 
     assert result.eigenvalue == pytest.approx(-1.0)
     assert result.optimal_parameters == {}

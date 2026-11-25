@@ -377,3 +377,61 @@ def test_build_circuit_returns_independent_circuits():
 
     first.x(0)
     assert len(first.operations) == len(second.operations) + 1
+
+
+def test_single_oracle_component_recovers_xor_period():
+    from cqlib_algorithms.operators import BitFlipOracle
+
+    function = _scalar_simon_function()
+    result = Simon(StatevectorSampler()).run(BitFlipOracle(function), shots=128)
+    assert result.period == (True, True)
+    assert result.num_qubits == 2
+
+
+def test_single_query_uses_injected_bit_flip_oracle():
+    from cqlib import Circuit
+
+    from cqlib_algorithms.operators import BitFlipOracle
+
+    class CompactParity(BitFlipOracle):
+        calls = 0
+
+        def build_circuit(self):
+            type(self).calls += 1
+            circuit = Circuit(3)
+            circuit.cx(0, 2)
+            circuit.cx(1, 2)
+            return circuit
+
+    oracle = CompactParity(_scalar_simon_function())
+    algorithm = Simon(StatevectorSampler())
+    result = algorithm.run(oracle, shots=128)
+    assert result.period == (True, True)
+    assert CompactParity.calls == 1
+    with pytest.raises(TypeError, match="shots"):
+        algorithm.run(oracle)
+    with pytest.raises(TypeError, match="batch"):
+        algorithm.run([], shots=32)
+
+
+@pytest.mark.parametrize("kind", ["type", "width", "symbol", "measure"])
+def test_invalid_single_oracle_fails_before_sampling(kind):
+    from cqlib import Circuit, Parameter
+
+    from cqlib_algorithms.operators import BitFlipOracle
+
+    class InvalidOracle(BitFlipOracle):
+        def build_circuit(self):
+            if kind == "type":
+                return None
+            circuit = Circuit(2 if kind == "width" else 3)
+            if kind == "symbol":
+                circuit.rx(0, Parameter("x"))
+            elif kind == "measure":
+                circuit.measure(0)
+            return circuit
+
+    sampler = _ScriptedSampler([])
+    with pytest.raises((TypeError, ValueError)):
+        Simon(sampler).run(InvalidOracle(_scalar_simon_function()), shots=32)
+    assert sampler.calls == 0

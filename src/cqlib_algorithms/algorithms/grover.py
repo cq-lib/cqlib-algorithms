@@ -27,7 +27,7 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import final
+from typing import final, overload
 
 from cqlib import Circuit
 
@@ -35,26 +35,6 @@ from ..operators.composite import GroverOperator
 from ..operators.oracle import BooleanFunction, BooleanVectorFunction, PhaseOracle
 from ..operators.state_preparation import UniformSuperposition
 from ..protocols.sampler import Sampler, SamplerRequest, require_sampler_results
-
-
-def _selected_marked_states(
-    function: BooleanFunction | BooleanVectorFunction,
-    output_mask: int | None,
-) -> tuple[int, ...]:
-    """Return states selected by the phase-oracle scalar predicate."""
-    oracle = PhaseOracle(function, output_mask=output_mask)
-    if isinstance(function, BooleanFunction):
-        return function.marked_states
-    return tuple(
-        state
-        for state, values in enumerate(function.truth_table)
-        if sum(
-            int(value)
-            for output, value in enumerate(values)
-            if (oracle.output_mask >> output) & 1
-        )
-        % 2
-    )
 
 
 def _validate_iterations(iterations: int | None) -> None:
@@ -65,6 +45,18 @@ def _validate_iterations(iterations: int | None) -> None:
         raise TypeError("iterations must be an integer or None")
     if iterations < 0:
         raise ValueError("iterations must be non-negative")
+
+
+def _build_search_circuit(iteration: GroverOperator, iterations: int) -> Circuit:
+    """Build Q**r A using the same preparation as the iteration's reflection."""
+    preparation = iteration.state_preparation
+    if preparation is None:
+        preparation = UniformSuperposition(iteration.num_qubits).build_circuit("grover")
+    if iterations:
+        step = iteration.build_circuit()
+        for _ in range(iterations):
+            preparation.compose(step, preparation.qubits)
+    return preparation
 
 
 @dataclass(frozen=True, slots=True)
@@ -119,8 +111,8 @@ class GroverRequest:
                 raise TypeError("seed must be an integer or None")
             if self.seed < 0:
                 raise ValueError("seed must be non-negative")
-        marked_states = _selected_marked_states(self.function, self.output_mask)
-        if not marked_states:
+        oracle = PhaseOracle(self.function, output_mask=self.output_mask)
+        if not oracle.marked_states:
             raise ValueError("function must mark at least one state")
 
 
@@ -236,32 +228,45 @@ class Grover:
     For ``M`` marked values among ``N = 2**n`` inputs, uniform preparation
     gives ``sin(theta)**2 = M/N``. After ``k`` applications of
     :class:`GroverOperator`, the total marked probability is
-    ``sin((2*k + 1)*theta)**2``. With no explicit iteration count this class
-    chooses the non-negative integer nearest the first continuous maximum,
-    breaking equal-probability ties toward fewer oracle queries.
+    ``sin((2*k + 1)*theta)**2``. A uniform search request can omit the count
+    to select the first discrete success maximum, favoring fewer queries
+    when probabilities tie. A preconfigured iteration uses its own initial
+    preparation and an explicit count.
 
-    The implementation composes :class:`UniformSuperposition`,
-    :class:`PhaseOracle`, and :class:`GroverOperator`; it does not duplicate
-    their gate synthesis. It accepts an injected :class:`Sampler`, validates
-    the complete batch before one sampler call, and derives all reported
-    success statistics from returned counts. Explicit truth-table oracle
-    synthesis is exponential classical preprocessing and is outside the
-    abstract query-complexity claim. Each circuit contains ``iterations``
-    oracle applications, while finite-shot execution repeats that circuit.
+    The sampler measures the search register. Success statistics are derived
+    from the counts of the marked states. Each sampled circuit applies the
+    oracle ``iterations`` times. Synthesizing an explicit truth-table oracle
+    can take exponential classical work in the number of qubits.
 
     Args:
         sampler: Concrete Sampler used for final-register measurements.
+        iteration: Optional preconfigured iteration for single searches.
+            It must use PhaseOracle or BitPatternPhaseOracle, reflect all search qubits,
+            and yield a fully bound search circuit for sampling.
 
     Raises:
-        TypeError: If ``sampler`` or a request has the wrong type.
-        ValueError: If request or result contracts are violated.
+        TypeError: If the sampler or iteration has the wrong type.
+        ValueError: If the supplied iteration has no marked states or uses
+            a partial reflection.
     """
 
-    __slots__ = ("_sampler",)
+    __slots__ = ("_iteration", "_sampler")
 
-    def __init__(self, sampler: Sampler) -> None:
+    def __init__(
+        self, sampler: Sampler, *, iteration: GroverOperator | None = None
+    ) -> None:
         if not isinstance(sampler, Sampler):
             raise TypeError("sampler must be a Sampler instance")
+        if iteration is not None:
+            if not isinstance(iteration, GroverOperator):
+                raise TypeError("iteration must be a GroverOperator instance")
+            if not iteration.marked_states:
+                raise ValueError(
+                    "iteration must use a PhaseOracle that marks at least one state"
+                )
+            if len(iteration.reflection_qubits) != iteration.num_qubits:
+                raise ValueError("iteration must reflect all search qubits")
+        self._iteration = iteration
         self._sampler = sampler
 
     @property
@@ -331,84 +336,124 @@ class Grover:
             ValueError: If an argument is out of range, a vector mask is
                 invalid, or the selected predicate marks no states.
         """
+        circuit, _, _ = Grover._standard_search(function, output_mask, iterations)
+        return circuit
+
+    @staticmethod
+    def _standard_search(
+        function: BooleanFunction | BooleanVectorFunction,
+        output_mask: int | None,
+        iterations: int | None,
+    ) -> tuple[Circuit, tuple[int, ...], int]:
+        """Assemble a uniform search and retain its predicate and iteration count."""
         _validate_iterations(iterations)
-        marked_states = _selected_marked_states(function, output_mask)
+        oracle = PhaseOracle(function, output_mask=output_mask)
+        iteration = GroverOperator(
+            oracle=oracle,
+            state_preparation=UniformSuperposition(function.num_variables),
+        )
+        marked_states = iteration.marked_states
         if not marked_states:
             raise ValueError("function must mark at least one state")
-        num_qubits = function.num_variables
         count = (
-            Grover.optimal_iterations(num_qubits, len(marked_states))
+            Grover.optimal_iterations(iteration.num_qubits, len(marked_states))
             if iterations is None
             else iterations
         )
-        circuit = UniformSuperposition(num_qubits).build_circuit("grover")
-        oracle = PhaseOracle(function, output_mask=output_mask).build_circuit()
-        grover_iteration = GroverOperator(oracle).build_circuit()
-        for _ in range(count):
-            circuit.compose(grover_iteration, circuit.qubits)
-        return circuit
+        return _build_search_circuit(iteration, count), marked_states, count
 
-    def run(self, requests: Sequence[GroverRequest], /) -> list[GroverResult]:
-        """Execute a complete request batch and return results in input order.
+    @overload
+    def run(self, requests: Sequence[GroverRequest], /) -> list[GroverResult]: ...
 
-        The complete batch is validated and transformed before the single
-        Sampler call. An empty request sequence returns an empty list without
-        invoking the Sampler.
+    @overload
+    def run(
+        self, /, *, iterations: int, shots: int, seed: int | None = None
+    ) -> GroverResult: ...
+
+    def run(
+        self,
+        requests: Sequence[GroverRequest] | None = None,
+        /,
+        *,
+        iterations: int | None = None,
+        shots: int | None = None,
+        seed: int | None = None,
+    ) -> GroverResult | list[GroverResult]:
+        """Execute a request batch or a single preconfigured search.
+
+        Configure an iteration at construction to search from its preparation.
+        Select the iteration count explicitly for this mode because the
+        optimal count depends on the initial marked-state probability.
+        A batch is validated before one sampler call.
 
         Args:
-            requests: Grover search requests in output order.
+            requests: Batch of search requests in output order.
+            iterations: Non-negative count for the preconfigured search.
+            shots: Sample count for the preconfigured search.
+            seed: Optional finite-shot seed for the preconfigured search.
 
         Returns:
-            One immutable search result per request, in input order.
+            A single result for a preconfigured search or a list in batch order.
 
         Raises:
-            TypeError: If a request or Sampler result has the wrong type.
-            ValueError: If a request invariant or Sampler-result contract is
-                violated.
+            TypeError: If arguments have the wrong type, required arguments
+                are missing, or both invocation styles are used.
+            ValueError: If request or sampler-result contracts are violated.
         """
-        sampler_requests: list[SamplerRequest] = []
-        marked_states_by_request: list[tuple[int, ...]] = []
-        iteration_counts: list[int] = []
+        if requests is None:
+            if self._iteration is None:
+                raise TypeError("single search requires a preconfigured iteration")
+            if iterations is None or shots is None:
+                raise TypeError("single search requires iterations and shots")
+            return self._run_iteration(self._iteration, iterations, shots, seed)
+        if self._iteration is not None or any(
+            value is not None for value in (iterations, shots, seed)
+        ):
+            raise TypeError(
+                "batch requests cannot be combined with single-search configuration"
+            )
+
+        batch: list[tuple[SamplerRequest, tuple[int, ...], int]] = []
         for request in requests:
             if not isinstance(request, GroverRequest):
                 raise TypeError("requests must contain GroverRequest instances")
             request.validate()
-            marked_states = _selected_marked_states(
-                request.function, request.output_mask
+            circuit, marked_states, count = self._standard_search(
+                request.function, request.output_mask, request.iterations
             )
-            iterations = (
-                self.optimal_iterations(
-                    request.function.num_variables, len(marked_states)
-                )
-                if request.iterations is None
-                else request.iterations
+            sampler_request = SamplerRequest(
+                circuit, tuple(circuit.qubits), request.shots, request.seed
             )
-            circuit = self.build_circuit(
-                request.function,
-                output_mask=request.output_mask,
-                iterations=iterations,
-            )
-            sampler_requests.append(
-                SamplerRequest(
-                    circuit,
-                    tuple(circuit.qubits),
-                    request.shots,
-                    request.seed,
-                )
-            )
-            marked_states_by_request.append(marked_states)
-            iteration_counts.append(iterations)
+            batch.append((sampler_request, marked_states, count))
+        return self._sample(batch)
 
-        if not sampler_requests:
+    def _run_iteration(
+        self, iteration: GroverOperator, iterations: int, shots: int, seed: int | None
+    ) -> GroverResult:
+        """Sample a search using the same preparation as the iteration."""
+        _validate_iterations(iterations)
+        marked_states = iteration.marked_states
+        if not marked_states:
+            raise ValueError(
+                "iteration must use a PhaseOracle that marks at least one state"
+            )
+        circuit = _build_search_circuit(iteration, iterations)
+        request = SamplerRequest(circuit, tuple(circuit.qubits), shots, seed)
+        return self._sample([(request, marked_states, iterations)])[0]
+
+    def _sample(
+        self, batch: Sequence[tuple[SamplerRequest, tuple[int, ...], int]]
+    ) -> list[GroverResult]:
+        """Evaluate search circuits and report counts against their predicates."""
+        if not batch:
             return []
 
+        sampler_requests = [request for request, _, _ in batch]
         sampled = require_sampler_results(
             self._sampler.run(sampler_requests), sampler_requests
         )
         results: list[GroverResult] = []
-        for result, sampler_request, marked_states, iterations in zip(
-            sampled, sampler_requests, marked_states_by_request, iteration_counts
-        ):
+        for result, (sampler_request, marked_states, iterations) in zip(sampled, batch):
             counts = [0] * (1 << len(sampler_request.qubits))
             for outcome, count in result.counts.items():
                 counts[int(outcome, 2)] = count

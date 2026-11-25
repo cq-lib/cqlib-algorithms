@@ -25,18 +25,28 @@ from cqlib_algorithms import (
     AmplitudeEstimationProblem,
     MaximumLikelihoodAmplitudeEstimation,
     MaximumLikelihoodAmplitudeEstimationRequest,
+    MaximumLikelihoodAmplitudeEstimationResult,
 )
 from cqlib_algorithms.algorithms.amplitude_estimation.maximum_likelihood import (
     _global_maximum_likelihood,
 )
+from cqlib_algorithms.operators import (
+    AmplitudeEncoding,
+    BooleanFunction,
+    GroverOperator,
+    PhaseOracle,
+    StatevectorSampler,
+)
+from cqlib_algorithms.operators.state_preparation import UserCircuitPreparation
 from cqlib_algorithms.protocols import Sampler
 
 
 def _rotation_problem(theta: float) -> AmplitudeEstimationProblem:
-    preparation = Circuit(1)
-    preparation.ry(0, 2.0 * theta)
-    grover = Circuit(1)
-    grover.ry(0, 4.0 * theta)
+    preparation = AmplitudeEncoding([math.cos(theta), math.sin(theta)])
+    grover = GroverOperator(
+        PhaseOracle(BooleanFunction.from_marked_states(1, [1])),
+        state_preparation=preparation,
+    )
     return AmplitudeEstimationProblem(
         preparation,
         grover,
@@ -140,6 +150,46 @@ def test_multimodal_likelihood_matches_independent_complete_grid_search() -> Non
     )
 
 
+@pytest.mark.parametrize("marked", [0, 1])
+def test_component_powers_match_analytic_probabilities_and_legacy_batch(marked):
+    preparation = AmplitudeEncoding((3, 0, 1j, 0))
+    oracle = PhaseOracle(
+        BooleanFunction.from_marked_states(2, (2 * marked, 2 * marked + 1))
+    )
+    iteration = GroverOperator(oracle, state_preparation=preparation)
+
+    def good(bits):
+        assert len(bits) == 1
+        return bits == str(marked)
+
+    problem = AmplitudeEstimationProblem(preparation, iteration, (1,), good)
+    expected = 0.1 if marked else 0.9
+    theta = math.asin(math.sqrt(expected))
+    powers = (0, 1, 2, 4)
+    shots = 1000
+    probabilities = [math.sin((2 * k + 1) * theta) ** 2 for k in powers]
+    hits = tuple(round(shots * p) for p in probabilities)
+    scripts = [{str(marked): h, str(1 - marked): shots - h} for h in hits]
+    sampler = _ScriptedSampler(scripts)
+    result = MaximumLikelihoodAmplitudeEstimation(sampler).run(
+        problem=problem, powers=powers, shots=shots
+    )
+
+    assert isinstance(result, MaximumLikelihoodAmplitudeEstimationResult)
+    assert sampler.batch_sizes == [len(powers)]
+    for experiment, expected_p in zip(sampler.requests, probabilities):
+        assert [qubit.index for qubit in experiment.qubits] == [1]
+        state = experiment.circuit.to_matrix()[:, 0]
+        observed_p = np.sum(np.abs(state[2 * marked : 2 * marked + 2]) ** 2)
+        assert observed_p == pytest.approx(expected_p, abs=1e-12, rel=0)
+    assert result.good_counts == hits
+    assert result.estimation == pytest.approx(expected, abs=1e-3, rel=0)
+    legacy = AmplitudeEstimationProblem(preparation, iteration, (1,), good)
+    assert MaximumLikelihoodAmplitudeEstimation(_ScriptedSampler(scripts)).run(
+        [MaximumLikelihoodAmplitudeEstimationRequest(legacy, powers, shots)]
+    ) == [result]
+
+
 @pytest.mark.parametrize(
     ("bitstring", "expected"),
     [("0", 0.0), ("1", 1.0)],
@@ -164,6 +214,19 @@ def test_all_failure_and_all_success_data_select_physical_endpoints(
     assert result.asymptotic_interval[0] <= result.estimation
     assert result.estimation <= result.asymptotic_interval[1]
 
+    preparation = AmplitudeEncoding((1, 0) if bitstring == "0" else (0, 1))
+    oracle = PhaseOracle(BooleanFunction.from_marked_states(1, [1]))
+    iteration = GroverOperator(oracle, state_preparation=preparation)
+    problem = AmplitudeEstimationProblem(
+        preparation, iteration, (0,), lambda bits: bits == "1"
+    )
+    assert (
+        MaximumLikelihoodAmplitudeEstimation(StatevectorSampler()).run(
+            problem, powers=powers, shots=shots
+        )
+        == result
+    )
+
 
 def test_multiple_problem_schedules_are_flattened_into_one_sampler_call() -> None:
     shots = 100
@@ -171,9 +234,9 @@ def test_multiple_problem_schedules_are_flattened_into_one_sampler_call() -> Non
         [
             {"0": 75, "1": 25},
             {"0": 25, "1": 75},
-            {"0": 50, "1": 50},
-            {"0": 10, "1": 90},
-            {"0": 90, "1": 10},
+            {"0": 100, "1": 100},
+            {"0": 20, "1": 180},
+            {"0": 180, "1": 20},
         ]
     )
     results = MaximumLikelihoodAmplitudeEstimation(sampler).run(
@@ -182,21 +245,27 @@ def test_multiple_problem_schedules_are_flattened_into_one_sampler_call() -> Non
                 _rotation_problem(math.pi / 6.0), (0, 1), shots
             ),
             MaximumLikelihoodAmplitudeEstimationRequest(
-                _rotation_problem(math.pi / 4.0), (0, 2, 5), shots
+                _rotation_problem(math.pi / 4.0), (0, 2, 5), 2 * shots
             ),
         ]
     )
 
     assert sampler.calls == 1
     assert sampler.batch_sizes == [5]
+    assert [request.shots for request in sampler.requests] == [100, 100, 200, 200, 200]
+    assert [result.powers for result in results] == [(0, 1), (0, 2, 5)]
     assert results[0].good_counts == (25, 75)
-    assert results[1].good_counts == (50, 90, 10)
+    assert results[1].good_counts == (100, 180, 20)
+    assert [result.shots for result in results] == [200, 600]
 
 
 def test_noncontiguous_objective_order_reaches_multibit_predicate() -> None:
     problem = AmplitudeEstimationProblem(
-        Circuit(3),
-        Circuit(3),
+        UserCircuitPreparation(Circuit(3)),
+        GroverOperator(
+            PhaseOracle(BooleanFunction.from_marked_states(3, [0])),
+            state_preparation=UserCircuitPreparation(Circuit(3)),
+        ),
         (2, 0),
         lambda bitstring: bitstring == "10",
     )
@@ -272,16 +341,14 @@ def test_near_singularity_score_root_does_not_snap_to_boundary() -> None:
     good_counts = (25_000_001, 100_000_000)
     sampler = _ScriptedSampler([{"0": shots - good, "1": good} for good in good_counts])
     precision = 1e-12
-    result = MaximumLikelihoodAmplitudeEstimation(sampler).run(
-        [
-            MaximumLikelihoodAmplitudeEstimationRequest(
-                _rotation_problem(math.pi / 6.0),
-                (0, 1),
-                shots,
-                search_precision=precision,
-            )
-        ]
-    )[0]
+    problem = _rotation_problem(math.pi / 6.0)
+    algorithm = MaximumLikelihoodAmplitudeEstimation(sampler)
+    result = algorithm.run(
+        problem, powers=(0, 1), shots=shots, search_precision=precision
+    )
+    assert algorithm.run(
+        [MaximumLikelihoodAmplitudeEstimationRequest(problem, (0, 1), shots, precision)]
+    ) == [result]
 
     theta = math.asin(math.sqrt(result.estimation))
     assert theta != math.pi / 6.0
@@ -332,6 +399,10 @@ def test_request_validation(field, value, error, message) -> None:
     arguments[field] = value
     with pytest.raises(error, match=message):
         MaximumLikelihoodAmplitudeEstimationRequest(**arguments)
+    sampler = _ScriptedSampler([])
+    with pytest.raises(error, match=message):
+        MaximumLikelihoodAmplitudeEstimation(sampler).run(**arguments)
+    assert sampler.calls == 0
 
 
 def test_public_request_enforces_binary64_candidate_geometry_shot_limit() -> None:
@@ -356,4 +427,41 @@ def test_public_request_enforces_binary64_candidate_geometry_shot_limit() -> Non
 def test_empty_batch_does_not_call_sampler() -> None:
     sampler = _ScriptedSampler([])
     assert MaximumLikelihoodAmplitudeEstimation(sampler).run([]) == []
+    assert sampler.calls == 0
+
+
+@pytest.mark.parametrize("options", [{"shots": 100}, {"powers": (0,)}])
+def test_single_requires_both_experiment_options_before_sampling(options):
+    sampler = _ScriptedSampler([])
+    with pytest.raises(TypeError, match="powers and shots"):
+        MaximumLikelihoodAmplitudeEstimation(sampler).run(
+            _rotation_problem(0.2), **options
+        )
+    assert sampler.calls == 0
+
+
+@pytest.mark.parametrize(
+    "options", [{"powers": (0,)}, {"shots": 100}, {"search_precision": 1e-8}]
+)
+def test_batch_rejects_options_belonging_to_individual_requests(options):
+    request = MaximumLikelihoodAmplitudeEstimationRequest(
+        _rotation_problem(0.2), (0,), 100
+    )
+    sampler = _ScriptedSampler([])
+    with pytest.raises(TypeError, match="batch"):
+        MaximumLikelihoodAmplitudeEstimation(sampler).run([request], **options)
+    assert sampler.calls == 0
+
+
+def test_invalid_later_request_prevents_submission_of_the_whole_batch():
+    first = MaximumLikelihoodAmplitudeEstimationRequest(
+        _rotation_problem(0.2), (0,), 100
+    )
+    second = MaximumLikelihoodAmplitudeEstimationRequest(
+        _rotation_problem(0.3), (0, 2), 200
+    )
+    second.problem.iteration_circuit.measure(0)
+    sampler = _ScriptedSampler([])
+    with pytest.raises(ValueError, match="static unitary|classical data"):
+        MaximumLikelihoodAmplitudeEstimation(sampler).run([first, second])
     assert sampler.calls == 0

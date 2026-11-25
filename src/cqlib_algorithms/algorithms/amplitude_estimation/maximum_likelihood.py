@@ -29,7 +29,7 @@ from fractions import Fraction
 from functools import cache
 from itertools import pairwise
 from numbers import Real
-from typing import final
+from typing import final, overload
 
 from ..._utils.numeric import normalize_positive_integer
 from ...protocols.sampler import Sampler, SamplerRequest, require_sampler_results
@@ -43,6 +43,7 @@ from .problem import AmplitudeEstimationProblem, _validate_problem
 # values on 64-bit hosts. MLAE's candidate geometry is nevertheless binary64;
 # this stricter bound keeps every observed integer count exactly representable.
 _MAX_BINARY64_LIKELIHOOD_SHOTS = (1 << 53) - 1
+_DEFAULT_SEARCH_PRECISION = 1e-8
 
 
 @dataclass(frozen=True, slots=True)
@@ -51,9 +52,9 @@ class MaximumLikelihoodAmplitudeEstimationRequest:
 
     Args:
         problem: State preparation, Grover iterate, and good-state predicate.
-        powers: Nonnegative Grover exponents in the experiment schedule.
+        powers: Strictly increasing Grover exponents starting at zero.
         shots: Samples used for each scheduled power.
-        search_precision: Absolute tolerance for the likelihood search.
+        search_precision: Absolute angular tolerance for the likelihood search, in radians.
 
     Raises:
         TypeError: If a field has the wrong type.
@@ -63,7 +64,7 @@ class MaximumLikelihoodAmplitudeEstimationRequest:
     problem: AmplitudeEstimationProblem
     powers: tuple[int, ...]
     shots: int
-    search_precision: float = 1e-8
+    search_precision: float = _DEFAULT_SEARCH_PRECISION
 
     __hash__ = None  # type: ignore[assignment]
 
@@ -114,8 +115,8 @@ class MaximumLikelihoodAmplitudeEstimationResult:
     """Store the maximum-likelihood estimate and experiment statistics.
 
     Attributes:
-        estimation: Maximum-likelihood amplitude estimate.
-        confidence_interval: Reported amplitude interval.
+        estimation: Estimated good-state probability in the prepared state.
+        confidence_interval: The same mapped 95% normal interval as ``asymptotic_interval``.
         shots: Total samples across scheduled circuits.
         num_grover_queries: Grover powers summed across circuit instances.
         num_oracle_queries: Shot-weighted Grover-query count.
@@ -685,28 +686,22 @@ def _global_maximum_likelihood(
 
 @final
 class MaximumLikelihoodAmplitudeEstimation:
-    """Estimate an amplitude from a fixed set of Grover-power experiments.
+    """Estimate the initial good-state probability from fixed Grover powers.
 
     Every configured ``Q**k A`` circuit is included in one flattened Sampler
     call. The likelihood is searched over the complete physical domain
     ``theta in [0, pi/2]`` by partitioning it at every sine/cosine singularity.
     The log likelihood is concave inside each resulting interval, so every
-    interval and boundary can be optimized deterministically. This avoids
-    relying on a single initial point for the multimodal likelihood.
+    interval and boundary can be compared when selecting the global maximum.
 
     ``asymptotic_interval`` is a mapped 95% normal interval in ``theta`` based
-    on Fisher information. It is an asymptotic diagnostic, not a finite-shot
-    coverage guarantee.
-
-    Reference: Y. Suzuki et al., *Amplitude Estimation without Phase
-    Estimation*, arXiv:1904.10246v2.
+    on Fisher information. Its coverage is asymptotic.
 
     Args:
         sampler: Sampling implementation used for scheduled experiments.
 
     Raises:
-        TypeError: If the sampler or a request has the wrong type.
-        ValueError: If validation or likelihood optimization fails.
+        TypeError: If the sampler has the wrong type.
     """
 
     __slots__ = ("_sampler",)
@@ -721,12 +716,73 @@ class MaximumLikelihoodAmplitudeEstimation:
         """Return the injected Sampler implementation."""
         return self._sampler
 
+    @overload
+    def run(
+        self,
+        problem: AmplitudeEstimationProblem,
+        *,
+        powers: tuple[int, ...],
+        shots: int,
+        search_precision: float | None = None,
+    ) -> MaximumLikelihoodAmplitudeEstimationResult: ...
+
+    @overload
     def run(
         self,
         requests: Sequence[MaximumLikelihoodAmplitudeEstimationRequest],
         /,
+    ) -> list[MaximumLikelihoodAmplitudeEstimationResult]: ...
+
+    def run(
+        self,
+        problem: AmplitudeEstimationProblem
+        | Sequence[MaximumLikelihoodAmplitudeEstimationRequest],
+        *,
+        powers: tuple[int, ...] | None = None,
+        shots: int | None = None,
+        search_precision: float | None = None,
+    ) -> (
+        MaximumLikelihoodAmplitudeEstimationResult
+        | list[MaximumLikelihoodAmplitudeEstimationResult]
+    ):
+        """Fit one problem or an ordered batch from one sampler submission.
+
+        Args:
+            problem: An amplitude-estimation problem, or a positional batch of requests.
+            powers: Strictly increasing tuple of Grover exponents starting at zero.
+            shots: Number of samples per power for a single problem.
+            search_precision: Angular search tolerance in radians. Defaults to 1e-8.
+
+        Returns:
+            One result or a list in request order. Each fit combines the good-state
+            counts from all powers of that problem.
+
+        Raises:
+            TypeError: If required options are missing, types are invalid, or
+                single-problem options are supplied with a batch.
+            ValueError: If the schedule, problem, or sampler result is invalid.
+            RuntimeError: If the likelihood search or candidate ranking fails to converge.
+        """
+        if isinstance(problem, AmplitudeEstimationProblem):
+            if powers is None or shots is None:
+                raise TypeError("a single problem requires powers and shots")
+            request = MaximumLikelihoodAmplitudeEstimationRequest(
+                problem,
+                powers,
+                shots,
+                _DEFAULT_SEARCH_PRECISION
+                if search_precision is None
+                else search_precision,
+            )
+            return self._run_batch((request,))[0]
+        if any(value is not None for value in (powers, shots, search_precision)):
+            raise TypeError("batch requests specify their own experiment options")
+        return self._run_batch(problem)
+
+    def _run_batch(
+        self, requests: Sequence[MaximumLikelihoodAmplitudeEstimationRequest]
     ) -> list[MaximumLikelihoodAmplitudeEstimationResult]:
-        """Execute every fixed power for a complete batch in one Sampler call."""
+        """Submit every scheduled circuit together and fit each problem separately."""
         sampler_requests: list[SamplerRequest] = []
         spans: list[tuple[int, int]] = []
         for request in requests:

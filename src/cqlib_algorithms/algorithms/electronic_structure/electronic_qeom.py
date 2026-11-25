@@ -149,7 +149,7 @@ class ElectronicQEOM:
             )
         return provenance
 
-    def compute(
+    def run(
         self,
         ground_state: ElectronicGroundStateResult,
         *,
@@ -278,6 +278,19 @@ class ElectronicQEOM:
             q_matrix,
             v_matrix,
             w_matrix,
+        )
+
+    def compute(
+        self,
+        ground_state: ElectronicGroundStateResult,
+        *,
+        excitations: Sequence[FermionicExcitation] | None = None,
+        num_roots: int | None = None,
+        shots: int | None = None,
+    ) -> ElectronicQEOMResult:
+        """Solve qEOM with the same inputs and result as :meth:`run`."""
+        return self.run(
+            ground_state, excitations=excitations, num_roots=num_roots, shots=shots
         )
 
 

@@ -368,3 +368,18 @@ def test_run_rejects_wrong_result_qubit_order():
 
     with pytest.raises(ValueError, match="qubits"):
         SuperdenseCoding(_ReversedSampler()).run([SuperdenseCodingRequest((0, 0), 2)])
+
+
+@pytest.mark.parametrize("message", _MESSAGES)
+def test_single_message_matches_legacy_batch(message):
+    algorithm = SuperdenseCoding(StatevectorSampler())
+    actual = algorithm.run(message, shots=16)
+    assert actual == algorithm.run([SuperdenseCodingRequest(message, 16)])[0]
+
+
+@pytest.mark.parametrize(
+    "message,shots", [((0, 2), 16), ((0,), 16), ((0, 1), 0), ([0, 1], 16)]
+)
+def test_single_message_rejects_invalid_inputs(message, shots):
+    with pytest.raises((TypeError, ValueError)):
+        SuperdenseCoding(StatevectorSampler()).run(message, shots=shots)

@@ -48,6 +48,8 @@
 
 ## 示例
 
+单比特 `EfficientSU2Ansatz(1, reps=0)` 在默认前缀下有两个角度参数，均设为零时从计算基态 0 开始。这里用采样器估计每步投影保真度，并用估计器记录 Z 的期望值。`evolve(...)` 也可接受与 `run(...)` 相同的参数。
+
 ```python
 from cqlib.circuit.ansatz import EvolutionStrategy
 from cqlib.qis import PauliString
@@ -61,7 +63,6 @@ from cqlib_algorithms.operators import (
 )
 
 ansatz = EfficientSU2Ansatz(1, reps=0)
-initial = {name: 0.0 for name in ansatz.build_circuit("theta").used_symbols}
 algorithm = PVQD(
     StatevectorSampler(),
     ansatz,
@@ -69,9 +70,9 @@ algorithm = PVQD(
     estimator=StatevectorEstimator(),
     evolution_strategy=EvolutionStrategy.exact(),
 )
-result = algorithm.evolve(
+result = algorithm.run(
     PauliString.from_str("X"),
-    initial,
+    {"theta_0": 0.0, "theta_1": 0.0},
     0.5,
     num_timesteps=5,
     fidelity_shots=4096,

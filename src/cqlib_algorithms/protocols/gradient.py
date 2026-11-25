@@ -16,10 +16,14 @@ from __future__ import annotations
 
 import math
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
+from copy import deepcopy
 from dataclasses import dataclass
 from numbers import Real
 
+from cqlib.qis import Hamiltonian, PauliString
+
+from .ansatz import Ansatz
 from .estimator import Estimator, EstimatorRequest
 
 
@@ -57,6 +61,54 @@ class GradientRequest:
 
     def __post_init__(self) -> None:
         self.validate()
+
+    @classmethod
+    def from_ansatz(
+        cls,
+        ansatz: Ansatz,
+        observable: Hamiltonian | PauliString | None,
+        parameter_bindings: Mapping[str, float],
+        *,
+        parameter_names: tuple[str, ...] | None = None,
+        shots: int | None = None,
+        seed: int | None = None,
+        prefix: str = "theta",
+    ) -> GradientRequest:
+        """Build an independent objective request from a trainable component.
+
+        Args:
+            ansatz: Trainable component built once using ``prefix``.
+            observable: Hermitian objective; ``None`` supplies identity for geometry.
+            parameter_bindings: Exact finite bindings for all active symbols.
+            parameter_names: Ordered derivative subset; None uses active-symbol order.
+            shots: Optional expectation sample count.
+            seed: Optional expectation sampler seed.
+            prefix: Naming prefix for the component's newly created symbols.
+
+        Returns:
+            A request owning independent circuit and observable snapshots.
+
+        Raises:
+            TypeError: If component, bindings, or configuration types are invalid.
+            ValueError: If component metadata, symbols, or dimensions disagree.
+        """
+        # Import at construction time so protocol initialization stays independent
+        # of the shared builder, which also serves preparation components.
+        from .._utils.state_preparation import build_component_circuit
+
+        if not isinstance(ansatz, Ansatz):
+            raise TypeError("ansatz must be an Ansatz")
+        circuit = deepcopy(build_component_circuit(ansatz, prefix=prefix))
+        if observable is None:
+            observable = PauliString.from_str("I" * circuit.num_qubits)
+        if not isinstance(observable, (Hamiltonian, PauliString)):
+            raise TypeError("observable must be a Hamiltonian, PauliString, or None")
+        return cls(
+            EstimatorRequest(
+                circuit, observable.copy(), parameter_bindings, shots, seed
+            ),
+            tuple(circuit.used_symbols) if parameter_names is None else parameter_names,
+        )
 
     def validate(self) -> None:
         """Revalidate this request and its nested estimator request.
@@ -135,6 +187,60 @@ class Gradient(ABC):
     """
 
     __slots__ = ()
+
+    def compute(
+        self,
+        estimator: Estimator,
+        ansatz: Ansatz,
+        observable: Hamiltonian | PauliString,
+        parameter_bindings: Mapping[str, float],
+        *,
+        parameter_names: tuple[str, ...] | None = None,
+        shots: int | None = None,
+        seed: int | None = None,
+        prefix: str = "theta",
+    ) -> GradientResult:
+        """Differentiate one ansatz objective using this component's batch method.
+
+        Args:
+            estimator: Evaluator for the generated expectation tasks.
+            ansatz: Trainable component to build internally.
+            observable: Hermitian objective on the ansatz register.
+            parameter_bindings: Exact bindings for the built circuit's symbols.
+            parameter_names: Ordered subset; None uses all active symbols.
+            shots: Optional expectation sample count.
+            seed: Optional expectation sampler seed.
+            prefix: Naming prefix used to build the ansatz.
+
+        Returns:
+            One gradient result in the selected parameter order.
+
+        Raises:
+            TypeError: If a component, input, or response has the wrong type.
+            ValueError: If inputs or the response violate their contracts.
+        """
+        if not isinstance(estimator, Estimator):
+            raise TypeError("estimator must be an Estimator")
+        if not isinstance(observable, (Hamiltonian, PauliString)):
+            raise TypeError("observable must be a Hamiltonian or PauliString")
+        request = GradientRequest.from_ansatz(
+            ansatz,
+            observable,
+            parameter_bindings,
+            parameter_names=parameter_names,
+            shots=shots,
+            seed=seed,
+            prefix=prefix,
+        )
+        results = self.run(estimator, [request])
+        if not isinstance(results, list) or len(results) != 1:
+            raise ValueError("gradient must return one result per request")
+        result = results[0]
+        if not isinstance(result, GradientResult):
+            raise TypeError("gradient must return GradientResult values")
+        if result.parameter_names != request.parameter_names:
+            raise ValueError("gradient result parameter order must match the request")
+        return result
 
     @abstractmethod
     def run(

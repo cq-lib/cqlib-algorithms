@@ -33,7 +33,9 @@ def test_uniform_superposition_adapter_matches_direct_circuit_reflection():
     adapted = GeneralStateReflection.from_state_preparation(
         preparation, prefix="uniform"
     ).build_circuit()
-    direct = GeneralStateReflection(direct_circuit).build_circuit()
+    direct = GeneralStateReflection(
+        UserCircuitPreparation(direct_circuit)
+    ).build_circuit()
 
     np.testing.assert_allclose(
         adapted.to_matrix(), direct.to_matrix(), rtol=0.0, atol=1e-12
@@ -53,7 +55,7 @@ def test_user_circuit_adapter_preserves_prefix_snapshot_and_global_phase():
     adapted_component = GeneralStateReflection.from_state_preparation(
         preparation, prefix="adapter_prefix"
     )
-    direct_component = GeneralStateReflection(prepared_snapshot)
+    direct_component = GeneralStateReflection(UserCircuitPreparation(prepared_snapshot))
     source.x(7)
     prepared_snapshot.x(0)
 

@@ -3,6 +3,56 @@
 本页说明变分工作流中梯度、量子几何和经典优化组件的选择。精确接口以源码 docstring
 为准。
 
+## 直接从 Ansatz 计算
+
+四种梯度均可调用 `compute(estimator, ansatz, observable, parameter_bindings, ...)`，
+返回一个 `GradientResult`，批量计算使用 `run(estimator, requests)`。
+`StatevectorQGT.compute(ansatz, bindings)` 和 `StatevectorQFI.compute(ansatz, bindings)`
+直接计算所制备纯态的几何量；`NaturalGradient.compute(...)` 返回经度规修正的方向。
+
+```python
+import math
+from cqlib.qis import PauliString
+from cqlib_algorithms.operators import RealAmplitudesAnsatz, StatevectorEstimator
+from cqlib_algorithms.operators.gradient import (
+    FiniteDifferenceGradient,
+    LinCombEstimatorGradient,
+    NaturalGradient,
+    ParameterShiftGradient,
+    SPSAGradient,
+    StatevectorQFI,
+    StatevectorQGT,
+)
+
+ansatz = RealAmplitudesAnsatz(1, reps=0)
+point = {"theta_0": 0.4}
+observable = PauliString.from_str("Z")
+estimator = StatevectorEstimator()
+methods = (
+    ParameterShiftGradient(),
+    LinCombEstimatorGradient(),
+    FiniteDifferenceGradient(),
+    SPSAGradient(1e-4, seed=7),
+)
+for method in methods:
+    result = method.compute(estimator, ansatz, observable, point)
+    print(type(method).__name__, result.values)
+print(StatevectorQGT().compute(ansatz, point).metric)  # [[0.25]]
+print(StatevectorQFI().compute(ansatz, point).qfi)  # [[1.0]]
+direction = NaturalGradient().compute(estimator, ansatz, observable, point)
+print(direction.values)  # approximately (-4 * sin(0.4),)
+```
+
+该例的目标为 `cos(0.4)`。导数约 `-0.3894183423`，QGT 实部为 `0.25`，QFI 为 `1`；
+未正则化的自然梯度约 `-1.5576733692`。自然梯度是更新方向，其数值与普通导数具有不同语义。
+有限差分和 SPSA 有步长误差，多个参数时 SPSA 还存在随机方向误差。
+
+默认前缀为 `theta`，绑定必须完整对应构建后实际使用的符号。`parameter_names` 可给出有序子集，
+省略时采用活跃符号顺序，空元组产生空结果。重复参数、缺失或多余绑定、非有限值会被拒绝。
+组件只在本次请求构造时建立一次并复制，后续求导扰动不会修改用户组件的缓存线路。
+传入自定义 Ansatz 时须满足各计算方法的门集和线路结构限制。
+
+
 ## 梯度
 
 - `ParameterShiftGradient`：适用于实现支持的参数化旋转门，使用解析参数移位规则。
@@ -44,19 +94,25 @@ L-BFGS-B 的边界按参数名配置，例如 `bounds={"theta": (0.0, 2 * math.p
 
 ```python
 import math
-
+from cqlib.qis import PauliString
+from cqlib_algorithms import VQE
+from cqlib_algorithms.operators import RealAmplitudesAnsatz, StatevectorEstimator
 from cqlib_algorithms.operators.gradient import ParameterShiftGradient
 from cqlib_algorithms.operators.optimizer import COBYLAOptimizer, LBFGSBOptimizer
 
-cobyla = COBYLAOptimizer(maxiter=500, tolerance=1e-6)
-lbfgsb = LBFGSBOptimizer(
-    ParameterShiftGradient(),
-    bounds={"theta": (0.0, 2.0 * math.pi)},
-    maxiter=200,
+optimizers = (
+    COBYLAOptimizer(maxiter=500, tolerance=1e-6),
+    LBFGSBOptimizer(
+        ParameterShiftGradient(),
+        bounds={"theta_0": (0.0, 2.0 * math.pi)},
+        maxiter=200,
+    ),
 )
-
-cobyla_results = cobyla.run(estimator, optimizer_requests)
-lbfgsb_results = lbfgsb.run(estimator, optimizer_requests)
+for optimizer in optimizers:
+    algorithm = VQE(StatevectorEstimator(), RealAmplitudesAnsatz(1, reps=0), optimizer)
+    result = algorithm.run(PauliString.from_str("Z"), {"theta_0": 0.4})
+    assert result.optimal_value < -0.999
+    print(result.optimal_value)
 ```
 
 这里的 `estimator` 实现 `Estimator`，`optimizer_requests` 是按输出顺序排列的

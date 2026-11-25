@@ -15,11 +15,15 @@
 from __future__ import annotations
 
 import copy
+from collections.abc import Mapping
 from typing import final
 
 from cqlib.circuit import Circuit, CircuitError
 
-from ..._utils.parameters import validate_parameter_prefix
+from ..._utils.circuit import validate_bound_static_unitary_circuit
+from ..._utils.parameters import bind_circuit_parameters, validate_parameter_prefix
+from ..._utils.state_preparation import build_component_circuit
+from ...protocols.ansatz import Ansatz
 from ...protocols.state_preparation import StatePreparation
 
 
@@ -66,6 +70,36 @@ class UserCircuitPreparation(StatePreparation):
         """Validate the snapshot and its static invertibility."""
         self._circuit.validate()
         self._circuit.inverse()
+
+    @classmethod
+    def from_component(
+        cls,
+        component: StatePreparation | Ansatz,
+        parameter_bindings: Mapping[str, float],
+        *,
+        prefix: str = "theta",
+    ) -> UserCircuitPreparation:
+        """Bind a preparation or ansatz once to obtain a fixed state preparation.
+
+        Args:
+            component: State-preparation or ansatz component to build and bind.
+            parameter_bindings: Finite values covering exactly its active symbols.
+            prefix: Naming prefix used to build the source component.
+
+        Returns:
+            A zero-parameter preparation with independent state and preserved phase.
+            Source qubits follow insertion order and are normalized to ``0..n-1``.
+            All component qubits, including ancillas, remain in the register.
+            Subsequent build prefixes leave this fixed circuit unchanged.
+
+        Raises:
+            TypeError: If component, binding, or prefix types are invalid.
+            ValueError: If metadata, bindings, or static invertibility are invalid.
+        """
+        circuit = build_component_circuit(component, prefix=prefix)
+        bound = bind_circuit_parameters(circuit, parameter_bindings)
+        validate_bound_static_unitary_circuit(bound, "bound component")
+        return cls(bound)
 
     def build_circuit(self, prefix: str) -> Circuit:
         """Return an independent snapshot copy; ``prefix`` does not rename it."""

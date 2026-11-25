@@ -24,7 +24,7 @@ import math
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from numbers import Real
-from typing import final
+from typing import final, overload
 
 from ..._utils.numeric import normalize_positive_integer
 from ...protocols.sampler import Sampler, SamplerRequest, require_sampler_results
@@ -35,7 +35,8 @@ from ._common import (
 )
 from .problem import AmplitudeEstimationProblem, _validate_problem
 
-_SUPPORTED_RESCALING_FACTORS = (1.0, 0.25)
+_DEFAULT_RESCALING_FACTOR = 1.0
+_SUPPORTED_RESCALING_FACTORS = (_DEFAULT_RESCALING_FACTOR, 0.25)
 _MAX_EXPLICIT_GROVER_POWER = 1_000_000
 _MAX_SAFE_POWER_ITERATIONS = 21
 
@@ -63,8 +64,8 @@ class FasterAmplitudeEstimationRequest:
     The supplied problem must already have good-state amplitude at most
     ``0.25``. A rescaling factor of ``0.25`` declares that the supplied
     problem represents an externally rescaled target; the result is divided
-    by ``0.25**2``. The algorithm never derives a quantum oracle from the
-    classical predicate and never rewrites ``A`` or ``Q`` automatically.
+    by ``0.25**2``. The state preparation, Grover iterate, and predicate
+    must describe that same scaled problem.
 
     Args:
         problem: Consistent state preparation, Grover iterate, and predicate.
@@ -81,7 +82,7 @@ class FasterAmplitudeEstimationRequest:
     problem: AmplitudeEstimationProblem
     alpha: float
     max_iterations: int
-    amplitude_rescaling_factor: float = 1.0
+    amplitude_rescaling_factor: float = _DEFAULT_RESCALING_FACTOR
 
     __hash__ = None  # type: ignore[assignment]
 
@@ -275,7 +276,7 @@ def _record_sample(state: _FasterState, power: int, shots: int, good: int) -> fl
 
 @final
 class FasterAmplitudeEstimation:
-    """Estimate a promised amplitude with Nakaji's two-stage algorithm.
+    """Estimate a good-state probability with Nakaji's two-stage algorithm.
 
     Every round samples one or two circuits of the form ``Q**k A``. The first
     stage obtains a narrow angle interval from one cosine estimate; the second
@@ -283,7 +284,7 @@ class FasterAmplitudeEstimation:
     the transition-stage phase offset. Requests in the same round are sent in
     one Sampler batch, while adaptive dependencies remain sequential.
 
-    The problem supplied in each request must already satisfy
+    The supplied problem must already satisfy
     ``sqrt(a_problem) <= 0.25``. When ``amplitude_rescaling_factor=0.25``, the
     caller must also supply the matching externally rescaled ``A``, ``Q``, and
     predicate; the reported target is ``a_problem / 0.25**2``.
@@ -292,9 +293,7 @@ class FasterAmplitudeEstimation:
         sampler: Sampling implementation used for every experiment.
 
     Raises:
-        TypeError: If the sampler or a request has the wrong type.
-        ValueError: If a request or Sampler result violates its contract.
-        RuntimeError: If a confidence-failure event produces invalid geometry.
+        TypeError: If the sampler has the wrong type.
     """
 
     __slots__ = ("_sampler",)
@@ -309,24 +308,75 @@ class FasterAmplitudeEstimation:
         """Return the injected Sampler implementation."""
         return self._sampler
 
+    @overload
+    def run(
+        self,
+        problem: AmplitudeEstimationProblem,
+        *,
+        alpha: float,
+        max_iterations: int,
+        amplitude_rescaling_factor: float | None = None,
+    ) -> FasterAmplitudeEstimationResult: ...
+
+    @overload
     def run(
         self,
         requests: Sequence[FasterAmplitudeEstimationRequest],
         /,
-    ) -> list[FasterAmplitudeEstimationResult]:
-        """Run all requests with same-round Sampler batching.
+    ) -> list[FasterAmplitudeEstimationResult]: ...
+
+    def run(
+        self,
+        problem: AmplitudeEstimationProblem
+        | Sequence[FasterAmplitudeEstimationRequest],
+        *,
+        alpha: float | None = None,
+        max_iterations: int | None = None,
+        amplitude_rescaling_factor: float | None = None,
+    ) -> FasterAmplitudeEstimationResult | list[FasterAmplitudeEstimationResult]:
+        """Estimate one probability or run an ordered batch of small-amplitude problems.
 
         Args:
-            requests: Faster-amplitude-estimation requests in result order.
+            problem: An amplitude-estimation problem, or a positional batch of requests.
+            alpha: Total failure-probability budget for a single problem.
+            max_iterations: Number of adaptive rounds. Together with ``alpha``, this
+                sets the sample count per circuit in each stage.
+            amplitude_rescaling_factor: Amplitude scale already applied to the
+                supplied problem. Defaults to 1.0. Use 0.25 for external rescaling.
 
         Returns:
-            One result per request, preserving input order.
+            One result or a list in request order. Each result includes the
+            probability estimate, confidence interval, and per-circuit counts.
 
         Raises:
-            TypeError: If a request has the wrong type.
-            ValueError: If validation or the Sampler contract fails.
+            TypeError: If required options are missing, argument types are invalid,
+                or single-problem options are supplied with a batch.
+            ValueError: If a request or sampling result violates its contract.
             RuntimeError: If sampled values produce invalid phase geometry.
         """
+        if isinstance(problem, AmplitudeEstimationProblem):
+            if alpha is None or max_iterations is None:
+                raise TypeError("a single problem requires alpha and max_iterations")
+            request = FasterAmplitudeEstimationRequest(
+                problem,
+                alpha,
+                max_iterations,
+                _DEFAULT_RESCALING_FACTOR
+                if amplitude_rescaling_factor is None
+                else amplitude_rescaling_factor,
+            )
+            return self._run_batch((request,))[0]
+        if any(
+            value is not None
+            for value in (alpha, max_iterations, amplitude_rescaling_factor)
+        ):
+            raise TypeError("batch requests specify their own estimation options")
+        return self._run_batch(problem)
+
+    def _run_batch(
+        self, requests: Sequence[FasterAmplitudeEstimationRequest]
+    ) -> list[FasterAmplitudeEstimationResult]:
+        """Sample all active problems together and update each angle interval per round."""
         states: list[_FasterState] = []
         for request in requests:
             if not isinstance(request, FasterAmplitudeEstimationRequest):

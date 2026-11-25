@@ -111,9 +111,7 @@ def _signal_matrix(signal_value: float) -> np.ndarray:
 def _qsp_response(signal_value: float, phases: np.ndarray) -> complex:
     r"""Return the ``(0, 0)`` entry of the full QSP response matrix.
 
-    Unlike the legacy ``_qsp_real_response`` helper, this returns the full
-    complex value so the same routine can drive both real and complex
-    polynomial fitting.
+    The complex response supports both real and complex polynomial fitting.
     """
     matrix = _phase_matrix(float(phases[0]))
     signal = _signal_matrix(signal_value)

@@ -13,46 +13,39 @@
 1. 在系统寄存器制备归一化右端项 <img src="../../assets/formulas/inline/inline-443db1954f6815ba.svg" alt="|b\rangle" style="vertical-align: -4.000pt;">；
 2. 对 <img src="../../assets/formulas/inline/inline-a25513c7e0f6eaa8.svg" alt="U" style="vertical-align: -1.000pt;"> 进行相位估计，将 <img src="../../assets/formulas/inline/inline-c52635a76801021f.svg" alt="\lambda_j/\alpha" style="vertical-align: -5.000pt;"> 写入评估寄存器；
 3. 使用 `ExactReciprocal` 对特征值执行受控倒数旋转；
-4. 逆向执行相位估计，复原评估寄存器；
+4. 用相同的 QFT 近似度执行逆相位估计。采用精确 QFT 且本征相位落在网格上时，评估寄存器回到零态；
 5. 测量系统寄存器和辅助量子比特，并在辅助位为 `1` 的样本上归一化系统分布。
 
-默认组件是 `AmplitudeEncoding`、`PhaseEstimationCircuit` 和 `ExactReciprocal`。
-`HHLComponents` 允许注入这些组件的兼容子类；`HHL.build_circuit()` 只构建未测量线路，
-`HHL.run()` 通过注入的 `Sampler` 批量执行请求。
+默认组件是 `AmplitudeEncoding`、`PhaseEstimationCircuit` 和 `ExactReciprocal`。提供经典向量时，由注册的制备类编码；直接提供 `StatePreparation` 时，使用该组件制备右端态。`HHLComponents` 登记组件类：`state_preparation` 必须是构造时接受右端向量的
+`StatePreparation` 子类，`phase_estimation` 和 `eigenvalue_inversion` 分别登记相位估计与倒数旋转类。
+问题已提供制备组件时，直接使用该组件。
 
 ## 使用示例
 
 ```python
 import numpy as np
 
-from cqlib_algorithms import HHL, HHLRequest, LinearSystemProblem
-from cqlib_algorithms.operators import StatevectorSampler
+from cqlib_algorithms import HHL, LinearSystemProblem
+from cqlib_algorithms.operators import StatevectorSampler, UniformSuperposition
 
-operator = np.diag(np.array([1.0, 0.5], dtype=np.complex128))
-problem = LinearSystemProblem(operator=operator, rhs=[1.0, 1.0])
-request = HHLRequest(
-    problem=problem,
-    num_evaluation_qubits=4,
-    scaling=2.0**-4,
-    shots=8192,
-    bound=2.0,
-    seed=7,
+system = LinearSystemProblem(np.diag([1.0, 2.0]), rhs=UniformSuperposition(1))
+solver = HHL(StatevectorSampler())
+solution = solver.run(
+    system, num_evaluation_qubits=2, scaling=0.25, shots=8192, bound=4.0, seed=7
 )
-
-result = HHL(StatevectorSampler()).run([request])[0]
-print(result.success_probability)
-print(dict(result.solution_probabilities))
+print(solution.success_probability)
+print(dict(solution.solution_probabilities))
 ```
 
-上例的归一化经典解满足 <img src="../../assets/formulas/inline/inline-2c5af535b8de42e4.svg" alt="A^{-1}b\propto(1,2)" style="vertical-align: -4.000pt;">，因此理想计算基概率为
-`{0: 0.2, 1: 0.8}`；有限 shots 的结果会在该分布附近波动。
+这里 `A = diag(1, 2)`，右端态为均匀叠加，解态的两个振幅之比为 2∶1。因此理想条件概率为 `{0: 0.8, 1: 0.2}`，辅助位成功率为 `5/8`；有限采样会产生波动。批量求解仍可调用 `solver.run([HHLRequest(...), ...])`，多个系统按输入顺序一次提交给采样器。
 
 ## 输入与结果
 
 | 接口 | 作用 |
 | --- | --- |
-| `LinearSystemProblem(operator, rhs)` | 保存 <img src="../../assets/formulas/inline/inline-559aead08264d579.svg" alt="A" style="vertical-align: -0.000pt;"> 与 <img src="../../assets/formulas/inline/inline-3e23e8160039594a.svg" alt="b" style="vertical-align: -1.000pt;"> 的独立快照；`operator` 接受 `numpy.ndarray` 或 `Hamiltonian`，`rhs` 接受复向量或静态酉制备线路 |
-| `HHLRequest` | 指定评估寄存器宽度、倒数缩放、shots、QFT 近似度、谱上界和随机种子 |
+| `LinearSystemProblem(operator, rhs)` | 保存 <img src="../../assets/formulas/inline/inline-559aead08264d579.svg" alt="A" style="vertical-align: -0.000pt;"> 与 <img src="../../assets/formulas/inline/inline-3e23e8160039594a.svg" alt="b" style="vertical-align: -1.000pt;"> 的独立快照；`operator` 接受 `numpy.ndarray` 或 `Hamiltonian`，`rhs` 接受复向量或 `StatePreparation` 组件 |
+| `HHLRequest` | 为批量执行指定评估寄存器宽度、倒数缩放、shots、QFT 近似度、谱上界和随机种子 |
+| `HHL.build_circuit()` | 按给定问题、组件和精度设置构造完整的未测量线路，供检查或后续组合 |
 | `HHLComponents` | 注册状态制备、相位估计和倒数旋转的组件类 |
 | `HHLResult` | 返回后选择成功率、条件系统分布、实际谱上界、缩放参数和寄存器宽度 |
 

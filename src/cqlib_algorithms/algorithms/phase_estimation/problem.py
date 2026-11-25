@@ -14,17 +14,20 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from cqlib import Circuit
 
 from ..._utils.phase_estimation import (
+    snapshot_phase_preparation,
     snapshot_static_unitary_circuit,
     validate_static_unitary_circuit,
 )
+from ...operators.state_preparation import UserCircuitPreparation
+from ...protocols.state_preparation import StatePreparation
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, init=False)
 class PhaseEstimationProblem:
     """A unitary and input-state preparation for phase estimation.
 
@@ -34,31 +37,41 @@ class PhaseEstimationProblem:
     classically fed-forward rounds execute as separate circuits.
 
     Args:
-        unitary: Fully bound static unitary whose eigenphase is estimated.
-        state_preparation: Fully bound circuit preparing the system state.
+        unitary: Fully bound static unitary circuit with its absolute global phase.
+            All target qubits, including any ancillas, belong to the estimated unitary.
+        state_preparation: Fully bound StatePreparation for the system register,
+            built once with prefix ``"state_preparation"``. Both inputs are snapshotted.
+            The stored preparation remains a component; ``preparation_circuit`` exposes
+            its execution snapshot and must remain unchanged.
 
     Raises:
-        TypeError: If an input is not a Circuit.
+        TypeError: If either input has an unsupported type.
         ValueError: If the circuits are invalid, parameterized, or incompatible.
     """
 
     unitary: Circuit
-    state_preparation: Circuit
+    state_preparation: StatePreparation
+    _preparation_circuit: Circuit = field(init=False, repr=False)
 
     __hash__ = None  # type: ignore[assignment]
 
-    def __post_init__(self) -> None:
-        unitary = snapshot_static_unitary_circuit(self.unitary, "unitary")
-        state_preparation = snapshot_static_unitary_circuit(
-            self.state_preparation,
-            "state_preparation",
-        )
-        if unitary.num_qubits != state_preparation.num_qubits:
+    def __init__(self, unitary: Circuit, state_preparation: StatePreparation) -> None:
+        unitary = snapshot_static_unitary_circuit(unitary, "unitary")
+        preparation = snapshot_phase_preparation(state_preparation)
+        if unitary.num_qubits != preparation.num_qubits:
             raise ValueError(
                 "unitary and state_preparation must have the same qubit count"
             )
         object.__setattr__(self, "unitary", unitary)
-        object.__setattr__(self, "state_preparation", state_preparation)
+        object.__setattr__(
+            self, "state_preparation", UserCircuitPreparation(preparation)
+        )
+        object.__setattr__(self, "_preparation_circuit", preparation)
+
+    @property
+    def preparation_circuit(self) -> Circuit:
+        """Return the stored preparation snapshot, which must remain unchanged."""
+        return self._preparation_circuit
 
     @property
     def num_qubits(self) -> int:
@@ -69,10 +82,10 @@ class PhaseEstimationProblem:
         """Revalidate the shallowly frozen problem before execution."""
         validate_static_unitary_circuit(self.unitary, "unitary")
         validate_static_unitary_circuit(
-            self.state_preparation,
+            self.preparation_circuit,
             "state_preparation",
         )
-        if self.unitary.num_qubits != self.state_preparation.num_qubits:
+        if self.unitary.num_qubits != self.preparation_circuit.num_qubits:
             raise ValueError(
                 "unitary and state_preparation must have the same qubit count"
             )

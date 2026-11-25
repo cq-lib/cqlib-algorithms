@@ -26,6 +26,8 @@ import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
 from ..._utils.numeric import copy_finite_real_array, validate_positive_integer
+from ...operators.quantum_kernel import FidelityQuantumKernel
+from ...protocols.quantum_kernel import QuantumKernel
 from ...protocols.scalar_minimizer import ScalarMinimizer, ScalarMinimizerResult
 from ._validation import _real_hyperparameter
 
@@ -149,11 +151,31 @@ def minimize(
     )
 
 
-def gram(values: ArrayLike, size: int) -> NDArray[np.float64]:
-    matrix = copy_finite_real_array(values, "kernel matrix", 2)
-    if matrix.shape != (size, size) or not np.array_equal(matrix, matrix.T):
-        raise ValueError("kernel must return a symmetric square training matrix")
-    if np.any(matrix < 0.0) or np.any(matrix > 1.0):
+def evaluate_kernel_matrix(
+    kernel: QuantumKernel,
+    data: NDArray[np.float64],
+    training: NDArray[np.float64] | None = None,
+) -> NDArray[np.float64]:
+    """Evaluate a Gram or cross-kernel matrix on independent input arrays."""
+    if training is None:
+        matrix = copy_finite_real_array(
+            kernel.evaluate(data.copy()), "kernel matrix", 2
+        )
+        if matrix.shape != (len(data), len(data)) or not np.array_equal(
+            matrix, matrix.T
+        ):
+            raise ValueError("kernel must return a symmetric square training matrix")
+    else:
+        matrix = copy_finite_real_array(
+            kernel.evaluate(data.copy(), training.copy()), "prediction kernel", 2
+        )
+        if matrix.shape != (len(data), len(training)):
+            raise ValueError(
+                "kernel must return a rectangular prediction matrix of the expected shape"
+            )
+    if isinstance(kernel, FidelityQuantumKernel) and (
+        np.any(matrix < 0.0) or np.any(matrix > 1.0)
+    ):
         raise ValueError("kernel fidelities must lie within [0, 1]")
     return matrix
 

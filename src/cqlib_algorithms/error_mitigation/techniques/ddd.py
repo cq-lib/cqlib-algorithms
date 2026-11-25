@@ -41,7 +41,7 @@ References
 
 from __future__ import annotations
 
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass
 
 from cqlib import Circuit
@@ -49,7 +49,8 @@ from cqlib.circuit import ValueOperation
 from cqlib.qis import Hamiltonian, PauliString
 
 from ...protocols import Estimator, EstimatorRequest, EstimatorResult, spawn_seeds
-from .._circuits import rebuild, splice
+from ...protocols.state_preparation import StatePreparation
+from .._circuits import bind_request_circuit, build_estimator_request, rebuild, splice
 from ..core import QemExecutor
 from ._ddd_rules import DDDRule
 
@@ -158,7 +159,7 @@ def combine_results(results: Sequence[EstimatorResult], /) -> float:
 
 
 def execute_with_ddd(
-    circuit: Circuit,
+    circuit: StatePreparation | Circuit,
     executor: QemExecutor,
     observable: Hamiltonian | PauliString,
     /,
@@ -166,18 +167,16 @@ def execute_with_ddd(
     rule: DDDRule,
     shots: int | None = None,
     seed: int | None = None,
+    parameter_bindings: Mapping[str, float] | None = None,
+    prefix: str = "qem",
 ) -> float:
     r"""Estimate one observable on ``circuit`` with dynamical decoupling.
 
-    This is the immediate form of :func:`ddd_executor`::
-
-        execute_with_ddd(c, ex, obs, **params)
-        == ddd_executor(ex, **params).estimate(
-               [EstimatorRequest(c, obs)]
-           )[0].expectation
+    This is the immediate form of :func:`ddd_executor`. The same task
+    can be evaluated by calling ``run()`` on that executor.
 
     Args:
-        circuit: Circuit whose expectation value is to be mitigated.
+        circuit: State-preparation component or circuit to evaluate.
         executor: Execution backend supplying the expectation surface.
         observable: Observable to estimate. A bare Pauli string is interpreted as a
             Hamiltonian with unit coefficient.
@@ -187,17 +186,28 @@ def execute_with_ddd(
         seed: Seed of the shot-based estimation, or ``None`` for fresh randomness.
             The pulse layout is deterministic, so the seed only reaches the
             estimator backend.
+        parameter_bindings: Finite values covering exactly all active symbols.
+            Values are bound before circuit transformations; None requires no symbols.
+        prefix: Build prefix for a preparation component, defaulting to ``qem``;
+            existing Circuit symbols keep their names.
 
     Returns:
         Mitigated expectation value.
 
     Raises:
-        TypeError: If ``rule`` is not a :class:`DDDRule`.
-        ValueError: If the rule's pulses do not multiply to the identity up to a global
+        TypeError: If an input or configuration argument has the wrong type.
+        ValueError: If bindings are non-finite or do not cover active symbols exactly,
+            or if the rule's pulses do not multiply to the identity up to a global
             phase.
     """
     wrapped = ddd_executor(executor, rule=rule, shots=shots, seed=seed)
-    request = EstimatorRequest(circuit=circuit, observable=observable, shots=shots)
+    request = build_estimator_request(
+        circuit,
+        observable,
+        shots=shots,
+        parameter_bindings=parameter_bindings,
+        prefix=prefix,
+    )
     return wrapped.estimate([request])[0].expectation
 
 
@@ -286,9 +296,10 @@ class _DddEstimator(Estimator):
 
     def _mitigate(self, request: EstimatorRequest) -> EstimatorResult:
         r"""Estimate one request on its decoupled circuit."""
+        bound_circuit = bind_request_circuit(request)
         shots = self._shots if self._shots is not None else request.shots
         seed = self._seed if self._seed is not None else request.seed
-        circuits = construct_circuits(request.circuit, rule=self._rule)
+        circuits = construct_circuits(bound_circuit, rule=self._rule)
         seeds = spawn_seeds(seed, len(circuits))
         results = self._executor.estimate(
             [

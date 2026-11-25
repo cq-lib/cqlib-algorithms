@@ -18,19 +18,117 @@ import math
 
 import numpy as np
 import pytest
+from cqlib import Circuit
 from cqlib.device import ExecutionResult
 
 from cqlib_algorithms.algorithms import Grover, GroverRequest, GroverResult
+from cqlib_algorithms.operators.composite import GroverOperator
 from cqlib_algorithms.operators.oracle import (
     BooleanFunction,
     BooleanVectorFunction,
+    PhaseOracle,
 )
 from cqlib_algorithms.operators.sampler import StatevectorSampler
+from cqlib_algorithms.operators.state_preparation import (
+    UniformSuperposition,
+    UserCircuitPreparation,
+)
 from cqlib_algorithms.protocols import Sampler
 
 
 def _function(num_qubits: int, marked_states: tuple[int, ...]) -> BooleanFunction:
     return BooleanFunction.from_marked_states(num_qubits, marked_states)
+
+
+def test_standard_and_batch_search_pass_components_to_the_iteration(monkeypatch):
+    original_init = GroverOperator.__init__
+    inputs = []
+
+    def record_inputs(self, oracle, *, state_preparation=None):
+        inputs.append((oracle, state_preparation))
+        original_init(self, oracle, state_preparation=state_preparation)
+
+    monkeypatch.setattr(GroverOperator, "__init__", record_inputs)
+    function = _function(2, (2,))
+    circuit = Grover.build_circuit(function)
+    (result,) = Grover(StatevectorSampler()).run([GroverRequest(function, shots=32)])
+
+    assert abs(circuit.to_matrix()[2, 0]) ** 2 == pytest.approx(1.0)
+    assert result.counts == (0, 0, 32, 0)
+    assert len(inputs) == 2
+    for oracle, preparation in inputs:
+        assert isinstance(oracle, PhaseOracle)
+        assert oracle.function is function
+        assert isinstance(preparation, UniformSuperposition)
+
+
+def test_run_with_preconfigured_iteration_accepts_components():
+    iteration = GroverOperator(
+        oracle=PhaseOracle(_function(2, (2,))),
+        state_preparation=UniformSuperposition(2),
+    )
+    grover = Grover(iteration=iteration, sampler=StatevectorSampler())
+
+    result = grover.run(iterations=1, shots=256, seed=7)
+
+    assert result.counts == (0, 0, 256, 0)
+    assert result.marked_states == (2,)
+    assert result.iterations == 1
+    assert result.success_probability == 1.0
+
+
+def test_run_prepares_the_same_nonuniform_state_used_in_reflection():
+    preparation = Circuit(2)
+    # Only |00> and |10> have support, with initial marked probability 1/4.
+    preparation.ry(1, math.pi / 3)
+    iteration = GroverOperator(
+        oracle=PhaseOracle(_function(2, (2,))),
+        state_preparation=UserCircuitPreparation(preparation),
+    )
+    grover = Grover(iteration=iteration, sampler=StatevectorSampler())
+
+    result = grover.run(iterations=1, shots=64, seed=7)
+
+    assert result.counts == (0, 0, 64, 0)
+    assert grover.run(iterations=1, shots=64, seed=7) == result
+
+
+def test_run_uses_the_preconfigured_oracles_vector_output_mask():
+    function = BooleanVectorFunction.from_truth_table(
+        [(False, False), (False, False), (True, False), (True, True)]
+    )
+    iteration = GroverOperator(PhaseOracle(function, output_mask=3))
+
+    result = Grover(StatevectorSampler(), iteration=iteration).run(
+        iterations=1, shots=32, seed=7
+    )
+
+    assert result.marked_states == (2,)
+    assert result.counts == (0, 0, 32, 0)
+
+
+def test_preconfigured_search_requires_a_phase_oracle_predicate_and_full_reflection():
+    oracle = PhaseOracle(_function(2, (2,)))
+    sampler = StatevectorSampler()
+
+    with pytest.raises(ValueError, match="PhaseOracle that marks"):
+        Grover(sampler, iteration=GroverOperator(PhaseOracle(_function(2, ()))))
+    with pytest.raises(ValueError, match="reflect all search qubits"):
+        Grover(sampler, iteration=GroverOperator(oracle, reflection_qubits=(0,)))
+
+
+def test_preconfigured_search_requires_explicit_iterations_and_separate_batch_mode():
+    function = _function(2, (2,))
+    iteration = GroverOperator(PhaseOracle(function))
+    sampler = StatevectorSampler()
+    grover = Grover(sampler, iteration=iteration)
+
+    with pytest.raises(TypeError, match="requires iterations and shots"):
+        grover.run(shots=32)  # type: ignore[call-overload]
+    with pytest.raises(TypeError, match="batch requests cannot be combined"):
+        grover.run([GroverRequest(function, shots=32)])
+    with pytest.raises(TypeError, match="requires a preconfigured iteration"):
+        Grover(sampler).run(iterations=1, shots=32)
 
 
 def _hadamard_matrix(num_qubits: int) -> np.ndarray:

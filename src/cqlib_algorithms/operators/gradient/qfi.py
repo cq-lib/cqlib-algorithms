@@ -22,11 +22,13 @@ References
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import final
 
 import numpy as np
 
+from ...protocols.ansatz import Ansatz
 from ...protocols.gradient import GradientRequest
 from .qgt import QGTResult, StatevectorQGT
 
@@ -101,10 +103,34 @@ class StatevectorQFI:
 
     __slots__ = ()
 
-    def compute(self, request: GradientRequest) -> QFIResult:
-        """Return the QFI matrix of one estimator objective's parameters."""
-        if not isinstance(request, GradientRequest):
-            raise TypeError("request must be a GradientRequest")
-        result: QGTResult = StatevectorQGT().compute(request)
+    def compute(
+        self,
+        request: GradientRequest | Ansatz,
+        parameter_bindings: Mapping[str, float] | None = None,
+        *,
+        parameter_names: tuple[str, ...] | None = None,
+        prefix: str = "theta",
+    ) -> QFIResult:
+        """Return pure-state QFI from an ansatz or existing gradient request.
+
+        With a GradientRequest, use its stored bindings and parameter selection;
+        additional bindings or parameter names and a nondefault prefix are rejected.
+
+        Args:
+            request: Trainable component or existing gradient request.
+            parameter_bindings: Exact bindings for a component input.
+            parameter_names: Ordered subset; None uses active-symbol order.
+            prefix: Naming prefix used to build a component.
+
+        Returns:
+            Four times the real QGT metric in the selected parameter order.
+
+        Raises:
+            TypeError: If the component or request has the wrong type.
+            ValueError: If parameters, options, or circuit instructions are invalid.
+        """
+        result: QGTResult = StatevectorQGT().compute(
+            request, parameter_bindings, parameter_names=parameter_names, prefix=prefix
+        )
         qfi = 4.0 * result.metric
-        return QFIResult(tuple(request.parameter_names), qfi)
+        return QFIResult(result.parameter_names, qfi)

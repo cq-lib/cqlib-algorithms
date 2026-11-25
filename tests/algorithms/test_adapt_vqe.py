@@ -180,22 +180,24 @@ def test_commutator_gradient_matches_independent_dense_matrix_reference() -> Non
 
 
 @pytest.mark.reference
-def test_real_components_reach_one_qubit_ground_state() -> None:
-    result = AdaptVQE(
+@pytest.mark.parametrize("entry_point", ["run", "compute_minimum_eigenvalue"])
+def test_real_components_reach_one_qubit_ground_state(entry_point: str) -> None:
+    algorithm = AdaptVQE(
         StatevectorEstimator(),
         LBFGSBOptimizer(maxiter=100, gtol=1e-10),
-        [PauliString.from_str("Y")],
+        [PauliString.from_str("Z"), PauliString.from_str("Y")],
         initial_state=UniformSuperposition(1),
         gradient_threshold=1e-7,
         max_iterations=3,
-    ).compute_minimum_eigenvalue(PauliString.from_str("Z"))
+    )
+    result = getattr(algorithm, entry_point)(PauliString.from_str("Z"))
 
     dense_ground = float(np.linalg.eigvalsh(PauliString.from_str("Z").to_matrix())[0])
     state = result.optimal_circuit.to_matrix()[:, 0]
     assert isinstance(result, AdaptVQEResult)
     assert result.eigenvalue == pytest.approx(dense_ground, abs=1e-10)
     assert abs(state[1]) ** 2 == pytest.approx(1.0, abs=1e-10)
-    assert result.selected_operator_indices == (0,)
+    assert result.selected_operator_indices == (1,)
     assert result.termination is AdaptVQETermination.GRADIENT_CONVERGED
 
 
@@ -342,23 +344,24 @@ def test_inputs_are_snapshotted_and_not_mutated() -> None:
 
 
 def test_finite_shot_master_seed_reproduces_the_complete_request_stream() -> None:
-    def run(seed: int) -> tuple[list[int | None], AdaptVQEResult]:
+    def run(
+        seed: int, entry_point: str = "run"
+    ) -> tuple[list[int | None], AdaptVQEResult]:
         estimator = _SeedRecordingEstimator()
-        result = AdaptVQE(
+        algorithm = AdaptVQE(
             estimator,
             _EvaluatingOptimizer(),
             [PauliString.from_str("X")],
             gradient_threshold=0.1,
             max_iterations=2,
-        ).compute_minimum_eigenvalue(
-            PauliString.from_str("Z"),
-            shots=32,
-            seed=seed,
+        )
+        result = getattr(algorithm, entry_point)(
+            PauliString.from_str("Z"), shots=32, seed=seed
         )
         return estimator.seeds, result
 
     first_seeds, first = run(17)
-    repeated_seeds, repeated = run(17)
+    repeated_seeds, repeated = run(17, "compute_minimum_eigenvalue")
     other_seeds, other = run(18)
 
     assert first_seeds == repeated_seeds
@@ -367,6 +370,8 @@ def test_finite_shot_master_seed_reproduces_the_complete_request_stream() -> Non
     assert first.optimal_value == repeated.optimal_value
     assert first.gradient_norms == repeated.gradient_norms
     assert first.selected_operator_indices == repeated.selected_operator_indices == (0,)
+    assert first.termination == repeated.termination
+    assert first.eigenvalue_history == repeated.eigenvalue_history
     assert first.optimal_value != other.optimal_value
 
 

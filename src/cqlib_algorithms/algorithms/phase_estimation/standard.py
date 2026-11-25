@@ -25,7 +25,7 @@ import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import final
+from typing import final, overload
 
 from cqlib import Circuit
 
@@ -219,16 +219,74 @@ class PhaseEstimation:
         )
         circuit = Circuit(component.num_qubits)
         system_targets = circuit.qubits[num_evaluation_qubits:]
-        circuit.compose(problem.state_preparation, list(system_targets))
+        circuit.compose(problem.preparation_circuit, list(system_targets))
         circuit.compose(component.build_circuit(), circuit.qubits)
         return circuit
 
+    @overload
+    def run(
+        self,
+        problem: PhaseEstimationProblem,
+        *,
+        num_evaluation_qubits: int,
+        shots: int,
+        approximation_degree: int = 0,
+    ) -> PhaseEstimationResult: ...
+
+    @overload
     def run(
         self,
         requests: Sequence[PhaseEstimationRequest],
         /,
-    ) -> list[PhaseEstimationResult]:
-        """Execute a validated request batch with one Sampler call."""
+    ) -> list[PhaseEstimationResult]: ...
+
+    def run(
+        self,
+        problem: PhaseEstimationProblem | Sequence[PhaseEstimationRequest],
+        *,
+        num_evaluation_qubits: int | None = None,
+        shots: int | None = None,
+        approximation_degree: int | None = None,
+    ) -> PhaseEstimationResult | list[PhaseEstimationResult]:
+        """Estimate one phase distribution or sample an ordered batch in one call.
+
+        Args:
+            problem: Prepared problem or positional batch with per-request settings.
+            num_evaluation_qubits: Phase-register width for one problem.
+            shots: Number of measurements of the phase register.
+            approximation_degree: Small-angle inverse-QFT layers to omit.
+
+        Returns:
+            The sampled phase distribution and its mode, or a list in batch order.
+
+        Raises:
+            TypeError: If inputs or single/batch options are incompatible.
+            ValueError: If a problem, resource bound or sampler result is invalid.
+        """
+        if isinstance(problem, PhaseEstimationProblem):
+            if num_evaluation_qubits is None or shots is None:
+                raise TypeError(
+                    "a single problem requires num_evaluation_qubits and shots"
+                )
+            requests: Sequence[PhaseEstimationRequest] = (
+                PhaseEstimationRequest(
+                    problem,
+                    num_evaluation_qubits,
+                    shots,
+                    0 if approximation_degree is None else approximation_degree,
+                ),
+            )
+        else:
+            if (
+                num_evaluation_qubits is not None
+                or shots is not None
+                or approximation_degree is not None
+            ):
+                raise TypeError(
+                    "batch requests specify their own phase-estimation settings"
+                )
+            requests = problem
+
         sampler_requests: list[SamplerRequest] = []
         for request in requests:
             if not isinstance(request, PhaseEstimationRequest):
@@ -281,7 +339,7 @@ class PhaseEstimation:
                     num_unitary_queries=applications * request.shots,
                 )
             )
-        return results
+        return results[0] if isinstance(problem, PhaseEstimationProblem) else results
 
 
 __all__ = [

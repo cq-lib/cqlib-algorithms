@@ -1,7 +1,7 @@
 # 线路组合组件
 
 本文档说明 `cqlib_algorithms.operators.composite` 中由基础算子组合而成的复合
-算子。它们也可从 `cqlib_algorithms.operators` 导入；具体算子不从包顶层导出。
+算子。下文组件均可从 `cqlib_algorithms.operators` 导入。
 所有 `build_circuit()` 调用都返回新的 Cqlib `Circuit`，不执行采样、测量或后端
 任务。组件只负责可复用的线路组合；算法承诺、执行策略和经典后处理仍由算法层负责。
 
@@ -9,7 +9,7 @@
 
 `HadamardPhaseQuery(function, output_mask=None)` 构建未测量线路
 <img src="../../assets/formulas/inline/inline-678b057a76c6a024.svg" alt="H^{\otimes n}\rightarrow S_f\rightarrow H^{\otimes n}" style="vertical-align: -5.000pt;">。<img src="../../assets/formulas/inline/inline-292ad28eb29afab7.svg" alt="S_f" style="vertical-align: -5.000pt;"> 完全复用
-`PhaseOracle`，因此单输出函数和多输出
+`PhaseOracle`。构造时可直接传入该组件，也可传入布尔函数并由库内构造 Oracle；预配置 Oracle 的输出掩码须与显式 `output_mask` 一致。因此单输出函数和多输出
 `output_mask` 奇偶归约的类型、端序与边界语义都与基础 Oracle 一致。该组件不判断
 函数是否满足常/平衡或线性承诺，也不追加测量；Deutsch-Jozsa、
 Bernstein-Vazirani 及后续同类查询算法可在其上实现各自的采样与经典判定。
@@ -21,12 +21,17 @@ Bernstein-Vazirani 及后续同类查询算法可在其上实现各自的采样�
 使用基础算子 `BitFlipOracle`。
 
 ```python
-from cqlib_algorithms.operators import HadamardPhaseQuery
+from cqlib_algorithms.operators import HadamardPhaseQuery, PhaseOracle
 from cqlib_algorithms.operators.oracle import BooleanFunction
 
 function = BooleanFunction.from_truth_table([False, True, True, False])
-query = HadamardPhaseQuery(function).build_circuit()
+query = HadamardPhaseQuery(PhaseOracle(function))
+circuit = query.build_circuit()
 ```
+
+该 `query` 可直接传给 `DeutschJozsa(sampler).run(query, shots=16)` 或
+`BernsteinVazirani(sampler).run(query, shots=16)`。调用方需按所选算法满足函数承诺。
+替换的 Oracle 应实现同一个函数及输出掩码，生成完全绑定的同宽静态酉线路。
 
 ## 隐藏线性函数电路
 
@@ -77,13 +82,14 @@ circuit = query.build_circuit()
 顺序为 Oracle、<img src="../../assets/formulas/inline/inline-265dc6d72a56872a.svg" alt="A^\dagger" style="vertical-align: -0.000pt;">、<img src="../../assets/formulas/inline/inline-eb79126375827d63.svg" alt="S_{0,R}" style="vertical-align: -5.000pt;">、<img src="../../assets/formulas/inline/inline-559aead08264d579.svg" alt="A" style="vertical-align: -0.000pt;">。部分文献写作 <img src="../../assets/formulas/inline/inline-3bf919dc0076368c.svg" alt="-Q" style="vertical-align: -3.000pt;">，两者只差一个
 全局相位；本组件采用不带前置负号的约定，并保证矩阵意义上的精确全局相位。
 
-`oracle` 必须是作用在搜索寄存器上的合法、可静态求逆的 Cqlib `Circuit`，量子比特
-<img src="../../assets/formulas/inline/inline-b8bbb3a7ebd17a45.svg" alt="q_0" style="vertical-align: -3.000pt;"> 为最低有效位。典型输入是 `PhaseOracle(function).build_circuit()`。振幅放大
+`oracle` 接收 `PhaseOracle` 或 `BitPatternPhaseOracle` 组件。
+当搜索条件只涉及部分位时，按位模式生成迭代线路即可避免枚举自由位的赋值。显式读取 `marked_states` 会列出全部满足条件的索引。量子比特
+<img src="../../assets/formulas/inline/inline-b8bbb3a7ebd17a45.svg" alt="q_0" style="vertical-align: -3.000pt;"> 为最低有效位。振幅放大
 假设酉 Oracle，因此包含测量、重置、动态控制等不可静态求逆操作的线路在构造时被
 拒绝。非连续源量子比特 ID 按 `Circuit.qubits` 的位置映射到 <img src="../../assets/formulas/inline/inline-80df05cab2d1ce42.svg" alt="0,\ldots,n-1" style="vertical-align: -3.000pt;">。
 
-构造器仅验证输入是合法且可静态求逆的线路。它不会通过指数规模的矩阵
-分析证明线路必然是对角相位 Oracle；输入是否满足相位 Oracle 语义由调用方负责。
+构造器校验组件的寄存器宽度及其线路的静态可逆性。自定义 Oracle 可继承相应组件类，
+生成线路须保持其声明的相位标记语义。
 
 不给出 `state_preparation` 时，<img src="../../assets/formulas/inline/inline-559aead08264d579.svg" alt="A" style="vertical-align: -0.000pt;"> 只在 `reflection_qubits` 上作用 Hadamard 门。
 当 <img src="../../assets/formulas/inline/inline-8c2574892063f995.svg" alt="R" style="vertical-align: -1.000pt;"> 是全部量子比特时，<img src="../../assets/formulas/inline/inline-6b18e13177ca9362.svg" alt="P_{0,R}=|0\ldots0\rangle\langle0\ldots0|" style="vertical-align: -5.000pt;">，<img src="../../assets/formulas/inline/inline-4044c8a85cc77c30.svg" alt="D_R" style="vertical-align: -3.000pt;"> 就是
@@ -91,7 +97,7 @@ circuit = query.build_circuit()
 比特各计算基分块内进行的部分扩散，其 <img src="../../assets/formulas/inline/inline-c59dc4e44ff99288.svg" alt="+1" style="vertical-align: -2.000pt;"> 特征子空间维数为
 <img src="../../assets/formulas/inline/inline-ea1e801eda3ecc49.svg" alt="2^{n-|R|}" style="vertical-align: -0.000pt;">，不是单态反射。
 
-给出 `state_preparation` 时，<img src="../../assets/formulas/inline/inline-559aead08264d579.svg" alt="A" style="vertical-align: -0.000pt;"> 是作用于整个搜索寄存器的自定义线路。
+给出 `state_preparation` 时，可传入 `StatePreparation` 组件，生成作用于整个搜索寄存器的 <img src="../../assets/formulas/inline/inline-559aead08264d579.svg" alt="A" style="vertical-align: -0.000pt;">。
 仅当 <img src="../../assets/formulas/inline/inline-8c2574892063f995.svg" alt="R" style="vertical-align: -1.000pt;"> 包含所有量子比特时，<img src="../../assets/formulas/inline/inline-4044c8a85cc77c30.svg" alt="D_R" style="vertical-align: -3.000pt;"> 才是关于 <img src="../../assets/formulas/inline/inline-3b7df70cc118381d.svg" alt="A|0\ldots0\rangle" style="vertical-align: -4.000pt;"> 的单态反射
 <img src="../../assets/formulas/inline/inline-280ee76a18e3b5fd.svg" alt="2A|0\ldots0\rangle\langle0\ldots0|A^\dagger-I" style="vertical-align: -4.000pt;">。当 <img src="../../assets/formulas/inline/inline-8c2574892063f995.svg" alt="R" style="vertical-align: -1.000pt;"> 是真子集时，<img src="../../assets/formulas/inline/inline-4044c8a85cc77c30.svg" alt="D_R" style="vertical-align: -3.000pt;"> 是关于
 <img src="../../assets/formulas/inline/inline-f193dcec98af8966.svg" alt="A\operatorname{range}(P_{0,R})" style="vertical-align: -5.000pt;"> 的子空间反射。`state_preparation` 必须可静态求逆且
@@ -113,7 +119,7 @@ from cqlib_algorithms.operators.oracle import BooleanFunction, PhaseOracle
 function = BooleanFunction.from_truth_table(
     [False] * 7 + [True]  # 在 3 量子比特上标记 |111>
 )
-oracle = PhaseOracle(function).build_circuit()
+oracle = PhaseOracle(function)
 
 # 标准 Grover 迭代：Oracle + 全扩散
 iteration = GroverOperator(oracle).build_circuit()
@@ -124,6 +130,10 @@ partial = GroverOperator(oracle, reflection_qubits=(0, 2)).build_circuit()
 
 更多反射与 Oracle 的数学约定见
 [布尔 Oracle 与反射算子](oracle.md)。
+
+## 相位估计线路
+
+`PhaseEstimationCircuit(unitary, m)` 将受控酉幂和逆 QFT 组合为可复用的相位估计线路。标准 QPE 在系统寄存器接入初态，HHL 则在特征值倒数旋转两侧分别使用正向和逆向组件。酉输入类型、位序及可运行示例见[相位估计](../algorithms/phase-estimation.md)。
 
 ## QSP 与 QSVT
 

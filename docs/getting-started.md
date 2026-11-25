@@ -109,19 +109,16 @@ hamiltonian = Hamiltonian.from_list(
 
 
 def solve(ansatz):
-    circuit = ansatz.build_circuit("theta")
+    # 本例的两个拟设按 theta_0、theta_1、… 为所有旋转角命名。
     initial_point = {
-        name: 0.1 * (index + 1) for index, name in enumerate(circuit.used_symbols)
+        f"theta_{i}": 0.1 * (i + 1) for i in range(ansatz.num_parameters())
     }
     algorithm = VQE(
         StatevectorEstimator(),
         ansatz,
         COBYLAOptimizer(maxiter=300),
     )
-    return algorithm.compute_minimum_eigenvalue(
-        hamiltonian,
-        initial_point,
-    )
+    return algorithm.run(hamiltonian, initial_point)
 
 
 real_result = solve(RealAmplitudesAnsatz(2, reps=1))

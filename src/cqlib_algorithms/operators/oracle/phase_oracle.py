@@ -15,12 +15,93 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Mapping, Sequence
 
 from cqlib import Circuit
 from cqlib.circuit.gates import StandardGate
 
+from ..._utils.numeric import validate_positive_integer
 from .boolean_function import BooleanFunction
 from .boolean_vector_function import BooleanVectorFunction
+
+
+def _mark_bit_pattern(
+    circuit: Circuit, positions: Sequence[int], zeros: Sequence[int]
+) -> None:
+    """Negate the basis states matching the selected bits."""
+    if not positions:
+        circuit.set_global_phase(math.pi)
+        return
+    for qubit in zeros:
+        circuit.x(qubit)
+    if len(positions) == 1:
+        circuit.z(positions[0])
+    else:
+        circuit.append_mc_gate(
+            StandardGate.Z.control(len(positions) - 1), list(positions)
+        )
+    for qubit in reversed(zeros):
+        circuit.x(qubit)
+
+
+class BitPatternPhaseOracle:
+    """Flip the phase when all specified qubits match their assigned bits.
+
+    Args:
+        num_qubits: Positive register width.
+        bits: Qubit positions mapped to zero or one. Other qubits are free.
+            An empty mapping negates every basis state.
+
+    Raises:
+        TypeError: If the width, mapping, positions, or bits have invalid types.
+        ValueError: If a position is out of range or a value is nonbinary.
+    """
+
+    __slots__ = ("_num_qubits", "_positions", "_zeros")
+
+    def __init__(self, num_qubits: int, bits: Mapping[int, int | bool]) -> None:
+        validate_positive_integer(num_qubits, "num_qubits")
+        if not isinstance(bits, Mapping):
+            raise TypeError("bits must be a mapping")
+        positions = []
+        zeros = []
+        for position, bit in bits.items():
+            if isinstance(position, bool) or not isinstance(position, int):
+                raise TypeError("bit positions must be integers")
+            if not 0 <= position < num_qubits:
+                raise ValueError("bit position is outside the register")
+            if not isinstance(bit, int):
+                raise TypeError("bit values must be binary integers or bool")
+            if bit not in (0, 1):
+                raise ValueError("bit values must be zero or one")
+            positions.append(position)
+            if bit == 0:
+                zeros.append(position)
+        self._num_qubits = num_qubits
+        self._positions = tuple(positions)
+        self._zeros = tuple(zeros)
+
+    @property
+    def num_qubits(self) -> int:
+        """Return the full register width."""
+        return self._num_qubits
+
+    @property
+    def marked_states(self) -> tuple[int, ...]:
+        """Enumerate marked indices on demand, with one entry per free-bit assignment."""
+        fixed = set(self._positions)
+        ones = fixed.difference(self._zeros)
+        states = [sum(1 << position for position in ones)]
+        for position in range(self.num_qubits):
+            if position not in fixed:
+                states += [state | (1 << position) for state in states]
+        return tuple(states)
+
+    def build_circuit(self) -> Circuit:
+        """Build the phase mark using gates on the specified bits only."""
+        circuit = Circuit(self.num_qubits)
+        _mark_bit_pattern(circuit, self._positions, self._zeros)
+        return circuit
 
 
 class PhaseOracle:
@@ -87,24 +168,32 @@ class PhaseOracle:
         """Return the selected output-bit mask."""
         return self._output_mask
 
+    @property
+    def num_qubits(self) -> int:
+        """Return the number of input variables."""
+        return self.function.num_variables
+
+    @property
+    def marked_states(self) -> tuple[int, ...]:
+        """Return the ordered basis indices negated by the selected predicate."""
+        if isinstance(self.function, BooleanFunction):
+            return self.function.marked_states
+        return tuple(
+            state
+            for state, row in enumerate(self.function.truth_table)
+            if sum(
+                int(value)
+                for output, value in enumerate(row)
+                if (self.output_mask >> output) & 1
+            )
+            % 2
+        )
+
     def build_circuit(self) -> Circuit:
         """Build and return a fresh phase-oracle circuit."""
         num_qubits = self.function.num_variables
         circuit = Circuit(num_qubits)
-        if isinstance(self.function, BooleanFunction):
-            marked_states = self.function.marked_states
-        else:
-            marked_states = tuple(
-                state
-                for state, row in enumerate(self.function.truth_table)
-                if sum(
-                    int(value)
-                    for output, value in enumerate(row)
-                    if (self.output_mask >> output) & 1
-                )
-                % 2
-            )
-
+        marked_states = self.marked_states
         if len(marked_states) == 1 << num_qubits:
             circuit.set_global_phase(math.pi)
             return circuit
@@ -113,16 +202,6 @@ class PhaseOracle:
             zero_qubits = [
                 qubit for qubit in range(num_qubits) if not (state >> qubit) & 1
             ]
-            for qubit in zero_qubits:
-                circuit.x(qubit)
-            if num_qubits == 1:
-                circuit.z(0)
-            else:
-                circuit.append_mc_gate(
-                    StandardGate.Z.control(num_qubits - 1),
-                    list(range(num_qubits)),
-                )
-            for qubit in reversed(zero_qubits):
-                circuit.x(qubit)
+            _mark_bit_pattern(circuit, range(num_qubits), zero_qubits)
 
         return circuit

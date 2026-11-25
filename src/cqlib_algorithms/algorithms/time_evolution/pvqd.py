@@ -518,7 +518,7 @@ class PVQD:
         """The ansatz parameter-name prefix."""
         return self._prefix
 
-    def evolve(
+    def run(
         self,
         hamiltonian: Hamiltonian | PauliString,
         initial_parameters: Mapping[str, float],
@@ -530,10 +530,10 @@ class PVQD:
         observable_shots: int | None = None,
         seed: int | None = None,
     ) -> PVQDResult:
-        """Evolve a time-independent Hamiltonian over equal positive steps.
+        """Project each real-time evolution step back onto the ansatz.
 
         Args:
-            hamiltonian: Finite nonempty Hermitian evolution generator.
+            hamiltonian: Finite nonempty time-independent Hermitian generator.
             initial_parameters: Exact bindings for active ansatz symbols.
             time: Positive total evolution time.
             num_timesteps: Positive number of equal projection steps.
@@ -544,7 +544,8 @@ class PVQD:
             seed: Optional master seed for all finite-shot requests.
 
         Returns:
-            The complete variational trajectory and projection diagnostics.
+            Time and parameter histories, the final bound circuit, per-step
+            fidelities and optimizer results, and requested observables.
 
         Raises:
             TypeError: If an input or component response has the wrong type.
@@ -678,6 +679,30 @@ class PVQD:
             tuple(optimizer_results),
             current_circuit,
             observables,
+        )
+
+    def evolve(
+        self,
+        hamiltonian: Hamiltonian | PauliString,
+        initial_parameters: Mapping[str, float],
+        time: float,
+        *,
+        num_timesteps: int,
+        fidelity_shots: int,
+        auxiliary_operators: Mapping[str, Hamiltonian | PauliString] | None = None,
+        observable_shots: int | None = None,
+        seed: int | None = None,
+    ) -> PVQDResult:
+        """Evolve with the same inputs and trajectory semantics as :meth:`run`."""
+        return self.run(
+            hamiltonian,
+            initial_parameters,
+            time,
+            num_timesteps=num_timesteps,
+            fidelity_shots=fidelity_shots,
+            auxiliary_operators=auxiliary_operators,
+            observable_shots=observable_shots,
+            seed=seed,
         )
 
 

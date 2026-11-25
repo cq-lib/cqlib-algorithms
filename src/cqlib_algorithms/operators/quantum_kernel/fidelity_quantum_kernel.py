@@ -37,8 +37,10 @@ from ..._utils.circuit import (
     validate_static_unitary_structure,
 )
 from ..._utils.numeric import copy_finite_real_array, validate_positive_integer
+from ..._utils.state_preparation import build_state_preparation_circuit
 from ...protocols.quantum_kernel import QuantumKernel
 from ...protocols.sampler import Sampler
+from ...protocols.state_preparation import StatePreparation
 from ..state_fidelity import CircuitFidelityRequest, ComputeUncomputeFidelity
 from ..state_preparation import UserCircuitPreparation
 
@@ -47,6 +49,7 @@ class FidelityQuantumKernel(QuantumKernel):
     """Evaluate ``K(x,y)=|<phi(x)|phi(y)>|**2`` using a fixed feature circuit.
 
     The nonempty ordered ``input_parameters`` defines data-column bindings.
+    A feature-map component is built once with prefix ``"x"``.
     Fixed ``parameter_bindings`` must cover exactly the remaining active
     symbols. Circuits are copied and normalized by qubit insertion position.
     Both execution modes require static, invertible, unitary circuits.
@@ -75,7 +78,7 @@ class FidelityQuantumKernel(QuantumKernel):
 
     def __init__(
         self,
-        feature_map: Circuit,
+        feature_map: StatePreparation,
         input_parameters: Sequence[str],
         *,
         parameter_bindings: Mapping[str, float] | None = None,
@@ -84,6 +87,22 @@ class FidelityQuantumKernel(QuantumKernel):
         max_statevector_qubits: int = 20,
         max_statevector_bytes: int = 268_435_456,
     ) -> None:
+        """Configure a fixed kernel from a state-preparation feature map.
+
+        Args:
+            feature_map: StatePreparation built once with prefix ``"x"`` and copied.
+            input_parameters: Nonempty ordered symbol names bound to data columns.
+            parameter_bindings: Fixed finite values for all remaining active symbols.
+            sampler: Optional Sampler for compute-uncompute evaluation.
+            shots: Positive samples per pair, required together with ``sampler``.
+            max_statevector_qubits: Maximum register width for exact evaluation.
+            max_statevector_bytes: Retained amplitude-storage budget for exact evaluation.
+
+        Raises:
+            TypeError: If the component or configuration types are invalid.
+            ValueError: If parameter roles, widths, static invertibility, execution
+                options, or exact-evaluation budgets are invalid.
+        """
         if isinstance(input_parameters, (str, bytes)) or not isinstance(
             input_parameters, Sequence
         ):
@@ -113,7 +132,8 @@ class FidelityQuantumKernel(QuantumKernel):
             fixed[name] = numeric
         if set(names) & set(fixed):
             raise ValueError("input_parameters and parameter_bindings must be disjoint")
-        normalized = UserCircuitPreparation(feature_map).build_circuit("")
+        source = build_state_preparation_circuit(feature_map, prefix="x")
+        normalized = UserCircuitPreparation(source).build_circuit("")
         if set(names) | set(fixed) != set(normalized.used_symbols):
             raise ValueError(
                 "input and fixed names must cover exactly the active symbols"

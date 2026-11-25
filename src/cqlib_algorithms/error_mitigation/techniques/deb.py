@@ -44,7 +44,7 @@ References
 from __future__ import annotations
 
 from collections import Counter
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 
 import numpy as np
 from cqlib import Circuit
@@ -59,7 +59,8 @@ from ...protocols import (
     SamplerRequest,
     spawn_seeds,
 )
-from .._circuits import rebuild
+from ...protocols.state_preparation import StatePreparation
+from .._circuits import bind_request_circuit, build_estimator_request, rebuild
 from ..core import QemExecutor
 from .rem import _validate_z_diagonal
 
@@ -194,7 +195,7 @@ def combine_results(
 
 
 def execute_with_deb(
-    circuit: Circuit,
+    circuit: StatePreparation | Circuit,
     executor: QemExecutor,
     observable: Hamiltonian | PauliString,
     /,
@@ -203,35 +204,36 @@ def execute_with_deb(
     shots: int,
     num_variants: int,
     seed: int | None = None,
+    parameter_bindings: Mapping[str, float] | None = None,
+    prefix: str = "qem",
 ) -> float:
     r"""Estimate one observable on ``circuit`` with qubit-label symmetrization.
 
-    This is the immediate form of :func:`deb_executor`::
-
-        execute_with_deb(c, ex, obs, mode=m, shots=s, num_variants=n)
-        == deb_executor(ex, mode=m, shots=s, num_variants=n).estimate(
-               [EstimatorRequest(c, obs, shots=s)]
-           )[0].expectation
+    This is the immediate form of :func:`deb_executor`. The same task
+    can be evaluated by calling ``run()`` on that executor.
 
     Args:
-        circuit: Circuit whose expectation value is to be mitigated.
+        circuit: State-preparation component or circuit to evaluate.
         executor: Execution backend supplying the sampling surface.
         observable: Observable to estimate. It must be diagonal in the :math:`Z` basis.
         mode: Aggregation to apply: ``"averaging"`` or ``"sharpening"``.
         shots: Shot count for every permuted circuit.
         num_variants: Number of independent permutations to aggregate over.
         seed: Seed of the permutation draw, or ``None`` for a fresh draw.
+        parameter_bindings: Finite values covering exactly all active symbols.
+            Values are bound before circuit transformations; None requires no symbols.
+        prefix: Build prefix for a preparation component, defaulting to ``qem``;
+            existing Circuit symbols keep their names.
 
     Returns:
         Mitigated expectation value.
 
     Raises:
-        TypeError: If ``mode`` is not a string, if ``shots`` or ``num_variants`` is not an
-            integer, or if ``seed`` is neither an integer nor ``None``.
-        ValueError: If ``mode`` is not a supported aggregation, if ``shots`` or
+        TypeError: If an input or configuration argument has the wrong type.
+        ValueError: If bindings are non-finite or do not cover active symbols exactly,
+            or if ``mode`` is not a supported aggregation, if ``shots`` or
             ``num_variants`` is below one, or if ``observable`` is not diagonal in
             the :math:`Z` basis.
-
     """
     wrapped = deb_executor(
         executor,
@@ -240,7 +242,13 @@ def execute_with_deb(
         num_variants=num_variants,
         seed=seed,
     )
-    request = EstimatorRequest(circuit=circuit, observable=observable, shots=shots)
+    request = build_estimator_request(
+        circuit,
+        observable,
+        shots=shots,
+        parameter_bindings=parameter_bindings,
+        prefix=prefix,
+    )
     return wrapped.estimate([request])[0].expectation
 
 
@@ -343,6 +351,7 @@ class _DebEstimator(Estimator):
 
     def _mitigate(self, request: EstimatorRequest) -> EstimatorResult:
         r"""Sample the permuted circuits and aggregate their counts."""
+        bound_circuit = bind_request_circuit(request)
         # Reject a non-diagonal observable before spending any shots on it.
         _validate_z_diagonal(request.observable)
         seed = self._seed if self._seed is not None else request.seed
@@ -350,7 +359,7 @@ class _DebEstimator(Estimator):
         # are needed downstream; the matching permuted observables are left to
         # the direct two-stage callers of construct_circuits.
         circuits, _ = construct_circuits(
-            request.circuit,
+            bound_circuit,
             request.observable,
             num_variants=self._num_variants,
             seed=seed,

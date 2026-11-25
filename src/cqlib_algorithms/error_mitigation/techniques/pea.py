@@ -55,7 +55,7 @@ References
 from __future__ import annotations
 
 import math
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from numbers import Real
 
 import numpy as np
@@ -63,7 +63,8 @@ from cqlib import Circuit
 from cqlib.qis import Hamiltonian, PauliString
 
 from ...protocols import Estimator, EstimatorRequest, EstimatorResult, spawn_seeds
-from .._circuits import is_measurement
+from ...protocols.state_preparation import StatePreparation
+from .._circuits import bind_request_circuit, build_estimator_request, is_measurement
 from ..core import QemExecutor
 from ..inference import (
     ExpFactory,
@@ -171,7 +172,7 @@ def combine_results(results: Sequence[EstimatorResult], /) -> float:
 
 
 def execute_with_pea(
-    circuit: Circuit,
+    circuit: StatePreparation | Circuit,
     executor: QemExecutor,
     observable: Hamiltonian | PauliString,
     /,
@@ -182,18 +183,16 @@ def execute_with_pea(
     precision: float = 0.1,
     shots: int | None = None,
     seed: int | None = None,
+    parameter_bindings: Mapping[str, float] | None = None,
+    prefix: str = "qem",
 ) -> float:
     r"""Estimate one observable on ``circuit`` with probabilistic error amplification.
 
-    This is the immediate form of :func:`pea_executor`::
-
-        execute_with_pea(c, ex, obs, **params)
-        == pea_executor(ex, **params).estimate(
-               [EstimatorRequest(c, obs)]
-           )[0].expectation
+    This is the immediate form of :func:`pea_executor`. The same task
+    can be evaluated by calling ``run()`` on that executor.
 
     Args:
-        circuit: Circuit whose expectation value is to be mitigated.
+        circuit: State-preparation component or circuit to evaluate.
         executor: Execution backend supplying the expectation surface.
         observable: Observable to estimate. A bare Pauli string is interpreted as a
             Hamiltonian with unit coefficient.
@@ -206,17 +205,20 @@ def execute_with_pea(
         shots: Shot count for every variant circuit, or ``None`` for exact
             evaluation.
         seed: Seed of the sampling stream, or ``None`` for fresh randomness.
+        parameter_bindings: Finite values covering exactly all active symbols.
+            Values are bound before circuit transformations; None requires no symbols.
+        prefix: Build prefix for a preparation component, defaulting to ``qem``;
+            existing Circuit symbols keep their names.
 
     Returns:
         Mitigated expectation value.
 
     Raises:
-        TypeError: If ``extrapolation_method`` is not a string, if ``precision`` is not
-            a real number, or if ``seed`` is neither an integer nor ``None``.
-        ValueError: If ``extrapolation_method`` is not a supported name, if ``precision``
+        TypeError: If an input or configuration argument has the wrong type.
+        ValueError: If bindings are non-finite or do not cover active symbols exactly,
+            or if ``extrapolation_method`` is not a supported name, if ``precision``
             is not in :math:`(0, 1]`, if a parameter describes an unusable
             configuration, or if ``noise_level * max(scale_factors)`` reaches one.
-
     """
     wrapped = pea_executor(
         executor,
@@ -227,7 +229,13 @@ def execute_with_pea(
         shots=shots,
         seed=seed,
     )
-    request = EstimatorRequest(circuit=circuit, observable=observable, shots=shots)
+    request = build_estimator_request(
+        circuit,
+        observable,
+        shots=shots,
+        parameter_bindings=parameter_bindings,
+        prefix=prefix,
+    )
     return wrapped.estimate([request])[0].expectation
 
 
@@ -357,6 +365,7 @@ class _PeaEstimator(Estimator):
 
     def _mitigate(self, request: EstimatorRequest) -> EstimatorResult:
         r"""Amplify, measure, and extrapolate one request."""
+        bound_circuit = bind_request_circuit(request)
         shots = self._shots if self._shots is not None else request.shots
         seed = self._seed if self._seed is not None else request.seed
         # Each scale factor draws its own amplified variants and measures them
@@ -365,7 +374,7 @@ class _PeaEstimator(Estimator):
         amplified: list[float] = []
         for scale_factor, scale_seed in zip(self._scale_factors, scale_seeds):
             variants = construct_circuits(
-                request.circuit,
+                bound_circuit,
                 noise_level=self._noise_level,
                 scale_factor=scale_factor,
                 precision=self._precision,

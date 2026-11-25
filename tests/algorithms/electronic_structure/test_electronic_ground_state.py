@@ -31,6 +31,7 @@ from cqlib_algorithms.extension.electronic_structure import (
     ElectronicSystem,
     SpinResolvedElectronicIntegrals,
 )
+from cqlib_algorithms.operators.ansatz import PUCCDAnsatz, PUCCSDAnsatz, UCCSDAnsatz
 from cqlib_algorithms.operators.estimator import StatevectorEstimator
 from cqlib_algorithms.protocols import (
     Ansatz,
@@ -65,6 +66,38 @@ def _system() -> ElectronicSystem:
         nuclear_repulsion_energy=0.25,
         inactive_energy=0.15,
     )
+
+
+def test_component_run_matches_independent_correlated_ground_state():
+    system = _system()
+    point, reference_energy = _exact_uccsd_point(system)
+    saved_point = dict(point)
+    solver = ElectronicGroundState(
+        StatevectorEstimator(), _FixedPointOptimizer(), prefix="chem"
+    )
+    result = solver.run(system, point, ansatz=UCCSDAnsatz(system.occupation))
+    legacy = solver.compute(system, point)
+    assert result.total_energy == pytest.approx(reference_energy, abs=1e-12)
+    assert result.total_energy == pytest.approx(legacy.total_energy, abs=1e-12)
+    assert result.mapper is solver.mapper
+    assert result.system is system
+    assert point == saved_point
+    np.testing.assert_allclose(
+        result.vqe_result.optimal_circuit.to_matrix(),
+        legacy.vqe_result.optimal_circuit.to_matrix(),
+        rtol=0.0,
+        atol=1e-12,
+    )
+
+
+@pytest.mark.parametrize("factory", [UCCSDAnsatz, PUCCDAnsatz, PUCCSDAnsatz])
+def test_component_run_accepts_different_chemical_ansatze(factory):
+    system = _system()
+    result = ElectronicGroundState(StatevectorEstimator(), _FixedPointOptimizer()).run(
+        system, ansatz=factory(system.occupation)
+    )
+    assert result.total_energy == pytest.approx(-0.6, abs=1e-12)
+    assert result.particle_number.expectation == pytest.approx(2.0, abs=1e-12)
 
 
 class _FixedPointOptimizer(Optimizer):

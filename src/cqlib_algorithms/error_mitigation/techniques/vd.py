@@ -48,13 +48,15 @@ References
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 
 from cqlib import Circuit
 from cqlib.error_mitigation import VirtualDistillation
 from cqlib.qis import Hamiltonian, PauliString
 
 from ...protocols import Estimator, EstimatorRequest, EstimatorResult, spawn_seeds
+from ...protocols.state_preparation import StatePreparation
+from .._circuits import bind_request_circuit, build_estimator_request
 from ..core import QemExecutor, make_cqlib_estimator
 
 
@@ -140,7 +142,7 @@ def combine_results(results: Sequence[EstimatorResult], /) -> float:
 
 
 def execute_with_vd(
-    circuit: Circuit,
+    circuit: StatePreparation | Circuit,
     executor: QemExecutor,
     observable: Hamiltonian | PauliString,
     /,
@@ -149,27 +151,23 @@ def execute_with_vd(
     shots_numerator: int,
     shots_denominator: int,
     seed: int | None = None,
+    parameter_bindings: Mapping[str, float] | None = None,
+    prefix: str = "qem",
 ) -> float:
     r"""Estimate one observable on ``circuit`` with virtual distillation.
 
-    This is the immediate form of :func:`vd_executor`::
-
-        execute_with_vd(c, ex, obs, **params)
-        == vd_executor(ex, **params).estimate(
-               [EstimatorRequest(c, obs)]
-           )[0].expectation
+    This is the immediate form of :func:`vd_executor`. The same task
+    can be evaluated by calling ``run()`` on that executor.
 
     The estimate is the moment ratio :math:`\operatorname{Tr}(O\rho^M) /
     \operatorname{Tr}(\rho^M)` read from the copy-swap circuit, where
-    :math:`\rho` is the state ``circuit`` prepares. Distillation suppresses the
-    error only while the fidelity of :math:`\rho` with the ideal state exceeds
-    one half; above that error rate the ordering of the components of
-    :math:`\rho` reverses and the estimate is driven away from the ideal value.
-    The method also assumes independent noise across copies; correlated noise
-    shared by the copies invalidates the correction model.
+    :math:`\rho` is the prepared state. Higher powers increase the relative
+    weight of its dominant eigenspace. Improvement depends on how that
+    eigenspace aligns with the desired state. The moment model also assumes
+    independent copies; correlations between copies invalidate that model.
 
     Args:
-        circuit: Circuit whose expectation value is to be mitigated.
+        circuit: State-preparation component or circuit to evaluate.
         executor: Execution backend supplying the expectation surface.
         observable: Observable to estimate, acting on exactly the circuit's qubits.
         copies: Number of density-matrix copies :math:`M`, at least two. Larger values
@@ -181,16 +179,19 @@ def execute_with_vd(
         seed: Non-negative seed of the sampled numerator and denominator, or
             ``None`` for fresh randomness. The two measurements draw from separate
             child seeds, so one value reproduces the whole estimate.
+        parameter_bindings: Finite values covering exactly all active symbols.
+            Values are bound before circuit transformations; None requires no symbols.
+        prefix: Build prefix for a preparation component, defaulting to ``qem``;
+            existing Circuit symbols keep their names.
 
     Returns:
         The distilled expectation value.
 
     Raises:
-        TypeError: If ``copies``, ``shots_numerator``, or ``shots_denominator`` is not an
-            integer, or if ``seed`` is neither an integer nor ``None``.
-        ValueError: If ``copies`` is below two, either shot count is below one, or ``seed``
+        TypeError: If an input or configuration argument has the wrong type.
+        ValueError: If bindings are non-finite or do not cover active symbols exactly,
+            or if ``copies`` is below two, either shot count is below one, or ``seed``
             is negative.
-
     """
     wrapped = vd_executor(
         executor,
@@ -199,7 +200,9 @@ def execute_with_vd(
         shots_denominator=shots_denominator,
         seed=seed,
     )
-    request = EstimatorRequest(circuit=circuit, observable=observable)
+    request = build_estimator_request(
+        circuit, observable, parameter_bindings=parameter_bindings, prefix=prefix
+    )
     return wrapped.estimate([request])[0].expectation
 
 
@@ -314,8 +317,9 @@ class _VdEstimator(Estimator):
 
     def _mitigate(self, request: EstimatorRequest) -> EstimatorResult:
         r"""Evaluate the moment ratio of one request on its copy-swap circuit."""
+        bound_circuit = bind_request_circuit(request)
         observable = _as_hamiltonian(request.observable)
-        runner = VirtualDistillation(request.circuit, self._copies)
+        runner = VirtualDistillation(bound_circuit, self._copies)
         seed = self._seed if self._seed is not None else request.seed
         # The numerator and denominator are independent measurements, so each
         # takes its own child seed while one run seed still reproduces the

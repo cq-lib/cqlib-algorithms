@@ -22,6 +22,7 @@ from cqlib.qis import FermionicLadder, FermionicOp, JordanWignerMapper
 from cqlib.qis.state import Statevector
 
 from cqlib_algorithms.algorithms.electronic_structure import (
+    ElectronicGroundState,
     ElectronicGroundStateResult,
     ElectronicQEOM,
     ElectronicQEOMResult,
@@ -47,6 +48,8 @@ from cqlib_algorithms.extension.electronic_structure import (
     FermionicExcitation,
 )
 from cqlib_algorithms.operators.estimator import StatevectorEstimator
+from cqlib_algorithms.operators.gradient import ParameterShiftGradient
+from cqlib_algorithms.operators.optimizer import GradientDescent
 from cqlib_algorithms.operators.state_preparation import (
     HartreeFockStatePreparation,
 )
@@ -109,6 +112,27 @@ def _noninteracting_system() -> ElectronicSystem:
         ),
         occupation,
     )
+
+
+@pytest.mark.parametrize("limited_pool", [False, True])
+def test_component_run_reuses_ground_state_and_recorded_mapper(limited_pool):
+    system = _noninteracting_system()
+    ground = ElectronicGroundState(
+        StatevectorEstimator(),
+        GradientDescent(ParameterShiftGradient(), maxiter=2, tolerance=1e-12),
+    ).run(system)
+    pool = (FermionicExcitation(4, (0,), (2,)),) if limited_pool else None
+    solver = ElectronicQEOM(StatevectorEstimator())
+    result = solver.run(ground, excitations=pool)
+    legacy = solver.compute(ground, excitations=pool)
+    expected = [1.7] if limited_pool else [1.7, 1.7, 3.4]
+    assert result.ground_state_result is ground
+    assert result.ground_state_result.mapper is ground.mapper
+    assert result.excitation_energies == pytest.approx(expected, abs=1e-10)
+    for name in ("m_matrix", "q_matrix", "v_matrix", "w_matrix"):
+        np.testing.assert_allclose(
+            getattr(result, name), getattr(legacy, name), rtol=0.0, atol=1e-12
+        )
 
 
 def _open_shell_noninteracting_system() -> ElectronicSystem:

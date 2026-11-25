@@ -50,8 +50,6 @@ Brierley 的
 下面估计单量子比特 <img src="../../assets/formulas/inline/inline-bbeebd879e1dff69.svg" alt="Z" style="vertical-align: -0.000pt;"> 的两个本征态：
 
 ```python
-import math
-
 from cqlib.qis import PauliString
 
 from cqlib_algorithms import VQD
@@ -71,7 +69,7 @@ algorithm = VQD(
     k=2,
     betas=(4.0,),
 )
-result = algorithm.compute_eigenvalues(
+result = algorithm.run(
     PauliString.from_str("Z"),
     [{"theta_0": 2.5}, {"theta_0": 0.3}],
     fidelity_shots=4096,
@@ -81,6 +79,8 @@ result = algorithm.compute_eigenvalues(
 assert abs(result.eigenvalues[0] + 1.0) < 1e-6
 assert abs(result.eigenvalues[1] - 1.0) < 2e-3
 ```
+
+一次 `run` 按求解顺序返回两个能级。`eigenvalues` 是各态的能量，`optimal_values` 包含正交惩罚。`compute_eigenvalues(...)` 接受相同参数和结果约定。
 
 后一级依赖前一级的近似状态，因此拟设误差、有限-shot 误差和优化误差会逐级传播。
 需要可靠激发态时，应同时检查能量收敛、状态间重叠以及不同初始点和 penalty 下的

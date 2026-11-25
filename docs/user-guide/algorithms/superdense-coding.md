@@ -45,26 +45,15 @@ Bob 收到 Alice 的量子比特后依次执行 `CX(0,1)`、`H(0)`，再按 `(0,
 ## 接口
 
 ```python
-from cqlib_algorithms import (
-    SuperdenseCoding,
-    SuperdenseCodingRequest,
-)
-from cqlib_algorithms.operators.sampler import StatevectorSampler
+from cqlib_algorithms import SuperdenseCoding
+from cqlib_algorithms.operators import StatevectorSampler
 
 algorithm = SuperdenseCoding(StatevectorSampler())
-requests = [
-    SuperdenseCodingRequest((0, 0), shots=32),
-    SuperdenseCodingRequest((0, 1), shots=32),
-    SuperdenseCodingRequest((1, 0), shots=32),
-    SuperdenseCodingRequest((1, 1), shots=32),
-]
-results = algorithm.run(requests)
-
-for result in results:
-    print(result.sent_message, result.decoded_message, result.success_rate)
+result = algorithm.run((1, 0), shots=32)
+print(result.decoded_message, result.success_rate)  # (1, 0) 1.0
 ```
 
-理想采样器下，四个结果的唯一众数分别为发送消息，且 `success_rate == 1.0`。
+单任务入口 `run(message, *, shots)` 返回一个结果。理想采样器下，解码众数等于发送消息，且 `success_rate == 1.0`。
 
 `SuperdenseCodingRequest` 包含：
 

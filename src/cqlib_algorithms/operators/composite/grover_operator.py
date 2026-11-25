@@ -32,15 +32,17 @@ from collections.abc import Iterable
 from cqlib import Circuit
 from cqlib.circuit import CircuitError
 
+from ...protocols.state_preparation import StatePreparation
 from ..oracle.general_state_reflection import GeneralStateReflection
 from ..oracle.grover_diffusion import GroverDiffusion
+from ..oracle.phase_oracle import BitPatternPhaseOracle, PhaseOracle
 from ..oracle.zero_state_reflection import ZeroStateReflection
 
 
 class GroverOperator:
     """Construct one Grover iteration ``Q = A S_(0,R) A† O``.
 
-    ``O`` is a phase-oracle circuit and ``S_(0,R) = 2 P_(0,R) - I`` is the
+    ``O`` is the operation supplied by the phase-oracle component and ``S_(0,R) = 2 P_(0,R) - I`` is the
     zero reflection on ``reflection_qubits``. Circuit time order is ``O``,
     ``A†``, ``S_(0,R)``, then ``A``.
 
@@ -49,13 +51,14 @@ class GroverOperator:
     subspace ``A range(P_(0,R))``. If ``state_preparation`` is omitted,
     Hadamard gates on the reflection qubits are used for ``A``.
 
-    Input circuits are defensively copied and must be statically invertible.
-    The caller is responsible for ensuring that ``oracle`` has phase-oracle
-    semantics.
+    Components are built once and their statically invertible circuits are
+    defensively copied. Source qubits map by insertion position to ``0..n-1``.
+    Symbolic preparations can define an iteration; execution requires full bindings.
 
     Args:
-        oracle: Invertible phase-oracle circuit.
-        state_preparation: Optional invertible preparation circuit ``A``.
+        oracle: PhaseOracle or BitPatternPhaseOracle defining the marked states.
+        state_preparation: Component for preparing ``A|0>``.
+            Components are built once at construction with the prefix ``"grover"``.
         reflection_qubits: Optional non-empty reflection-qubit subset.
             ``None`` selects all qubits.
 
@@ -64,7 +67,7 @@ class GroverOperator:
         ValueError: If a circuit or reflection-qubit selection is invalid.
     """
 
-    __slots__ = ("_oracle", "_reflection_qubits", "_state_reflection")
+    __slots__ = ("_marked_states", "_oracle", "_reflection_qubits", "_state_reflection")
 
     _oracle: Circuit
     _state_reflection: GeneralStateReflection | None
@@ -72,24 +75,35 @@ class GroverOperator:
 
     def __init__(
         self,
-        oracle: Circuit,
+        oracle: PhaseOracle | BitPatternPhaseOracle,
         *,
-        state_preparation: Circuit | None = None,
+        state_preparation: StatePreparation | None = None,
         reflection_qubits: Iterable[int] | None = None,
     ) -> None:
-        if not isinstance(oracle, Circuit):
-            raise TypeError("oracle must be a Circuit")
-        if oracle.num_qubits <= 0:
-            raise ValueError("oracle must contain at least one qubit")
-        if state_preparation is not None and not isinstance(state_preparation, Circuit):
-            raise TypeError("state_preparation must be a Circuit")
-
-        self._oracle = self._snapshot_oracle(oracle)
-        self._state_reflection = (
-            None
-            if state_preparation is None
-            else GeneralStateReflection(state_preparation)
+        if not isinstance(oracle, (PhaseOracle, BitPatternPhaseOracle)):
+            raise TypeError("oracle must be a phase-oracle component")
+        oracle_circuit = oracle.build_circuit()
+        if not isinstance(oracle_circuit, Circuit):
+            raise TypeError("PhaseOracle.build_circuit must return a Circuit")
+        if oracle_circuit.num_qubits != oracle.num_qubits:
+            raise ValueError("oracle circuit width must match its predicate")
+        self._marked_states: tuple[int, ...] | BitPatternPhaseOracle = (
+            copy.copy(oracle)
+            if isinstance(oracle, BitPatternPhaseOracle)
+            else oracle.marked_states
         )
+        if oracle_circuit.num_qubits <= 0:
+            raise ValueError("oracle must contain at least one qubit")
+
+        self._oracle = self._snapshot_oracle(oracle_circuit)
+        if isinstance(state_preparation, StatePreparation):
+            self._state_reflection = GeneralStateReflection.from_state_preparation(
+                state_preparation, prefix="grover"
+            )
+        elif state_preparation is None:
+            self._state_reflection = None
+        else:
+            raise TypeError("state_preparation must be a StatePreparation or None")
         if (
             self._state_reflection is not None
             and self._state_reflection.num_qubits != self._oracle.num_qubits
@@ -152,6 +166,13 @@ class GroverOperator:
     def oracle(self) -> Circuit:
         """Return an independent copy of the normalized oracle circuit."""
         return copy.deepcopy(self._oracle)
+
+    @property
+    def marked_states(self) -> tuple[int, ...]:
+        """Return marked indices, expanding a compact bit pattern only on access."""
+        if isinstance(self._marked_states, BitPatternPhaseOracle):
+            return self._marked_states.marked_states
+        return self._marked_states
 
     @property
     def state_preparation(self) -> Circuit | None:

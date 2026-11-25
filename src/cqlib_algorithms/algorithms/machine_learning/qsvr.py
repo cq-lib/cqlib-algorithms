@@ -12,7 +12,7 @@
 
 # Modified to use the shared fidelity quantum-kernel operator.
 
-"""Classical epsilon-SVR trained on Cqlib pure-state fidelity kernels.
+"""Classical epsilon-SVR trained on fixed quantum kernels.
 
 The epsilon-insensitive objective follows Smola and Scholkopf,
 Statistics and Computing 14, 199-222 (2004), DOI:10.1023/B:STCO.0000035301.49549.88.
@@ -27,7 +27,9 @@ from typing import Protocol, cast
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
-from ...operators.quantum_kernel import FidelityQuantumKernel
+from ..._utils.numeric import validate_positive_integer
+from ...protocols.quantum_kernel import QuantumKernel
+from ._common import evaluate_kernel_matrix
 from ._validation import _real_hyperparameter, _targets
 from ._validation import data as validate_data
 
@@ -71,15 +73,27 @@ def _weights(values: ArrayLike | None, size: int) -> NDArray[np.float64] | None:
 
 
 class QSVR:
-    """Fit epsilon-SVR with a fixed FidelityQuantumKernel and libsvm.
+    """Fit epsilon-SVR with a fixed QuantumKernel and libsvm.
 
     C and tol are finite positive reals, epsilon is nonnegative, and max_iter
     is -1 or a positive integer. Positive sample weights scale each sample's C.
     The machine-learning extra provides the lazily imported scikit-learn.
     By default, training Gram eigenvalues are clipped to zero. Prediction
-    evaluates rectangular fidelities between query and training rows.
+    evaluates cross-kernel values between query and training rows.
     Fit publishes the model after the solver completes and retains its
     termination diagnostics.
+
+    Args:
+        quantum_kernel: Fixed kernel, including a kernel returned by a trainer.
+        C: Positive penalty coefficient.
+        epsilon: Nonnegative width of the insensitive error interval.
+        tol: Positive solver stopping tolerance.
+        max_iter: Positive iteration limit, or -1 for the solver default.
+        enforce_psd: Whether to use the positive part of the training Gram matrix.
+
+    Raises:
+        TypeError: If the kernel or option types are invalid.
+        ValueError: If the feature width or numeric settings are invalid.
     """
 
     __slots__ = (
@@ -94,7 +108,7 @@ class QSVR:
 
     def __init__(
         self,
-        quantum_kernel: FidelityQuantumKernel,
+        quantum_kernel: QuantumKernel,
         *,
         C: float = 1.0,
         epsilon: float = 0.1,
@@ -102,8 +116,9 @@ class QSVR:
         max_iter: int = -1,
         enforce_psd: bool = True,
     ) -> None:
-        if not isinstance(quantum_kernel, FidelityQuantumKernel):
-            raise TypeError("quantum_kernel must be a FidelityQuantumKernel")
+        if not isinstance(quantum_kernel, QuantumKernel):
+            raise TypeError("quantum_kernel must be a QuantumKernel")
+        validate_positive_integer(quantum_kernel.num_features, "num_features")
         self._C = _real_hyperparameter(C, "C")
         self._epsilon = _real_hyperparameter(epsilon, "epsilon", allow_zero=True)
         self._tol = _real_hyperparameter(tol, "tol")
@@ -208,13 +223,7 @@ class QSVR:
             raise ImportError(
                 "QSVR.fit requires scikit-learn; install cqlib-algorithms[machine-learning]"
             ) from error
-        raw = self._quantum_kernel.evaluate(data)
-        if raw.shape != (len(data), len(data)) or not np.all(np.isfinite(raw)):
-            raise ValueError(
-                "quantum kernel must return a finite square training matrix"
-            )
-        if not np.array_equal(raw, raw.T):
-            raise ValueError("quantum kernel must return a symmetric training matrix")
+        raw = evaluate_kernel_matrix(self._quantum_kernel, data)
         eigenvalues, eigenvectors = np.linalg.eigh(raw)
         fitted = raw.copy()
         if self._enforce_psd:
@@ -243,7 +252,7 @@ class QSVR:
         return self
 
     def predict(self, X: ArrayLike) -> NDArray[np.float64]:
-        """Predict with raw rectangular test/training fidelities.
+        """Predict with raw cross-kernel values for test and training rows.
 
         Predicting before fit raises ValueError. Empty (0,d) data returns an
         empty vector without evaluating circuits or calling the solver.
@@ -252,13 +261,7 @@ class QSVR:
         data = validate_data(X, self._quantum_kernel.num_features)
         if not len(data):
             return np.empty(0, dtype=np.float64)
-        matrix = self._quantum_kernel.evaluate(data, state.training_data)
-        if matrix.shape != (len(data), len(state.training_data)) or not np.all(
-            np.isfinite(matrix)
-        ):
-            raise ValueError(
-                "quantum kernel must return a finite rectangular prediction matrix"
-            )
+        matrix = evaluate_kernel_matrix(self._quantum_kernel, data, state.training_data)
         return np.array(state.solver.predict(matrix), dtype=np.float64, copy=True)
 
     def score(

@@ -25,9 +25,9 @@ from dataclasses import dataclass
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
-from ..._utils.numeric import copy_finite_real_array, validate_positive_integer
-from ...operators.quantum_kernel import FidelityQuantumKernel
-from ._common import gram
+from ..._utils.numeric import validate_positive_integer
+from ...protocols.quantum_kernel import QuantumKernel
+from ._common import evaluate_kernel_matrix
 from ._validation import (
     _real_hyperparameter,
     _targets,
@@ -73,21 +73,32 @@ class PegasosQSVC:
 
     The objective is lambda*||w||^2/2 + mean hinge loss. Each step samples
     one observation with a local RNG. Training uses the PSD positive part of
-    the Gram matrix; prediction evaluates rectangular fidelities. Numeric
+    the Gram matrix. Prediction evaluates cross-kernel values. Numeric
     labels are sorted, and a zero decision maps to the positive class.
     The returned coefficients represent the final iterate with zero bias.
+
+    Args:
+        quantum_kernel: Fixed kernel, including a kernel returned by a trainer.
+        regularization: Positive coefficient of the squared weight norm.
+        num_steps: Positive number of stochastic updates.
+        seed: Nonnegative random seed for choosing training samples.
+
+    Raises:
+        TypeError: If the kernel or option types are invalid.
+        ValueError: If the feature width, regularization, steps, or seed is invalid.
     """
 
     def __init__(
         self,
-        quantum_kernel: FidelityQuantumKernel,
+        quantum_kernel: QuantumKernel,
         *,
         regularization: float = 0.1,
         num_steps: int = 1000,
         seed: int | None = None,
     ) -> None:
-        if not isinstance(quantum_kernel, FidelityQuantumKernel):
-            raise TypeError("quantum_kernel must be a FidelityQuantumKernel")
+        if not isinstance(quantum_kernel, QuantumKernel):
+            raise TypeError("quantum_kernel must be a QuantumKernel")
+        validate_positive_integer(quantum_kernel.num_features, "num_features")
         self._regularization = _real_hyperparameter(regularization, "regularization")
         validate_positive_integer(num_steps, "num_steps")
         if seed is not None and (isinstance(seed, bool) or not isinstance(seed, int)):
@@ -133,7 +144,7 @@ class PegasosQSVC:
 
     @property
     def raw_kernel_matrix_(self) -> NDArray[np.float64]:
-        """Return a copy of training fidelities before repair."""
+        """Return a copy of the training kernel matrix before PSD repair."""
         return np.array(self._fitted().raw, dtype=np.float64, copy=True)
 
     @property
@@ -171,7 +182,7 @@ class PegasosQSVC:
         """Fit finite nonempty X and exactly two numeric classes atomically."""
         data = validate_data(X, self._kernel.num_features, nonempty=True)
         labels, classes = binary_labels(y, len(data))
-        raw = gram(self._kernel.evaluate(data), len(data))
+        raw = evaluate_kernel_matrix(self._kernel, data)
         eigenvalues, eigenvectors = np.linalg.eigh(raw)
         matrix = (eigenvectors * np.maximum(eigenvalues, 0.0)) @ eigenvectors.T
         matrix = (matrix + matrix.T) / 2.0
@@ -221,15 +232,7 @@ class PegasosQSVC:
         data = validate_data(X, self._kernel.num_features)
         if not len(data):
             return np.empty(0, dtype=np.float64)
-        matrix = copy_finite_real_array(
-            self._kernel.evaluate(data, state.data), "prediction kernel", 2
-        )
-        if (
-            matrix.shape != (len(data), len(state.data))
-            or np.any(matrix < 0.0)
-            or np.any(matrix > 1.0)
-        ):
-            raise ValueError("kernel must return rectangular fidelities within [0, 1]")
+        matrix = evaluate_kernel_matrix(self._kernel, data, state.data)
         with np.errstate(over="raise", invalid="raise"):
             try:
                 scores = matrix @ state.coefficients

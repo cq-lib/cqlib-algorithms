@@ -15,29 +15,39 @@
 from __future__ import annotations
 
 import math
+from dataclasses import replace
 from fractions import Fraction
 
 import numpy as np
 import pytest
-from cqlib import Circuit
 from cqlib.device import ExecutionResult
 
 from cqlib_algorithms import (
     AmplitudeEstimationProblem,
     IterativeAmplitudeEstimation,
     IterativeAmplitudeEstimationRequest,
+    IterativeAmplitudeEstimationResult,
+    StandardAmplitudeEstimation,
 )
 from cqlib_algorithms.algorithms.amplitude_estimation.iterative import (
     _find_next_power,
+)
+from cqlib_algorithms.operators import (
+    AmplitudeEncoding,
+    BooleanFunction,
+    GroverOperator,
+    PhaseOracle,
+    StatevectorSampler,
 )
 from cqlib_algorithms.protocols import Sampler
 
 
 def _rotation_problem(theta: float, *, predicate=None) -> AmplitudeEstimationProblem:
-    preparation = Circuit(1)
-    preparation.ry(0, 2.0 * theta)
-    grover = Circuit(1)
-    grover.ry(0, 4.0 * theta)
+    preparation = AmplitudeEncoding([math.cos(theta), math.sin(theta)])
+    grover = GroverOperator(
+        PhaseOracle(BooleanFunction.from_marked_states(1, [1])),
+        state_preparation=preparation,
+    )
     return AmplitudeEstimationProblem(
         preparation,
         grover,
@@ -49,20 +59,17 @@ def _rotation_problem(theta: float, *, predicate=None) -> AmplitudeEstimationPro
 class _AnalyticSampler(Sampler):
     """Return rounded Bernoulli counts from the known rotation problem."""
 
-    def __init__(self, theta: float) -> None:
-        self.theta = theta
+    def __init__(self) -> None:
         self.batch_sizes: list[int] = []
 
     def run(self, requests):
         self.batch_sizes.append(len(requests))
         results = []
         for request in requests:
-            # The test problem has one RY in A and one in every Q copy.
-            power = (
-                sum(operation.name == "RY" for operation in request.circuit.operations)
-                - 1
-            )
-            probability = math.sin((2 * power + 1) * self.theta) ** 2
+            state = request.circuit.to_matrix()[:, 0]
+            probability = float(abs(state[1]) ** 2)
+            assert -1e-12 <= probability <= 1.0 + 1e-12
+            probability = min(1.0, max(0.0, probability))
             good = round(request.shots * probability)
             counts = {}
             if request.shots - good:
@@ -83,18 +90,16 @@ class _AnalyticSampler(Sampler):
 
 
 class _SeededBernoulliSampler(Sampler):
-    def __init__(self, theta: float, seed: int) -> None:
-        self.theta = theta
+    def __init__(self, seed: int) -> None:
         self.generator = np.random.default_rng(seed)
 
     def run(self, requests):
         results = []
         for request in requests:
-            power = (
-                sum(operation.name == "RY" for operation in request.circuit.operations)
-                - 1
-            )
-            probability = math.sin((2 * power + 1) * self.theta) ** 2
+            state = request.circuit.to_matrix()[:, 0]
+            probability = float(abs(state[1]) ** 2)
+            assert -1e-12 <= probability <= 1.0 + 1e-12
+            probability = min(1.0, max(0.0, probability))
             good = int(self.generator.binomial(request.shots, probability))
             results.append(
                 ExecutionResult.from_counts(
@@ -109,10 +114,60 @@ class _SeededBernoulliSampler(Sampler):
         return results
 
 
+class _SeededStatevectorSampler(Sampler):
+    """Replay finite-shot sampling of the actual component circuits."""
+
+    def __init__(self):
+        self.generator = np.random.default_rng(2026)
+        self.sampler = StatevectorSampler()
+
+    def run(self, requests):
+        return self.sampler.run(
+            [
+                replace(request, seed=int(self.generator.integers(2**32)))
+                for request in requests
+            ]
+        )
+
+
+@pytest.mark.parametrize("marked", [0, 1])
+def test_components_share_standard_problem_and_match_batch(marked):
+    theta = math.pi / 8
+    preparation = AmplitudeEncoding((math.cos(theta), 0, 1j * math.sin(theta), 0))
+    oracle = PhaseOracle(
+        BooleanFunction.from_marked_states(2, [2 * marked, 2 * marked + 1])
+    )
+    iteration = GroverOperator(oracle, state_preparation=preparation)
+
+    def good(bits):
+        assert len(bits) == 1
+        return bits == str(marked)
+
+    problem = AmplitudeEstimationProblem(preparation, iteration, (1,), good)
+    standard = StandardAmplitudeEstimation(_SeededStatevectorSampler()).run(
+        problem, num_evaluation_qubits=3, shots=128
+    )
+    result = IterativeAmplitudeEstimation(_SeededStatevectorSampler()).run(
+        problem=problem, epsilon=0.01, alpha=0.05, shots=500
+    )
+    batch = IterativeAmplitudeEstimation(_SeededStatevectorSampler()).run(
+        [IterativeAmplitudeEstimationRequest(problem, 0.01, 0.05, 500)]
+    )
+
+    expected = math.sin(theta) ** 2 if marked else math.cos(theta) ** 2
+    assert standard.estimation == pytest.approx(expected)
+    assert isinstance(result, IterativeAmplitudeEstimationResult)
+    assert batch == [result]
+    low, high = result.confidence_interval
+    assert low <= expected <= high
+    assert high - low <= 0.02
+    assert result.estimation == (low + high) / 2
+
+
 @pytest.mark.reference
 def test_adaptive_schedule_and_intervals_follow_chernoff_half_circle_rule() -> None:
     theta = math.pi / 8.0
-    sampler = _AnalyticSampler(theta)
+    sampler = _AnalyticSampler()
     result = IterativeAmplitudeEstimation(sampler).run(
         [
             IterativeAmplitudeEstimationRequest(
@@ -128,6 +183,12 @@ def test_adaptive_schedule_and_intervals_follow_chernoff_half_circle_rule() -> N
     assert result.powers == (0, 1, 4, 17)
     assert result.round_shots == (500, 500, 500, 500)
     assert sampler.batch_sizes == [1, 1, 1, 1]
+    rounds = math.ceil(math.log2(math.pi / (8 * 0.005)))
+    radius = math.sqrt(math.log(2 * rounds / 0.05) / (2 * 500))
+    observed = round(500 * math.sin(theta) ** 2) / 500
+    assert result.round_intervals[0] == pytest.approx(
+        (observed - radius, observed + radius)
+    )
     assert result.confidence_interval[0] <= math.sin(theta) ** 2
     assert math.sin(theta) ** 2 <= result.confidence_interval[1]
     assert result.confidence_interval[1] - result.confidence_interval[0] <= 0.01
@@ -139,7 +200,7 @@ def test_adaptive_schedule_and_intervals_follow_chernoff_half_circle_rule() -> N
 
 @pytest.mark.parametrize("theta", [0.0, math.pi / 4.0, math.pi / 2.0])
 def test_boundary_and_midpoint_amplitudes_remain_inside_interval(theta: float) -> None:
-    result = IterativeAmplitudeEstimation(_AnalyticSampler(theta)).run(
+    result = IterativeAmplitudeEstimation(_AnalyticSampler()).run(
         [
             IterativeAmplitudeEstimationRequest(
                 _rotation_problem(theta),
@@ -163,7 +224,7 @@ def test_seeded_monte_carlo_has_conservative_coverage_regression() -> None:
     amplitude = math.sin(theta) ** 2
     covered = 0
     for seed in range(20):
-        result = IterativeAmplitudeEstimation(_SeededBernoulliSampler(theta, seed)).run(
+        result = IterativeAmplitudeEstimation(_SeededBernoulliSampler(seed)).run(
             [
                 IterativeAmplitudeEstimationRequest(
                     _rotation_problem(theta), 0.02, 0.1, 300, 20
@@ -179,7 +240,7 @@ def test_seeded_monte_carlo_has_conservative_coverage_regression() -> None:
 
 def test_active_requests_are_batched_and_completed_requests_drop_out() -> None:
     theta = math.pi / 8.0
-    sampler = _AnalyticSampler(theta)
+    sampler = _AnalyticSampler()
     results = IterativeAmplitudeEstimation(sampler).run(
         [
             IterativeAmplitudeEstimationRequest(
@@ -195,6 +256,15 @@ def test_active_requests_are_batched_and_completed_requests_drop_out() -> None:
     assert sampler.batch_sizes[1:] == [2, 1, 1]
     assert len(results[0].powers) == 2
     assert results[1].powers == (0, 1, 4, 17)
+    for result, epsilon in zip(results, (0.05, 0.005)):
+        single = IterativeAmplitudeEstimation(_AnalyticSampler()).run(
+            _rotation_problem(theta),
+            epsilon=epsilon,
+            alpha=0.05,
+            shots=500,
+            max_rounds=20,
+        )
+        assert single == result
 
 
 @pytest.mark.reference
@@ -203,7 +273,7 @@ def test_no_overshooting_reduces_shots_and_repeated_powers_are_combined() -> Non
     request = IterativeAmplitudeEstimationRequest(
         _rotation_problem(theta), 0.002, 0.05, 500, 20
     )
-    result = IterativeAmplitudeEstimation(_AnalyticSampler(theta)).run([request])[0]
+    result = IterativeAmplitudeEstimation(_AnalyticSampler()).run([request])[0]
 
     rounds = math.ceil(math.log2(math.pi / (8.0 * request.epsilon)))
     lmax = math.asin(
@@ -234,22 +304,26 @@ def test_no_overshooting_reduces_shots_and_repeated_powers_are_combined() -> Non
 def test_max_rounds_is_a_hard_safety_limit() -> None:
     theta = 0.1
     with pytest.raises(RuntimeError, match="did not converge"):
-        IterativeAmplitudeEstimation(_AnalyticSampler(theta)).run(
+        IterativeAmplitudeEstimation(_AnalyticSampler()).run(
             [
                 IterativeAmplitudeEstimationRequest(
                     _rotation_problem(theta), 0.05, 0.05, 200, 3
                 )
             ]
         )
+    with pytest.raises(RuntimeError, match="did not converge"):
+        IterativeAmplitudeEstimation(_AnalyticSampler()).run(
+            _rotation_problem(theta), epsilon=0.05, alpha=0.05, shots=200, max_rounds=3
+        )
 
 
 def test_theoretical_round_budget_is_independent_of_safety_limit() -> None:
     theta = math.pi / 8.0
     problem = _rotation_problem(theta)
-    short_limit = IterativeAmplitudeEstimation(_AnalyticSampler(theta)).run(
+    short_limit = IterativeAmplitudeEstimation(_AnalyticSampler()).run(
         [IterativeAmplitudeEstimationRequest(problem, 0.005, 0.05, 500, 20)]
     )[0]
-    long_limit = IterativeAmplitudeEstimation(_AnalyticSampler(theta)).run(
+    long_limit = IterativeAmplitudeEstimation(_AnalyticSampler()).run(
         [IterativeAmplitudeEstimationRequest(problem, 0.005, 0.05, 500, 50)]
     )[0]
 
@@ -308,7 +382,7 @@ def test_every_new_power_is_exactly_contained_in_one_half_circle(
 def test_good_state_predicate_must_return_bool() -> None:
     problem = _rotation_problem(0.2, predicate=lambda _: 1)
     with pytest.raises(TypeError, match="must return a bool"):
-        IterativeAmplitudeEstimation(_AnalyticSampler(0.2)).run(
+        IterativeAmplitudeEstimation(_AnalyticSampler()).run(
             [IterativeAmplitudeEstimationRequest(problem, 0.1, 0.05, 100, 5)]
         )
 
@@ -380,6 +454,41 @@ def test_epsilon_respects_binary64_geometry_resolution() -> None:
 
 
 def test_empty_batch_does_not_call_sampler() -> None:
-    sampler = _AnalyticSampler(0.2)
+    sampler = _AnalyticSampler()
     assert IterativeAmplitudeEstimation(sampler).run([]) == []
+    assert sampler.batch_sizes == []
+
+
+def test_entire_batch_is_revalidated_before_the_first_round():
+    first = IterativeAmplitudeEstimationRequest(_rotation_problem(0.2), 0.05, 0.05, 500)
+    second = IterativeAmplitudeEstimationRequest(
+        _rotation_problem(0.3), 0.05, 0.05, 500
+    )
+    second.problem.iteration_circuit.measure(0)
+    sampler = _AnalyticSampler()
+    with pytest.raises(ValueError, match="static unitary|classical data"):
+        IterativeAmplitudeEstimation(sampler).run((first, second))
+    assert sampler.batch_sizes == []
+
+
+@pytest.mark.parametrize("missing", ["epsilon", "alpha", "shots"])
+def test_single_requires_its_estimation_options_before_sampling(missing):
+    options = {"epsilon": 0.05, "alpha": 0.05, "shots": 500}
+    del options[missing]
+    sampler = _AnalyticSampler()
+    with pytest.raises(TypeError, match="epsilon, alpha, and shots"):
+        IterativeAmplitudeEstimation(sampler).run(_rotation_problem(0.2), **options)
+    assert sampler.batch_sizes == []
+
+
+@pytest.mark.parametrize(
+    "option", [{"epsilon": 0.05}, {"alpha": 0.1}, {"shots": 256}, {"max_rounds": 50}]
+)
+def test_batch_rejects_single_problem_options_before_sampling(option):
+    sampler = _AnalyticSampler()
+    request = IterativeAmplitudeEstimationRequest(
+        _rotation_problem(0.2), 0.05, 0.05, 500
+    )
+    with pytest.raises(TypeError, match="batch"):
+        IterativeAmplitudeEstimation(sampler).run([request], **option)
     assert sampler.batch_sizes == []

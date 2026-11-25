@@ -30,6 +30,7 @@ from cqlib_algorithms.algorithms.time_evolution.var_qrte import (
     VarQRTEResult,
 )
 from cqlib_algorithms.operators import (
+    RealAmplitudesAnsatz,
     SamplingEstimator,
     StatevectorEstimator,
     StatevectorSampler,
@@ -253,12 +254,13 @@ def _two_qubit_hamiltonian_matrix() -> np.ndarray:
     pauli_x = np.array([[0.0, 1.0], [1.0, 0.0]], dtype=np.complex128)
     pauli_y = np.array([[0.0, -1.0j], [1.0j, 0.0]], dtype=np.complex128)
     pauli_z = np.diag([1.0, -1.0]).astype(np.complex128)
-    return (
+    matrix: np.ndarray = (
         0.61 * np.kron(pauli_z, identity)
         - 0.37 * np.kron(pauli_x, pauli_x)
         + 0.23 * np.kron(identity, pauli_y)
         + 0.19 * np.kron(identity, pauli_z)
     )
+    return matrix
 
 
 def _dense_reference_step(
@@ -316,8 +318,9 @@ def _dense_reference_step(
     return dict(zip(names, (float(value) for value in next_values), strict=True))
 
 
-def test_ry_under_y_fixes_sign_imaginary_part_and_qgt_factor() -> None:
-    result = VarQRTE(StatevectorEstimator(), RYAnsatz()).evolve(
+@pytest.mark.parametrize("ansatz", [RYAnsatz(), RealAmplitudesAnsatz(1, reps=0)])
+def test_ry_under_y_fixes_sign_imaginary_part_and_qgt_factor(ansatz: Ansatz) -> None:
+    result = VarQRTE(StatevectorEstimator(), ansatz).run(
         PauliString.from_str("Y"),
         {"theta_0": 0.37},
         0.08,
@@ -498,16 +501,18 @@ def test_result_records_immutable_trajectory_and_auxiliary_observables() -> None
 def test_observable_shots_and_seeds_do_not_change_parameters() -> None:
     first_estimator = RecordingExactEstimator()
     second_estimator = RecordingExactEstimator()
-    arguments = {
-        "hamiltonian": PauliString.from_str("Y"),
-        "initial_parameters": {"theta_0": 0.2},
-        "time": 0.1,
-        "num_timesteps": 2,
-        "observable_shots": 64,
-        "auxiliary_operators": {"x": PauliString.from_str("X")},
-    }
-    first = VarQRTE(first_estimator, RYAnsatz()).evolve(seed=37, **arguments)
-    second = VarQRTE(second_estimator, RYAnsatz()).evolve(seed=38, **arguments)
+    first, second = (
+        VarQRTE(estimator, RYAnsatz()).run(
+            PauliString.from_str("Y"),
+            {"theta_0": 0.2},
+            0.1,
+            num_timesteps=2,
+            observable_shots=64,
+            auxiliary_operators={"x": PauliString.from_str("X")},
+            seed=seed,
+        )
+        for estimator, seed in ((first_estimator, 37), (second_estimator, 38))
+    )
 
     assert first.parameters == second.parameters
     assert len(first_estimator.batches) == len(second_estimator.batches) == 1
@@ -521,26 +526,34 @@ def test_observable_shots_and_seeds_do_not_change_parameters() -> None:
 
 
 @pytest.mark.integration
-def test_sampling_estimator_integration_preserves_exact_parameter_path() -> None:
-    sampled = VarQRTE(
-        SamplingEstimator(StatevectorSampler()),
-        RYAnsatz(),
-    ).evolve(
-        PauliString.from_str("Y"),
-        {"theta_0": 0.2},
-        0.1,
-        num_timesteps=2,
-        observable_shots=4096,
-        seed=91,
+def test_sampled_run_matches_evolve_and_preserves_the_exact_parameter_path() -> None:
+    ansatz = RealAmplitudesAnsatz(1, reps=0)
+    algorithm = VarQRTE(SamplingEstimator(StatevectorSampler()), ansatz)
+    hamiltonian = PauliString.from_str("Y")
+    initial = {"theta_0": 0.2}
+    sampled, legacy = (
+        execute(
+            hamiltonian,
+            initial,
+            0.1,
+            num_timesteps=2,
+            observable_shots=4096,
+            auxiliary_operators={"z": PauliString.from_str("Z")},
+            seed=91,
+        )
+        for execute in (algorithm.run, algorithm.evolve)
     )
-    exact = VarQRTE(StatevectorEstimator(), RYAnsatz()).evolve(
-        PauliString.from_str("Y"),
-        {"theta_0": 0.2},
-        0.1,
-        num_timesteps=2,
+    exact = VarQRTE(StatevectorEstimator(), ansatz).run(
+        hamiltonian, initial, 0.1, num_timesteps=2
     )
 
-    assert sampled.parameters == exact.parameters
+    assert sampled.times == legacy.times == exact.times
+    assert sampled.parameters == legacy.parameters == exact.parameters
+    assert sampled.energies == legacy.energies
+    assert sampled.observables == legacy.observables
+    np.testing.assert_array_equal(
+        sampled.evolved_circuit.to_matrix(), legacy.evolved_circuit.to_matrix()
+    )
     assert all(result.variance is not None for result in sampled.energies)
 
 
@@ -625,7 +638,7 @@ def test_constructor_rejects_invalid_configuration(
         ),
     ],
 )
-def test_evolve_rejects_invalid_input(
+def test_run_rejects_invalid_input(
     overrides: dict[str, object],
     exception: type[Exception],
     message: str,
@@ -638,7 +651,7 @@ def test_evolve_rejects_invalid_input(
     }
     arguments.update(overrides)
     with pytest.raises(exception, match=message):
-        VarQRTE(StatevectorEstimator(), RYAnsatz()).evolve(**arguments)  # type: ignore[arg-type]
+        VarQRTE(StatevectorEstimator(), RYAnsatz()).run(**arguments)  # type: ignore[arg-type]
 
 
 def test_evolve_rejects_width_mismatch_and_unsupported_circuit() -> None:

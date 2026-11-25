@@ -24,7 +24,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import final
+from typing import cast, final, overload
 
 from cqlib import Circuit
 
@@ -211,10 +211,46 @@ class SuperdenseCoding:
         circuit.validate()
         return circuit
 
+    @overload
+    def run(
+        self, message: Sequence[SuperdenseCodingRequest], /
+    ) -> list[SuperdenseCodingResult]: ...
+
+    @overload
+    def run(
+        self, message: tuple[int, int], /, *, shots: int
+    ) -> SuperdenseCodingResult: ...
+
     def run(
         self,
-        requests: Sequence[SuperdenseCodingRequest],
+        message: tuple[int, int] | Sequence[SuperdenseCodingRequest],
         /,
+        *,
+        shots: int | None = None,
+    ) -> SuperdenseCodingResult | list[SuperdenseCodingResult]:
+        """Encode and decode one two-bit message or an ordered request batch.
+
+        Args:
+            message: Pair (bit-flip bit, phase bit), or a batch of coding requests.
+            shots: Positive decoding samples for a single message.
+
+        Returns:
+            One decoding result, or results in the original batch order.
+
+        Raises:
+            TypeError: For invalid message types or mixed invocation styles.
+            ValueError: For nonbinary message bits, invalid shots, or sampler results.
+        """
+        if shots is not None:
+            if not isinstance(message, tuple):
+                raise TypeError("a single message must be a two-bit tuple")
+            request = SuperdenseCodingRequest(cast(tuple[int, int], message), shots)
+            return self._run_batch([request])[0]
+        return self._run_batch(cast(Sequence[SuperdenseCodingRequest], message))
+
+    def _run_batch(
+        self,
+        requests: Sequence[SuperdenseCodingRequest],
     ) -> list[SuperdenseCodingResult]:
         """Execute a complete ordered batch with one Sampler call."""
         prepared: list[tuple[SuperdenseCodingRequest, SamplerRequest]] = []

@@ -483,7 +483,7 @@ class VQD:
         """The prefix passed to the ansatz when constructing symbols."""
         return self._prefix
 
-    def compute_eigenvalues(
+    def run(
         self,
         operator: Hamiltonian | PauliString,
         initial_points: Mapping[str, float] | Sequence[Mapping[str, float]],
@@ -675,4 +675,24 @@ class VQD:
             tuple(optimizer_results),
             auxiliary_results,
             betas,
+        )
+
+    def compute_eigenvalues(
+        self,
+        operator: Hamiltonian | PauliString,
+        initial_points: Mapping[str, float] | Sequence[Mapping[str, float]],
+        *,
+        shots: int | None = None,
+        fidelity_shots: int = 1024,
+        seed: int | None = None,
+        auxiliary_operators: Sequence[Hamiltonian | PauliString] = (),
+    ) -> VQDResult:
+        """Estimate the same sequence of low-energy states as :meth:`run`."""
+        return self.run(
+            operator,
+            initial_points,
+            shots=shots,
+            fidelity_shots=fidelity_shots,
+            seed=seed,
+            auxiliary_operators=auxiliary_operators,
         )

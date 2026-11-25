@@ -72,6 +72,7 @@ def test_oracle_operators_are_exported_from_functional_packages():
         "GroverDiffusion",
         "GroverLong",
         "PhaseOracle",
+        "BitPatternPhaseOracle",
         "SplitCycleShift",
         "UnitaryDilation",
         "UnitaryMatrixOracle",

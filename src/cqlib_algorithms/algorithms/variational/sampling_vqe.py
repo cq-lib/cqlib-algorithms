@@ -377,7 +377,7 @@ class SamplingVQE:
         self._optimizer = optimizer
         self._prefix = prefix
 
-    def compute_minimum_eigenvalue(
+    def run(
         self,
         operator: Hamiltonian | PauliString,
         initial_point: Mapping[str, float],
@@ -457,6 +457,17 @@ class SamplingVQE:
             best_measurement=estimator.best_measurement,
             shots=shots,
         )
+
+    def compute_minimum_eigenvalue(
+        self,
+        operator: Hamiltonian | PauliString,
+        initial_point: Mapping[str, float],
+        *,
+        shots: int,
+        seed: int | None = None,
+    ) -> SamplingVQEResult:
+        """Run the same sampling minimization as :meth:`run`."""
+        return self.run(operator, initial_point, shots=shots, seed=seed)
 
 
 __all__ = ["SamplingVQE", "SamplingVQEMeasurement", "SamplingVQEResult"]

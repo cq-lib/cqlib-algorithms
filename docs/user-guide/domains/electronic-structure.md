@@ -54,7 +54,7 @@ Jordan–Wigner；自定义 mapper 必须同时用于 Hamiltonian、初态、拟
 ```python
 import numpy as np
 
-from cqlib_algorithms import ElectronicGroundState
+from cqlib_algorithms import ElectronicGroundState, ElectronicQEOM
 from cqlib_algorithms.extension.electronic_structure import (
     ElectronicIntegrals,
     ElectronicOccupation,
@@ -62,6 +62,7 @@ from cqlib_algorithms.extension.electronic_structure import (
     hartree_fock_initial_point,
 )
 from cqlib_algorithms.operators.estimator import StatevectorEstimator
+from cqlib_algorithms.operators.ansatz import UCCSDAnsatz
 from cqlib_algorithms.operators.gradient import ParameterShiftGradient
 from cqlib_algorithms.operators.optimizer import GradientDescent
 
@@ -83,13 +84,20 @@ solver = ElectronicGroundState(
     GradientDescent(ParameterShiftGradient(), maxiter=20, tolerance=1e-12),
     prefix="chem",
 )
-result = solver.compute(system, point)
+result = solver.run(system, point, ansatz=UCCSDAnsatz(system.occupation))
+excited = ElectronicQEOM(StatevectorEstimator()).run(result)
+print(result.total_energy)
+print(excited.excitation_energies)
 ```
 
 `result.total_energy` 包含积分常数；`electronic_energy`、`inactive_energy`、
 `correlation_energy` 只在输入数据包含相应来源信息时可用。`particle_number`、
 `magnetization` 和 `angular_momentum` 用于检查终态物理扇区。qEOM 接收同一
 `ElectronicGroundStateResult`，计算中性、粒子数守恒的激发能。
+该例输出约为 `-1.3` 和 `[1.5, 1.5, 3.0]`。将 `UCCSDAnsatz` 换为兼容的
+`PUCCDAnsatz` 或 `PUCCSDAnsatz` 可比较不同的变分状态空间；省略 `initial_point` 时
+使用所选拟设的零参数初值。qEOM 保留基态结果记录的 mapper，`excitations` 可指定
+中性激发池，`num_roots` 限制返回根数。两个求解器的 `compute()` 与 `run()` 使用相同的求解流程。
 
 当目标是从 occupation-basis 样本提取低能 determinant 子空间时，可改用
 [`SQD`](../algorithms/sample-based-quantum-diagonalization.md)。SQD 固定使用

@@ -62,12 +62,11 @@ from cqlib_algorithms import VarQITE
 from cqlib_algorithms.operators import RealAmplitudesAnsatz, StatevectorEstimator
 
 ansatz = RealAmplitudesAnsatz(1, reps=0)
-template = ansatz.build_circuit("theta")
-initial = {name: 0.4 for name in template.used_symbols}
+algorithm = VarQITE(StatevectorEstimator(), ansatz)
 
-result = VarQITE(StatevectorEstimator(), ansatz).evolve(
+result = algorithm.run(
     PauliString.from_str("Z"),
-    initial,
+    {"theta_0": 0.4},
     0.2,
     num_timesteps=20,
     auxiliary_operators={"x": PauliString.from_str("X")},
@@ -78,6 +77,8 @@ print(result.final_parameters)
 print(result.final_energy.expectation)
 print([item.expectation for item in result.observables["x"]])
 ```
+
+这里的 `theta_0` 是该单比特拟设在默认前缀下的旋转角。一次 `run` 返回初态和 20 次更新，共 21 个时刻。`evolve(...)` 接受相同参数。
 
 变分虚时演化框架见 McArdle 等人的
 [Variational ansatz-based quantum simulation of imaginary time evolution](https://doi.org/10.1038/s41534-019-0187-2)；

@@ -22,14 +22,20 @@ References
 from __future__ import annotations
 
 import copy
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import final
 
 from cqlib import Circuit, Qubit
 from cqlib.circuit import CircuitError
+from cqlib.device import ExecutionResult
 from cqlib.qis import Pauli, PauliString
 
+from ..._utils.parameters import bind_circuit_parameters, validate_parameter_prefix
+from ..._utils.state_preparation import build_component_circuit
+from ...protocols.ansatz import Ansatz
+from ...protocols.sampler import Sampler, SamplerRequest, require_sampler_results
+from ...protocols.state_preparation import StatePreparation
 from .pauli_grouping_strategy import PauliGroupingStrategy, snapshot_terms
 
 
@@ -162,6 +168,52 @@ class MeasurementPlan:
                 circuit.h(qubit)
         return circuit
 
+    def run(
+        self,
+        sampler: Sampler,
+        *,
+        shots: int,
+        parameter_bindings: Mapping[str, float] | None = None,
+        seed: int | None = None,
+    ) -> list[ExecutionResult]:
+        """Sample the product bases in group order using one batch submission.
+
+        Args:
+            sampler: Backend implementing the public Sampler protocol.
+            shots: Positive sample count for each measurement group.
+            parameter_bindings: Exact finite values for all preparation symbols.
+            seed: Optional non-negative seed forwarded to each group.
+
+        Returns:
+            Raw counts in ``groups`` order; identity terms require no samples.
+            An empty plan returns an empty list without submitting a batch.
+
+        Raises:
+            TypeError: If a dependency, option, or sampler result has an invalid type.
+            ValueError: If bindings, counts, or sampler results violate the contract.
+        """
+        if not isinstance(sampler, Sampler):
+            raise TypeError("sampler must be a Sampler instance")
+        bound = bind_circuit_parameters(
+            self._circuit, {} if parameter_bindings is None else parameter_bindings
+        )
+        base = SamplerRequest(bound, self._qubits, shots, seed)
+        bound_plan = MeasurementPlan(
+            bound, self._terms, self._groups, self._identity_indices
+        )
+        requests = [
+            SamplerRequest(
+                bound_plan.build_circuit(index),
+                base.qubits,
+                base.shots,
+                base.seed,
+            )
+            for index in range(len(self._groups))
+        ]
+        if not requests:
+            return []
+        return require_sampler_results(sampler.run(requests), requests)
+
 
 @final
 class PauliMeasurementPlanner:
@@ -177,11 +229,14 @@ class PauliMeasurementPlanner:
     local grouping; global commuting groups intentionally are not accepted
     because they may require entangled joint readout rather than local basis
     rotations. Empty terms produce an empty plan.
+    Parameterized preparations retain their symbols until ``plan.run`` binds
+    them. All preparation qubits, including any ancillas, remain in the plan.
 
     Args:
-        circuit: Fixed positive-width state-preparation circuit.
+        circuit: State preparation, ansatz, or existing preparation circuit.
         terms: Ordered Pauli observables with matching width.
         grouping: ``"none"`` or ``"qwc"``.
+        prefix: Symbol prefix used to build a preparation or ansatz.
 
     Raises:
         TypeError: If inputs have invalid types.
@@ -192,13 +247,17 @@ class PauliMeasurementPlanner:
 
     def __init__(
         self,
-        circuit: Circuit,
+        circuit: StatePreparation | Ansatz | Circuit,
         terms: Sequence[PauliString],
         *,
         grouping: str = "qwc",
+        prefix: str = "theta",
     ) -> None:
-        if not isinstance(circuit, Circuit):
-            raise TypeError("circuit must be a cqlib.Circuit")
+        validate_parameter_prefix(prefix)
+        if isinstance(circuit, (StatePreparation, Ansatz)):
+            circuit = build_component_circuit(circuit, prefix=prefix)
+        elif not isinstance(circuit, Circuit):
+            raise TypeError("circuit must be a StatePreparation, Ansatz, or Circuit")
         _validate_preparation_circuit(circuit)
         self._circuit = copy.copy(circuit)
         self._terms = snapshot_terms(terms)

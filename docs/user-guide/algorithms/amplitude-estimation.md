@@ -3,14 +3,19 @@
 本库提供标准振幅估计、迭代振幅估计、最大似然振幅估计和快速振幅估计。四者共享
 `AmplitudeEstimationProblem`，由调用方显式提供：
 
-- 固定、完全绑定且静态酉的状态制备线路 <img src="../../assets/formulas/inline/inline-559aead08264d579.svg" alt="A" style="vertical-align: -0.000pt;">；
-- 与 <img src="../../assets/formulas/inline/inline-559aead08264d579.svg" alt="A" style="vertical-align: -0.000pt;"> 同宽的固定、完全绑定且静态酉 Grover 迭代线路 <img src="../../assets/formulas/inline/inline-4ae81572f06e1b88.svg" alt="Q" style="vertical-align: -3.000pt;">；
+- 状态制备 `A`，可传入 `StatePreparation` 组件；
+- Grover 迭代 `Q`，可传入 `GroverOperator` 组件；
 - 非空且无重复的目标量子比特位置；
 - 将目标寄存器测量字符串判为好态或坏态的谓词。
 
 线路按量子比特插入位置映射到连续位置 <img src="../../assets/formulas/inline/inline-80df05cab2d1ce42.svg" alt="0,\ldots,n-1" style="vertical-align: -3.000pt;">。Sampler 返回的字符串右端
-对应 `objective_qubits` 的第一项，谓词直接接收这一字符串。组件验证线路机械约束，
-但不通过指数规模分析证明调用方给出的 <img src="../../assets/formulas/inline/inline-4ae81572f06e1b88.svg" alt="Q" style="vertical-align: -3.000pt;">、<img src="../../assets/formulas/inline/inline-559aead08264d579.svg" alt="A" style="vertical-align: -0.000pt;"> 和好态谓词在数学上相互一致。
+对应 `objective_qubits` 的第一项。问题对象保存两条线路的独立副本，要求它们同宽、静态、酉且所有参数已绑定。
+构造 `Q` 时应使用同一初态制备，并让 Oracle 标记与好态谓词一致的子空间。
+`problem.state_preparation` 保存固定制备组件，`problem.grover_operator` 保存独立的迭代组件副本；
+`preparation_circuit` 和 `iteration_circuit` 是供执行使用的线路快照，应保持不变。
+四种算法均可调用 `run(problem, ...)` 估计一个问题，也可调用 `run(requests)` 批量估计。
+批量请求自行指定执行参数，不能同时传入单任务的关键字配置。
+标准 AE 测量相位寄存器。其余三种方法对目标寄存器采样，再用谓词判断好态。FAE 对输入还有小振幅要求。
 
 若
 
@@ -18,7 +23,7 @@
   <img src="../../assets/formulas/ae-state-decomposition.svg" alt="A|0⟩ = √(1-a)|ψ_bad⟩ + √a|ψ_good⟩, where a = sin²θ and θ is in [0, π/2].">
 </p>
 
-则相关二维子空间上的 <img src="../../assets/formulas/inline/inline-4ae81572f06e1b88.svg" alt="Q" style="vertical-align: -3.000pt;"> 本征相位为 <img src="../../assets/formulas/inline/inline-224c55075b62d340.svg" alt="e^{\pm2i\theta}" style="vertical-align: -1.000pt;">，并且
+则相关二维子空间上的 <img src="../../assets/formulas/inline/inline-4ae81572f06e1b88.svg" alt="Q" style="vertical-align: -3.000pt;"> 本征值为 <img src="../../assets/formulas/inline/inline-224c55075b62d340.svg" alt="e^{\pm2i\theta}" style="vertical-align: -1.000pt;">，并且
 <img src="../../assets/formulas/inline/inline-cbcc0a5a5fb6988b.svg" alt="Q^kA" style="vertical-align: -3.000pt;"> 的好态概率为 <img src="../../assets/formulas/inline/inline-982c3cd3fdbf23fa.svg" alt="\sin^2((2k+1)\theta)" style="vertical-align: -4.000pt;">。
 
 ## 标准振幅估计
@@ -52,23 +57,102 @@
 <img src="../../assets/formulas/inline/inline-74d4f5dd95885b5e.svg" alt="\mathtt{num\_grover\_queries}=2^m-1" style="vertical-align: -4.000pt;"> 表示线路中的 Grover 幂次数总和，
 <img src="../../assets/formulas/inline/inline-3704f4331ef2205e.svg" alt="\mathtt{num\_oracle\_queries}=\mathtt{shots}(2^m-1)" style="vertical-align: -4.000pt;"> 表示按 shots 加权的查询数。
 
+下面估计单比特态中 `|1⟩` 的概率。将同一个 `preparation` 交给 Grover 迭代和问题对象，
+前者用它构造关于初态的反射，后者用它初始化系统寄存器。
+
+```python
+import math
+
+from cqlib_algorithms import AmplitudeEstimationProblem, StandardAmplitudeEstimation
+from cqlib_algorithms.operators import (
+    AmplitudeEncoding,
+    BooleanFunction,
+    GroverOperator,
+    PhaseOracle,
+    StatevectorSampler,
+)
+
+theta = math.pi / 8
+marked = 1
+preparation = AmplitudeEncoding((math.cos(theta), math.sin(theta)))
+oracle = PhaseOracle(BooleanFunction.from_marked_states(1, [marked]))
+iteration = GroverOperator(oracle=oracle, state_preparation=preparation)
+problem = AmplitudeEstimationProblem(
+    state_preparation=preparation,
+    grover_operator=iteration,
+    objective_qubits=(0,),
+    is_good_state=lambda bits: bits == str(marked),
+)
+
+ae = StandardAmplitudeEstimation(StatevectorSampler())
+result = ae.run(problem, num_evaluation_qubits=3, shots=256)
+print(result.estimation)  # 0.14644660940672624
+```
+
+相位寄存器使用 3 个量子比特。在理想仿真中，相位读数为 1 或 7，两者对应相同的概率 `sin²(π/8)`。
+将 `marked` 改为 `0` 即可估计同一初态中 `|0⟩` 的概率，约为 `0.8535533906`。
+一次运行多个问题时，将各自的 `StandardAmplitudeEstimationRequest` 放入列表，调用 `ae.run(requests)`，结果按请求顺序返回。
+
 ## 迭代振幅估计
 
-`IterativeAmplitudeEstimation` 每轮采样普通线路 <img src="../../assets/formulas/inline/inline-cbcc0a5a5fb6988b.svg" alt="Q^kA" style="vertical-align: -3.000pt;">，使用
-Chernoff--Hoeffding 区间约束 <img src="../../assets/formulas/inline/inline-982c3cd3fdbf23fa.svg" alt="\sin^2((2k+1)\theta)" style="vertical-align: -4.000pt;">，再按同半圆规则选择下一轮幂次。
+IAE 复用标准 AE 的 `AmplitudeEstimationProblem`。每轮执行 <img src="../../assets/formulas/inline/inline-cbcc0a5a5fb6988b.svg" alt="Q^kA" style="vertical-align: -3.000pt;">，
+测量 `objective_qubits` 并用 `is_good_state` 统计好态。若初态的好态概率为 `a = sin²(θ)`，
+这一轮观测到好态的概率为 <img src="../../assets/formulas/inline/inline-982c3cd3fdbf23fa.svg" alt="\sin^2((2k+1)\theta)" style="vertical-align: -4.000pt;">。
+
+下面用振幅比 3∶1 制备单比特态，估计得到 `1` 的概率，解析值为 `1 / (3² + 1²) = 0.1`。
+已有标准 AE 的 `problem` 时，可直接从创建 `iae` 的一行开始。
+
+```python
+from cqlib_algorithms import AmplitudeEstimationProblem, IterativeAmplitudeEstimation
+from cqlib_algorithms.operators import (
+    AmplitudeEncoding,
+    BooleanFunction,
+    GroverOperator,
+    PhaseOracle,
+    StatevectorSampler,
+)
+
+marked = 1
+preparation = AmplitudeEncoding((3, 1))
+oracle = PhaseOracle(BooleanFunction.from_marked_states(1, [marked]))
+iteration = GroverOperator(oracle, state_preparation=preparation)
+problem = AmplitudeEstimationProblem(
+    state_preparation=preparation,
+    grover_operator=iteration,
+    objective_qubits=(0,),
+    is_good_state=lambda bits: bits == str(marked),
+)
+
+iae = IterativeAmplitudeEstimation(StatevectorSampler())
+result = iae.run(problem, epsilon=0.01, alpha=0.05, shots=500)
+print(result.estimation, result.confidence_interval)
+for k, shots, interval in zip(
+    result.powers, result.round_shots, result.round_intervals
+):
+    print(k, shots, interval)
+```
+
+**选择幂次。** 首轮取 `k=0`，直接采样初态。以后从大到小考察候选幂次，要求放大系数
+`4k+2` 至少是上一轮的两倍，且当前角度区间经放大后落在同一半圆。这样观测概率可以在一个单调分支上反推出角度。
+若没有符合条件的更大幂次，就在原幂次继续采样。
+
+**更新区间。** 对当前幂次累计好态数和采样数，先为该幂次的好态概率建立 Chernoff–Hoeffding 区间，
+再沿选定分支反解角度，与上一轮的角度区间取交集。交集为空时沿用旧区间。
+将新区间两端映射为初态好态概率，按轮保存在 `round_intervals` 中。最终 `estimation` 是最后一个区间的中点。
+
 论文 Algorithm 1 的理论轮数界
 
 <p align="center">
   <img src="../../assets/formulas/iae-round-bound.svg" alt="T equals the ceiling of log base 2 of π divided by 8ε.">
 </p>
 
-用于置信预算；同一幂次 `k` 再次出现时，把它的好态数和 shots 与此前数据合并，再用
+用于分配总失败概率预算 `alpha`。设 `N_total` 为当前幂次累计采样数，概率区间的半径为
 
 <p align="center">
   <img src="../../assets/formulas/iae-amplitude-radius.svg" alt="ε_a equals the square root of log(2T/α) divided by 2N_total.">
 </p>
 
-更新区间。为遵守 no-overshooting 规则，先从基准 `shots=N_shots` 计算
+区间端点截到 `[0, 1]`。为确定每轮实际采样数，先从基准 `shots=N_shots` 计算
 
 <p align="center">
   <img src="../../assets/formulas/iae-angle-bound.svg" alt="L_max is the arcsine of the fourth root of 2 log(2T/α) divided by N_shots.">
@@ -88,10 +172,10 @@ binary64 Chernoff--Hoeffding 几何计算的整数频数可精确表示，并避
 固定浮点容差把跨越半圆边界的区间视为合法。同样，区间更新的圈编号也由旧下界的
 精确有理表示计算。
 
-同一轮所有尚未收敛的问题合并为一次 Sampler 批调用；下一轮依赖当前观测，所以
-不能把全部轮次预先合并。
+批量调用使用 `iae.run(requests)`，每个 `IterativeAmplitudeEstimationRequest` 自行设置精度、失败概率预算、采样数和轮数上限。
+同一轮的全部活动问题合并为一次采样提交。已收敛的问题退出后续轮次，最终结果保持输入顺序。
 
-角度区间宽度不超过 <img src="../../assets/formulas/inline/inline-9cbc7f6855e810d2.svg" alt="2\epsilon" style="vertical-align: -1.000pt;"> 且实际 binary64 振幅区间宽度不超过
+以弧度计的角度区间宽度不超过 <img src="../../assets/formulas/inline/inline-9cbc7f6855e810d2.svg" alt="2\epsilon" style="vertical-align: -1.000pt;"> 且初态好态概率区间宽度不超过
 <img src="../../assets/formulas/inline/inline-9cbc7f6855e810d2.svg" alt="2\epsilon" style="vertical-align: -1.000pt;"> 后才停止；构造结果前还会直接复核后一个条件。
 `T` 是置信预算所覆盖的同幂次数据组数界，相同 `k` 的多轮采样合并为一组；
 `max_rounds` 则是实际 Sampler 迭代次数的独立硬上限，不参与置信预算。因此
@@ -101,13 +185,53 @@ binary64 Chernoff--Hoeffding 几何计算的整数频数可精确表示，并避
 
 ## 最大似然振幅估计
 
-`MaximumLikelihoodAmplitudeEstimation` 对固定、严格递增且从 `0` 开始的幂次序列，
-一次批量执行全部 <img src="../../assets/formulas/inline/inline-cbcc0a5a5fb6988b.svg" alt="Q^kA" style="vertical-align: -3.000pt;"> 线路。若第 <img src="../../assets/formulas/inline/inline-8254c329a92850f6.svg" alt="k" style="vertical-align: -1.000pt;"> 个实验观察到 <img src="../../assets/formulas/inline/inline-8a5a5b48b1793c8b.svg" alt="h_k" style="vertical-align: -3.000pt;"> 次好态、总 shots 为
-<img src="../../assets/formulas/inline/inline-8ce86a6ae65d3692.svg" alt="N" style="vertical-align: -0.000pt;">，则在 <img src="../../assets/formulas/inline/inline-316345810c2bcc09.svg" alt="\theta\in[0,\pi/2]" style="vertical-align: -4.000pt;"> 最大化
+MLAE 使用与标准 AE、IAE 相同的 `AmplitudeEstimationProblem`。预先指定从 `0` 开始、严格递增的幂次元组 `powers`，
+算法为每个幂次构造 <img src="../../assets/formulas/inline/inline-cbcc0a5a5fb6988b.svg" alt="Q^kA" style="vertical-align: -3.000pt;">，一次提交全部线路，每条线路独立采样 `shots` 次。
+下面估计同一振幅比为 3∶1 的初态中测到 `1` 的概率。若已创建上一节的 `problem`，直接从创建 `mlae` 的一行开始。
+
+```python
+from cqlib_algorithms import (
+    AmplitudeEstimationProblem,
+    MaximumLikelihoodAmplitudeEstimation,
+)
+from cqlib_algorithms.operators import (
+    AmplitudeEncoding,
+    BooleanFunction,
+    GroverOperator,
+    PhaseOracle,
+    StatevectorSampler,
+)
+
+marked = 1
+preparation = AmplitudeEncoding((3, 1))
+oracle = PhaseOracle(BooleanFunction.from_marked_states(1, [marked]))
+iteration = GroverOperator(oracle, state_preparation=preparation)
+problem = AmplitudeEstimationProblem(
+    state_preparation=preparation,
+    grover_operator=iteration,
+    objective_qubits=(0,),
+    is_good_state=lambda bits: bits == str(marked),
+)
+
+mlae = MaximumLikelihoodAmplitudeEstimation(StatevectorSampler())
+result = mlae.run(problem, powers=(0, 1, 2, 4), shots=500)
+print(list(zip(result.powers, result.good_counts)))
+print(result.estimation, result.asymptotic_interval)
+```
+
+设初态好态概率为 `a = sin²(θ)`。对于给定的候选角度，各幂次分别预测好态概率
+<img src="../../assets/formulas/inline/inline-982c3cd3fdbf23fa.svg" alt="\sin^2((2k+1)\theta)" style="vertical-align: -4.000pt;">。
+例如在解析值 `a=0.1` 处，幂次 `0、1、2、4` 依次预测 `0.1、0.676、0.99856、0.059228416`。
+对每个幂次，算法用 `is_good_state` 统计目标比特上的好态数 <img src="../../assets/formulas/inline/inline-8a5a5b48b1793c8b.svg" alt="h_k" style="vertical-align: -3.000pt;">，
+再把各组二项计数的对数似然相加，在 <img src="../../assets/formulas/inline/inline-316345810c2bcc09.svg" alt="\theta\in[0,\pi/2]" style="vertical-align: -4.000pt;"> 上求最大值，其中 `N=shots` 是每个幂次的采样数。
 
 <p align="center">
   <img src="../../assets/formulas/mlae-log-likelihood.svg" alt="Maximum-likelihood amplitude-estimation log-likelihood over experiment powers k.">
 </p>
+
+最终 `estimation` 为最优角度的正弦平方。示例共采样 2,000 次，`good_counts` 与 `powers` 逐项对应。
+批量运行时，每个问题使用 `MaximumLikelihoodAmplitudeEstimationRequest(problem, powers, shots)` 指定实验配置。
+`mlae.run(requests)` 将所有线路合并提交，各问题单独拟合，结果按请求顺序返回。
 
 公共请求要求 <img src="../../assets/formulas/inline/inline-4ba1c74d5dbe64e9.svg" alt="\mathtt{shots}\leq2^{53}-1" style="vertical-align: -2.000pt;">。Core 的结果对象在 64 位主机上以 Rust `usize`
 承载 shots，表示范围更大；这里采用更严格的算法边界，是因为候选生成的一阶导数
@@ -130,27 +254,22 @@ guard digits，而且用两档精度复算候选排序；若排序改变，再�
 报错。全域比较不使用按似然绝对值或 shots 放大的相对容差。公开
 `log_likelihood` 仍是选中候选对应的有限 float。低于
 <img src="../../assets/formulas/inline/inline-e9742eff9c4a7c8d.svg" alt="[0,\pi/2]" style="vertical-align: -4.000pt;"> 浮点分辨率的 `search_precision` 会在执行前被拒绝，搜索还包含有限迭代
-与浮点停滞保护。`asymptotic_interval` 是
-根据 Fisher 信息构造并映射回振幅的 95% 渐近区间，同时作为共享
-`confidence_interval` 字段返回；它不是有限样本覆盖保证。
+与浮点停滞保护。`search_precision` 控制角度搜索的数值容差，单位为弧度。
+`asymptotic_interval` 与 `confidence_interval` 给出同一 95% 渐近区间，由 Fisher 信息构造并映射回好态概率。其覆盖率采用大样本正态近似。
 
 ## 快速振幅估计
 
-`FasterAmplitudeEstimation` 实现 Nakaji 的两阶段快速振幅估计，不使用相位寄存器、
-受控 Grover 幂或逆 QFT。每轮执行普通线路 <img src="../../assets/formulas/inline/inline-cbcc0a5a5fb6988b.svg" alt="Q^kA" style="vertical-align: -3.000pt;">；第一阶段用一个余弦估计逐轮
-缩小 <img src="../../assets/formulas/inline/inline-2b4af44cb17349bb.svg" alt="\theta" style="vertical-align: -1.000pt;"> 区间，达到相位消歧条件后，第二阶段用两个不同 Grover 幂的余弦估计
-恢复正弦和余弦，从而继续倍增查询深度。同一轮所有请求合并为一次 Sampler 批调用，
-后续轮次仍依赖当前观测。
+`FasterAmplitudeEstimation` 复用标准 AE 的 `AmplitudeEstimationProblem`。每轮采样普通线路 <img src="../../assets/formulas/inline/inline-cbcc0a5a5fb6988b.svg" alt="Q^kA" style="vertical-align: -3.000pt;">。
+第一阶段依次取幂次 1、2、4 等，从每轮好态频率估计余弦并反解角度区间。达到转换条件后，
+第二阶段每轮取两个幂次，利用两组计数区分同一余弦值对应的不同相位，再结合上一轮区间确定当前角度范围。
+达到 `max_iterations` 后，将最终角度区间的中点取正弦平方，得到输入问题的好态概率估计。
 
-算法要求实际送入的估计问题已经满足 <img src="../../assets/formulas/inline/inline-56396a782bef738c.svg" alt="\sqrt{a_{\mathrm{problem}}}\leq0.25" style="vertical-align: -5.000pt;">。请求中的
-`amplitude_rescaling_factor` 只声明调用方已经施加的幅度缩放，不会改写线路：
+输入问题须满足 <img src="../../assets/formulas/inline/inline-56396a782bef738c.svg" alt="\sqrt{a_{\mathrm{problem}}}\leq0.25" style="vertical-align: -5.000pt;">，即好态概率至多为 `1/16`。
+`amplitude_rescaling_factor` 声明输入问题已经采用的振幅缩放系数。
 
-- `1.0` 表示直接估计这个小振幅问题；
-- `0.25` 表示调用方已经构造了配套的缩放后 <img src="../../assets/formulas/inline/inline-559aead08264d579.svg" alt="A" style="vertical-align: -0.000pt;">、<img src="../../assets/formulas/inline/inline-4ae81572f06e1b88.svg" alt="Q" style="vertical-align: -3.000pt;"> 和好态谓词，返回值再除以
-  <img src="../../assets/formulas/inline/inline-19626a5e79b04c3f.svg" alt="0.25^2" style="vertical-align: -1.000pt;"> 恢复原目标。
-
-经典 `is_good_state` 谓词不足以自动生成量子 Oracle，复用未缩放问题的旧 Grover
-迭代线路也不能代表缩放后的问题。因此实现不会在内部静默执行自动缩放。
+- `1.0` 是默认值，直接估计当前问题的好态概率。
+- `0.25` 适用于已把目标振幅缩小到四分之一的问题。调用方须提供配套的初态、Grover 迭代和好态判据。
+  FAE 将估计概率及区间端点除以 <img src="../../assets/formulas/inline/inline-19626a5e79b04c3f.svg" alt="0.25^2" style="vertical-align: -1.000pt;">，恢复原问题的概率尺度。
 
 总失败概率预算 <img src="../../assets/formulas/inline/inline-4893e9df8b5496eb.svg" alt="\alpha" style="vertical-align: -1.000pt;"> 在至多 <img src="../../assets/formulas/inline/inline-40d294e752c9bd80.svg" alt="2\mathtt{max\_iterations}" style="vertical-align: -2.000pt;"> 次余弦估计之间均分。单次预算为
 <img src="../../assets/formulas/inline/inline-9d177c825e748e45.svg" alt="\delta_c=\alpha/(2\mathtt{max\_iterations})" style="vertical-align: -4.000pt;">，第一、第二阶段每条线路的 shots 分别为
@@ -166,67 +285,38 @@ guard digits，而且用两档精度复算候选排序；若排序改变，再�
 线路 shots 加权后的指数之和。因为当前线路构造显式重复 <img src="../../assets/formulas/inline/inline-4ae81572f06e1b88.svg" alt="Q" style="vertical-align: -3.000pt;">，请求会在构造前拒绝
 单条线路超过一百万次 Grover 重复的规模。
 
-## 示例
+下面用振幅比 4∶1 制备单比特态，标记 `1` 的概率为 `1/17`，可以直接估计。
 
 ```python
-import math
-
-from cqlib import Circuit
-from cqlib_algorithms import (
-    AmplitudeEstimationProblem,
-    MaximumLikelihoodAmplitudeEstimation,
-    MaximumLikelihoodAmplitudeEstimationRequest,
+from cqlib_algorithms import AmplitudeEstimationProblem, FasterAmplitudeEstimation
+from cqlib_algorithms.operators import (
+    AmplitudeEncoding,
+    BooleanFunction,
+    GroverOperator,
+    PhaseOracle,
+    StatevectorSampler,
 )
-from cqlib_algorithms.operators import StatevectorSampler
 
-theta = math.pi / 8
-preparation = Circuit(1)
-preparation.ry(0, 2 * theta)
-grover = Circuit(1)
-grover.ry(0, 4 * theta)
+marked = 1
+preparation = AmplitudeEncoding((4, 1))
+oracle = PhaseOracle(BooleanFunction.from_marked_states(1, [marked]))
+iteration = GroverOperator(oracle, state_preparation=preparation)
 problem = AmplitudeEstimationProblem(
-    preparation,
-    grover,
-    (0,),
-    lambda bits: bits == "1",
+    state_preparation=preparation,
+    grover_operator=iteration,
+    objective_qubits=(0,),
+    is_good_state=lambda bits: bits == str(marked),
 )
 
-algorithm = MaximumLikelihoodAmplitudeEstimation(StatevectorSampler())
-result = algorithm.run(
-    [MaximumLikelihoodAmplitudeEstimationRequest(problem, (0, 1, 2, 4), 1000)]
-)[0]
-print(result.estimation, result.asymptotic_interval)
-```
-
-快速振幅估计必须使用满足小振幅承诺的问题。例如：
-
-```python
-from cqlib_algorithms import (
-    FasterAmplitudeEstimation,
-    FasterAmplitudeEstimationRequest,
-)
-
-theta = 0.1
-preparation = Circuit(1)
-preparation.ry(0, 2 * theta)
-grover = Circuit(1)
-grover.ry(0, 4 * theta)
-problem = AmplitudeEstimationProblem(
-    preparation,
-    grover,
-    (0,),
-    lambda bits: bits == "1",
-)
-
-algorithm = FasterAmplitudeEstimation(StatevectorSampler())
-result = algorithm.run(
-    [FasterAmplitudeEstimationRequest(problem, alpha=0.05, max_iterations=5)]
-)[0]
+fae = FasterAmplitudeEstimation(StatevectorSampler())
+result = fae.run(problem, alpha=0.05, max_iterations=5)
 print(result.estimation, result.confidence_interval)
+print(result.powers)
 ```
 
-若目标振幅大于 `0.25`，调用方应先构造数学上一致的缩放后问题，并在请求中设置
-`amplitude_rescaling_factor=0.25`；不能只修改该参数而继续传入原来的 <img src="../../assets/formulas/inline/inline-559aead08264d579.svg" alt="A" style="vertical-align: -0.000pt;"> 和 <img src="../../assets/formulas/inline/inline-4ae81572f06e1b88.svg" alt="Q" style="vertical-align: -3.000pt;">。
+每条线路的采样数由 `alpha` 和 `max_iterations` 决定。批量运行时，每个问题通过
+`FasterAmplitudeEstimationRequest(problem, alpha, max_iterations)` 指定自己的配置。
+`fae.run(requests)` 在每轮把仍需执行的线路合并为一次采样提交，最终按请求顺序返回各自的结果。
 
 ## 理论来源
 

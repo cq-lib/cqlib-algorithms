@@ -21,7 +21,7 @@ References
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, final
 
@@ -29,6 +29,7 @@ import numpy as np
 from cqlib.circuit import Circuit, Qubit, ValueOperation
 from cqlib.qis import Statevector
 
+from ...protocols.ansatz import Ansatz
 from ...protocols.gradient import GradientRequest
 from ._parameter_analysis import Occurrence, analyze_symbol, validate_circuit
 
@@ -353,8 +354,48 @@ class StatevectorQGT:
 
     __slots__ = ()
 
-    def compute(self, request: GradientRequest) -> QGTResult:
-        """Return the QGT of one estimator objective's parameters."""
+    def compute(
+        self,
+        request: GradientRequest | Ansatz,
+        parameter_bindings: Mapping[str, float] | None = None,
+        *,
+        parameter_names: tuple[str, ...] | None = None,
+        prefix: str = "theta",
+    ) -> QGTResult:
+        """Return the QGT of an ansatz state or an existing objective request.
+
+        With a GradientRequest, use its stored bindings and parameter selection;
+        additional bindings or parameter names and a nondefault prefix are rejected.
+
+        Args:
+            request: Trainable component or existing gradient request.
+            parameter_bindings: Exact symbol bindings for a component input.
+            parameter_names: Ordered geometric coordinates; None uses active symbols.
+            prefix: Symbol prefix used to build a component.
+
+        Returns:
+            Tensor and real metric in the selected coordinate order.
+
+        Raises:
+            TypeError: If the component or request has the wrong type.
+            ValueError: If symbols, circuit support, or input options are invalid.
+        """
+        if isinstance(request, Ansatz):
+            if parameter_bindings is None:
+                raise ValueError("an ansatz requires parameter_bindings")
+            request = GradientRequest.from_ansatz(
+                request,
+                None,
+                parameter_bindings,
+                parameter_names=parameter_names,
+                prefix=prefix,
+            )
+        elif (
+            parameter_bindings is not None
+            or parameter_names is not None
+            or prefix != "theta"
+        ):
+            raise ValueError("a gradient request owns its parameter configuration")
         if not isinstance(request, GradientRequest):
             raise TypeError("request must be a GradientRequest")
         request.validate()

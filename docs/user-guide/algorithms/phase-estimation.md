@@ -1,8 +1,6 @@
 # 相位估计
 
-本模块提供可复用相位估计电路、标准量子相位估计（QPE）、迭代量子相位估计
-（IQPE）和 Hamiltonian 相位估计（HPE）。公共输入使用 Cqlib `Circuit`、
-`Hamiltonian` 和本库 `Sampler`。
+标准 QPE 和迭代 QPE 共用 `PhaseEstimationProblem`，由待估计的酉算子和系统初态组成。Hamiltonian 相位估计（HPE）直接接收 `Hamiltonian` 和状态制备组件。这三种算法均可调用一次 `run()` 得到单任务结果。
 
 ## 数学约定
 
@@ -18,7 +16,7 @@
 
 ## PhaseEstimationCircuit
 
-`PhaseEstimationCircuit` 是无状态制备、无测量的 L2 复合线路算子。它依次执行：
+`PhaseEstimationCircuit` 是无状态制备、无测量的复合线路算子。它依次执行：
 
 1. 对估计寄存器施加 Hadamard；
 2. 第 <img src="../../assets/formulas/inline/inline-189f40034be7a199.svg" alt="j" style="vertical-align: -3.000pt;"> 个估计量子比特控制 <img src="../../assets/formulas/inline/inline-26b873f4bebb2962.svg" alt="U^{2^j}" style="vertical-align: -1.000pt;">；
@@ -29,17 +27,83 @@
 内存复杂度为指数级；构造前执行 256 MiB 稠密工作集上限检查。数值酉门也不保证每个
 远端后端都能直接接受或分解。
 
-```python
-component = PhaseEstimationCircuit(unitary, 4, approximation_degree=0)
-circuit = component.build_circuit()
-```
+`PhaseEstimationCircuit(unitary, m)` 接收完全绑定的静态 `Circuit`。若目标来自算术、Oracle、QFT 或其他算子，先调用对应的 `build_circuit()`。目标线路必须包含完整寄存器和目标操作的绝对全局相位；相位估计分析这条线路的完整酉变换。
 
 `approximation_degree` 直接传递给现有逆 `QFT`。估计位数限制为 52，确保公开的
 binary64 相位结果仍具有逐位分辨能力，并避免超大指数转换产生非契约异常。
 
+## 酉目标线路与初态组件
+
+先把编码器或拟设绑定为固定制备组件，再传入相位估计问题。以下例子在两个算法中复用同一个
+组件组合，输入态是被标记的单比特基态，标准 QPE 和迭代 QPE 均得到相位 `0.5`。
+
+```python
+import math
+from cqlib.circuit import StandardGate
+from cqlib_algorithms import (
+    IterativePhaseEstimation,
+    PhaseEstimation,
+    PhaseEstimationProblem,
+)
+from cqlib_algorithms.operators import (
+    AngleEncoding,
+    BitPatternPhaseOracle,
+    StatevectorSampler,
+    UserCircuitPreparation,
+)
+
+preparation = UserCircuitPreparation.from_component(
+    AngleEncoding(1, StandardGate.RY),
+    {"x_0": math.pi},
+    prefix="x",
+)
+unitary = BitPatternPhaseOracle(1, {0: 1}).build_circuit()
+problem = PhaseEstimationProblem(unitary, preparation)
+qpe = PhaseEstimation(StatevectorSampler()).run(
+    problem,
+    num_evaluation_qubits=3,
+    shots=32,
+)
+iqpe = IterativePhaseEstimation(StatevectorSampler()).run(
+    problem,
+    num_iterations=3,
+    shots_per_iteration=32,
+)
+print(qpe.phase, iqpe.phase)  # 0.5 0.5
+```
+
+目标也可以由 QSP 等算子生成，初态继续使用状态制备组件：
+
+```python
+import math
+from cqlib_algorithms import PhaseEstimation, PhaseEstimationProblem
+from cqlib_algorithms.operators import (
+    QuantumSignalProcessing,
+    StatevectorSampler,
+    UniformSuperposition,
+)
+
+unitary = QuantumSignalProcessing([0.0, 0.0], signal_angle=math.pi / 4).build_circuit()
+problem = PhaseEstimationProblem(unitary, UniformSuperposition(1))
+result = PhaseEstimation(StatevectorSampler()).run(
+    problem,
+    num_evaluation_qubits=3,
+    shots=32,
+)
+print(result.phase)  # 0.125
+```
+
+此处 QSP 对均匀单比特叠加态的本征值为 `exp(i*pi/4)`，归一化相位为 `1/8`。
+作为酉输入时使用组件的完整线路；只制备同一个物理态的两个组件，其完整酉算子和全局相位
+仍可能不同。BlockEncoding 与 QSVT 包含辅助寄存器，QPE 估计完整酉的本征相位，
+编码矩阵的本征值或奇异值需按具体算法另行解释。
+
+
 ## 标准 QPE
 
-`PhaseEstimationProblem(unitary, state_preparation)` 定义酉算子和输入态；
+`PhaseEstimationProblem(unitary, state_preparation)` 接收完整酉 `Circuit` 和完全绑定的
+`StatePreparation`。构造时保存独立快照，`state_preparation` 为固定制备组件，
+`preparation_circuit` 为执行快照，应保持不变；
 `PhaseEstimationRequest` 另外给出估计位数、shots 和可选 QFT 近似度。算法支持
 输入态为本征态叠加：若
 
@@ -51,11 +115,25 @@ binary64 相位结果仍具有逐位分辨能力，并避免超大指数转换�
 和只包含已观测网格点的稀疏概率映射；众数并列时选择最小网格点。线路内逻辑酉调用
 总数为 <img src="../../assets/formulas/inline/inline-26049ce5031a842a.svg" alt="2^m-1" style="vertical-align: -0.000pt;">，`num_unitary_queries` 是再乘 shots 的采样加权查询数。
 
+下例用三个估计比特测量矩阵在 `|1⟩` 上的本征相位。该本征值为 `exp(3πi/4)`，对应归一化相位 `3/8`。改变制备的基态即可选择另一个本征值。
+
 ```python
-algorithm = PhaseEstimation(sampler)
-result = algorithm.run(
-    [PhaseEstimationRequest(problem, num_evaluation_qubits=4, shots=1024)]
-)[0]
+import numpy as np
+
+from cqlib_algorithms import PhaseEstimation, PhaseEstimationProblem
+from cqlib_algorithms.operators import (
+    BasisStateInitialization,
+    StatevectorSampler,
+    UnitaryMatrixOracle,
+)
+
+unitary = UnitaryMatrixOracle(np.exp(1j * np.pi / 4) * np.diag([1, 1j])).build_circuit()
+preparation = BasisStateInitialization(1, 1)
+problem = PhaseEstimationProblem(unitary, preparation)
+sampler = StatevectorSampler()
+qpe = PhaseEstimation(sampler)
+phase = qpe.run(problem, num_evaluation_qubits=3, shots=32)
+assert phase.phase == 3 / 8
 ```
 
 ## 迭代 QPE
@@ -69,11 +147,15 @@ result = algorithm.run(
 结果按最高有效位到最低有效位返回 `bitstring` 和每位观测到 `1` 的概率。该实现用多个
 静态线路和 Sampler 调用完成轮间反馈，不要求后端支持动态线路。
 
+沿用上一例的 `problem` 和 `sampler`。三轮受控幂依次为 4、2、1，每轮将先前已测得的低位用于反馈，最终位串按高位在前排列。
+
 ```python
-algorithm = IterativePhaseEstimation(sampler)
-result = algorithm.run(
-    [IterativePhaseEstimationRequest(problem, num_iterations=4, shots_per_iteration=32)]
-)[0]
+from cqlib_algorithms import IterativePhaseEstimation
+
+bits = IterativePhaseEstimation(sampler).run(
+    problem, num_iterations=3, shots_per_iteration=8
+)
+assert bits.bitstring == "011"
 ```
 
 ## Hamiltonian 相位估计
@@ -84,7 +166,8 @@ result = algorithm.run(
   <img src="../../assets/formulas/hpe-scaling-unitary.svg" alt="s=π/B, U=eisH,">
 </p>
 
-其中 `bound` 是本征值绝对值上界。若未显式提供，使用各 Pauli 项有效系数绝对值之和。
+其中 `bound` 是本征值绝对值的上界。默认取各 Pauli 项有效系数绝对值之和的两倍，
+将精确本征值对应的有符号相位限制在 −1/4 到 1/4 之间。
 Core 的演化约定为 <img src="../../assets/formulas/inline/inline-2637b6dd9fae991f.svg" alt="e^{-itH}" style="vertical-align: -1.000pt;">，实现以 <img src="../../assets/formulas/inline/inline-37a0e776cafd52a2.svg" alt="t=-s" style="vertical-align: -1.000pt;"> 构造上述 <img src="../../assets/formulas/inline/inline-a25513c7e0f6eaa8.svg" alt="U" style="vertical-align: -1.000pt;">。相位 <img src="../../assets/formulas/inline/inline-10ce0200b450ea95.svg" alt="\phi" style="vertical-align: -3.000pt;"> 先映射
 到有符号区间，再恢复本征值：
 
@@ -92,25 +175,41 @@ Core 的演化约定为 <img src="../../assets/formulas/inline/inline-2637b6dd9f
   <img src="../../assets/formulas/hpe-phase-rescaling.svg" alt="The phase is mapped to a signed interval before the eigenvalue λ = 2πφ̃/s is recovered.">
 </p>
 
-<img src="../../assets/formulas/inline/inline-ea916ea31283e13b.svg" alt="+\mathtt{bound}" style="vertical-align: -2.000pt;"> 与 <img src="../../assets/formulas/inline/inline-80006d7f53be6eb0.svg" alt="-\mathtt{bound}" style="vertical-align: -1.000pt;"> 都映射到相位端点 <img src="../../assets/formulas/inline/inline-d939926f05444b0f.svg" alt="1/2" style="vertical-align: -4.000pt;">，无法区分；可能占据端点时应提供严格
-大于实际谱半径的 `bound`。对非对易 Pauli 项，Core 使用指定 `TrotterMode` 和
+估计寄存器至少需要两个量子比特才能区分正负相位。手动设置较紧的 `bound` 可缩小能量网格间距，
+但应给相位端点留出可分辨的余量。能量 <img src="../../assets/formulas/inline/inline-ea916ea31283e13b.svg" alt="+\mathtt{bound}" style="vertical-align: -2.000pt;"> 与 <img src="../../assets/formulas/inline/inline-80006d7f53be6eb0.svg" alt="-\mathtt{bound}" style="vertical-align: -1.000pt;"> 都会映射到相位 <img src="../../assets/formulas/inline/inline-d939926f05444b0f.svg" alt="1/2" style="vertical-align: -4.000pt;">。
+对非对易 Pauli 项，Core 使用指定 `TrotterMode` 和
 `trotter_steps` 合成演化，结果对应这一乘积公式近似；默认使用二阶公式、一步。
 对易项由 Core 使用精确单遍分解。
 
+对 `H = Z`，默认谱界为 2。输入 `|0⟩` 时，测得相位 1/4、能量 +1。换成 `|1⟩`，测得相位 3/4，对应有符号相位 −1/4、能量 −1。
+
 ```python
-algorithm = HamiltonianPhaseEstimation(sampler)
-result = algorithm.run(
-    [
-        HamiltonianPhaseEstimationRequest(
-            hamiltonian,
-            state_preparation,
-            num_evaluation_qubits=5,
-            shots=2048,
-            bound=energy_bound,
-            trotter_steps=4,
-        )
-    ]
-)[0]
+from cqlib.qis import Hamiltonian, PauliString
+
+from cqlib_algorithms import HamiltonianPhaseEstimation
+from cqlib_algorithms.operators import BasisStateInitialization, StatevectorSampler
+
+hamiltonian = Hamiltonian.from_pauli(PauliString.from_str("Z"))
+energy = HamiltonianPhaseEstimation(StatevectorSampler()).run(
+    hamiltonian,
+    state_preparation=BasisStateInitialization(1, 0),
+    num_evaluation_qubits=3,
+    shots=32,
+)
+assert energy.phase_result.phase == 0.25
+assert energy.eigenvalue == 1.0
+```
+
+## 批量执行
+
+以标准 QPE 为例，下面沿用前文的矩阵和 `qpe`，一次提交两个不同初态。三个算法均支持 `run([Request, ...])`，空批次返回空列表，输出按输入顺序排列。标准 QPE 与 HPE 各一次提交整批线路，IQPE 按请求顺序逐位采样和反馈。
+
+```python
+from cqlib_algorithms import PhaseEstimationRequest
+
+zero = PhaseEstimationProblem(unitary, BasisStateInitialization(1, 0))
+requests = [PhaseEstimationRequest(item, 3, 32) for item in (zero, problem)]
+assert [item.phase for item in qpe.run(requests)] == [1 / 8, 3 / 8]
 ```
 
 ## 能力边界

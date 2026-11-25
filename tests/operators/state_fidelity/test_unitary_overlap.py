@@ -221,6 +221,25 @@ def test_output_can_be_composed_and_inverted() -> None:
     assert destination.num_qubits == 3
 
 
+@pytest.mark.reference
+def test_nested_product_reuses_the_intermediate_circuit() -> None:
+    h_circuit, z_circuit, x_circuit = Circuit(1), Circuit(1), Circuit(1)
+    h_circuit.h(0)
+    z_circuit.z(0)
+    x_circuit.x(0)
+    inner = UnitaryOverlap(h_circuit, z_circuit)
+    outer = UnitaryOverlap(inner.build_circuit(), x_circuit)
+    h_matrix = np.array([[1, 1], [1, -1]]) / math.sqrt(2)
+    z_matrix = np.diag([1, -1])
+    x_matrix = np.array([[0, 1], [1, 0]])
+    np.testing.assert_allclose(
+        outer.build_circuit().to_matrix(),
+        x_matrix @ z_matrix @ h_matrix,
+        rtol=0.0,
+        atol=1e-14,
+    )
+
+
 @pytest.mark.integration
 def test_integrates_with_compute_uncompute_and_statevector_sampler() -> None:
     unitary1 = Circuit(1)

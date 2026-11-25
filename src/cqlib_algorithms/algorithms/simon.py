@@ -23,10 +23,11 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import final
+from typing import final, overload
 
 from cqlib import Circuit
 
+from .._utils.circuit import validate_bound_static_unitary_circuit
 from ..operators.oracle import (
     BitFlipOracle,
     BooleanFunction,
@@ -247,12 +248,39 @@ class Simon:
 
     @staticmethod
     def build_circuit(
-        function: BooleanFunction | BooleanVectorFunction,
+        function: BooleanFunction | BooleanVectorFunction | BitFlipOracle,
     ) -> Circuit:
-        """Build the unmeasured Simon query circuit for ``function``."""
-        oracle = BitFlipOracle(function)
+        """Build the unmeasured Simon query circuit for ``function``.
+
+        Args:
+            function: BooleanFunction, BooleanVectorFunction, or a BitFlipOracle
+                implementing the same function and input/output register layout.
+
+        Returns:
+            A fresh circuit with input qubits before output qubits, containing
+            Hadamard layers around the oracle on the input register.
+
+        Raises:
+            TypeError: If the input type or oracle output has the wrong type.
+            ValueError: If the oracle width or unitary circuit is invalid.
+        """
+        oracle = (
+            function if isinstance(function, BitFlipOracle) else BitFlipOracle(function)
+        )
         oracle_circuit = oracle.build_circuit()
-        num_inputs = function.num_variables
+        if not isinstance(oracle_circuit, Circuit):
+            raise TypeError("bit-flip-oracle component must build a Circuit")
+        num_inputs = oracle.function.num_variables
+        outputs = (
+            oracle.function.num_outputs
+            if isinstance(oracle.function, BooleanVectorFunction)
+            else 1
+        )
+        if oracle_circuit.num_qubits != num_inputs + outputs:
+            raise ValueError(
+                "oracle circuit width must match its input and output registers"
+            )
+        validate_bound_static_unitary_circuit(oracle_circuit, "bit-flip-oracle circuit")
         circuit = Circuit(len(oracle_circuit.qubits))
         for qubit in range(num_inputs):
             circuit.h(qubit)
@@ -261,7 +289,46 @@ class Simon:
             circuit.h(qubit)
         return circuit
 
-    def run(self, requests: Sequence[SimonRequest], /) -> list[SimonResult]:
+    @overload
+    def run(self, requests: Sequence[SimonRequest], /) -> list[SimonResult]: ...
+
+    @overload
+    def run(self, oracle: BitFlipOracle, /, *, shots: int) -> SimonResult: ...
+
+    def run(
+        self,
+        oracle: BitFlipOracle | Sequence[SimonRequest],
+        /,
+        *,
+        shots: int | None = None,
+    ) -> SimonResult | list[SimonResult]:
+        """Query one bit-flip-oracle component or an ordered request batch.
+
+        Args:
+            oracle: BitFlipOracle component, or a sequence of SimonRequest objects
+                in output order.
+            shots: Positive samples for a single oracle query.
+
+        Returns:
+            Independent binary equations and their nullspace for one task,
+            or one result per batch item.
+
+        Raises:
+            TypeError: For invalid types, missing shots, or mixed invocation styles.
+            ValueError: For invalid shots, oracle circuits, or sampler responses.
+        """
+        if isinstance(oracle, BitFlipOracle):
+            if shots is None:
+                raise TypeError("single Simon query requires shots")
+            request = SimonRequest(oracle.function, shots)
+            return self._run_batch([request], oracle=oracle)[0]
+        if shots is not None:
+            raise TypeError("batch requests cannot be combined with shots")
+        return self._run_batch(oracle)
+
+    def _run_batch(
+        self, requests: Sequence[SimonRequest], *, oracle: BitFlipOracle | None = None
+    ) -> list[SimonResult]:
         """Evaluate a complete batch in input order with one Sampler call."""
         sampler_requests: list[SamplerRequest] = []
         widths: list[int] = []
@@ -269,7 +336,7 @@ class Simon:
             if not isinstance(request, SimonRequest):
                 raise TypeError("requests must contain SimonRequest instances")
             request.validate()
-            circuit = self.build_circuit(request.function)
+            circuit = self.build_circuit(request.function if oracle is None else oracle)
             num_inputs = request.function.num_variables
             sampler_requests.append(
                 SamplerRequest(

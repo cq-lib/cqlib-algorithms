@@ -31,7 +31,7 @@ standard Grover diffusion operator up to a global minus sign.
 
 The helper formulas :meth:`GroverLong.get_beta`,
 :meth:`GroverLong.get_it_num`, and :meth:`GroverLong.get_phi` follow the
-phase-matching convention used by the legacy prototype:
+phase-matching convention:
 
 .. math::
 
@@ -175,7 +175,7 @@ class GroverLong:
     def get_it_num(beta: float) -> int:
         r"""Return the Long-operator iteration count.
 
-        The adopted convention matches the legacy prototype:
+        The iteration count is defined by:
 
         .. math::
 
@@ -199,7 +199,7 @@ class GroverLong:
     def get_phi(it_num: int, beta: float) -> float:
         r"""Return the phase-matched Long angle.
 
-        The adopted convention matches the legacy prototype:
+        The matching phase is defined by:
 
         .. math::
 

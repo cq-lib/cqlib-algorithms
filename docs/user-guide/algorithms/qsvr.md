@@ -3,7 +3,7 @@
 `FidelityQuantumKernel` 通过量子特征线路计算样本相似度，核函数为
 <img src="../../assets/formulas/inline/inline-d0758bca8ee5fcae.svg" alt="K(x,z)=|\langle\phi(x)|\phi(z)\rangle|^2" style="vertical-align: -4.000pt;">。`QSVR` 基于该核执行 ε-SVR 回归，提供训练、预测和 R² 评分。
 
-QSVR 训练使用 scikit-learn，可通过 `cqlib-algorithms[machine-learning]` 安装经典计算依赖。
+`QSVR` 接收实现 `QuantumKernel` 的固定核，也可直接接收核训练器的 `quantum_kernel_`。QSVR 训练使用 scikit-learn，可通过 `cqlib-algorithms[machine-learning]` 安装经典计算依赖。
 
 ## 使用示例
 
@@ -11,14 +11,13 @@ QSVR 训练使用 scikit-learn，可通过 `cqlib-algorithms[machine-learning]` 
 
 ```python
 import numpy as np
-from cqlib import Circuit, Parameter
+from cqlib.circuit.gates import StandardGate
 
 from cqlib_algorithms.algorithms import QSVR
-from cqlib_algorithms.operators import FidelityQuantumKernel
+from cqlib_algorithms.operators import AngleEncoding, FidelityQuantumKernel
 
-feature_map = Circuit(1)
-feature_map.ry(0, Parameter("angle"))
-kernel = FidelityQuantumKernel(feature_map, ["angle"])
+feature_map = AngleEncoding(1, StandardGate.RY)
+kernel = FidelityQuantumKernel(feature_map, ["x_0"])
 X_train = np.linspace(-1.5, 1.5, 7).reshape(-1, 1)
 y_train = np.sin(X_train[:, 0])
 model = QSVR(kernel, C=10.0, epsilon=0.01).fit(X_train, y_train)
@@ -38,7 +37,7 @@ evaluate(X, Y=None) -> numpy.ndarray
 
 | 参数 | 含义 |
 | --- | --- |
-| `feature_map` | 参数化 Cqlib `Circuit`，绑定后要求静态酉且可逆 |
+| `feature_map` | `StatePreparation` 数据编码组件。组件采用前缀 `x` 构建，绑定后的线路应静态酉且可逆 |
 | `input_parameters` | 有序数据参数名，第 j 列输入绑定第 j 个参数 |
 | `parameter_bindings` | 其余线路参数的固定数值 |
 | `sampler`、`shots` | 同时提供时采用采样计算，`shots` 为每个样本对的采样次数；默认采用精确计算 |
@@ -63,7 +62,7 @@ score(X, y, *, sample_weight=None) -> float
 
 | 参数 | 含义 |
 | --- | --- |
-| `quantum_kernel` | `FidelityQuantumKernel` 实例 |
+| `quantum_kernel` | 固定的 `QuantumKernel`，如保真度核或训练器返回的核 |
 | `C` | 正的误差惩罚系数 |
 | `epsilon` | ε 不敏感区间参数，取非负值 |
 | `tol` | 求解器停止容差，取正值 |
@@ -91,16 +90,15 @@ score(X, y, *, sample_weight=None) -> float
 
 ```python
 import math
-from cqlib import Circuit, Parameter
+from cqlib.circuit.gates import StandardGate
 
 from cqlib_algorithms.algorithms import QSVR
-from cqlib_algorithms.operators import FidelityQuantumKernel
+from cqlib_algorithms.operators import AngleEncoding, FidelityQuantumKernel
 from cqlib_algorithms.operators.sampler import StatevectorSampler
 
-feature_map = Circuit(1)
-feature_map.ry(0, Parameter("angle"))
+feature_map = AngleEncoding(1, StandardGate.RY)
 kernel = FidelityQuantumKernel(
-    feature_map, ["angle"], sampler=StatevectorSampler(), shots=64
+    feature_map, ["x_0"], sampler=StatevectorSampler(), shots=64
 )
 print("Kernel matrix:", kernel.evaluate([[0.0], [math.pi]]))
 model = QSVR(kernel).fit([[0.0], [math.pi]], [0.0, 1.0])

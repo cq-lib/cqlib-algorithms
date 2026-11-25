@@ -96,6 +96,109 @@ def test_real_cobyla_learns_cosine_and_generalizes():
     assert isinstance(regressor.optimizer_message_, str)
 
 
+def test_vqr_composes_features_and_ansatz_for_a_cosine_regression():
+    from cqlib.circuit.gates import StandardGate
+
+    from cqlib_algorithms.operators import AngleEncoding, RealAmplitudesAnsatz
+
+    X = np.linspace(-1.4, 1.5, 9)[:, None]
+    targets = np.cos(X[:, 0] + 0.43)
+    regressor = VQR.from_components(
+        AngleEncoding(1, StandardGate.RY),
+        RealAmplitudesAnsatz(1, reps=0),
+        PauliString.from_str("Z"),
+        StatevectorEstimator(),
+        max_evaluations=150,
+    )
+    assert regressor.input_parameters == ("x_0",)
+    assert regressor.weight_parameters == ("theta_0",)
+    regressor.fit(X, targets, initial_point={"theta_0": -0.7})
+    legacy = model(max_evaluations=150).fit(X, targets, initial_point={"theta": -0.7})
+    holdout = np.array([[-1.21], [0.13], [1.03]])
+    np.testing.assert_allclose(
+        regressor.predict(holdout), np.cos(holdout[:, 0] + 0.43), atol=5e-4
+    )
+    np.testing.assert_allclose(
+        regressor.predict(holdout), legacy.predict(holdout), atol=1e-12
+    )
+
+
+def test_vqr_component_order_and_data_column_order(monkeypatch):
+    from cqlib.circuit.gates import StandardGate
+
+    from cqlib_algorithms.operators import AngleEncoding, RealAmplitudesAnsatz
+
+    fixed_solver(monkeypatch, [0.4, 0.2])
+    columns = ["x_1", "x_0"]
+    regressor = VQR.from_components(
+        AngleEncoding(2, StandardGate.RX),
+        RealAmplitudesAnsatz(2, reps=0),
+        PauliString.from_str("IX"),
+        StatevectorEstimator(),
+        input_parameters=columns,
+    )
+    columns.reverse()
+    data = [[0.8, -0.7], [-0.1, 1.0]]
+    # On qubit zero, RX(x_0) followed by RY(theta_0) yields <X> = sin(theta_0) cos(x_0).
+    reference = np.sin(0.4) * np.cos(np.asarray(data)[:, 1])
+    regressor.fit(data, reference, initial_point={"theta_0": 0.4, "theta_1": 0.2})
+    np.testing.assert_allclose(regressor.predict(data), reference, atol=1e-12)
+
+
+@pytest.mark.parametrize(
+    "case,error",
+    [
+        ("wrong_feature_type", TypeError),
+        ("wrong_ansatz_type", TypeError),
+        ("width", ValueError),
+        ("overlap", ValueError),
+        ("invalid_order", ValueError),
+        ("duplicate", ValueError),
+        ("empty_features", ValueError),
+        ("empty_weights", ValueError),
+    ],
+)
+def test_vqr_component_configuration_boundaries(case, error):
+    from cqlib.circuit.gates import StandardGate
+
+    from cqlib_algorithms.operators import (
+        AngleEncoding,
+        RealAmplitudesAnsatz,
+        UniformSuperposition,
+        UserCircuitPreparation,
+    )
+
+    encoding = AngleEncoding(1, StandardGate.RY)
+    ansatz = RealAmplitudesAnsatz(1, reps=0)
+    order = None
+    if case == "wrong_feature_type":
+        encoding = Circuit(1)
+    elif case == "wrong_ansatz_type":
+        ansatz = Circuit(1)
+    elif case == "width":
+        ansatz = RealAmplitudesAnsatz(2, reps=0)
+    elif case == "overlap":
+        circuit = Circuit(1)
+        circuit.ry(0, Parameter("theta_0"))
+        encoding = UserCircuitPreparation(circuit)
+    elif case == "invalid_order":
+        order = ["theta_0"]
+    elif case == "duplicate":
+        order = ["x_0", "x_0"]
+    elif case == "empty_features":
+        encoding = UniformSuperposition(1)
+    elif case == "empty_weights":
+        ansatz = RealAmplitudesAnsatz(1, reps=0, skip_final_rotation_layer=True)
+    with pytest.raises(error):
+        VQR.from_components(
+            encoding,
+            ansatz,
+            PauliString.from_str("Z"),
+            StatevectorEstimator(),
+            input_parameters=order,
+        )
+
+
 @pytest.mark.reference
 @pytest.mark.parametrize(
     "pauli,expected",

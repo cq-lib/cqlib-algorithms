@@ -29,6 +29,46 @@ from cqlib_algorithms.operators.oracle import (
     GroverDiffusion,
     PhaseOracle,
 )
+from cqlib_algorithms.operators.state_preparation import UserCircuitPreparation
+from cqlib_algorithms.protocols import StatePreparation
+
+
+class _CircuitPhaseOracle(PhaseOracle):
+    """Expose test circuit output through the phase-oracle component boundary."""
+
+    __slots__ = ("_source",)
+
+    def __init__(self, circuit):
+        self._source = circuit
+        super().__init__(
+            BooleanFunction.from_marked_states(max(1, circuit.num_qubits), [])
+        )
+
+    @property
+    def num_qubits(self):
+        return self._source.num_qubits
+
+    def build_circuit(self):
+        return self._source
+
+
+class _CircuitPreparation(StatePreparation):
+    """Return deliberately unchecked operations for component-boundary tests."""
+
+    def __init__(self, circuit):
+        self._source = circuit
+
+    def validate(self):
+        self._source.validate()
+
+    def build_circuit(self, prefix):
+        return self._source
+
+    def num_qubits(self):
+        return self._source.num_qubits
+
+    def num_parameters(self):
+        return len(self._source.used_symbols)
 
 
 def _phase_oracle_matrix(num_qubits, marked_states):
@@ -99,9 +139,25 @@ def _truth_table(num_qubits, marked_states):
     return values
 
 
-def _phase_oracle_circuit(num_qubits, marked_states):
+def _phase_oracle(num_qubits, marked_states):
     function = BooleanFunction.from_truth_table(_truth_table(num_qubits, marked_states))
-    return PhaseOracle(function).build_circuit()
+    return PhaseOracle(function)
+
+
+def test_component_inputs_match_the_independent_iteration_matrix():
+    oracle = PhaseOracle(BooleanFunction.from_marked_states(1, [1]))
+    preparation = Circuit(1)
+    preparation.ry(0, math.pi / 3)
+    preparation.s(0)
+    state = np.array([math.sqrt(3) / 2, 0.5j])
+    expected = _state_reflection_matrix(state) @ _phase_oracle_matrix(1, (1,))
+    iteration = GroverOperator(
+        oracle, state_preparation=UserCircuitPreparation(preparation)
+    )
+    np.testing.assert_allclose(
+        iteration.build_circuit().to_matrix(), expected, atol=1e-12, rtol=0
+    )
+    assert iteration.marked_states == (1,)
 
 
 def test_partial_diffusion_reference_is_consistent_with_uniform_reference():
@@ -127,7 +183,7 @@ def test_partial_diffusion_reference_is_consistent_with_uniform_reference():
 def test_grover_operator_matches_independent_matrix_reference(
     num_qubits, marked_states
 ):
-    oracle = _phase_oracle_circuit(num_qubits, marked_states)
+    oracle = _phase_oracle(num_qubits, marked_states)
     operator = GroverOperator(oracle)
 
     expected = _uniform_diffusion_matrix(num_qubits) @ _phase_oracle_matrix(
@@ -144,7 +200,7 @@ def test_grover_operator_matches_independent_matrix_reference(
 @pytest.mark.parametrize("num_qubits", [1, 2, 3])
 def test_default_diffusion_composes_oracle_and_grover_diffusion(num_qubits):
     marked_states = tuple(range(0, 1 << num_qubits, 3))
-    oracle = _phase_oracle_circuit(num_qubits, marked_states)
+    oracle = _phase_oracle(num_qubits, marked_states)
     operator = GroverOperator(oracle)
 
     expected = GroverDiffusion(num_qubits).build_circuit().to_matrix() @ (
@@ -161,7 +217,7 @@ def test_default_diffusion_composes_oracle_and_grover_diffusion(num_qubits):
 def test_amplitude_amplification_matches_analytic_success_probability():
     num_qubits = 4
     marked_states = (1, 7, 12)
-    operator = GroverOperator(_phase_oracle_circuit(num_qubits, marked_states))
+    operator = GroverOperator(_phase_oracle(num_qubits, marked_states))
     matrix = operator.build_circuit().to_matrix()
 
     dimension = 1 << num_qubits
@@ -185,8 +241,8 @@ def test_custom_state_preparation_reflects_about_prepared_state():
     preparation.x(1)
     marked_states = (0, 3)
     operator = GroverOperator(
-        _phase_oracle_circuit(2, marked_states),
-        state_preparation=preparation,
+        _phase_oracle(2, marked_states),
+        state_preparation=UserCircuitPreparation(preparation),
     )
 
     state_vector = np.zeros(4, dtype=np.complex128)
@@ -209,8 +265,8 @@ def test_custom_state_preparation_without_subset_matches_full_reflection():
     preparation.h(1)
     marked_states = (1,)
     operator = GroverOperator(
-        _phase_oracle_circuit(2, marked_states),
-        state_preparation=preparation,
+        _phase_oracle(2, marked_states),
+        state_preparation=UserCircuitPreparation(preparation),
     )
 
     expected = _uniform_diffusion_matrix(2) @ _phase_oracle_matrix(2, marked_states)
@@ -232,8 +288,8 @@ def test_entangled_custom_preparation_partial_subset_matches_projector_formula()
     marked_states = (1, 6)
 
     operator = GroverOperator(
-        _phase_oracle_circuit(3, marked_states),
-        state_preparation=preparation,
+        _phase_oracle(3, marked_states),
+        state_preparation=UserCircuitPreparation(preparation),
         reflection_qubits=reflection_qubits,
     )
 
@@ -278,7 +334,7 @@ def test_partial_reflection_qubits_match_independent_reference(
 ):
     marked_states = (1,)
     operator = GroverOperator(
-        _phase_oracle_circuit(num_qubits, marked_states),
+        _phase_oracle(num_qubits, marked_states),
         reflection_qubits=reflection_qubits,
     )
 
@@ -295,7 +351,7 @@ def test_partial_reflection_qubits_match_independent_reference(
 
 def test_full_reflection_qubits_subset_equals_default():
     marked_states = (2,)
-    oracle = _phase_oracle_circuit(3, marked_states)
+    oracle = _phase_oracle(3, marked_states)
     default = GroverOperator(oracle)
     explicit = GroverOperator(oracle, reflection_qubits=(0, 1, 2))
 
@@ -309,7 +365,7 @@ def test_full_reflection_qubits_subset_equals_default():
 
 def test_reflection_qubits_are_sorted_and_frozen():
     operator = GroverOperator(
-        _phase_oracle_circuit(3, (0,)),
+        _phase_oracle(3, (0,)),
         reflection_qubits=(2, 0, 1),
     )
 
@@ -329,14 +385,14 @@ def test_reflection_qubit_generator_is_consumed_exactly_once():
             yield 0
 
     indices = SingleUseIndices()
-    operator = GroverOperator(_phase_oracle_circuit(3, (1,)), reflection_qubits=indices)
+    operator = GroverOperator(_phase_oracle(3, (1,)), reflection_qubits=indices)
 
     assert indices.iterations == 1
     assert operator.reflection_qubits == (0, 2)
 
 
 def test_grover_operator_is_unitary():
-    operator = GroverOperator(_phase_oracle_circuit(3, (1, 5)))
+    operator = GroverOperator(_phase_oracle(3, (1, 5)))
     matrix = operator.build_circuit().to_matrix()
     identity = np.eye(1 << 3)
 
@@ -344,11 +400,11 @@ def test_grover_operator_is_unitary():
 
 
 def test_oracle_with_non_contiguous_qubit_ids_is_mapped_positionally():
-    oracle = _phase_oracle_circuit(2, (2,))
+    oracle = _phase_oracle(2, (2,))
     remapped = Circuit([5, 9])
-    remapped.compose(oracle, [Qubit(5), Qubit(9)])
+    remapped.compose(oracle.build_circuit(), [Qubit(5), Qubit(9)])
 
-    operator = GroverOperator(remapped)
+    operator = GroverOperator(_CircuitPhaseOracle(remapped))
 
     expected = _uniform_diffusion_matrix(2) @ _phase_oracle_matrix(2, (2,))
     np.testing.assert_allclose(
@@ -360,16 +416,19 @@ def test_oracle_with_non_contiguous_qubit_ids_is_mapped_positionally():
 
 
 def test_oracle_and_preparation_with_different_qubit_ids_map_by_position():
-    compact_oracle = _phase_oracle_circuit(2, (2,))
+    compact_oracle = _phase_oracle(2, (2,))
     oracle = Circuit([9, 4])
-    oracle.compose(compact_oracle, [Qubit(9), Qubit(4)])
+    oracle.compose(compact_oracle.build_circuit(), [Qubit(9), Qubit(4)])
 
     preparation = Circuit([20, 7])
     preparation.ry(20, 0.351)
     preparation.cx(20, 7)
     preparation_matrix = preparation.to_matrix([20, 7])
 
-    operator = GroverOperator(oracle, state_preparation=preparation)
+    operator = GroverOperator(
+        _CircuitPhaseOracle(oracle),
+        state_preparation=UserCircuitPreparation(preparation),
+    )
     expected = _prepared_subspace_reflection_matrix(
         preparation_matrix, (0, 1)
     ) @ _phase_oracle_matrix(2, (2,))
@@ -383,8 +442,8 @@ def test_oracle_and_preparation_with_different_qubit_ids_map_by_position():
 
 
 def test_oracle_is_defensively_copied():
-    oracle = _phase_oracle_circuit(2, (1,))
-    operator = GroverOperator(oracle)
+    oracle = _phase_oracle(2, (1,)).build_circuit()
+    operator = GroverOperator(_CircuitPhaseOracle(oracle))
     oracle.x(0)
     oracle.set_global_phase(math.pi)
 
@@ -398,10 +457,10 @@ def test_oracle_is_defensively_copied():
 
 
 def test_oracle_accessor_returns_an_independent_normalized_copy():
-    compact = _phase_oracle_circuit(2, (1,))
+    compact = _phase_oracle(2, (1,))
     source = Circuit([7, 12])
-    source.compose(compact, [Qubit(7), Qubit(12)])
-    operator = GroverOperator(source)
+    source.compose(compact.build_circuit(), [Qubit(7), Qubit(12)])
+    operator = GroverOperator(_CircuitPhaseOracle(source))
 
     exposed = operator.oracle
     assert [qubit.index for qubit in exposed.qubits] == [0, 1]
@@ -427,7 +486,10 @@ def test_symbolic_parameters_and_global_phases_preserve_exact_matrix_semantics()
     preparation.cx(0, 1)
     preparation.set_global_phase(-0.713)
 
-    built = GroverOperator(oracle, state_preparation=preparation).build_circuit()
+    built = GroverOperator(
+        _CircuitPhaseOracle(oracle),
+        state_preparation=UserCircuitPreparation(preparation),
+    ).build_circuit()
     bindings = {"phi": -0.401, "theta": 0.638}
     oracle_matrix = oracle.assign_parameters(bindings).to_matrix()
     preparation_matrix = preparation.assign_parameters(bindings).to_matrix()
@@ -442,13 +504,16 @@ def test_symbolic_parameters_and_global_phases_preserve_exact_matrix_semantics()
 
 
 def test_barriers_are_allowed_and_preserved_in_oracle_and_preparation():
-    oracle = _phase_oracle_circuit(1, (0,))
+    oracle = _phase_oracle(1, (0,)).build_circuit()
     oracle.barrier([0])
     preparation = Circuit(1)
     preparation.h(0)
     preparation.barrier([0])
 
-    built = GroverOperator(oracle, state_preparation=preparation).build_circuit()
+    built = GroverOperator(
+        _CircuitPhaseOracle(oracle),
+        state_preparation=UserCircuitPreparation(preparation),
+    ).build_circuit()
 
     assert [operation.name for operation in built.operations].count("barrier") == 3
     expected = _state_reflection_matrix(
@@ -458,7 +523,7 @@ def test_barriers_are_allowed_and_preserved_in_oracle_and_preparation():
 
 
 def test_build_returns_fresh_independent_circuits():
-    operator = GroverOperator(_phase_oracle_circuit(2, (1,)))
+    operator = GroverOperator(_phase_oracle(2, (1,)))
     first = operator.build_circuit()
     second = operator.build_circuit()
 
@@ -470,7 +535,7 @@ def test_build_returns_fresh_independent_circuits():
 
 
 def test_grover_operator_is_a_slotted_component_with_read_only_config():
-    operator = GroverOperator(_phase_oracle_circuit(2, (1,)))
+    operator = GroverOperator(_phase_oracle(2, (1,)))
 
     assert not is_dataclass(operator)
     assert not hasattr(operator, "__dict__")
@@ -485,7 +550,7 @@ def test_state_preparation_accessor_returns_an_independent_copy():
     preparation = Circuit(1)
     preparation.h(0)
     operator = GroverOperator(
-        _phase_oracle_circuit(1, (0,)), state_preparation=preparation
+        _phase_oracle(1, (0,)), state_preparation=UserCircuitPreparation(preparation)
     )
 
     accessed = operator.state_preparation
@@ -502,15 +567,15 @@ def test_state_preparation_accessor_returns_an_independent_copy():
     )
 
 
-@pytest.mark.parametrize("oracle", [None, "circuit", 2, 1.5])
-def test_grover_operator_rejects_non_circuit_oracles(oracle):
-    with pytest.raises(TypeError, match="oracle must be a Circuit"):
+@pytest.mark.parametrize("oracle", [None, "circuit", 2, 1.5, Circuit(1)])
+def test_grover_operator_rejects_unsupported_oracle_types(oracle):
+    with pytest.raises(TypeError, match="phase-oracle component"):
         GroverOperator(oracle)  # type: ignore[arg-type]
 
 
 def test_grover_operator_rejects_empty_oracle():
     with pytest.raises(ValueError, match="at least one qubit"):
-        GroverOperator(Circuit(0))
+        GroverOperator(_CircuitPhaseOracle(Circuit(0)))
 
 
 def test_grover_operator_rejects_non_invertible_oracle():
@@ -518,7 +583,7 @@ def test_grover_operator_rejects_non_invertible_oracle():
     oracle.reset(0)
 
     with pytest.raises(ValueError, match="valid invertible operations"):
-        GroverOperator(oracle)
+        GroverOperator(_CircuitPhaseOracle(oracle))
 
 
 def _invalid_circuit(kind):
@@ -547,15 +612,15 @@ def _invalid_circuit(kind):
 )
 def test_grover_operator_rejects_dynamic_or_noninvertible_oracle_paths(kind):
     with pytest.raises(ValueError, match="oracle must contain only valid invertible"):
-        GroverOperator(_invalid_circuit(kind))
+        GroverOperator(_CircuitPhaseOracle(_invalid_circuit(kind)))
 
 
-@pytest.mark.parametrize("state_preparation", ["circuit", 2])
-def test_grover_operator_rejects_non_circuit_state_preparation(
+@pytest.mark.parametrize("state_preparation", ["circuit", 2, Circuit(1)])
+def test_grover_operator_rejects_unsupported_state_preparation_types(
     state_preparation,
 ):
-    oracle = _phase_oracle_circuit(1, (0,))
-    with pytest.raises(TypeError, match="state_preparation must be a Circuit"):
+    oracle = _phase_oracle(1, (0,))
+    with pytest.raises(TypeError, match="state_preparation must be a StatePreparation"):
         GroverOperator(oracle, state_preparation=state_preparation)  # type: ignore[arg-type]
 
 
@@ -564,7 +629,10 @@ def test_grover_operator_rejects_mismatched_state_preparation_size():
     preparation.h(0)
 
     with pytest.raises(ValueError, match="same number of qubits as oracle"):
-        GroverOperator(_phase_oracle_circuit(2, (1,)), state_preparation=preparation)
+        GroverOperator(
+            _phase_oracle(2, (1,)),
+            state_preparation=UserCircuitPreparation(preparation),
+        )
 
 
 def test_grover_operator_rejects_non_invertible_state_preparation():
@@ -572,7 +640,9 @@ def test_grover_operator_rejects_non_invertible_state_preparation():
     preparation.reset(0)
 
     with pytest.raises(ValueError, match="valid invertible operations"):
-        GroverOperator(_phase_oracle_circuit(1, (0,)), state_preparation=preparation)
+        GroverOperator(
+            _phase_oracle(1, (0,)), state_preparation=_CircuitPreparation(preparation)
+        )
 
 
 @pytest.mark.parametrize(
@@ -580,12 +650,12 @@ def test_grover_operator_rejects_non_invertible_state_preparation():
 )
 def test_grover_operator_rejects_dynamic_or_noninvertible_preparation_paths(kind):
     preparation = _invalid_circuit(kind)
-    oracle = _phase_oracle_circuit(int(preparation.num_qubits), (0,))
+    oracle = _phase_oracle(int(preparation.num_qubits), (0,))
 
     with pytest.raises(
         ValueError, match="state_preparation must contain only valid invertible"
     ):
-        GroverOperator(oracle, state_preparation=preparation)
+        GroverOperator(oracle, state_preparation=_CircuitPreparation(preparation))
 
 
 @pytest.mark.parametrize("reflection_qubits", [1, 2.5, True])
@@ -596,7 +666,7 @@ def test_grover_operator_rejects_non_iterable_reflection_qubits(
         TypeError, match="reflection_qubits must be an iterable of integers"
     ):
         GroverOperator(
-            _phase_oracle_circuit(1, (0,)),
+            _phase_oracle(1, (0,)),
             reflection_qubits=reflection_qubits,  # type: ignore[arg-type]
         )
 
@@ -605,15 +675,13 @@ def test_grover_operator_rejects_string_reflection_qubits():
     with pytest.raises(
         TypeError, match="reflection_qubits must be an iterable of integers"
     ):
-        GroverOperator(_phase_oracle_circuit(2, (0,)), reflection_qubits="01")
+        GroverOperator(_phase_oracle(2, (0,)), reflection_qubits="01")
 
 
 @pytest.mark.parametrize("reflection_qubits", [[], ()])
 def test_grover_operator_rejects_empty_reflection_qubits(reflection_qubits):
     with pytest.raises(ValueError, match="must not be empty"):
-        GroverOperator(
-            _phase_oracle_circuit(2, (0,)), reflection_qubits=reflection_qubits
-        )
+        GroverOperator(_phase_oracle(2, (0,)), reflection_qubits=reflection_qubits)
 
 
 @pytest.mark.parametrize("reflection_qubits", [[True], [0, 1.5], ["0"]])
@@ -621,9 +689,7 @@ def test_grover_operator_rejects_non_integer_reflection_qubits(
     reflection_qubits,
 ):
     with pytest.raises(TypeError, match="must contain only integers"):
-        GroverOperator(
-            _phase_oracle_circuit(2, (0,)), reflection_qubits=reflection_qubits
-        )
+        GroverOperator(_phase_oracle(2, (0,)), reflection_qubits=reflection_qubits)
 
 
 @pytest.mark.parametrize("reflection_qubits", [[-1], [0, 2], [3]])
@@ -631,11 +697,9 @@ def test_grover_operator_rejects_out_of_range_reflection_qubits(
     reflection_qubits,
 ):
     with pytest.raises(ValueError, match="valid search-qubit indices"):
-        GroverOperator(
-            _phase_oracle_circuit(2, (0,)), reflection_qubits=reflection_qubits
-        )
+        GroverOperator(_phase_oracle(2, (0,)), reflection_qubits=reflection_qubits)
 
 
 def test_grover_operator_rejects_duplicate_reflection_qubits():
     with pytest.raises(ValueError, match="must not contain duplicates"):
-        GroverOperator(_phase_oracle_circuit(2, (0,)), reflection_qubits=[0, 1, 1])
+        GroverOperator(_phase_oracle(2, (0,)), reflection_qubits=[0, 1, 1])

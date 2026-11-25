@@ -103,6 +103,7 @@ if TYPE_CHECKING:
     )
     from .oracle import (
         BitFlipOracle,
+        BitPatternPhaseOracle,
         BlockEncoding,
         BooleanFunction,
         BooleanVectorFunction,
@@ -253,6 +254,7 @@ _EXPORTS: dict[str, tuple[str, str | None]] = {
     "GroverDiffusion": (".oracle", "GroverDiffusion"),
     "GroverLong": (".oracle", "GroverLong"),
     "PhaseOracle": (".oracle", "PhaseOracle"),
+    "BitPatternPhaseOracle": (".oracle", "BitPatternPhaseOracle"),
     "SplitCycleShift": (".oracle", "SplitCycleShift"),
     "UnitaryDilation": (".oracle", "UnitaryDilation"),
     "UnitaryMatrixOracle": (".oracle", "UnitaryMatrixOracle"),
@@ -332,6 +334,7 @@ __all__ = [
     "BasisEncoding",
     "BasisStateInitialization",
     "BitFlipOracle",
+    "BitPatternPhaseOracle",
     "BlockEncoding",
     "BooleanFunction",
     "BooleanVectorFunction",

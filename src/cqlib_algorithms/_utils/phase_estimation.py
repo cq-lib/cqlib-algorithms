@@ -20,10 +20,12 @@ import numpy as np
 from cqlib import Circuit, Qubit
 from cqlib.circuit.gates import UnitaryGate
 
+from ..protocols.state_preparation import StatePreparation
 from .circuit import (
     snapshot_bound_static_unitary_circuit,
     validate_bound_static_unitary_circuit,
 )
+from .state_preparation import build_state_preparation_circuit
 
 _MAX_DENSE_WORK_BYTES = 256 * 1024 * 1024
 _MAX_EVALUATION_QUBITS = 52
@@ -71,6 +73,26 @@ def snapshot_static_unitary_circuit(circuit: Circuit, name: str) -> Circuit:
         name,
         check_numeric_unitaries=False,
     )
+
+
+def snapshot_phase_preparation(
+    preparation: StatePreparation, name: str = "state_preparation"
+) -> Circuit:
+    """Build a preparation once and snapshot its fully bound static circuit."""
+    circuit = build_state_preparation_circuit(preparation, prefix=name)
+    return snapshot_static_unitary_circuit(circuit, name)
+
+
+def circuit_from_unitary_matrix(matrix: np.ndarray, label: str) -> Circuit:
+    """Represent a checked unitary in Core basis order, including global phase."""
+    width = matrix.shape[0].bit_length() - 1
+    if width < 1:
+        raise ValueError("unitary must contain at least one qubit")
+    circuit = Circuit(width)
+    gate = UnitaryGate(label, width).with_matrix(matrix)
+    # Numeric gates treat their first target as the most significant qubit.
+    circuit.append_unitary_gate(gate, list(reversed(circuit.qubits)))
+    return circuit
 
 
 def unitary_matrix(

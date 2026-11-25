@@ -169,14 +169,16 @@ def _independent_value(bitstring: str) -> float:
 
 
 @pytest.mark.reference
-def test_joint_counts_give_independent_mean_variance_and_little_endian_values() -> None:
+@pytest.mark.parametrize("entry_point", ["run", "compute_minimum_eigenvalue"])
+def test_joint_counts_give_independent_mean_variance_and_little_endian_values(
+    entry_point: str,
+) -> None:
     objective_counts = {"00": 2, "01": 3, "10": 1, "11": 2}
     final_counts = {"01": 4, "10": 4}
     sampler = _CountsSampler((objective_counts, objective_counts, final_counts))
     optimizer = _BatchEvaluatingOptimizer()
-    result = SamplingVQE(
-        sampler, _OneParameterAnsatz(), optimizer
-    ).compute_minimum_eigenvalue(
+    algorithm = SamplingVQE(sampler, _OneParameterAnsatz(), optimizer)
+    result = getattr(algorithm, entry_point)(
         _correlated_diagonal_operator(), {"theta_0": 0.0}, shots=8, seed=19
     )
 
@@ -204,6 +206,7 @@ def test_joint_counts_give_independent_mean_variance_and_little_endian_values() 
     ) / 7
     assert optimizer.values == pytest.approx([expected_objective] * 2)
     assert optimizer.variances == pytest.approx([expected_variance] * 2)
+    assert result.optimal_value == pytest.approx(expected_objective)
     assert result.final_sample_value == pytest.approx(expected_final)
     assert result.final_distribution == {"01": 0.5, "10": 0.5}
     assert result.best_measurement.bitstring == "11"
@@ -277,17 +280,18 @@ def test_zero_count_keys_are_not_observed_outcomes() -> None:
 
 
 def test_master_seed_reproducibly_derives_distinct_child_seeds() -> None:
-    def run(seed: int) -> list[int | None]:
+    def run(seed: int, entry_point: str = "run") -> list[int | None]:
         sampler = _CountsSampler(({"00": 2}, {"00": 2}, {"00": 2}))
-        SamplingVQE(
+        algorithm = SamplingVQE(
             sampler, _OneParameterAnsatz(), _BatchEvaluatingOptimizer()
-        ).compute_minimum_eigenvalue(
+        )
+        getattr(algorithm, entry_point)(
             _correlated_diagonal_operator(), {"theta_0": 0.0}, shots=2, seed=seed
         )
         return [request.seed for request in sampler.requests]
 
     first = run(7)
-    assert first == run(7)
+    assert first == run(7, "compute_minimum_eigenvalue")
     assert first != run(8)
     assert len(set(first)) == len(first)
 

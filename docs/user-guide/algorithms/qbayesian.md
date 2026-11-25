@@ -1,7 +1,7 @@
 # 量子贝叶斯推断 QBayesian
 
 `QBayesian` 根据联合概率分布和已知证据，估计查询变量的条件分布。
-调用方提供联合分布制备线路、变量位置映射及 Sampler，算法通过振幅放大和采样完成推断。
+将联合分布的状态制备组件、变量位置和采样器交给 `QBayesian`，一次 `run` 即可得到条件分布。算法只在证据指定的位上做相位标记，再进行振幅放大和采样。
 
 ## 使用示例
 
@@ -18,9 +18,9 @@ from cqlib_algorithms.operators.state_preparation import ArbitraryStatePreparati
 joint_probabilities = [0.60, 0.15, 0.05, 0.20]
 preparation = ArbitraryStatePreparation(
     [math.sqrt(value) for value in joint_probabilities]
-).build_circuit("")
+)
 inference = QBayesian(preparation, {"q": 0, "e": 1}, StatevectorSampler())
-result = inference.infer(
+result = inference.run(
     ["q"],
     {"e": 1},
     target_accepted=128,
@@ -36,7 +36,7 @@ print("Accepted / attempted:", result.accepted, result.attempted_shots)
 
 ```text
 QBayesian(state_preparation, variable_qubits, sampler)
-infer(query, evidence=None, *, target_accepted=256, shots_per_round=256,
+run(query, evidence=None, *, target_accepted=256, shots_per_round=256,
       amplification_powers=(0, 1, 2, 4, 8, 16, 32), max_rounds=128,
       max_grover_power=1024, max_total_shots=1_000_000,
       max_grover_queries=10_000_000)
@@ -45,7 +45,7 @@ build_circuit(evidence=None, *, grover_power=0, max_grover_power=1024)
 
 | 参数 | 含义 |
 | --- | --- |
-| `state_preparation` | 编码联合分布的 Cqlib `Circuit`，要求参数完全绑定、静态酉且可逆 |
+| `state_preparation` | 编码联合分布的 `StatePreparation` 组件。生成的线路须完全绑定、静态可逆 |
 | `variable_qubits` | 变量名到量子比特位置的映射，位置按输入线路的量子比特插入顺序从 0 编号 |
 | `sampler` | 本库 `Sampler` 组件，如 `StatevectorSampler` |
 | `query` | 查询变量名称序列，结果元组按此顺序排列 |
@@ -61,7 +61,7 @@ build_circuit(evidence=None, *, grover_power=0, max_grover_power=1024)
 
 ## 返回结果
 
-`infer` 返回 `QBayesianResult`。条件概率由符合证据的样本频数归一化得到。
+`run` 返回 `QBayesianResult`。`infer` 使用相同签名与计算流程。条件概率由符合证据的样本频数归一化得到。
 
 | 属性 | 含义 |
 | --- | --- |

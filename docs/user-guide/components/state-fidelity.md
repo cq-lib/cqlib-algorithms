@@ -5,6 +5,79 @@
 协议，估计两条线路所制备纯态之间的保真度。构造参数、返回类型与异常以
 源码 docstring 为准。
 
+## 直接比较组件
+
+`run(state_a, state_b, *, shots, ...)` 直接接收 `StatePreparation`、`Ansatz` 或已有
+`Circuit`，返回一个
+`CircuitFidelityResult`。组件输入在请求构造时各自构建并复制；直接传入的 `Circuit`
+按引用保存，调用方应在请求存续期间保持其不变。默认符号前缀为 `a`、`b`，绑定分别通过
+`parameter_bindings_a`、`parameter_bindings_b` 提供。同一个组件可以在两侧使用不同的参数值。
+`prefix_a`、`prefix_b` 只影响组件新建符号的名字，实际参数归属由两组独立绑定决定。
+
+```python
+import math
+from cqlib_algorithms.operators import (
+    BasisStateInitialization,
+    ComputeUncomputeFidelity,
+    RealAmplitudesAnsatz,
+    StatevectorSampler,
+    UniformSuperposition,
+)
+
+fidelity = ComputeUncomputeFidelity(StatevectorSampler())
+ansatz = RealAmplitudesAnsatz(1, reps=0)
+result = fidelity.run(
+    UniformSuperposition(1),
+    ansatz,
+    shots=4096,
+    seed=7,
+    parameter_bindings_b={"b_0": math.pi / 2},
+)
+print(result.fidelity)  # 1.0
+changed = fidelity.run(
+    BasisStateInitialization(1, 0),
+    ansatz,
+    shots=4096,
+    seed=7,
+    parameter_bindings_b={"b_0": math.pi / 2},
+)
+print(changed.fidelity)  # approximately 0.5
+```
+
+第一组比较的是两个相同的单比特叠加态，保真度为 `1.0`；替换参考态后理论值为 `0.5`，
+有限采样结果约为 `0.5044`。所有绑定必须恰好覆盖各自线路的活跃符号，宽度不匹配、
+测量或不可逆操作会在采样前被拒绝。
+
+## 将酉组件适配为状态制备
+
+将算术、QFT、Grover、QSP/QSVT、块编码或嵌套重叠用于态比较时，先通过
+`UserCircuitPreparation(circuit)` 将其线路适配为状态制备。以下例子组合 QFT
+与恒等制备，绑定后比较其输出态与均匀叠加态；线路构建和采样均在库内完成：
+
+```python
+from cqlib_algorithms.operators import (
+    QFT,
+    BasisStateInitialization,
+    ComputeUncomputeFidelity,
+    StatevectorSampler,
+    UniformSuperposition,
+    UnitaryOverlap,
+    UserCircuitPreparation,
+)
+
+unitary = UnitaryOverlap(QFT(2).build_circuit(), BasisStateInitialization(2, 0))
+prepared = UserCircuitPreparation(unitary.build_circuit())
+fidelity = ComputeUncomputeFidelity(StatevectorSampler())
+result = fidelity.run(prepared, UniformSuperposition(2), shots=256, seed=7)
+print(result.fidelity)  # 1.0
+```
+
+`UnitaryOverlap(U1, U2)` 的时间顺序为 U1、U2 的伴随；嵌套组合延续这一顺序。
+保真度比较两个完整酉分别作用于全零态后所得的纯态。BlockEncoding 和 QSVT 的辅助位
+计入比较寄存器，接口按完整制备态解释结果。快照保留输入线路的全局相位；复合输出后续
+用于受控相位估计时，应使用准确表达目标酉的完整线路。
+
+
 ## 酉算子重叠线路
 
 对相同正宽度的线路 `U1` 和 `U2`，`UnitaryOverlap(U1, U2)` 构建
@@ -22,18 +95,21 @@
 避免在组合时隐式共享训练参数。`insert_barrier=True` 只在 <img src="../../assets/formulas/inline/inline-98de45ac415e9b4a.svg" alt="U_1" style="vertical-align: -3.000pt;"> 与 <img src="../../assets/formulas/inline/inline-70940f2cacc705e3.svg" alt="U_2^\dagger" style="vertical-align: -4.000pt;">
 之间加入非语义 barrier，不改变线路矩阵。
 
+`U1`、`U2` 接收 `StatePreparation`、`Ansatz` 或已有 `Circuit`。其他算子先生成线路；
+状态制备或 Ansatz 默认分别用 `a`、`b` 构建。
+构建结果保存独立快照；同名活跃符号仍会被拒绝，以保持输出线路的参数独立性。
+
 ```python
-from cqlib import Circuit
-from cqlib_algorithms.operators import UnitaryOverlap
+import numpy as np
+from cqlib_algorithms.operators import (
+    BasisStateInitialization,
+    UnitaryOverlap,
+    UniformSuperposition,
+)
 
-first = Circuit(1)
-first.h(0)
-
-second = Circuit(1)
-second.ry(0, 0.3)
-
-overlap = UnitaryOverlap(first, second, insert_barrier=True).build_circuit()
-inverse_overlap = overlap.inverse()
+overlap = UnitaryOverlap(UniformSuperposition(1), BasisStateInitialization(1, 0))
+matrix = overlap.build_circuit().to_matrix()  # inspect the constructed operator
+np.testing.assert_allclose(matrix, np.array([[1, 1], [1, -1]]) / np.sqrt(2), atol=1e-14)
 ```
 
 输入必须为等宽、可分解且可静态求逆的酉线路；允许 barrier，但拒绝测量、
@@ -72,7 +148,7 @@ inverse_overlap = overlap.inverse()
 
 ## 请求与结果
 
-- `CircuitFidelityRequest`：保存两条制备线路、正整数 shots，以及两组独立的参数绑定；
+- `CircuitFidelityRequest`：两侧接收状态制备、Ansatz 或已有线路，另提供正整数 shots 及两组独立绑定；组件输入构建后保存快照，已有 Circuit 输入保留原引用与执行前复核规则；
 - `CircuitFidelityResult`：返回 `[0, 1]` 内的保真度和可用时的估计方差；
 - `ComputeUncomputeFidelity`：接收一个 `Sampler`，批量执行保真度请求。
 

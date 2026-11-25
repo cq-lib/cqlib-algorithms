@@ -30,13 +30,14 @@ from cqlib.device import ExecutionResult
 
 from cqlib_algorithms.operators.quantum_kernel import FidelityQuantumKernel
 from cqlib_algorithms.operators.sampler import StatevectorSampler
+from cqlib_algorithms.operators.state_preparation import UserCircuitPreparation
 from cqlib_algorithms.protocols import Sampler
 
 
 def ry_kernel(**kwargs):
     circuit = Circuit(1)
     circuit.ry(0, Parameter("x"))
-    return FidelityQuantumKernel(circuit, ["x"], **kwargs)
+    return FidelityQuantumKernel(UserCircuitPreparation(circuit), ["x"], **kwargs)
 
 
 def analytic_ry(x, y):
@@ -67,7 +68,9 @@ def test_product_map_explicit_nonalphabetic_order_repetition_and_fixed_binding()
     circuit.rz(Qubit(2), Parameter("fixed"))
     circuit.set_global_phase(0.73)
     fixed = {"fixed": 0.37}
-    kernel = FidelityQuantumKernel(circuit, ["z", "a"], parameter_bindings=fixed)
+    kernel = FidelityQuantumKernel(
+        UserCircuitPreparation(circuit), ["z", "a"], parameter_bindings=fixed
+    )
     x = np.array([[0.1, 0.7], [0.3, -0.2], [1.3, 0.11]])
     expected = np.cos(x[:, None, 0] - x[None, :, 0]) ** 2
     expected *= np.cos((x[:, None, 1] - x[None, :, 1]) / 2) ** 2
@@ -99,7 +102,7 @@ def test_nonzero_feature_domain_matches_reciprocal_analytic_kernel(
     kwargs = {"parameter_bindings": {"scale": scale}} if fixed_scale else {}
     if sampled:
         kwargs.update(sampler=sampler, shots=shots)
-    kernel = FidelityQuantumKernel(circuit, ["x"], **kwargs)
+    kernel = FidelityQuantumKernel(UserCircuitPreparation(circuit), ["x"], **kwargs)
     matrix = kernel.evaluate(data)
     if sampled:
         np.testing.assert_allclose(matrix, expected, rtol=0, atol=0.5 / shots)
@@ -128,7 +131,7 @@ def test_nonzero_domain_equal_and_empty_rows_do_not_execute(sampled, monkeypatch
     circuit.ry(0, 1 / Parameter("x"))
     sampler = PairSampler([])
     kwargs = {"sampler": sampler, "shots": 10} if sampled else {}
-    kernel = FidelityQuantumKernel(circuit, ["x"], **kwargs)
+    kernel = FidelityQuantumKernel(UserCircuitPreparation(circuit), ["x"], **kwargs)
     monkeypatch.setattr(
         module.Statevector, "from_circuit", lambda *a: pytest.fail("no execution")
     )
@@ -160,7 +163,9 @@ def test_constructor_checks_fixed_operations_without_binding_input(monkeypatch):
         original(candidate, name)
 
     monkeypatch.setattr(module, "validate_bound_static_unitary_circuit", record)
-    FidelityQuantumKernel(circuit, ["x"], parameter_bindings={"fixed": 0.3})
+    FidelityQuantumKernel(
+        UserCircuitPreparation(circuit), ["x"], parameter_bindings={"fixed": 0.3}
+    )
     assert len(checked) == 1
     assert not checked[0].used_symbols
     expected = Circuit(1)
@@ -178,7 +183,10 @@ def test_invalid_fixed_only_expression_rejected_by_constructor(sampled, kind, va
     kwargs = {"sampler": PairSampler([]), "shots": 10} if sampled else {}
     with pytest.raises((CircuitError, ValueError)):
         FidelityQuantumKernel(
-            circuit, ["x"], parameter_bindings={"fixed": value}, **kwargs
+            UserCircuitPreparation(circuit),
+            ["x"],
+            parameter_bindings={"fixed": value},
+            **kwargs,
         )
 
 
@@ -190,7 +198,7 @@ def test_unsupported_numeric_unitary_inverse_is_still_rejected(sampled):
     circuit.append_unitary_gate(gate, [0, 1, 2])
     kwargs = {"sampler": PairSampler([]), "shots": 10} if sampled else {}
     with pytest.raises(ValueError, match="invertible"):
-        FidelityQuantumKernel(circuit, ["x"], **kwargs)
+        FidelityQuantumKernel(UserCircuitPreparation(circuit), ["x"], **kwargs)
 
 
 class PairSampler(Sampler):
@@ -337,7 +345,7 @@ def test_equal_rows_reject_invalid_bound_feature_states(
     circuit.ry(0, angle)
     sampler = PairSampler([])
     kwargs = {"sampler": sampler, "shots": 10} if sampled else {}
-    kernel = FidelityQuantumKernel(circuit, ["x"], **kwargs)
+    kernel = FidelityQuantumKernel(UserCircuitPreparation(circuit), ["x"], **kwargs)
     monkeypatch.setattr(
         module.Statevector,
         "from_circuit",
@@ -407,7 +415,7 @@ def test_invalid_kernel_configuration(kwargs):
     circuit.ry(0, Parameter("x"))
     arguments = {"input_parameters": ["x"], **kwargs}
     with pytest.raises((TypeError, ValueError)):
-        FidelityQuantumKernel(circuit, **arguments)
+        FidelityQuantumKernel(UserCircuitPreparation(circuit), **arguments)
 
 
 @pytest.mark.parametrize("kind", ["measure", "reset", "delay", "nested"])
@@ -426,7 +434,7 @@ def test_nonunitary_envelope_is_rejected_in_both_modes(kind):
         circuit.compose(inner, circuit.qubits)
     for kwargs in ({}, {"sampler": StatevectorSampler(), "shots": 10}):
         with pytest.raises(ValueError):
-            FidelityQuantumKernel(circuit, ["x"], **kwargs)
+            FidelityQuantumKernel(UserCircuitPreparation(circuit), ["x"], **kwargs)
 
 
 @pytest.mark.parametrize("budget", ["qubits", "bytes"])
@@ -444,7 +452,7 @@ def test_exact_limits_reject_before_core_simulation(budget, monkeypatch):
         if budget == "qubits"
         else {"max_statevector_bytes": 127}
     )
-    kernel = FidelityQuantumKernel(circuit, ["x"], **kwargs)
+    kernel = FidelityQuantumKernel(UserCircuitPreparation(circuit), ["x"], **kwargs)
     with pytest.raises(ValueError, match="max_statevector"):
         kernel.evaluate([[0]], [[1]])
     assert calls == []

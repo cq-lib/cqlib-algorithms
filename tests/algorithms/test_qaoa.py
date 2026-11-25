@@ -239,12 +239,13 @@ def test_single_edge_maxcut_reaches_known_optimum_and_optimal_bitstrings() -> No
         ),
     )
 
-    result = algorithm.compute_maximum(
+    result = algorithm.run(
         _maxcut_cost(2, [(0, 1)]),
         {
             "qaoa_0_gamma": math.pi / 2.0,
             "qaoa_0_beta": math.pi / 8.0,
         },
+        objective_sense="maximize",
     )
 
     probabilities = np.abs(result.optimal_circuit.to_matrix()[:, 0]) ** 2
@@ -537,16 +538,23 @@ def test_algorithms_share_a_flat_variational_result() -> None:
     assert not hasattr(result, "vqe_result")
 
 
-def test_minimum_uses_original_cost_and_same_circuit_as_maximum() -> None:
+@pytest.mark.parametrize("legacy", [False, True], ids=["run", "compute"])
+def test_minimum_uses_original_cost_and_same_circuit_as_maximum(legacy: bool) -> None:
     optimizer = RecordingOptimizer()
     algorithm = QAOA(RecordingEstimator(), optimizer)
     cost = _maxcut_cost(2, [(0, 1)])
     point = {"qaoa_0_gamma": 0.2, "qaoa_0_beta": -0.3}
-    minimum = algorithm.compute_minimum_eigenvalue(cost, point, shots=123)
-    maximum = algorithm.compute_maximum(cost, point, shots=123)
+    if legacy:
+        minimum = algorithm.compute_minimum_eigenvalue(cost, point, shots=123)
+        maximum = algorithm.compute_maximum(cost, point, shots=123)
+    else:
+        minimum = algorithm.run(cost, point, shots=123)
+        maximum = algorithm.run(cost, point, shots=123, objective_sense="maximize")
     assert minimum.optimal_value == -0.75
     assert maximum.optimal_value == 0.75
     assert minimum.objective_sense == "minimize"
+    assert maximum.objective_sense == "maximize"
+    assert maximum.optimizer_result.optimal_value == -maximum.optimal_value
     assert minimum.eigenvalue == minimum.optimal_value
     positive = optimizer.batches[0][0].estimator_request
     negative = optimizer.batches[1][0].estimator_request
@@ -556,13 +564,28 @@ def test_minimum_uses_original_cost_and_same_circuit_as_maximum() -> None:
     np.testing.assert_allclose(negative.observable.to_matrix(), -cost.to_matrix())
 
 
+@pytest.mark.parametrize(
+    ("sense", "error"), [("minimum", ValueError), (None, TypeError)]
+)
+def test_invalid_objective_sense_is_rejected_before_optimization(sense, error) -> None:
+    optimizer = RecordingOptimizer()
+    algorithm = QAOA(RecordingEstimator(), optimizer)
+    with pytest.raises(error, match="objective_sense"):
+        algorithm.run(
+            _maxcut_cost(2, [(0, 1)]),
+            {"qaoa_0_gamma": 0.2, "qaoa_0_beta": -0.3},
+            objective_sense=sense,
+        )
+    assert optimizer.batches == []
+
+
 @pytest.mark.reference
 def test_minimum_reaches_known_single_edge_minimum() -> None:
     algorithm = QAOA(
         StatevectorEstimator(),
         GradientDescent(ParameterShiftGradient(), maxiter=1, tolerance=1e-12),
     )
-    result = algorithm.compute_minimum_eigenvalue(
+    result = algorithm.run(
         _maxcut_cost(2, [(0, 1)]),
         {"qaoa_0_gamma": math.pi / 2, "qaoa_0_beta": -math.pi / 8},
     )

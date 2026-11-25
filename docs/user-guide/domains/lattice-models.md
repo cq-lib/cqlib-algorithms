@@ -66,6 +66,43 @@ site_zero = SiteOccupation(model, 0).to_qubit_hamiltonian()
 物理子空间。结果对 Fermi–Hubbard 返回粒子数、格点占据和双占据，对自旋模型返回
 总/局域磁化、边关联和相互作用能。
 
+下面直接组合拟设、估计器和优化器，求解两格点单电子 hopping 问题：
+
+```python
+from cqlib_algorithms import LatticeGroundState
+from cqlib_algorithms.extension.lattice import (
+    FermiHubbardModel,
+    FermionicLatticeConfiguration,
+    FermionicSector,
+    Lattice,
+    LatticeSystem,
+)
+from cqlib_algorithms.operators import FermiHubbardAnsatz, StatevectorEstimator
+from cqlib_algorithms.operators.optimizer import COBYLAOptimizer
+
+system = LatticeSystem(
+    FermiHubbardModel(
+        Lattice.from_nodes_and_edges(
+            2,
+            ((0, 0, 0.3), (0, 1, -1.0), (1, 1, -0.3)),
+        )
+    ),
+    FermionicSector(2, num_up=1, num_down=0),
+)
+ansatz = FermiHubbardAnsatz(system, FermionicLatticeConfiguration(2, (0,), ()))
+result = LatticeGroundState(
+    StatevectorEstimator(),
+    COBYLAOptimizer(maxiter=100),
+).run(system, ansatz=ansatz)
+print(result.variational_energy)
+print(result.measurements.total_particle_number.expectation)
+```
+
+能量应接近该模型的精确基态能量 `-sqrt(1.09)`（约 `-1.04403`），总粒子数约为 `1.0`；有限次经典优化的
+误差需结合收敛状态判断。固定磁化的自旋问题可使用 `SpinExchangeAnsatz`。显式提供
+拟设时，配置和层数由该组件管理；省略拟设时仍可用 `configuration`、`reps` 配置
+默认路径。`compute()` 与 `run()` 使用相同的求解流程。
+
 ## 适用边界
 
 - 内置拓扑覆盖通用、线形、矩形和超立方最近邻晶格；未提供三角、蜂窝和 Kagome

@@ -26,7 +26,7 @@ import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import final
+from typing import final, overload
 
 from cqlib import Circuit
 
@@ -220,29 +220,72 @@ class StandardAmplitudeEstimation:
         _validate_problem(problem)
         normalize_positive_integer(num_evaluation_qubits, "num_evaluation_qubits")
         component = PhaseEstimationCircuit(
-            problem.grover_operator,
+            problem.iteration_circuit,
             num_evaluation_qubits,
         )
         circuit = Circuit(component.num_qubits)
         system_targets = tuple(circuit.qubits[num_evaluation_qubits:])
 
-        circuit.compose(problem.state_preparation, list(system_targets))
+        circuit.compose(problem.preparation_circuit, list(system_targets))
         circuit.compose(component.build_circuit(), circuit.qubits)
         return circuit
 
+    @overload
+    def run(
+        self,
+        problem: AmplitudeEstimationProblem,
+        *,
+        num_evaluation_qubits: int,
+        shots: int,
+    ) -> StandardAmplitudeEstimationResult: ...
+
+    @overload
     def run(
         self,
         requests: Sequence[StandardAmplitudeEstimationRequest],
         /,
-    ) -> list[StandardAmplitudeEstimationResult]:
-        """Execute a request batch with one Sampler call.
+    ) -> list[StandardAmplitudeEstimationResult]: ...
+
+    def run(
+        self,
+        problem: AmplitudeEstimationProblem
+        | Sequence[StandardAmplitudeEstimationRequest],
+        *,
+        num_evaluation_qubits: int | None = None,
+        shots: int | None = None,
+    ) -> StandardAmplitudeEstimationResult | list[StandardAmplitudeEstimationResult]:
+        """Estimate one problem or submit an ordered batch of requests.
 
         Args:
-            requests: Requests in the desired output order.
+            problem: A prepared problem, or a positional batch whose requests
+                each specify their phase-register width and sample count.
+            num_evaluation_qubits: Number of phase qubits for a single problem.
+            shots: Number of measurements for a single problem.
 
         Returns:
-            One result per request in the same order.
+            One result for a single problem, or a list in request order.
+
+        Raises:
+            TypeError: If the argument types or the single/batch options are invalid.
+            ValueError: If a problem, resource bound, or sampler result is invalid.
         """
+        if isinstance(problem, AmplitudeEstimationProblem):
+            if num_evaluation_qubits is None or shots is None:
+                raise TypeError(
+                    "a single problem requires num_evaluation_qubits and shots"
+                )
+            requests: Sequence[StandardAmplitudeEstimationRequest] = (
+                StandardAmplitudeEstimationRequest(
+                    problem, num_evaluation_qubits, shots
+                ),
+            )
+        else:
+            if num_evaluation_qubits is not None or shots is not None:
+                raise TypeError(
+                    "batch requests specify their own num_evaluation_qubits and shots"
+                )
+            requests = problem
+
         sampler_requests: list[SamplerRequest] = []
         for request in requests:
             if not isinstance(request, StandardAmplitudeEstimationRequest):
@@ -298,7 +341,9 @@ class StandardAmplitudeEstimation:
                     num_evaluation_qubits=request.num_evaluation_qubits,
                 )
             )
-        return results
+        return (
+            results[0] if isinstance(problem, AmplitudeEstimationProblem) else results
+        )
 
 
 __all__ = [

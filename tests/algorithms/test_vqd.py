@@ -246,7 +246,7 @@ def test_vqd_real_optimizer_reaches_both_one_qubit_eigenstates() -> None:
         betas=(4.0,),
     )
 
-    result = algorithm.compute_eigenvalues(
+    result = algorithm.run(
         PauliString.from_str("Z"),
         [{"theta_0": 2.5}, {"theta_0": 0.3}],
         seed=7,
@@ -291,13 +291,16 @@ def test_vqd_preserves_distinct_states_in_a_degenerate_two_qubit_level() -> None
             )
 
 
-def test_vqd_reports_unpenalized_energy_and_operator_derived_beta() -> None:
+@pytest.mark.parametrize("entry_point", ["run", "compute_eigenvalues"])
+def test_vqd_reports_unpenalized_energy_and_operator_derived_beta(
+    entry_point: str,
+) -> None:
     algorithm = _preset_vqd(
         [{"theta_0": math.pi}, {"theta_0": math.pi}],
         betas=None,
     )
 
-    result = algorithm.compute_eigenvalues(
+    result = getattr(algorithm, entry_point)(
         PauliString.from_str("Z"),
         {"theta_0": 0.2},
     )
@@ -382,14 +385,16 @@ def test_vqd_callback_observes_immutable_points_and_level_order() -> None:
 
 def test_vqd_integrates_compute_uncompute_with_reproducible_request_seeds() -> None:
     first_fidelity = _RecordingFidelity()
+    auxiliaries = (PauliString.from_str("Z"),)
     first = _preset_vqd(
         [{"theta_0": 0.6}, {"theta_0": 1.8}],
         fidelity=first_fidelity,
-    ).compute_eigenvalues(
+    ).run(
         PauliString.from_str("Z"),
         {"theta_0": 0.1},
         fidelity_shots=257,
         seed=17,
+        auxiliary_operators=auxiliaries,
     )
     second_fidelity = _RecordingFidelity()
     second = _preset_vqd(
@@ -400,6 +405,7 @@ def test_vqd_integrates_compute_uncompute_with_reproducible_request_seeds() -> N
         {"theta_0": 0.1},
         fidelity_shots=257,
         seed=17,
+        auxiliary_operators=auxiliaries,
     )
 
     assert first_fidelity.seeds == second_fidelity.seeds
@@ -410,6 +416,7 @@ def test_vqd_integrates_compute_uncompute_with_reproducible_request_seeds() -> N
     assert first_fidelity.results == second_fidelity.results
     assert first.eigenvalues == second.eigenvalues
     assert first.optimal_values == second.optimal_values
+    assert first.auxiliary_results == second.auxiliary_results
 
 
 def test_deflated_estimator_rejects_width_changing_transformations() -> None:

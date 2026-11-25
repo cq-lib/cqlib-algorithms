@@ -16,8 +16,11 @@ from __future__ import annotations
 
 import math
 from collections.abc import Mapping
+from copy import deepcopy
 from numbers import Real
 from types import MappingProxyType
+
+from cqlib import Circuit
 
 
 def validate_parameter_prefix(prefix: str) -> None:
@@ -46,6 +49,30 @@ def snapshot_parameter_bindings(
             raise ValueError("parameter binding values must be finite")
         normalized[parameter_name] = numeric_value
     return MappingProxyType(normalized)
+
+
+def bind_circuit_parameters(
+    circuit: Circuit,
+    parameter_bindings: Mapping[str, float],
+) -> Circuit:
+    """Return an independent circuit with exactly its active symbols bound.
+
+    Finite real values are substituted into every parameter expression.
+    Missing or unexpected symbol names raise ValueError. The input circuit
+    and its global phase are preserved.
+    """
+    bindings = snapshot_parameter_bindings(
+        parameter_bindings, name="parameter_bindings"
+    )
+    required = set(circuit.used_symbols)
+    provided = set(bindings)
+    if required != provided:
+        raise ValueError(
+            "parameter bindings must match used circuit symbols exactly: "
+            f"missing={sorted(required - provided)!r}, "
+            f"unexpected={sorted(provided - required)!r}"
+        )
+    return deepcopy(circuit).assign_parameters(dict(bindings))
 
 
 __all__: list[str] = []
