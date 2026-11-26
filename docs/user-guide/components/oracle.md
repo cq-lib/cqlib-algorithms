@@ -29,7 +29,10 @@ $`q_i`$。默认变量顺序在表达式中依首次出现顺序确定，真值�
 
 给定 `n` 个输入比特与 `m` 个输出比特，`BitFlipOracle(F)` 构建可逆线路
 
-$`U_F\vert x\rangle\vert y\rangle=\vert x\rangle\vert y\oplus F(x)\rangle`$。
+```math
+U_F\lvert x\rangle\lvert y\rangle
+=\lvert x\rangle\lvert y\oplus F(x)\rangle.
+```
 
 输入寄存器占 $`q_0`$ 至 $`q_{n-1}`$，输出位 $`i`$ 占 $`q_{n+i}`$。线路共有 $`n+m`$ 个
 量子比特，输出寄存器不被强制初始化；对已有 `y` 也是 XOR，而不是覆盖写入。
@@ -37,12 +40,17 @@ $`U_F\vert x\rangle\vert y\rangle=\vert x\rangle\vert y\oplus F(x)\rangle`$。
 
 `PhaseOracle(f)` 对单输出函数构建
 
-$`S_f\vert x\rangle=(-1)^{f(x)}\vert x\rangle`$。
+```math
+S_f\lvert x\rangle=(-1)^{f(x)}\lvert x\rangle.
+```
 
 多输出 `PhaseOracle(F, output_mask=k)` 必须显式给出整数 $`k`$，并满足
 $`1\leq k<2^m`$；布尔值不是合法掩码。其线路仅包含 $`n`$ 个输入量子比特：
 
-$`S_{F,k}\vert x\rangle=(-1)^{\mathrm{parity}(k\mathbin{\&}F_{\mathrm{int}}(x))}\vert x\rangle`$，
+```math
+S_{F,k}\lvert x\rangle
+=(-1)^{\mathrm{parity}(k\mathbin{\&}F_{\mathrm{int}}(x))}\lvert x\rangle,
+```
 
 其中 $`F_{\mathrm{int}}(x)=\sum_i2^iF_i(x)`$，`parity` 是被选输出位的模二和。这是
 $`F_i`$ 的 XOR/奇偶投影，**不是**“任一被选输出为真”的逻辑 OR 标记。

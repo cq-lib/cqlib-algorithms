@@ -91,9 +91,16 @@ result = StatevectorEstimator().run([request])[0]
 ## 复杂度与数值边界
 
 `StatevectorEstimator` 使用 Core `Statevector.from_circuit` 制备精确态，并采用
-Core 暴露的 Pauli 位掩码和相位，
-按 $`P\vert j\rangle=\mathtt{phase}\,\mathtt{y\_phase} (-1)^{\mathrm{popcount}(j\mathbin{\&}\mathtt{z\_mask})} \vert j\mathbin{\mathtt{xor}}\mathtt{x\_mask}\rangle`$
-计算期望值。该兼容路径对每个 Pauli 项扫描 $`2^n`$ 个幅度，不构造 $`2^n\times2^n`$
+Core 暴露的 Pauli 位掩码和相位，按以下作用关系计算期望值：
+
+```math
+P\lvert j\rangle
+=\mathtt{phase}\,\mathtt{y\_phase}\,
+ (-1)^{\mathrm{popcount}(j\mathbin{\&}\mathtt{z\_mask})}
+ \lvert j\mathbin{\mathtt{xor}}\mathtt{x\_mask}\rangle.
+```
+
+该兼容路径对每个 Pauli 项扫描 $`2^n`$ 个幅度，不构造 $`2^n\times2^n`$
 稠密算子。当前 Core Python binding 的 `Statevector.data` 返回一次幅度拷贝，
 因此每请求的峰值额外空间为 $`O(2^n)`$；组件仅读取一次并复用于全部 Pauli 项。
 对 $`m`$ 个 Hamiltonian 项，计算时间为 $`O(m2^n)`$，不包含 Core 线路仿真成本。
@@ -140,8 +147,12 @@ $`\mathtt{shots}<G`$
 
 对某项的完整原始 counts，位串最右字符对应线路插入顺序中的位置 0。令
 $`\mathtt{mask}=\mathtt{x\_mask}\mathbin{\vert }\mathtt{z\_mask}`$，单次本征值为
-$`(-1)^{\mathrm{popcount}(\mathrm{int}(\mathtt{bitstring},2) \mathbin{\&}\mathtt{mask})}`$。两次及以上采样时，返回的
-`EstimatorResult.variance` 是均值估计量方差的无偏样本估计：
+
+```math
+(-1)^{\mathrm{popcount}(\mathrm{int}(\mathtt{bitstring},2) \mathbin{\&}\mathtt{mask})}.
+```
+
+两次及以上采样时，返回的 `EstimatorResult.variance` 是均值估计量方差的无偏样本估计：
 
 ```math
 \frac{1-\overline{x}^{\,2}}{N_{\mathrm{term}}-1}

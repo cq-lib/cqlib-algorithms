@@ -8,13 +8,13 @@
 SciPy 1.17.1 和 Pytest 9.1.1 的组合下完成全量功能测试，并使用 Mypy 1.20.2
 完成严格类型检查。
 
-当前开发代码维护在 `dev` 分支。以下命令假定系统已经安装
+以下命令假定系统已经安装
 [uv](https://docs.astral.sh/uv/getting-started/installation/)。
 
 ### Windows PowerShell
 
 ```powershell
-git clone --branch dev --single-branch https://gitee.com/zdxlz/cqlib-algorithms.git
+git clone https://github.com/cq-lib/cqlib-algorithms.git
 cd cqlib-algorithms
 uv venv --python 3.11
 & .\.venv\Scripts\Activate.ps1
@@ -24,7 +24,7 @@ uv pip install -e .
 ### Linux/macOS
 
 ```bash
-git clone --branch dev --single-branch https://gitee.com/zdxlz/cqlib-algorithms.git
+git clone https://github.com/cq-lib/cqlib-algorithms.git
 cd cqlib-algorithms
 uv venv --python 3.11
 source .venv/bin/activate
@@ -84,9 +84,17 @@ print(result.zero_count)  # 0 on the ideal statevector sampler
 本库的完整算法通过统一组件接口组织计算流程，因此可以根据问题结构和线路资源替换
 Ansatz，而无需重新实现算法主体。VQE 通过参数化 Ansatz 制备试探态，再由 Estimator
 计算能量、Optimizer 更新参数。
-下面求解两量子比特 Heisenberg Hamiltonian
-$`H=X\otimes X+Y\otimes Y+Z\otimes Z`$。其基态是纠缠态
-$`\left(\vert 01\rangle-\vert 10\rangle\right)/\sqrt{2}`$，最小本征值为 $`-3`$。
+下面以两量子比特 Heisenberg 模型为例，比较两种 Ansatz 的求解效果。
+该模型的 Hamiltonian、纠缠基态和基态能量为：
+
+```math
+\begin{aligned}
+H &= X\otimes X+Y\otimes Y+Z\otimes Z,\\
+\lvert\psi_0\rangle
+  &= \frac{\lvert 01\rangle-\lvert 10\rangle}{\sqrt{2}},
+  \qquad E_0=-3.
+\end{aligned}
+```
 
 ```python
 from cqlib.qis import Hamiltonian, PauliString

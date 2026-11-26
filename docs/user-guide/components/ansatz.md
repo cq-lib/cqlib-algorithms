@@ -49,20 +49,29 @@ $`\mathbf{1}_{\mathrm{final}}`$ 表示是否保留末尾旋转层。
 
 `RealAmplitudesAnsatz` 将 TwoLocal 固定为 `RY` 旋转与 `CX` 纠缠。所有固定参数下
 的门矩阵均为实数。参数数量为
-$`\mathtt{num\_qubits}\,[\mathtt{reps}+\neg\mathtt{skip\_final\_rotation\_layer}]`$。
+
+```math
+\mathtt{num\_qubits}\,[\mathtt{reps}+\neg\mathtt{skip\_final\_rotation\_layer}].
+```
 
 ### `EfficientSU2Ansatz`
 
 `EfficientSU2Ansatz` 将每个单比特参数块固定为依次执行 `RY`、`RZ`，纠缠门固定为
 `CX`。参数数量为
-$`2\,\mathtt{num\_qubits}\,[\mathtt{reps}+\neg\mathtt{skip\_final\_rotation\_layer}]`$。
+
+```math
+2\,\mathtt{num\_qubits}\,[\mathtt{reps}+\neg\mathtt{skip\_final\_rotation\_layer}].
+```
 
 ### `HardwareEfficientAnsatz`
 
 `HardwareEfficientAnsatz` 是本库冻结的一种数字门模型实现：每个单比特参数块为
 `RZ`、`RX`、`RZ` Euler 序列，之后按 Core 拓扑执行 `CX`、`CY` 或 `CZ` 纠缠。
 参数数量为
-$`3\,\mathtt{num\_qubits}\,[\mathtt{reps}+\neg\mathtt{skip\_final\_rotation\_layer}]`$。
+
+```math
+3\,\mathtt{num\_qubits}\,[\mathtt{reps}+\neg\mathtt{skip\_final\_rotation\_layer}].
+```
 
 “硬件高效拟设”并没有唯一线路定义；这个组件不会自动查询设备、选择本征门或执行
 拓扑映射。调用方应传入与目标设备相符的 `EntanglementTopology` 和纠缠门，后续仍需

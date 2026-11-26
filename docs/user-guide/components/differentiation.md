@@ -129,9 +129,18 @@ for optimizer in optimizers:
 - `NaturalGradient` —— 自然梯度方向 $`g\eta=\nabla E`$ 的求解器。
 
 数学定义采用 Stokes et al.（arXiv:1909.02108）的对称化约定：
-$`F_{ij}=\langle\partial_i\psi\vert (1-\vert \psi\rangle\langle\psi\vert )\vert \partial_j\psi\rangle`$，
-$`g_{ij}=\mathrm{Re}\,F_{ij}`$。端序遵循 Cqlib
-小端约定，量子比特位置按线路插入顺序解释，支持非连续量子比特 ID。
+
+```math
+\begin{aligned}
+F_{ij}
+  &= \langle\partial_i\psi\rvert
+     \left(1-\lvert\psi\rangle\langle\psi\rvert\right)
+     \lvert\partial_j\psi\rangle,\\
+g_{ij} &= \mathrm{Re}\,F_{ij}.
+\end{aligned}
+```
+
+端序遵循 Cqlib 小端约定，量子比特位置按线路插入顺序解释，支持非连续量子比特 ID。
 
 ## 参数移位规则
 
@@ -171,7 +180,10 @@ shots 模式的统计质量取决于底层 Estimator。仅出现在 `set_global_
 $`G=\sum_k w_kP_k`$，则在线路参数因子前插入受辅助量子比特控制的 $`P_k`$，
 辅助位制备为 $`R_Y(\pi/2)\vert 0\rangle`$，并测量 $`O\otimes Y_{\mathrm{aux}}`$：
 
-$`\partial E/\partial t=2a\sum_k w_k\langle O\otimes Y_{\mathrm{aux}}\rangle_k`$。
+```math
+\frac{\partial E}{\partial t}
+=2a\sum_k w_k\langle O\otimes Y_{\mathrm{aux}}\rangle_k.
+```
 
 普通 Pauli 旋转生成元为 $`P/2`$；受 $`k`$ 个量子比特控制的 Pauli 旋转展开为
 $`\sum_S(-1)^{\vert S\vert }Z_SP/2^{k+1}`$。受控 Phase 的生成元展开为控制位与目标位

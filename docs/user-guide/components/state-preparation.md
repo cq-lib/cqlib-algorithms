@@ -156,9 +156,13 @@ Givens 旋转制备固定粒子数 Slater 行列式。`FermionicGaussianStatePre
 
 两个图像组件都接受 `(height, width)` 和通道优先的扁平行优先数据。若
 $`N=\mathtt{height}\times\mathtt{width}`$，`ImageAngleEncoding` 将通道 $`c`$ 的第 $`p`$ 个标量放在
-量子比特 $`q=cN+p`$，并按
-$`\theta=\pi(\mathtt{value}-\mathtt{lower})/(\mathtt{upper}-\mathtt{lower})`$ 施加 `RY(theta)`。输入值和范围
-必须有限，且由调用方在编码前完成所需的裁剪。每个标量使用一个量子比特和一个局部
+量子比特 $`q=cN+p`$，并按以下角度施加 `RY(theta)`：
+
+```math
+\theta=\pi\frac{\mathtt{value}-\mathtt{lower}}{\mathtt{upper}-\mathtt{lower}}.
+```
+
+输入值和范围必须有限，且由调用方在编码前完成所需的裁剪。每个标量使用一个量子比特和一个局部
 旋转，形成直积态编码。
 
 `ImageBasisEncoding`（精确别名 `BRQI`）实现固定 8 位单通道灰度 BRQI。对
