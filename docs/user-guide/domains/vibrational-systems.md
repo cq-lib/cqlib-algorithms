@@ -63,7 +63,7 @@ print([value.expectation for value in result.measurements.mode_leakages])
 
 默认参考态占据每个 mode 的 modal 0，也可通过 `reference_modals` 指定。返回结果包含
 每个 modal 的占据、每个 mode 的总占据以及
-<img src="../../assets/formulas/inline/inline-cc0552fd94289a98.svg" alt="\left(N_{\mathrm{mode}}-I\right)^2" style="vertical-align: -3.000pt;"> 泄漏量；总占据等于 1 只是均值条件，泄漏量为 0 才严格证明状态完全
+$`\left(N_{\mathrm{mode}}-I\right)^2`$ 泄漏量；总占据等于 1 只是均值条件，泄漏量为 0 才严格证明状态完全
 位于 one-hot 物理子空间。
 该例输出约为 `0.0` 和 `[0.0, 0.0]`。可替换兼容的 `Ansatz`、`Estimator` 或
 `Optimizer`；自定义拟设需要保持模态编码，并自行满足目标物理子空间。显式传入

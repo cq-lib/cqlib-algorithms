@@ -82,17 +82,17 @@ print(result.fidelity)  # 1.0
 
 对相同正宽度的线路 `U1` 和 `U2`，`UnitaryOverlap(U1, U2)` 构建
 
-<p align="center">
-  <img src="../../assets/formulas/overlap-unitary.svg" alt="Uoverlap=U2†U1.">
-</p>
+```math
+U_{\mathrm{overlap}}=U_2^\dagger U_1.
+```
 
 该结果是可继续组合、参数绑定或求逆的 Cqlib 线路，不自动测量，也不直接
 返回一个重叠度标量。两个输入的量子比特按各自的插入位置对应，输出紧凑映射到
-<img src="../../assets/formulas/inline/inline-80df05cab2d1ce42.svg" alt="0,\ldots,n-1" style="vertical-align: -3.000pt;">，因此源量子比特标识无需相同。构造时保存两条输入的独立快照；后续
+$`0,\ldots,n-1`$，因此源量子比特标识无需相同。构造时保存两条输入的独立快照；后续
 修改源线路不会改变组件，每次 `build_circuit()` 都返回新线路。
 
 参数化输入的活动参数名会原样保留。两条线路中不得出现相同的活动参数名，
-避免在组合时隐式共享训练参数。`insert_barrier=True` 只在 <img src="../../assets/formulas/inline/inline-98de45ac415e9b4a.svg" alt="U_1" style="vertical-align: -3.000pt;"> 与 <img src="../../assets/formulas/inline/inline-70940f2cacc705e3.svg" alt="U_2^\dagger" style="vertical-align: -4.000pt;">
+避免在组合时隐式共享训练参数。`insert_barrier=True` 只在 $`U_1`$ 与 $`U_2^\dagger`$
 之间加入非语义 barrier，不改变线路矩阵。
 
 `U1`、`U2` 接收 `StatePreparation`、`Ansatz` 或已有 `Circuit`。其他算子先生成线路；
@@ -114,7 +114,7 @@ np.testing.assert_allclose(matrix, np.array([[1, 1], [1, -1]]) / np.sqrt(2), ato
 
 输入必须为等宽、可分解且可静态求逆的酉线路；允许 barrier，但拒绝测量、
 重置、delay、经典数据和经典控制，包括嵌套线路中隐藏的这些操作。该组件实现
-的是线路乘积 <img src="../../assets/formulas/inline/inline-76c9776168f71a5d.svg" alt="U_2^\dagger U_1" style="vertical-align: -4.000pt;">，不是 Hilbert–Schmidt trace overlap。
+的是线路乘积 $`U_2^\dagger U_1`$，不是 Hilbert–Schmidt trace overlap。
 
 ## 采样态保真度
 
@@ -125,24 +125,24 @@ np.testing.assert_allclose(matrix, np.array([[1, 1], [1, -1]]) / np.sqrt(2), ato
 
 设
 
-<p align="center">
-  <img src="../../assets/formulas/fidelity-prepared-states.svg" alt="|ψa⟩=Ua|0…0⟩, |ψb⟩=Ub|0…0⟩.">
-</p>
+```math
+|\psi_a\rangle=U_a|0\ldots0\rangle,\qquad |\psi_b\rangle=U_b|0\ldots0\rangle.
+```
 
 则纯态保真度为
 
-<p align="center">
-  <img src="../../assets/formulas/pure-state-fidelity.svg" alt="Pure-state fidelity expressed as the all-zero compute-uncompute probability.">
-</p>
+```math
+F(|\psi_a\rangle,|\psi_b\rangle)=|\langle\psi_a|\psi_b\rangle|^2=|\langle0\ldots0|U_a^\dagger U_b|0\ldots0\rangle|^2
+```
 
-组件构建 <img src="../../assets/formulas/inline/inline-76090afb5ac82bc0.svg" alt="U_a^\dagger U_b" style="vertical-align: -4.000pt;"> 的 compute-uncompute 线路，并对全部量子比特采样。全零比特串
-的频率即保真度估计值 <img src="../../assets/formulas/inline/inline-148de9c5a7a44d19.svg" alt="p" style="vertical-align: -3.000pt;">。当 `shots > 1` 时，返回的估计方差为
+组件构建 $`U_a^\dagger U_b`$ 的 compute-uncompute 线路，并对全部量子比特采样。全零比特串
+的频率即保真度估计值 $`p`$。当 `shots > 1` 时，返回的估计方差为
 
-<p align="center">
-  <img src="../../assets/formulas/binomial-variance.svg" alt="The unbiased finite-shot variance estimate p(1-p)/(N−1).">
-</p>
+```math
+\frac{p(1-p)}{N-1}
+```
 
-其中 <img src="../../assets/formulas/inline/inline-8ce86a6ae65d3692.svg" alt="N" style="vertical-align: -0.000pt;"> 为 shots 数。
+其中 $`N`$ 为 shots 数。
 
 单次采样无法估计统计方差，因此 `variance` 为 `None`。
 

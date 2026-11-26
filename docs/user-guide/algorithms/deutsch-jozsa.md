@@ -5,19 +5,19 @@
 
 ## 数学定义
 
-给定承诺为常函数或平衡函数的 <img src="../../assets/formulas/inline/inline-8fbf5e830d838f4e.svg" alt="f:\{0,1\}^n\to\{0,1\}" style="vertical-align: -4.000pt;">，算法线路为
+给定承诺为常函数或平衡函数的 $`f:\{0,1\}^n\to\{0,1\}`$，算法线路为
 
-<p align="center">
-  <img src="../../assets/formulas/deutsch-jozsa-phase-query.svg" alt="H⊗n Sf H⊗n |0…0⟩, Sf|x⟩= (-1)f(x)|x⟩.">
-</p>
+```math
+H^{\otimes n}\, S_f\, H^{\otimes n}\, |0\ldots 0\rangle, \qquad S_f|x\rangle = (-1)^{f(x)}|x\rangle .
+```
 
 最终态在全零计算基态上的振幅为
 
-<p align="center">
-  <img src="../../assets/formulas/deutsch-jozsa-zero-amplitude.svg" alt="The all-zero output amplitude is 2^−n times the sum over x of (−1)^f(x).">
-</p>
+```math
+\frac{1}{2^n}\sum_x(-1)^{f(x)}
+```
 
-常函数时模为 <img src="../../assets/formulas/inline/inline-6b86b273ff34fce1.svg" alt="1" style="vertical-align: -0.000pt;">，平衡函数时恰为 <img src="../../assets/formulas/inline/inline-5feceb66ffc86f38.svg" alt="0" style="vertical-align: -1.000pt;">。在满足承诺的理想无噪声执行中，
+常函数时模为 $`1`$，平衡函数时恰为 $`0`$。在满足承诺的理想无噪声执行中，
 一次 shot 已足够确定性判别：全零结果表示"常"，任意非全零结果表示"平衡"。
 组件对任意注入的 Sampler 都使用相同的观测规则，即仅当 `zero_count == shots`
 时返回"常"，否则返回"平衡"；存在噪声时，该值只是观测判决，不构成无误差证明。
@@ -41,10 +41,10 @@ Proc. R. Soc. Lond. A 454, 339 (1998)。
 - 查询线路由 `HadamardPhaseQuery` 组合两层 Hadamard 与 `PhaseOracle`；函数校验
   （类型、`output_mask` 规则）最终委托该底层 Oracle；输入变量数必须至少为 1；
 - 多输出扩展定义派生标量函数
-  <img src="../../assets/formulas/inline/inline-33364f15d74acdcc.svg" alt="g(x)=\bigoplus_{j:\,m_j=1}f_j(x)" style="vertical-align: -18.000pt;">，其中 <img src="../../assets/formulas/inline/inline-62c66a7a5dd70c31.svg" alt="m" style="vertical-align: -1.000pt;"> 是 `output_mask`，
-  常/平衡承诺作用于 <img src="../../assets/formulas/inline/inline-cd0aa9856147b6c5.svg" alt="g" style="vertical-align: -3.000pt;">，而不是分别作用于每个输出位；
+  $`g(x)=\bigoplus_{j:\,m_j=1}f_j(x)`$，其中 $`m`$ 是 `output_mask`，
+  常/平衡承诺作用于 $`g`$，而不是分别作用于每个输出位；
 - `DeutschJozsa.build_circuit(function, output_mask=None)` 构建未测量的
-  <img src="../../assets/formulas/inline/inline-678b057a76c6a024.svg" alt="H^{\otimes n}\rightarrow S_f\rightarrow H^{\otimes n}" style="vertical-align: -5.000pt;"> 查询线路，末端测量由 Sampler 追加；
+  $`H^{\otimes n}\rightarrow S_f\rightarrow H^{\otimes n}`$ 查询线路，末端测量由 Sampler 追加；
 - `run(query, shots=...)` 接收组合后的查询组件并返回一个结果；`run(requests)` 按批次顺序返回结果列表。
 
 `DeutschJozsaRequest(function, shots, output_mask=None)` 中 `shots` 必须为正整数。
@@ -61,7 +61,7 @@ Proc. R. Soc. Lond. A 454, 339 (1998)。
 - 采样结果契约与库内其他采样算法一致：要求成功的终态结果、shots 与量子比特
   顺序匹配、频数总数等于请求 shots；过滤或后选择的不完整频数会被拒绝；
 - 组件不选择后端、不管理迭代、不做误差缓解；经典确定性最坏情形需要
-  <img src="../../assets/formulas/inline/inline-3d4cdb8f7478f49a.svg" alt="2^{n-1}+1" style="vertical-align: -2.000pt;"> 次抽象函数查询，而理想量子算法的一条线路使用一次抽象 Oracle
+  $`2^{n-1}+1`$ 次抽象函数查询，而理想量子算法的一条线路使用一次抽象 Oracle
   查询。这是查询模型中的理论结论，不是对真值表综合或具体执行后端的性能承诺。
 
 ## 可运行示例

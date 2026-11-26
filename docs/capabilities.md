@@ -33,7 +33,7 @@
 | 执行 | 本地态矢量 Sampler、回调式后端 Sampler、精确态矢量 Estimator、采样 Estimator |
 | 微分与优化 | 参数移位、线性组合、有限差分、SPSA 梯度，QGT、QFI、自然梯度，GradientDescent、Adam、SPSA、COBYLA、L-BFGS-B 优化器 |
 | 量子信息 | 纯态或混态任意量子比特二分下的精确量子互信息 |
-| 保真度与重叠 | <img src="assets/formulas/inline/inline-76c9776168f71a5d.svg" alt="U_2^\dagger U_1" style="vertical-align: -4.000pt;"> 酉重叠和纯态保真度接收状态制备、Ansatz 或线路；保真度保留请求批次，自定义制备线路可通过用户状态制备组件复用 |
+| 保真度与重叠 | $`U_2^\dagger U_1`$ 酉重叠和纯态保真度接收状态制备、Ansatz 或线路；保真度保留请求批次，自定义制备线路可通过用户状态制备组件复用 |
 | 误差缓解基础组件 | `QemExecutor`（组件式 `run`、Estimator 适配与批次执行）、线路折叠/单位层插入/参数缩放、外推 Factory、拟概率表示、读出混淆矩阵、动态解耦与 Pauli twirling 线路变换 |
 | 量子核 | `FidelityQuantumKernel`、`TrainableFidelityQuantumKernel`、`BalancedKernelAlignmentLoss` |
 

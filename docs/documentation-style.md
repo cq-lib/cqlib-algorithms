@@ -152,26 +152,30 @@ def _normalize_angle(angle: float) -> float:
 源码 docstring 是接口契约；`docs/user-guide/` 说明如何选择组件、如何调用、如何解释
 结果以及当前适用边界。用户指南不复制完整字段列表、私有调用链或测试清单。
 
-Markdown 文档必须能在代码托管页面直接阅读，不依赖额外的 MathJax、KaTeX 或外部
-公式图片服务。行内和展示公式统一使用仓库内 SVG，并存放在
-`docs/assets/formulas/`；参数名和短程序表达式仍优先使用行内代码。不要混用 HTML 数学
-标记，也不要使用页面会原样显示的 `$...$`、`$$...$$`、`\(...\)` 或 `\[...\]`
-分隔符。
+Markdown 文档使用 GitHub 原生支持的 LaTeX 数学语法。公式直接维护在对应的文档中，
+参数名、类型名和短程序表达式使用行内代码。
 
-公式的可编辑源统一维护在 `docs/assets/formulas/_source/formulas.toml`，Markdown 通过
-相对路径引用生成的 SVG，并提供能够独立表达公式含义的 `alt` 文本。SVG 使用透明背景、
-统一的 TeX 数学字体和 14 pt 基准字号。行内公式不得设置固定图片高度，以免不同公式被
-分别放大或压缩；生成器依据每个公式的真实数学基线写入垂直对齐量，使同一符号跨公式
-保持相同字级。不要手工编辑生成文件。维护公式时使用：
+行内公式使用美元符号与反引号组合，避免下划线等字符被当作 Markdown 标记。例如：
 
-```bash
-python docs/assets/formulas/_source/render_formulas.py
-python docs/assets/formulas/_source/render_formulas.py --check
+```markdown
+初态为 $`\lvert 0^n\rangle`$。
 ```
 
-生成器只写入内容发生变化的 SVG；`--check` 验证公式源、生成文件和 Markdown 引用
-一致，从而避免无差别重写全部静态资源。Matplotlib 只属于文档维护工具，不是算法库
-的运行时依赖。
+独立公式使用 `math` 围栏代码块，并与相邻段落之间保留空行。例如：
+
+````markdown
+```math
+Q=A(2\lvert 0^n\rangle\langle 0^n\rvert-I)A^\dagger S_f
+```
+````
+
+表格中的行内公式使用 `\lvert`、`\rvert`、`\vert` 或 `\Vert` 表示竖线，防止
+竖线被识别为列分隔符。较长的推导放在表格外，按需要使用 `aligned` 对齐分行。
+公式中的运算符、上下标和宏必须能被 GitHub 的 MathJax 渲染器识别。
+
+修改公式后检查数学含义、行内与独立公式的分隔、表格列数和页面显示；同时确认
+代码示例、文档链接和参考文献没有受到排版调整的影响。语法说明见
+[GitHub 数学表达式文档](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/writing-mathematical-expressions)。
 
 修改完成后至少检查：
 

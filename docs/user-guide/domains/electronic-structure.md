@@ -115,5 +115,5 @@ carryover、迭代 callback 和外部子空间求解器注入均由同一工作�
 - 目前只提供 Jordan–Wigner 默认映射和中性 qEOM；未包含对称性约化、偶极矩、
   约化密度矩阵和自动活性空间选择。
 - SQD 当前提供单进程稀疏投影参考求解器、论文式自旋配置闭包，并允许注入外部 SCI
-  求解器；工作流尚未提供分布式批次调度、轨道优化、严格 <img src="../../assets/formulas/inline/inline-c8d0b37b4af3bfcc.svg" alt="S^2" style="vertical-align: -1.000pt;"> 罚函数或通用 Pauli
+  求解器；工作流尚未提供分布式批次调度、轨道优化、严格 $`S^2`$ 罚函数或通用 Pauli
   SQD。大子空间计算必须显式评估经典内存和求解时间。

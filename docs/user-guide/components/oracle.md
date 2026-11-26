@@ -6,20 +6,20 @@
 
 ## 函数表示与端序
 
-`BooleanFunction` 是一个不可变的单输出函数 <img src="../../assets/formulas/inline/inline-f21c2c371f725c1e.svg" alt="f:\{0,1\}^n\rightarrow\{0,1\}" style="vertical-align: -4.000pt;">，其中 <img src="../../assets/formulas/inline/inline-1273956ae1ee6ea5.svg" alt="n\geq1" style="vertical-align: -2.000pt;">。
+`BooleanFunction` 是一个不可变的单输出函数 $`f:\{0,1\}^n\rightarrow\{0,1\}`$，其中 $`n\geq1`$。
 它可通过 `from_marked_states(n, states)`、`from_truth_table(values)` 或
-`from_expression(expression, variable_order=...)` 创建。真值表长度为 <img src="../../assets/formulas/inline/inline-e8a3fed33f2f1fe0.svg" alt="2^n" style="vertical-align: -0.000pt;">，
+`from_expression(expression, variable_order=...)` 创建。真值表长度为 $`2^n`$，
 `truth_table[x]` 对应输入整数 `x`。表达式只支持变量、`True`、`False`、括号、
 `~`、`&`、`^` 和 `|`；它使用受限 AST 解析，不执行 Python 表达式。
 
-`BooleanVectorFunction` 表示 <img src="../../assets/formulas/inline/inline-c9674789af0d66a7.svg" alt="F:\{0,1\}^n\rightarrow\{0,1\}^m" style="vertical-align: -4.000pt;">，要求 <img src="../../assets/formulas/inline/inline-1273956ae1ee6ea5.svg" alt="n\geq1" style="vertical-align: -2.000pt;">、<img src="../../assets/formulas/inline/inline-b2bec29c814f7b2a.svg" alt="m\geq2" style="vertical-align: -2.000pt;">，
+`BooleanVectorFunction` 表示 $`F:\{0,1\}^n\rightarrow\{0,1\}^m`$，要求 $`n\geq1`$、$`m\geq2`$，
 各标量输出的 `variable_order` 完全一致。`from_truth_table(rows)` 接收输入优先
 的矩形真值表，`rows[x][i]` 为输入 `x` 的输出位 `i`；
 `from_marked_state_sets(n, sets)` 则接收输出优先的标记态集合；还可使用
 `from_functions(outputs)` 与 `from_expressions(expressions, variable_order=...)`。
 字符串表达式或显式 `variable_order` 中第 `i` 个变量对应输入比特 `i`、量子比特
-<img src="../../assets/formulas/inline/inline-2fdfdde7570c43b1.svg" alt="q_i" style="vertical-align: -3.000pt;">。默认变量顺序在表达式中依首次出现顺序确定，真值表构造默认采用
-`("x0", "x1", ...)`。量子比特 <img src="../../assets/formulas/inline/inline-b8bbb3a7ebd17a45.svg" alt="q_0" style="vertical-align: -3.000pt;"> 是计算基整数的最低有效位。
+$`q_i`$。默认变量顺序在表达式中依首次出现顺序确定，真值表构造默认采用
+`("x0", "x1", ...)`。量子比特 $`q_0`$ 是计算基整数的最低有效位。
 
 非法类型通常抛出 `TypeError`，无效长度、输出数量、标记态、变量顺序或掩码通常
 抛出 `ValueError`。向量函数不接受只有一个输出；该情况应使用 `BooleanFunction`。
@@ -29,29 +29,29 @@
 
 给定 `n` 个输入比特与 `m` 个输出比特，`BitFlipOracle(F)` 构建可逆线路
 
-<img src="../../assets/formulas/inline/inline-2723251377d0a8f8.svg" alt="U_F|x\rangle|y\rangle=|x\rangle|y\oplus F(x)\rangle" style="vertical-align: -4.000pt;">。
+$`U_F\vert x\rangle\vert y\rangle=\vert x\rangle\vert y\oplus F(x)\rangle`$。
 
-输入寄存器占 <img src="../../assets/formulas/inline/inline-b8bbb3a7ebd17a45.svg" alt="q_0" style="vertical-align: -3.000pt;"> 至 <img src="../../assets/formulas/inline/inline-fc9f285973235a15.svg" alt="q_{n-1}" style="vertical-align: -3.000pt;">，输出位 <img src="../../assets/formulas/inline/inline-de7d1b721a1e0632.svg" alt="i" style="vertical-align: -1.000pt;"> 占 <img src="../../assets/formulas/inline/inline-1ffdb8ca099954ec.svg" alt="q_{n+i}" style="vertical-align: -4.000pt;">。线路共有 <img src="../../assets/formulas/inline/inline-6a766438d1de2cc9.svg" alt="n+m" style="vertical-align: -2.000pt;"> 个
+输入寄存器占 $`q_0`$ 至 $`q_{n-1}`$，输出位 $`i`$ 占 $`q_{n+i}`$。线路共有 $`n+m`$ 个
 量子比特，输出寄存器不被强制初始化；对已有 `y` 也是 XOR，而不是覆盖写入。
-单输出函数对应 <img src="../../assets/formulas/inline/inline-a8de8aa13b0788a7.svg" alt="m=1" style="vertical-align: -1.000pt;">。此线路是酉的、厄米的、对合的，并不包含辅助量子比特。
+单输出函数对应 $`m=1`$。此线路是酉的、厄米的、对合的，并不包含辅助量子比特。
 
 `PhaseOracle(f)` 对单输出函数构建
 
-<img src="../../assets/formulas/inline/inline-7b564082c30e9873.svg" alt="S_f|x\rangle=(-1)^{f(x)}|x\rangle" style="vertical-align: -5.000pt;">。
+$`S_f\vert x\rangle=(-1)^{f(x)}\vert x\rangle`$。
 
-多输出 `PhaseOracle(F, output_mask=k)` 必须显式给出整数 <img src="../../assets/formulas/inline/inline-8254c329a92850f6.svg" alt="k" style="vertical-align: -1.000pt;">，并满足
-<img src="../../assets/formulas/inline/inline-ee553d48cab20c51.svg" alt="1\leq k&lt;2^m" style="vertical-align: -2.000pt;">；布尔值不是合法掩码。其线路仅包含 <img src="../../assets/formulas/inline/inline-1b16b1df538ba12d.svg" alt="n" style="vertical-align: -1.000pt;"> 个输入量子比特：
+多输出 `PhaseOracle(F, output_mask=k)` 必须显式给出整数 $`k`$，并满足
+$`1\leq k<2^m`$；布尔值不是合法掩码。其线路仅包含 $`n`$ 个输入量子比特：
 
-<img src="../../assets/formulas/inline/inline-bccdeea47d9297d3.svg" alt="S_{F,k}|x\rangle=(-1)^{\operatorname{parity}(k\mathbin{\&amp;}F_{\mathrm{int}}(x))}|x\rangle" style="vertical-align: -5.000pt;">，
+$`S_{F,k}\vert x\rangle=(-1)^{\operatorname{parity}(k\mathbin{\&}F_{\mathrm{int}}(x))}\vert x\rangle`$，
 
-其中 <img src="../../assets/formulas/inline/inline-1f23c55b44b9f612.svg" alt="F_{\mathrm{int}}(x)=\sum_i2^iF_i(x)" style="vertical-align: -15.000pt;">，`parity` 是被选输出位的模二和。这是
-<img src="../../assets/formulas/inline/inline-31d7232e6fa917d3.svg" alt="F_i" style="vertical-align: -3.000pt;"> 的 XOR/奇偶投影，**不是**“任一被选输出为真”的逻辑 OR 标记。
-例如，两个被选输出在同一个输入上都为真时，相位为 <img src="../../assets/formulas/inline/inline-c59dc4e44ff99288.svg" alt="+1" style="vertical-align: -2.000pt;">。如需 OR 谓词，
+其中 $`F_{\mathrm{int}}(x)=\sum_i2^iF_i(x)`$，`parity` 是被选输出位的模二和。这是
+$`F_i`$ 的 XOR/奇偶投影，**不是**“任一被选输出为真”的逻辑 OR 标记。
+例如，两个被选输出在同一个输入上都为真时，相位为 $`+1`$。如需 OR 谓词，
 调用方应先定义相应的单输出 `BooleanFunction`；该组件不会悄然替换标记语义。
-对恒真标记，线路显式保留 <img src="../../assets/formulas/inline/inline-4c3a1b75ae7e2fb9.svg" alt="-I" style="vertical-align: -0.000pt;"> 全局相位；恒假标记返回 <img src="../../assets/formulas/inline/inline-a83dd0ccbffe39d0.svg" alt="I" style="vertical-align: -0.000pt;">。
+对恒真标记，线路显式保留 $`-I`$ 全局相位；恒假标记返回 $`I`$。
 
-将 BitFlip 输出位 <img src="../../assets/formulas/inline/inline-de7d1b721a1e0632.svg" alt="i" style="vertical-align: -1.000pt;"> 初始化为 <img src="../../assets/formulas/inline/inline-d2df50038d900c16.svg" alt="|-\rangle" style="vertical-align: -4.000pt;">（其余输出位为 <img src="../../assets/formulas/inline/inline-8372b50dbaef9a87.svg" alt="|+\rangle" style="vertical-align: -4.000pt;">）时，
-XOR 的相位回踢与选择 <img src="../../assets/formulas/inline/inline-2995f7a6d64548fb.svg" alt="k=2^i" style="vertical-align: -1.000pt;"> 的 Phase Oracle 一致；多个被选位为 <img src="../../assets/formulas/inline/inline-d2df50038d900c16.svg" alt="|-\rangle" style="vertical-align: -4.000pt;">
+将 BitFlip 输出位 $`i`$ 初始化为 $`\vert -\rangle`$（其余输出位为 $`\vert +\rangle`$）时，
+XOR 的相位回踢与选择 $`k=2^i`$ 的 Phase Oracle 一致；多个被选位为 $`\vert -\rangle`$
 时得到相同的掩码奇偶相位。这不表示 Phase Oracle 持有或测量输出寄存器。
 
 ### 按指定位标记
@@ -63,16 +63,16 @@ XOR 的相位回踢与选择 <img src="../../assets/formulas/inline/inline-2995f
 ## 精确反射
 
 `ZeroStateReflection(n)` 要求正整数 `n`，返回
-<img src="../../assets/formulas/inline/inline-58cea9d343541471.svg" alt="R_0=2|0\ldots0\rangle\langle0\ldots0|-I" style="vertical-align: -4.000pt;">，含精确全局相位。`GroverDiffusion(n)` 返回
-<img src="../../assets/formulas/inline/inline-3b7347d72dc0df56.svg" alt="D=H^{\otimes n}R_0H^{\otimes n}=2|s\rangle\langle s|-I" style="vertical-align: -4.000pt;">，其中
-<img src="../../assets/formulas/inline/inline-32cdd5e02494ec4d.svg" alt="|s\rangle=2^{-n/2}\sum_x|x\rangle" style="vertical-align: -13.000pt;">；它本身不包含标记 Oracle。
+$`R_0=2\vert 0\ldots0\rangle\langle0\ldots0\vert -I`$，含精确全局相位。`GroverDiffusion(n)` 返回
+$`D=H^{\otimes n}R_0H^{\otimes n}=2\vert s\rangle\langle s\vert -I`$，其中
+$`\vert s\rangle=2^{-n/2}\sum_x\vert x\rangle`$；它本身不包含标记 Oracle。
 
 `GeneralStateReflection(A, prefix="reflection")` 接收 StatePreparation 或 Ansatz 组件。
 组件在内部构建并复制，结果要求非空且可由 Core 静态求逆。对应线路
-<img src="../../assets/formulas/inline/inline-559aead08264d579.svg" alt="A" style="vertical-align: -0.000pt;">，并返回 <img src="../../assets/formulas/inline/inline-0fbcc5c0d72b22c4.svg" alt="AR_0A^\dagger=2|\psi\rangle\langle\psi|-I" style="vertical-align: -4.000pt;">，
-<img src="../../assets/formulas/inline/inline-ad835ea3642254bc.svg" alt="|\psi\rangle=A|0\rangle" style="vertical-align: -4.000pt;">。实际线路时间顺序为
-<img src="../../assets/formulas/inline/inline-de2ab7158fa3a095.svg" alt="A^\dagger\rightarrow R_0\rightarrow A" style="vertical-align: -3.000pt;">。非连续源量子比特 ID 按 `Circuit.qubits` 的位置映射到
-<img src="../../assets/formulas/inline/inline-80df05cab2d1ce42.svg" alt="0,\ldots,n-1" style="vertical-align: -3.000pt;">。测量、重置、延时、动态控制等不能静态求逆的操作被拒绝。
+$`A`$，并返回 $`AR_0A^\dagger=2\vert \psi\rangle\langle\psi\vert -I`$，
+$`\vert \psi\rangle=A\vert 0\rangle`$。实际线路时间顺序为
+$`A^\dagger\rightarrow R_0\rightarrow A`$。非连续源量子比特 ID 按 `Circuit.qubits` 的位置映射到
+$`0,\ldots,n-1`$。测量、重置、延时、动态控制等不能静态求逆的操作被拒绝。
 需要固定参数初态时，先通过 `UserCircuitPreparation.from_component(component, bindings, prefix=...)`
 得到固定组件，再交给反射或 Grover；独立符号反射也保留参数化构建能力。
 
@@ -81,8 +81,8 @@ StatePreparation，并执行相同的构造与检查。组件必须继承对应�
 声明宽度、参数槽数量及生成线路的可逆性都会检查。
 
 `GroverLong(n, phase=phi)` 构建 Long 搜索使用的相位匹配扩散算子
-<img src="../../assets/formulas/inline/inline-04ffe08e2cc4809d.svg" alt="H^{\otimes n}S_0(\phi)H^{\otimes n}" style="vertical-align: -4.000pt;">。当 <img src="../../assets/formulas/inline/inline-102f538e6177b98b.svg" alt="\phi=\pi" style="vertical-align: -3.000pt;"> 时，它得到
-<img src="../../assets/formulas/inline/inline-d82e3224b5b4f71c.svg" alt="I-2|s\rangle\langle s|" style="vertical-align: -4.000pt;">，与上述
+$`H^{\otimes n}S_0(\phi)H^{\otimes n}`$。当 $`\phi=\pi`$ 时，它得到
+$`I-2\vert s\rangle\langle s\vert `$，与上述
 `GroverDiffusion` 相差一个全局负号。`get_beta()`、`get_it_num()` 和
 `get_phi()` 提供已知标记态数量时的 Long 相位匹配公式；该组件只构建扩散线路并
 计算参数，不负责构造标记 Oracle、重复迭代或执行完整搜索。
@@ -93,10 +93,10 @@ StatePreparation，并执行相同的构造与检查。组件必须继承对应�
 
 ## 任意酉矩阵与块编码
 
-`UnitaryMatrixOracle(U)` 接受有限、方形、维数为 <img src="../../assets/formulas/inline/inline-e8a3fed33f2f1fe0.svg" alt="2^n" style="vertical-align: -0.000pt;"> 的酉矩阵，并通过递归
+`UnitaryMatrixOracle(U)` 接受有限、方形、维数为 $`2^n`$ 的酉矩阵，并通过递归
 Block-ZXZ 分解构建 Cqlib 线路。输入矩阵在构造时复制，`build_circuit()` 返回独立
 线路；可选重构检查按全局相位对齐后比较目标矩阵。当前两量子比特叶节点依赖 Core
-KAK 分解，Core 对 Weyl chamber 边界 <img src="../../assets/formulas/inline/inline-fdbf9a4cc0d9f8d2.svg" alt="a=\pi/4,\ c&lt;0" style="vertical-align: -4.000pt;"> 的拒绝会使少数合法矩阵无法
+KAK 分解，Core 对 Weyl chamber 边界 $`a=\pi/4,\ c<0`$ 的拒绝会使少数合法矩阵无法
 综合。该限制会以异常暴露，不能视为输入矩阵非酉。
 
 `BlockEncoding` 定义块编码组件的公共接口。`UnitaryDilation(A)` 对谱范数不超过 1
@@ -145,8 +145,8 @@ assert reflection.num_qubits == diffusion.num_qubits == 2
 
 ## 复杂度、验证与限制
 
-表达式构造需要完整枚举 <img src="../../assets/formulas/inline/inline-e8a3fed33f2f1fe0.svg" alt="2^n" style="vertical-align: -0.000pt;"> 个输入；向量函数的经典真值表存储与解析
-构造为 <img src="../../assets/formulas/inline/inline-65eca65c6418815a.svg" alt="O(m2^n)" style="vertical-align: -4.000pt;">。现有线路综合逐标记态生成多控门及相应的 open-control
-翻转，最坏仍随 <img src="../../assets/formulas/inline/inline-e8a3fed33f2f1fe0.svg" alt="2^n" style="vertical-align: -0.000pt;"> 增长。它适合小规模精确构造，**不是**黑盒查询复杂度
+表达式构造需要完整枚举 $`2^n`$ 个输入；向量函数的经典真值表存储与解析
+构造为 $`O(m2^n)`$。现有线路综合逐标记态生成多控门及相应的 open-control
+翻转，最坏仍随 $`2^n`$ 增长。它适合小规模精确构造，**不是**黑盒查询复杂度
 优化、QRAM 数据加载或一般布尔函数的高效编译承诺。反射只使用已有 Cqlib
 线路、标准门、组合和求逆能力；不复制平台后端接口。

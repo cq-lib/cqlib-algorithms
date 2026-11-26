@@ -18,7 +18,7 @@ Lattice / LineLattice / SquareLattice / HyperCubicLattice
 
 `Lattice` 的边权属于物理模型：Fermi–Hubbard 接受复 hopping，反向边自动使用共轭；
 自旋模型要求实耦合。Fermi–Hubbard 始终要求显式 `num_up`、`num_down` 扇区；只有在
-Hamiltonian 守恒总 <img src="../../assets/formulas/inline/inline-87a2b7a1a86d2b97.svg" alt="S_z" style="vertical-align: -3.000pt;"> 时，自旋模型才允许固定磁化扇区。
+Hamiltonian 守恒总 $`S_z`$ 时，自旋模型才允许固定磁化扇区。
 
 内置晶格使用简单无向图，同一节点对至多有一条边。因此长度为 2 的周期轴与开边界轴
 具有相同连接关系，不额外表示两个方向对应的平行键；长度至少为 3 时才增加首尾回绕

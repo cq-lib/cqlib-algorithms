@@ -8,12 +8,12 @@
 
 | 类别 | 组件 | 语义 |
 | --- | --- | --- |
-| 加法 | `HalfAdder`、`FullAdder`、`ModularAdder` | 两个等宽量子整数的半加、带输入进位的全加，以及模 <img src="../../assets/formulas/inline/inline-e8a3fed33f2f1fe0.svg" alt="2^n" style="vertical-align: -0.000pt;"> 加法 |
-| 常数加法 | `DraperConstantAdder` | 将寄存器值原地更新为 <img src="../../assets/formulas/inline/inline-e8ff3692f34b2f6c.svg" alt="(b+\mathtt{value})\bmod 2^n" style="vertical-align: -4.000pt;"> |
-| 比较 | `IntegerComparator` | 将 <img src="../../assets/formulas/inline/inline-d336d8cb50f20858.svg" alt="x\geq\mathtt{value}" style="vertical-align: -2.000pt;"> 或 <img src="../../assets/formulas/inline/inline-940e6749b7048589.svg" alt="x&lt;\mathtt{value}" style="vertical-align: -1.000pt;"> 写入标志位 |
-| 乘法 | `Multiplier` | 保留两个输入寄存器，并把乘积写入 <img src="../../assets/formulas/inline/inline-8438925a75f710ec.svg" alt="2n" style="vertical-align: -1.000pt;"> 位结果寄存器 |
+| 加法 | `HalfAdder`、`FullAdder`、`ModularAdder` | 两个等宽量子整数的半加、带输入进位的全加，以及模 $`2^n`$ 加法 |
+| 常数加法 | `DraperConstantAdder` | 将寄存器值原地更新为 $`(b+\mathtt{value})\bmod 2^n`$ |
+| 比较 | `IntegerComparator` | 将 $`x\geq\mathtt{value}`$ 或 $`x<\mathtt{value}`$ 写入标志位 |
+| 乘法 | `Multiplier` | 保留两个输入寄存器，并把乘积写入 $`2n`$ 位结果寄存器 |
 | 加权和 | `WeightedSum` | 把多个量子整数的非负整数加权和写入独立结果寄存器 |
-| 二次型 | `QuadraticForm`、`build_quadratic_form` | 计算 <img src="../../assets/formulas/inline/inline-a438564559e9eead.svg" alt="x^\mathsf{T}Ax+b^\mathsf{T}x+c\pmod{2^m}" style="vertical-align: -4.000pt;"> |
+| 二次型 | `QuadraticForm`、`build_quadratic_form` | 计算 $`x^\mathsf{T}Ax+b^\mathsf{T}x+c\pmod{2^m}`$ |
 | 均匀受控旋转 | `UCRX`、`UCRY`、`UCRZ` | 按控制寄存器基态选择目标量子比特的 X/Y/Z 旋转角 |
 | 函数与倒数旋转 | `ArbitraryFunction`、`ExactReciprocal` | 根据显式函数表编码角度或振幅；为 HHL 相位寄存器编码倒数振幅 |
 | 线性与多项式旋转 | `LinearAmplitudeRotation`、`LinearPauliRotation`、`PolynomialPauliRotation` | 将线性函数编码为目标振幅，或将线性/多项式编码为 Pauli 旋转角 |
@@ -30,7 +30,7 @@
 - `IntegerComparator` 的输出标志位通过 XOR 写入，调用方应按组件合同初始化并管理
   标志位和辅助位。
 - 函数旋转类均把控制寄存器解释为无符号小端整数。角度编码与振幅编码不是同一合同：
-  振幅模式会把函数值转换为 <img src="../../assets/formulas/inline/inline-9c4cc7cf87d630fa.svg" alt="2\arcsin(f(x))" style="vertical-align: -4.000pt;">，并要求值位于 <img src="../../assets/formulas/inline/inline-471610700dbccc74.svg" alt="[-1,1]" style="vertical-align: -4.000pt;">。
+  振幅模式会把函数值转换为 $`2\arcsin(f(x))`$，并要求值位于 $`[-1,1]`$。
 
 ## 接入算法
 
@@ -92,7 +92,7 @@ print(at_least_five.num_qubits)
   `amplitude_error_bound`；需要逐控制态精确振幅时，应使用
   `ArbitraryFunction(mode="amplitude")`。
 - 高次多项式和分段多项式会增加多控旋转与比较器数量；`ArbitraryFunction` 的显式表
-  长度为 <img src="../../assets/formulas/inline/inline-e8a3fed33f2f1fe0.svg" alt="2^n" style="vertical-align: -0.000pt;">。这些入口适合明确的小至中等规模函数编码，不隐含高效的通用函数
+  长度为 $`2^n`$。这些入口适合明确的小至中等规模函数编码，不隐含高效的通用函数
   求值器。
 - QFT 近似度会改变算术线路的数值精度。调用方应针对目标输入范围验证近似误差，而
   不能只依据线路深度选择参数。

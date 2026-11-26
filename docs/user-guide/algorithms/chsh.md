@@ -3,9 +3,9 @@
 `CHSH` 通过公共 `Estimator` 契约计算四个二体相关函数，并据此评估
 Clauser–Horne–Shimony–Holt（CHSH）见证量。组件默认制备 Bell 态
 
-<p align="center">
-  <img src="../../assets/formulas/bell-state.svg" alt="The Bell state |Φ+⟩ equals (|00⟩ + |11⟩)/√2.">
-</p>
+```math
+|\Phi^+\rangle=\frac{|00\rangle+|11\rangle}{\sqrt{2}}
+```
 
 也接受调用方提供的固定二量子比特状态制备组件。它负责构造可观测量、批量执行期望值
 估计和解释数值结果，不绑定模拟器或硬件后端。
@@ -15,24 +15,24 @@ Clauser–Horne–Shimony–Holt（CHSH）见证量。组件默认制备 Bell �
 Alice 对应线路插入顺序中的量子比特位置 0，Bob 对应位置 1。双方各有两个位于
 X–Z 平面的二值可观测量：
 
-<p align="center">
-  <img src="../../assets/formulas/chsh-observable.svg" alt="M(θ)=cos(θ)Z+sin(θ)X.">
-</p>
+```math
+M(\theta)=\cos(\theta)Z+\sin(\theta)X.
+```
 
 若 Alice 的角度为 `(a0, a1)`，Bob 的角度为 `(b0, b1)`，则算法计算
 
-<p align="center">
-  <img src="../../assets/formulas/chsh-correlator.svg" alt="Eij=⟨M(ai)⊗M(bj)⟩, S=E00+E01+E10-E11.">
-</p>
+```math
+E_{ij}=\langle M(a_i)\otimes M(b_j)\rangle, \qquad S=E_{00}+E_{01}+E_{10}-E_{11}.
+```
 
-局域隐变量模型满足 <img src="../../assets/formulas/inline/inline-75a7ad73e1123e85.svg" alt="|S|\leq2" style="vertical-align: -4.000pt;">。理想量子理论满足 Cirel'son 上界
-<img src="../../assets/formulas/inline/inline-e8b97edf905bbf70.svg" alt="|S|\leq2\sqrt{2}" style="vertical-align: -4.000pt;">。默认设置为
+局域隐变量模型满足 $`\vert S\vert \leq2`$。理想量子理论满足 Cirel'son 上界
+$`\vert S\vert \leq2\sqrt{2}`$。默认设置为
 
-<p align="center">
-  <img src="../../assets/formulas/chsh-measurement-settings.svg" alt="The CHSH measurement settings are a = (0, π/2) and b = (π/4, −π/4).">
-</p>
+```math
+(a_0,a_1)=\left(0,\frac{\pi}{2}\right),\qquad(b_0,b_1)=\left(\frac{\pi}{4},-\frac{\pi}{4}\right)
+```
 
-对默认 <img src="../../assets/formulas/inline/inline-305d42b86673cf8e.svg" alt="|\Phi^+\rangle" style="vertical-align: -4.000pt;"> 态给出 <img src="../../assets/formulas/inline/inline-cbe248e2cac7e8b1.svg" alt="S=2\sqrt{2}" style="vertical-align: -1.000pt;">。定义与界限分别依据 CHSH 原始论文
+对默认 $`\vert \Phi^+\rangle`$ 态给出 $`S=2\sqrt{2}`$。定义与界限分别依据 CHSH 原始论文
 [Phys. Rev. Lett. 23, 880 (1969)](https://doi.org/10.1103/PhysRevLett.23.880)
 及 Cirel'son 的量子相关界限
 [Lett. Math. Phys. 4, 93–100 (1980)](https://doi.org/10.1007/BF00417500)。
@@ -66,10 +66,10 @@ True
 批量入口 `run(requests)` 接收 `CHSHRequest`。其参数如下：
 
 - `state_preparation`：可选的固定二量子比特 `StatePreparation` 组件。省略时复用
-  `GHZStatePreparation(2)` 制备 <img src="../../assets/formulas/inline/inline-305d42b86673cf8e.svg" alt="|\Phi^+\rangle" style="vertical-align: -4.000pt;">；
+  `GHZStatePreparation(2)` 制备 $`\vert \Phi^+\rangle`$；
 - `alice_angles`、`bob_angles`：各自恰含两个有限实数的元组；
 - `shots`：`None` 表示请求精确估计，正整数表示把有限-shot 语义传给 Estimator；
-- `tolerance`：判断 <img src="../../assets/formulas/inline/inline-9a35eb7881a75d4c.svg" alt="|S|&gt;2+\mathtt{tolerance}" style="vertical-align: -4.000pt;"> 时使用的非负有限数值容差。
+- `tolerance`：判断 $`\vert S\vert >2+\mathtt{tolerance}`$ 时使用的非负有限数值容差。
 
 批次中的每项请求都可以直接配置状态制备组件：
 
@@ -103,20 +103,20 @@ Bob，即使底层量子比特编号不连续或顺序重排。输入线路不�
 
 `CHSHResult.correlators` 固定按 `(E00, E01, E10, E11)` 排列，并提供同名属性：
 
-- `chsh_value`：有符号的 <img src="../../assets/formulas/inline/inline-8de0b3c47f112c59.svg" alt="S" style="vertical-align: -1.000pt;">；
-- `absolute_value`：<img src="../../assets/formulas/inline/inline-df55184acb2af771.svg" alt="|S|" style="vertical-align: -4.000pt;">；
-- `violation_margin`：<img src="../../assets/formulas/inline/inline-1647517d4acf8abb.svg" alt="|S|-2" style="vertical-align: -4.000pt;">，没有截断，未违反时为负；
-- `violates_classical_bound`：是否满足 <img src="../../assets/formulas/inline/inline-9a35eb7881a75d4c.svg" alt="|S|&gt;2+\mathtt{tolerance}" style="vertical-align: -4.000pt;">；
-- `classical_bound`：经典界 <img src="../../assets/formulas/inline/inline-d4735e3a265e16ee.svg" alt="2" style="vertical-align: -0.000pt;">；
-- `tsirelson_bound`：理想量子界 <img src="../../assets/formulas/inline/inline-d68f84b49c8a65dd.svg" alt="2\sqrt{2}" style="vertical-align: -0.000pt;">；
+- `chsh_value`：有符号的 $`S`$；
+- `absolute_value`：$`\vert S\vert `$；
+- `violation_margin`：$`\vert S\vert -2`$，没有截断，未违反时为负；
+- `violates_classical_bound`：是否满足 $`\vert S\vert >2+\mathtt{tolerance}`$；
+- `classical_bound`：经典界 $`2`$；
+- `tsirelson_bound`：理想量子界 $`2\sqrt{2}`$；
 - `variances`：四个 Estimator 返回的估计量方差；
 - `standard_deviation_upper_bound`：全部方差已知时的
-  <img src="../../assets/formulas/inline/inline-0a4962f4c21e1069.svg" alt="\sum_i\sqrt{\mathtt{variance}_i}" style="vertical-align: -15.000pt;">，否则为 `None`。
+  $`\sum_i\sqrt{\mathtt{variance}_i}`$，否则为 `None`。
 
 最后一项是在不知道协方差时通过三角不等式得到的保守标准差上界，不是置信区间或
 显著性检验。`tolerance` 同样只处理浮点比较，不表达统计置信度。
 
-算法不会拒绝超出 <img src="../../assets/formulas/inline/inline-471610700dbccc74.svg" alt="[-1,1]" style="vertical-align: -4.000pt;"> 的经验相关值，也不会把超出 <img src="../../assets/formulas/inline/inline-d68f84b49c8a65dd.svg" alt="2\sqrt{2}" style="vertical-align: -0.000pt;"> 的有限-shot
+算法不会拒绝超出 $`[-1,1]`$ 的经验相关值，也不会把超出 $`2\sqrt{2}`$ 的有限-shot
 或误差缓解结果自动裁剪。这样可以如实保留 Estimator 输出；调用方必须结合后端、
 采样方差和实验模型解释异常值。
 
@@ -126,15 +126,15 @@ Bob，即使底层量子比特编号不连续或顺序重排。输入线路不�
 包含 `N` 个请求，算法先完成全部请求、线路和可观测量校验，再用一次 Estimator
 调用提交 `4N` 个请求；空批次直接返回空列表且不会调用 Estimator。
 
-每个乘积可观测量展开为 Alice/Bob 下标明确的 <img src="../../assets/formulas/inline/inline-04f0e46fcbc26238.svg" alt="Z_AZ_B" style="vertical-align: -3.000pt;">、<img src="../../assets/formulas/inline/inline-e1d5c74dbd386d70.svg" alt="Z_AX_B" style="vertical-align: -3.000pt;">、
-<img src="../../assets/formulas/inline/inline-650af23fea761b3f.svg" alt="X_AZ_B" style="vertical-align: -3.000pt;">、<img src="../../assets/formulas/inline/inline-7b81144263e2c1e1.svg" alt="X_AX_B" style="vertical-align: -3.000pt;"> 有限 Hermitian Hamiltonian：
+每个乘积可观测量展开为 Alice/Bob 下标明确的 $`Z_AZ_B`$、$`Z_AX_B`$、
+$`X_AZ_B`$、$`X_AX_B`$ 有限 Hermitian Hamiltonian：
 
-<p align="center">
-  <img src="../../assets/formulas/chsh-correlator-expansion.svg" alt="Pauli expansion of the two-party CHSH correlator.">
-</p>
+```math
+M_A(a)\otimes M_B(b)=\cos(a)\cos(b)Z_AZ_B+\cos(a)\sin(b)Z_AX_B+\sin(a)\cos(b)X_AZ_B+\sin(a)\sin(b)X_AX_B
+```
 
 Core 量子比特位置 0 是 Alice，位置 1 是 Bob；在 Core 的小端态矢量稠密矩阵顺序
-中，上述乘积写为 <img src="../../assets/formulas/inline/inline-85ba441a5930b9f7.svg" alt="M_B(b)\otimes M_A(a)" style="vertical-align: -4.000pt;">。实现按量子比特位置设置 Pauli 轴而不
+中，上述乘积写为 $`M_B(b)\otimes M_A(a)`$。实现按量子比特位置设置 Pauli 轴而不
 依赖字符串显示顺序，因此保持这一约定。绝对值不超过 `1e-15` 的数值零系数被省略。
 
 ## 边界

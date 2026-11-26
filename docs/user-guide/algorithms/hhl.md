@@ -1,6 +1,6 @@
 # HHL 线性方程组求解
 
-`HHL` 求解 Hermitian 正定线性系统 <img src="../../assets/formulas/inline/inline-4f218032237abba5.svg" alt="Ax=b" style="vertical-align: -1.000pt;">，制备与 <img src="../../assets/formulas/inline/inline-65ac1652270f246b.svg" alt="A^{-1}|b\rangle" style="vertical-align: -4.000pt;"> 成比例的量子态。
+`HHL` 求解 Hermitian 正定线性系统 $`Ax=b`$，制备与 $`A^{-1}\vert b\rangle`$ 成比例的量子态。
 它不会返回经典向量 `x`：执行结果是辅助量子比特测得 `1` 后，系统寄存器在计算基上的
 条件概率分布。需要完整复振幅或逐项经典解时，应使用经典线性代数方法或在量子态上
 继续估计目标可观测量。
@@ -8,10 +8,10 @@
 ## 算法结构
 
 对谱上界 `alpha`，算法构造
-<img src="../../assets/formulas/inline/inline-35a5c8f985c00d98.svg" alt="U=\exp(2\pi iA/\alpha)" style="vertical-align: -4.000pt;">，依次执行：
+$`U=\exp(2\pi iA/\alpha)`$，依次执行：
 
-1. 在系统寄存器制备归一化右端项 <img src="../../assets/formulas/inline/inline-443db1954f6815ba.svg" alt="|b\rangle" style="vertical-align: -4.000pt;">；
-2. 对 <img src="../../assets/formulas/inline/inline-a25513c7e0f6eaa8.svg" alt="U" style="vertical-align: -1.000pt;"> 进行相位估计，将 <img src="../../assets/formulas/inline/inline-c52635a76801021f.svg" alt="\lambda_j/\alpha" style="vertical-align: -5.000pt;"> 写入评估寄存器；
+1. 在系统寄存器制备归一化右端项 $`\vert b\rangle`$；
+2. 对 $`U`$ 进行相位估计，将 $`\lambda_j/\alpha`$ 写入评估寄存器；
 3. 使用 `ExactReciprocal` 对特征值执行受控倒数旋转；
 4. 用相同的 QFT 近似度执行逆相位估计。采用精确 QFT 且本征相位落在网格上时，评估寄存器回到零态；
 5. 测量系统寄存器和辅助量子比特，并在辅助位为 `1` 的样本上归一化系统分布。
@@ -43,26 +43,26 @@ print(dict(solution.solution_probabilities))
 
 | 接口 | 作用 |
 | --- | --- |
-| `LinearSystemProblem(operator, rhs)` | 保存 <img src="../../assets/formulas/inline/inline-559aead08264d579.svg" alt="A" style="vertical-align: -0.000pt;"> 与 <img src="../../assets/formulas/inline/inline-3e23e8160039594a.svg" alt="b" style="vertical-align: -1.000pt;"> 的独立快照；`operator` 接受 `numpy.ndarray` 或 `Hamiltonian`，`rhs` 接受复向量或 `StatePreparation` 组件 |
+| `LinearSystemProblem(operator, rhs)` | 保存 $`A`$ 与 $`b`$ 的独立快照；`operator` 接受 `numpy.ndarray` 或 `Hamiltonian`，`rhs` 接受复向量或 `StatePreparation` 组件 |
 | `HHLRequest` | 为批量执行指定评估寄存器宽度、倒数缩放、shots、QFT 近似度、谱上界和随机种子 |
 | `HHL.build_circuit()` | 按给定问题、组件和精度设置构造完整的未测量线路，供检查或后续组合 |
 | `HHLComponents` | 注册状态制备、相位估计和倒数旋转的组件类 |
 | `HHLResult` | 返回后选择成功率、条件系统分布、实际谱上界、缩放参数和寄存器宽度 |
 
-`solution_probabilities[i]` 对应系统寄存器计算基态 <img src="../../assets/formulas/inline/inline-174310e98fddcbf5.svg" alt="|i\rangle" style="vertical-align: -4.000pt;">，量子比特 0 是最低有效位。
+`solution_probabilities[i]` 对应系统寄存器计算基态 $`\vert i\rangle`$，量子比特 0 是最低有效位。
 空分布表示本次采样没有出现辅助位为 `1` 的结果，不表示线性系统无解。
 `num_unitary_applications` 给出正向和逆向相位估计合计的受控酉查询数
-<img src="../../assets/formulas/inline/inline-e74647334e018e23.svg" alt="2(2^m-1)" style="vertical-align: -4.000pt;">。
+$`2(2^m-1)`$。
 
 ## 精度、资源与适用边界
 
-- <img src="../../assets/formulas/inline/inline-559aead08264d579.svg" alt="A" style="vertical-align: -0.000pt;"> 必须是有限、非奇异、维度为 <img src="../../assets/formulas/inline/inline-e8a3fed33f2f1fe0.svg" alt="2^n" style="vertical-align: -0.000pt;"> 的 Hermitian 正定算符；当前实现不自动把
+- $`A`$ 必须是有限、非奇异、维度为 $`2^n`$ 的 Hermitian 正定算符；当前实现不自动把
   一般矩阵嵌入 Hermitian 系统。
 - 评估寄存器宽度 `m` 决定特征值网格分辨率。特征值被量化到零相位网格点时，倒数
   旋转会丢弃该分支；实现会对过于接近周期端点的谱发出警告。
-- `scaling` 必须满足 <img src="../../assets/formulas/inline/inline-50450a1d7a1ad898.svg" alt="0&lt;\mathtt{scaling}\leq2^{-m}" style="vertical-align: -4.000pt;">。缩放越小，辅助位后选择成功率通常越低，
+- `scaling` 必须满足 $`0<\mathtt{scaling}\leq2^{-m}`$。缩放越小，辅助位后选择成功率通常越低，
   需要更多 shots 才能稳定估计条件分布。
-- 稠密矩阵入口会显式对角化 <img src="../../assets/formulas/inline/inline-559aead08264d579.svg" alt="A" style="vertical-align: -0.000pt;"> 并构造 <img src="../../assets/formulas/inline/inline-cfa68802318c3913.svg" alt="2^n\times2^n" style="vertical-align: -0.000pt;"> 酉矩阵，只适合小规模验证。
+- 稠密矩阵入口会显式对角化 $`A`$ 并构造 $`2^n\times2^n`$ 酉矩阵，只适合小规模验证。
   `Hamiltonian` 入口使用二阶乘积公式构造演化，结果还包含 Hamiltonian 演化近似误差。
 - 输出只有计算基概率，不包含解态相位，也不提供条件数估计、误差界或经典向量重构。
 

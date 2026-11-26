@@ -5,23 +5,23 @@
 
 ## 数学约定
 
-对成本 Hamiltonian <img src="../../assets/formulas/inline/inline-e3112e17a0dd53f5.svg" alt="H_C" style="vertical-align: -3.000pt;">、一参数混合族 <img src="../../assets/formulas/inline/inline-cb3c8b433d53a88c.svg" alt="U_M(\beta)" style="vertical-align: -4.000pt;"> 和层数 <img src="../../assets/formulas/inline/inline-148de9c5a7a44d19.svg" alt="p" style="vertical-align: -3.000pt;">，算法构造
+对成本 Hamiltonian $`H_C`$、一参数混合族 $`U_M(\beta)`$ 和层数 $`p`$，算法构造
 
-<p align="center">
-  <img src="../../assets/formulas/qaoa-layered-state.svg" alt="The QAOA state is produced by alternating p cost and mixer evolutions on the initial state.">
-</p>
+```math
+|\boldsymbol{\gamma},\boldsymbol{\beta}\rangle=U_M(\beta_{p-1})U_C(\gamma_{p-1})\cdots U_M(\beta_0)U_C(\gamma_0)|s\rangle
+```
 
 其中 Hamiltonian Mixer 满足
 
-<p align="center">
-  <img src="../../assets/formulas/qaoa-layer-unitaries.svg" alt="UC(γ)=e-iγHC, UM(β)=e-iβHM.">
-</p>
+```math
+U_C(\gamma)=e^{-i\gamma H_C},\qquad U_M(\beta)=e^{-i\beta H_M}.
+```
 
 也可以用满足同一参数契约的 partitioned 或 controlled Mixer 线路替代
 Hamiltonian Mixer。
 
-线路时间顺序是初态、第 0 层成本演化、第 0 层混合演化，依次直到第 <img src="../../assets/formulas/inline/inline-1dee6e3ec67dc803.svg" alt="p-1" style="vertical-align: -3.000pt;"> 层。
-默认 <img src="../../assets/formulas/inline/inline-061000355bced1f0.svg" alt="|s\rangle" style="vertical-align: -4.000pt;"> 是全量子比特均匀叠加态，默认 <img src="../../assets/formulas/inline/inline-40ac2e0201cce829.svg" alt="H_M=\sum_iX_i" style="vertical-align: -15.000pt;">。量子比特 0 是
+线路时间顺序是初态、第 0 层成本演化、第 0 层混合演化，依次直到第 $`p-1`$ 层。
+默认 $`\vert s\rangle`$ 是全量子比特均匀叠加态，默认 $`H_M=\sum_iX_i`$。量子比特 0 是
 计算基索引的最低有效位。
 
 实现采用 Farhi、Goldstone 与 Gutmann 提出的交替成本/混合演化形式；自定义混合
@@ -73,7 +73,7 @@ assert math.isclose(result.optimal_value, 1.0, abs_tol=1e-10)
 
 - 是至少作用于一个量子比特的非空 `Hamiltonian`；
 - 所有有效系数有限且整体 Hermitian；
-- 每个有效 Pauli 项只含 <img src="../../assets/formulas/inline/inline-a83dd0ccbffe39d0.svg" alt="I" style="vertical-align: -0.000pt;"> 和 <img src="../../assets/formulas/inline/inline-bbeebd879e1dff69.svg" alt="Z" style="vertical-align: -0.000pt;">，因此计算基对角元素可解释为经典目标值。
+- 每个有效 Pauli 项只含 $`I`$ 和 $`Z`$，因此计算基对角元素可解释为经典目标值。
 
 自定义 `mixer_operator` 必须非空、系数有限、整体 Hermitian 且与成本同宽；它不要求
 计算基对角。也可通过 `mixer=Ansatz` 传入已经定义综合顺序的一参数 Mixer。线路 Mixer
@@ -88,7 +88,7 @@ assert math.isclose(result.optimal_value, 1.0, abs_tol=1e-10)
 
 ## 最小化、最大化与结果语义
 
-`run` 默认最小化。最大化时传入原始收益 Hamiltonian 和 `objective_sense="maximize"`。两种方向的成本演化都使用原始 <img src="../../assets/formulas/inline/inline-e3112e17a0dd53f5.svg" alt="H_C" style="vertical-align: -3.000pt;">。最大化时优化器最小化 <img src="../../assets/formulas/inline/inline-0c8173812474d41a.svg" alt="-H_C" style="vertical-align: -3.000pt;"> 的期望值，对外返回原始收益的期望值。
+`run` 默认最小化。最大化时传入原始收益 Hamiltonian 和 `objective_sense="maximize"`。两种方向的成本演化都使用原始 $`H_C`$。最大化时优化器最小化 $`-H_C`$ 的期望值，对外返回原始收益的期望值。
 
 `compute_minimum_eigenvalue(...)` 和 `compute_maximum(...)` 分别对应上述两种方向，均返回 `VQAResult`。主要字段如下。
 
@@ -120,8 +120,8 @@ gamma/beta 两个符号，但退化演化可能不包含某些逻辑参数槽，
 ## 组件复用边界
 
 - `UniformSuperposition` 负责默认初态；
-- `QAOACostEvolution` 负责每层 <img src="../../assets/formulas/inline/inline-5040fabcc88b990c.svg" alt="e^{-i\gamma H_C}" style="vertical-align: -1.000pt;">；
-- `QAOAMixerEvolution` 负责 Hamiltonian Mixer 的每层 <img src="../../assets/formulas/inline/inline-988e8afd24f0d386.svg" alt="e^{-i\beta H_M}" style="vertical-align: -1.000pt;">；
+- `QAOACostEvolution` 负责每层 $`e^{-i\gamma H_C}`$；
+- `QAOAMixerEvolution` 负责 Hamiltonian Mixer 的每层 $`e^{-i\beta H_M}`$；
 - `operators.mixer` 的一参数组件负责受控与 partitioned Mixer 线路；
 - `QAOA` 直接创建 Estimator/Optimizer 请求，校验返回结果并完成参数绑定；
 - 注入的 Optimizer 继续拥有梯度组件及其更新规则。

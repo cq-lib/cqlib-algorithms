@@ -19,13 +19,13 @@ Python 3.11.15、[Cqlib 2.0.0b7](https://pypi.org/project/cqlib/2.0.0b7/)、
 NumPy 2.4.6、SciPy 1.17.1 和 Pytest 9.1.1 的组合下完成全量功能测试，并使用
 Mypy 1.20.2 完成严格类型检查。
 
-当前开发代码维护在 `dev` 分支。以下命令假定系统已经安装
+源代码托管于 [GitHub 仓库](https://github.com/cq-lib/cqlib-algorithms)。以下命令克隆仓库默认分支，并假定系统已经安装
 [uv](https://docs.astral.sh/uv/getting-started/installation/)。
 
 ### Windows PowerShell
 
 ```powershell
-git clone --branch dev --single-branch https://gitee.com/zdxlz/cqlib-algorithms.git
+git clone https://github.com/cq-lib/cqlib-algorithms.git
 cd cqlib-algorithms
 uv venv --python 3.11
 & .\.venv\Scripts\Activate.ps1
@@ -35,7 +35,7 @@ uv pip install -e .
 ### Linux/macOS
 
 ```bash
-git clone --branch dev --single-branch https://gitee.com/zdxlz/cqlib-algorithms.git
+git clone https://github.com/cq-lib/cqlib-algorithms.git
 cd cqlib-algorithms
 uv venv --python 3.11
 source .venv/bin/activate

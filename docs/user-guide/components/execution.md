@@ -53,9 +53,9 @@ seed；采样 Estimator 必须从父 seed 为不同 Pauli 项派生独立子 see
 对已绑定参数的线路 `U` 和有限、Hermitian 的 `PauliString` 或 `Hamiltonian`，
 结果为
 
-<p align="center">
-  <img src="../../assets/formulas/estimator-expectation.svg" alt="⟨O⟩=⟨0…0|U†O U|0…0⟩.">
-</p>
+```math
+\langle O\rangle=\langle0\ldots0|U^\dagger O U|0\ldots0\rangle.
+```
 
 量子位 0 是计算基索引的最低有效位。可观测量位置 `i` 对应输入线路
 `circuit.qubits[i]` 的插入顺序；该规则对非连续或重排的 Core `Qubit` 标识也适用。
@@ -92,15 +92,15 @@ result = StatevectorEstimator().run([request])[0]
 
 `StatevectorEstimator` 使用 Core `Statevector.from_circuit` 制备精确态，并采用
 Core 暴露的 Pauli 位掩码和相位，
-按 <img src="../../assets/formulas/inline/inline-aff4dff42ba824a3.svg" alt="P|j\rangle=\mathtt{phase}\,\mathtt{y\_phase} (-1)^{\operatorname{popcount}(j\mathbin{\&amp;}\mathtt{z\_mask})} |j\mathbin{\mathtt{xor}}\mathtt{x\_mask}\rangle" style="vertical-align: -4.000pt;">
-计算期望值。该兼容路径对每个 Pauli 项扫描 <img src="../../assets/formulas/inline/inline-e8a3fed33f2f1fe0.svg" alt="2^n" style="vertical-align: -0.000pt;"> 个幅度，不构造 <img src="../../assets/formulas/inline/inline-cfa68802318c3913.svg" alt="2^n\times2^n" style="vertical-align: -0.000pt;">
+按 $`P\vert j\rangle=\mathtt{phase}\,\mathtt{y\_phase} (-1)^{\operatorname{popcount}(j\mathbin{\&}\mathtt{z\_mask})} \vert j\mathbin{\mathtt{xor}}\mathtt{x\_mask}\rangle`$
+计算期望值。该兼容路径对每个 Pauli 项扫描 $`2^n`$ 个幅度，不构造 $`2^n\times2^n`$
 稠密算子。当前 Core Python binding 的 `Statevector.data` 返回一次幅度拷贝，
-因此每请求的峰值额外空间为 <img src="../../assets/formulas/inline/inline-4dec31c647c2c2db.svg" alt="O(2^n)" style="vertical-align: -4.000pt;">；组件仅读取一次并复用于全部 Pauli 项。
-对 <img src="../../assets/formulas/inline/inline-62c66a7a5dd70c31.svg" alt="m" style="vertical-align: -1.000pt;"> 个 Hamiltonian 项，计算时间为 <img src="../../assets/formulas/inline/inline-65eca65c6418815a.svg" alt="O(m2^n)" style="vertical-align: -4.000pt;">，不包含 Core 线路仿真成本。
+因此每请求的峰值额外空间为 $`O(2^n)`$；组件仅读取一次并复用于全部 Pauli 项。
+对 $`m`$ 个 Hamiltonian 项，计算时间为 $`O(m2^n)`$，不包含 Core 线路仿真成本。
 
 请求契约先对 Hamiltonian 做严格的代数 Hermitian 核验。有限精度求和可能留下
 微小虚部；仅当其绝对值不超过
-<img src="../../assets/formulas/inline/inline-8d1113e7bfc5c343.svg" alt="10^{-12}(1+\sum|\mathtt{coefficient}|)" style="vertical-align: -6.000pt;"> 时才取实部，
+$`10^{-12}(1+\sum\vert \mathtt{coefficient}\vert )`$ 时才取实部，
 否则抛出 `ValueError`，不会把显著复数结果伪装成实期望。
 
 ## SamplingEstimator
@@ -131,25 +131,25 @@ result = SamplingEstimator(StatevectorSampler()).run([request])[0]
 Sampler 负责建立私有目标测量。因此不会与 `SamplerRequest` 的测量职责冲突。
 
 `EstimatorRequest.shots` 在这里定义为**单个 Estimator 请求的总测量预算**。若规范化后
-有 <img src="../../assets/formulas/inline/inline-333e0a1e27815d0c.svg" alt="G" style="vertical-align: -1.000pt;"> 个非身份项，则按稳定顺序均匀分配：前 `shots % G` 项各多一次；
-<img src="../../assets/formulas/inline/inline-8f9d69b73d30a734.svg" alt="\mathtt{shots}&lt;G" style="vertical-align: -1.000pt;">
+有 $`G`$ 个非身份项，则按稳定顺序均匀分配：前 `shots % G` 项各多一次；
+$`\mathtt{shots}<G`$
 会被拒绝。纯身份或空 Hamiltonian 不调用 Sampler，统计方差为 0。当前正确性优先路径
 逐项独立测量，不重复实现 `PauliMeasurementPlanner` 已有的 QWC 分组。现有规划器
 可以提供未测量的分组基线路，但分组估计还需要明确组内协方差和总 shots 分配合同；
 在这些统计语义冻结前，本组件保留可独立验证的逐项路径。
 
 对某项的完整原始 counts，位串最右字符对应线路插入顺序中的位置 0。令
-<img src="../../assets/formulas/inline/inline-2b3b32cedd2d2cb5.svg" alt="\mathtt{mask}=\mathtt{x\_mask}\mathbin{|}\mathtt{z\_mask}" style="vertical-align: -4.000pt;">，单次本征值为
-<img src="../../assets/formulas/inline/inline-9371a05ad1bbde27.svg" alt="(-1)^{\operatorname{popcount}(\operatorname{int}(\mathtt{bitstring},2) \mathbin{\&amp;}\mathtt{mask})}" style="vertical-align: -4.000pt;">。两次及以上采样时，返回的
+$`\mathtt{mask}=\mathtt{x\_mask}\mathbin{\vert }\mathtt{z\_mask}`$，单次本征值为
+$`(-1)^{\operatorname{popcount}(\operatorname{int}(\mathtt{bitstring},2) \mathbin{\&}\mathtt{mask})}`$。两次及以上采样时，返回的
 `EstimatorResult.variance` 是均值估计量方差的无偏样本估计：
 
-<p align="center">
-  <img src="../../assets/formulas/sample-variance.svg" alt="The unbiased variance estimator for a sampled Pauli term.">
-</p>
+```math
+\frac{1-\overline{x}^{\,2}}{N_{\mathrm{term}}-1}
+```
 
-各项使用独立采样，所以总方差是 <img src="../../assets/formulas/inline/inline-161096f5f2c92dd7.svg" alt="\mathtt{coefficient}^2" style="vertical-align: -1.000pt;"> 加权后的方差之和。任一项只有一次
+各项使用独立采样，所以总方差是 $`\mathtt{coefficient}^2`$ 加权后的方差之和。任一项只有一次
 采样时，方差返回 `None`，不会伪报为 0。标准误差可由
-<img src="../../assets/formulas/inline/inline-9869cfc01f70105e.svg" alt="\sqrt{\mathtt{result.variance}}" style="vertical-align: -1.000pt;"> 取得。
+$`\sqrt{\mathtt{result.variance}}`$ 取得。
 
 SamplingEstimator 有意只接受完整原始频数，即每个 counts 总数必须等于分配给该项的
 shots。Core `ExecutionResult` 本身允许过滤或后选择后的频数少于 shots，但在没有显式

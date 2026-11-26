@@ -23,7 +23,7 @@
 ## 端序、归一化与相位
 
 Cqlib 使用小端基态索引：量子比特 0 对应索引最低有效位。例如，
-`BasisStateInitialization(3, 5)` 准备 <img src="../../assets/formulas/inline/inline-e283c4710c0e15aa.svg" alt="|101\rangle" style="vertical-align: -4.000pt;">，其中输入位 `bits[0]` 对应量子比特 0。
+`BasisStateInitialization(3, 5)` 准备 $`\vert 101\rangle`$，其中输入位 `bits[0]` 对应量子比特 0。
 幅度向量的第 `i` 项就是计算基态索引 `i` 的复幅度。
 
 `ArbitraryStatePreparation` 不替调用方掩盖明显的归一化错误，只接受相对误差和绝对
@@ -40,12 +40,12 @@ Cqlib 使用小端基态索引：量子比特 0 对应索引最低有效位。�
 `DickeStatePreparation(n, k)` 制备 `n` 个量子比特上 Hamming weight 恰为 `k`
 的均匀叠加态：
 
-<p align="center">
-  <img src="../../assets/formulas/dicke-state.svg" alt="The normalized n-qubit Dicke state of Hamming weight k.">
-</p>
+```math
+|D(n,k)\rangle=\frac{1}{\sqrt{\binom{n}{k}}}\sum_{|x|=k}|x\rangle
+```
 
 量子比特 0 仍是最低有效位，但目标态包含全部 weight-`k` 位串，因此不依赖某一种
-位串书写方向。<img src="../../assets/formulas/inline/inline-34c14001ab1c2005.svg" alt="k=0" style="vertical-align: -1.000pt;"> 返回全零态，<img src="../../assets/formulas/inline/inline-100447ebb5bf98ff.svg" alt="k=n" style="vertical-align: -1.000pt;"> 返回全一态；中间权重通过 Dicke
+位串书写方向。$`k=0`$ 返回全零态，$`k=n`$ 返回全一态；中间权重通过 Dicke
 权重分布酉线路构造。组件不测量 Hamming weight，也不替调用方选择问题相关的 `k`。
 
 ## 稠密态综合
@@ -132,7 +132,7 @@ print(result.counts)  # (0, 0, 256, 0)
 `BasisEncoding`、`AngleEncoding` 和 `FeatureMapPreparation` 保存输入快照并直接委托
 兼容版本的 Cqlib Core 构建线路，不复制 Core 已有线路逻辑。
 
-`UserCircuitPreparation` 将源线路的量子比特按插入位置映射到连续 <img src="../../assets/formulas/inline/inline-80df05cab2d1ce42.svg" alt="0,\ldots,n-1" style="vertical-align: -3.000pt;">，保留
+`UserCircuitPreparation` 将源线路的量子比特按插入位置映射到连续 $`0,\ldots,n-1`$，保留
 活跃符号和线路全局相位，且 `prefix` 不重命名用户符号。它要求线路可由 Core 静态
 求逆，因此拒绝测量、重置、动态控制等非幺正操作。当前 Core 对数值矩阵型
 `UnitaryGate` 存在静态求逆限制，构造时会检查该能力。自定义线路使用
@@ -155,28 +155,28 @@ Givens 旋转制备固定粒子数 Slater 行列式。`FermionicGaussianStatePre
 ## 图像编码
 
 两个图像组件都接受 `(height, width)` 和通道优先的扁平行优先数据。若
-<img src="../../assets/formulas/inline/inline-34ea60dd872e9740.svg" alt="N=\mathtt{height}\times\mathtt{width}" style="vertical-align: -4.000pt;">，`ImageAngleEncoding` 将通道 <img src="../../assets/formulas/inline/inline-2e7d2c03a9507ae2.svg" alt="c" style="vertical-align: -1.000pt;"> 的第 <img src="../../assets/formulas/inline/inline-148de9c5a7a44d19.svg" alt="p" style="vertical-align: -3.000pt;"> 个标量放在
-量子比特 <img src="../../assets/formulas/inline/inline-567702ee252d486b.svg" alt="q=cN+p" style="vertical-align: -3.000pt;">，并按
-<img src="../../assets/formulas/inline/inline-0ba30f2e010f756e.svg" alt="\theta=\pi(\mathtt{value}-\mathtt{lower})/(\mathtt{upper}-\mathtt{lower})" style="vertical-align: -4.000pt;"> 施加 `RY(theta)`。输入值和范围
+$`N=\mathtt{height}\times\mathtt{width}`$，`ImageAngleEncoding` 将通道 $`c`$ 的第 $`p`$ 个标量放在
+量子比特 $`q=cN+p`$，并按
+$`\theta=\pi(\mathtt{value}-\mathtt{lower})/(\mathtt{upper}-\mathtt{lower})`$ 施加 `RY(theta)`。输入值和范围
 必须有限，且由调用方在编码前完成所需的裁剪。每个标量使用一个量子比特和一个局部
 旋转，形成直积态编码。
 
 `ImageBasisEncoding`（精确别名 `BRQI`）实现固定 8 位单通道灰度 BRQI。对
-<img src="../../assets/formulas/inline/inline-ca99008e316f9d60.svg" alt="H=2^h" style="vertical-align: -0.000pt;">、<img src="../../assets/formulas/inline/inline-f874c29ec93a3aef.svg" alt="W=2^w" style="vertical-align: -1.000pt;">，目标态为
+$`H=2^h`$、$`W=2^w`$，目标态为
 
-<p align="center">
-  <img src="../../assets/formulas/image-basis-encoding-state.svg" alt="The normalized image basis-encoding state over bit plane, row, and column indices.">
-</p>
+```math
+\frac{1}{\sqrt{8HW}}\sum_{l,y,x}|g(y,x,l)\rangle|x\rangle|y\rangle|l\rangle
+```
 
-其中 <img src="../../assets/formulas/inline/inline-e50faab9ec3620f6.svg" alt="g(y,x,l)=(\mathtt{pixel}[y,x]\mathbin{\mathtt{&gt;&gt;}}l)\mathbin{\mathtt{\&amp;}}1" style="vertical-align: -4.000pt;">，<img src="../../assets/formulas/inline/inline-449b7b395d613059.svg" alt="l=0" style="vertical-align: -1.000pt;"> 为最低有效位平面。Cqlib 小端物理
+其中 $`g(y,x,l)=(\mathtt{pixel}[y,x]\mathbin{\mathtt{>>}}l)\mathbin{\mathtt{\&}}1`$，$`l=0`$ 为最低有效位平面。Cqlib 小端物理
 布局固定为：量子比特 0 是值位，其后依次为 `w` 个列位、`h` 个行位和 3 个平面位，
 各寄存器内部均最低有效位在前。对应基态索引为
-<img src="../../assets/formulas/inline/inline-f57c19676482787d.svg" alt="g+2x+2Wy+2WHl" style="vertical-align: -3.000pt;">。
+$`g+2x+2Wy+2WHl`$。
 
 线路先对全部地址与平面量子比特施加 H，再对每个值为 1 的 `(x,y,l)` 地址使用完整
 开放/闭合控制写入值位，返回未测量的状态制备线路。只接受恰好一个通道，像素必须是真正的 Python
-整数且位于 <img src="../../assets/formulas/inline/inline-84eae7395655789e.svg" alt="[0,255]" style="vertical-align: -4.000pt;">；高和宽必须分别为 2 的非负整数次幂（含 1）。逻辑量子比特数为
-<img src="../../assets/formulas/inline/inline-f13d2d3e4a5a65c7.svg" alt="h+w+4" style="vertical-align: -2.000pt;">；经典构造显式枚举 <img src="../../assets/formulas/inline/inline-6d62a3ba55760149.svg" alt="8HW" style="vertical-align: -1.000pt;"> 个像素位，线路规模和构造时间随输入图像的数据量
+整数且位于 $`[0,255]`$；高和宽必须分别为 2 的非负整数次幂（含 1）。逻辑量子比特数为
+$`h+w+4`$；经典构造显式枚举 $`8HW`$ 个像素位，线路规模和构造时间随输入图像的数据量
 增长。
 
 ## 使用示例

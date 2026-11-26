@@ -2,23 +2,23 @@
 
 `VarQITE` 用参数化量子态近似归一化虚时演化
 
-<p align="center">
-  <img src="../../assets/formulas/var-qite-state.svg" alt="The normalized imaginary-time evolved state.">
-</p>
+```math
+|\psi(\tau)\rangle=\frac{e^{-\tau H}|\psi(0)\rangle}{\|e^{-\tau H}|\psi(0)\rangle\|}
+```
 
 虚时演化会相对抑制高能本征态，因此常用于从具有非零基态重叠的初态逐步逼近低能态。
 本实现采用消除全局相位自由度后的 McLachlan 变分投影。在每个时刻计算相位规范
 不变的投影量子几何度规
 
-<p align="center">
-  <img src="../../assets/formulas/var-qite-metric.svg" alt="The phase-invariant projected quantum-geometric metric used by VarQITE.">
-</p>
+```math
+g_{ij}=\operatorname{Re}\left[\langle\partial_i\psi|\partial_j\psi\rangle-\langle\partial_i\psi|\psi\rangle\langle\psi|\partial_j\psi\rangle\right]
+```
 
 并求解
 
-<p align="center">
-  <img src="../../assets/formulas/var-qite-update.svg" alt="The VarQITE parameter-velocity equation.">
-</p>
+```math
+g\dot{\theta}=-\frac{1}{2}\nabla_\theta\langle\psi(\theta)|H|\psi(\theta)\rangle
+```
 
 参数使用固定步长 Forward Euler 更新。该离散化简单且结果可解释，但不自适应调整
 步长，也不提供积分截断误差估计。
@@ -33,7 +33,7 @@
 - 指定 `shots` 时，梯度、能量和辅助观测使用注入 Estimator 的有限-shot 语义，
   但 QGT 仍为精确态矢量度规；
 - `regularization=0` 对奇异度规使用最小范数最小二乘解；正值则求解
-  <img src="../../assets/formulas/inline/inline-d5987264c1477f56.svg" alt="g+\lambda I" style="vertical-align: -3.000pt;"> 的岭正则系统，其中 <img src="../../assets/formulas/inline/inline-583cf6290785d72c.svg" alt="\lambda" style="vertical-align: -1.000pt;"> 为 `regularization`。
+  $`g+\lambda I`$ 的岭正则系统，其中 $`\lambda`$ 为 `regularization`。
 
 拟设必须满足 `StatevectorQGT` 与 `ParameterShiftGradient` 的共同边界：活跃参数可出现
 在支持的旋转、相位、受控旋转和 `U` 门的仿射表达式中。测量、重置、延迟、动态经典

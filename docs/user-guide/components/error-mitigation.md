@@ -166,7 +166,7 @@ REM、T-REx、经典阴影和 DEB 需要在 `base` 中提供采样后端；QSE �
 | T-REx | 可执行随机读出翻转及相应校准线路 | 读出 twirling 后的期望值 | `trex_executor(base, shots=4096, num_randomizations=32)` |
 | Classical Shadows | 可执行随机局域 Pauli 测量 | Pauli 可观测量的 shadow 估计 | `shadows_executor(base, num_total_measurements_shadow=4096)` |
 | QSE | 给定扩展算符基和代码 Hamiltonian | 广义本征值问题的最低能量估计 | `qse_executor(base, check_operators=checks, code_hamiltonian=code_hamiltonian, shots=4096)` |
-| Virtual Distillation | 能执行多副本 copy-swap 线路，副本噪声近似独立 | <img src="../../assets/formulas/inline/inline-290e1a115e43c614.svg" alt="\operatorname{Tr}(O\rho^M)/\operatorname{Tr}(\rho^M)" style="vertical-align: -4.000pt;"> | `vd_executor(base, copies=2, shots_numerator=4096, shots_denominator=4096)` |
+| Virtual Distillation | 能执行多副本 copy-swap 线路，副本噪声近似独立 | $`\operatorname{Tr}(O\rho^M)/\operatorname{Tr}(\rho^M)`$ | `vd_executor(base, copies=2, shots_numerator=4096, shots_denominator=4096)` |
 
 ## 缩放、推断与拟概率
 
@@ -186,7 +186,7 @@ REM、T-REx、经典阴影和 DEB 需要在 `base` 中提供采样后端；QSE �
 - 有限-shot 方差可能因缓解权重、外推或拟概率开销显著放大。
 - PEC 和 PEA 的正确性依赖拟概率模型与实际噪声的一致性。
 - REM 当前使用逐量子比特混淆数据，不表示一般相关读出噪声模型。
-- Virtual Distillation 的线路宽度为 <img src="../../assets/formulas/inline/inline-c0247fd5b4940c66.svg" alt="Mn+1" style="vertical-align: -2.000pt;">，并要求副本噪声近似独立。
+- Virtual Distillation 的线路宽度为 $`Mn+1`$，并要求副本噪声近似独立。
 - QSE 的结果依赖扩展基、重叠矩阵条件数和广义本征值截断容差。
 - 组件只提供同步本地契约；认证、任务提交、排队和异步轮询由外部适配层负责。
 

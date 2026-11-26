@@ -61,7 +61,7 @@ fit(X, y, *, initial_point) -> self
 
 ## 自定义损失与优化器
 
-这个示例训练 <img src="../../assets/formulas/inline/inline-337ae63cc1dccdb4.svg" alt="R_Y(wx)" style="vertical-align: -4.000pt;"> 中的参数 <img src="../../assets/formulas/inline/inline-50e721e49c013f00.svg" alt="w" style="vertical-align: -1.000pt;">，并使用已有的参数化线路。
+这个示例训练 $`R_Y(wx)`$ 中的参数 $`w`$，并使用已有的参数化线路。
 
 损失函数接收 `(matrix, targets)`。标量优化器接收 `(objective, initial_point)`，调用目标函数后，
 返回选中的参数点、目标值、终止信息和实际评估次数。以下示例使用矩阵平方误差与三点搜索。

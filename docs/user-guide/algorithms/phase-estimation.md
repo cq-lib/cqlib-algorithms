@@ -4,14 +4,14 @@
 
 ## 数学约定
 
-对酉算子 <img src="../../assets/formulas/inline/inline-a25513c7e0f6eaa8.svg" alt="U" style="vertical-align: -1.000pt;"> 的本征态 <img src="../../assets/formulas/inline/inline-43e0453225b24b1c.svg" alt="|\psi\rangle" style="vertical-align: -4.000pt;">，归一化本征相位定义为
+对酉算子 $`U`$ 的本征态 $`\vert \psi\rangle`$，归一化本征相位定义为
 
-<p align="center">
-  <img src="../../assets/formulas/phase-eigenvalue-relation.svg" alt="U|ψ⟩=e2πiφ|ψ⟩, φ∈[0,1).">
-</p>
+```math
+U|\psi\rangle=e^{2\pi i\phi}|\psi\rangle,\qquad \phi\in[0,1).
+```
 
-系统量子比特采用 Cqlib 小端序。<img src="../../assets/formulas/inline/inline-62c66a7a5dd70c31.svg" alt="m" style="vertical-align: -1.000pt;"> 个估计量子比特的整数结果 <img src="../../assets/formulas/inline/inline-a1fce4363854ff88.svg" alt="y" style="vertical-align: -3.000pt;"> 表示
-<img src="../../assets/formulas/inline/inline-97a178f0aa1d0020.svg" alt="\phi=y/2^m" style="vertical-align: -4.000pt;">。所有状态制备和酉线路必须固定、完全绑定、静态且同宽；量子比特按
+系统量子比特采用 Cqlib 小端序。$`m`$ 个估计量子比特的整数结果 $`y`$ 表示
+$`\phi=y/2^m`$。所有状态制备和酉线路必须固定、完全绑定、静态且同宽；量子比特按
 插入位置映射到连续位置。
 
 ## PhaseEstimationCircuit
@@ -19,11 +19,11 @@
 `PhaseEstimationCircuit` 是无状态制备、无测量的复合线路算子。它依次执行：
 
 1. 对估计寄存器施加 Hadamard；
-2. 第 <img src="../../assets/formulas/inline/inline-189f40034be7a199.svg" alt="j" style="vertical-align: -3.000pt;"> 个估计量子比特控制 <img src="../../assets/formulas/inline/inline-26b873f4bebb2962.svg" alt="U^{2^j}" style="vertical-align: -1.000pt;">；
+2. 第 $`j`$ 个估计量子比特控制 $`U^{2^j}`$；
 3. 对估计寄存器施加逆 QFT。
 
 当前 Core 尚无把任意线路直接提升为量子受控线路的通用接口，因此实现从
-`Circuit.to_matrix` 构造 <img src="../../assets/formulas/inline/inline-04674418a03a7957.svg" alt="\operatorname{diag}(I,U^k)" style="vertical-align: -4.000pt;">。该过程保留 <img src="../../assets/formulas/inline/inline-a25513c7e0f6eaa8.svg" alt="U" style="vertical-align: -1.000pt;"> 的全局相位，但系统宽度的
+`Circuit.to_matrix` 构造 $`\operatorname{diag}(I,U^k)`$。该过程保留 $`U`$ 的全局相位，但系统宽度的
 内存复杂度为指数级；构造前执行 256 MiB 稠密工作集上限检查。数值酉门也不保证每个
 远端后端都能直接接受或分解。
 
@@ -107,13 +107,13 @@ print(result.phase)  # 0.125
 `PhaseEstimationRequest` 另外给出估计位数、shots 和可选 QFT 近似度。算法支持
 输入态为本征态叠加：若
 
-<p align="center">
-  <img src="../../assets/formulas/phase-state-decomposition.svg" alt="|ψ⟩=Σj cj|φj⟩,">
-</p>
+```math
+|\psi\rangle=\sum_j c_j|\phi_j\rangle,
+```
 
-则理想采样以 <img src="../../assets/formulas/inline/inline-22598f41cec3ab3b.svg" alt="|c_j|^2" style="vertical-align: -5.000pt;"> 的权重观察对应本征相位。结果返回经验众数相位、整数网格点
+则理想采样以 $`\vert c_j\vert ^2`$ 的权重观察对应本征相位。结果返回经验众数相位、整数网格点
 和只包含已观测网格点的稀疏概率映射；众数并列时选择最小网格点。线路内逻辑酉调用
-总数为 <img src="../../assets/formulas/inline/inline-26049ce5031a842a.svg" alt="2^m-1" style="vertical-align: -0.000pt;">，`num_unitary_queries` 是再乘 shots 的采样加权查询数。
+总数为 $`2^m-1`$，`num_unitary_queries` 是再乘 shots 的采样加权查询数。
 
 下例用三个估计比特测量矩阵在 `|1⟩` 上的本征相位。该本征值为 `exp(3πi/4)`，对应归一化相位 `3/8`。改变制备的基态即可选择另一个本征值。
 
@@ -139,7 +139,7 @@ assert phase.phase == 3 / 8
 ## 迭代 QPE
 
 `IterativePhaseEstimation` 使用一个估计辅助比特，以独立线路从最低有效位向最高有效位
-提取相位。第 <img src="../../assets/formulas/inline/inline-8254c329a92850f6.svg" alt="k" style="vertical-align: -1.000pt;"> 轮使用受控 <img src="../../assets/formulas/inline/inline-b721f2cf60da8b78.svg" alt="U^{2^k}" style="vertical-align: -1.000pt;">，并根据已经得到的低位施加经典反馈相位；
+提取相位。第 $`k`$ 轮使用受控 $`U^{2^k}`$，并根据已经得到的低位施加经典反馈相位；
 每轮重新制备同一系统态。因不同位不在同一次相干演化中关联，该接口要求输入制备态
 为一个本征态，不支持用一次运行解析本征态叠加的联合相位分布。
 
@@ -162,21 +162,21 @@ assert bits.bitstring == "011"
 
 对有限 Hermitian Pauli Hamiltonian `H`，HPE 选择正比例因子
 
-<p align="center">
-  <img src="../../assets/formulas/hpe-scaling-unitary.svg" alt="s=π/B, U=eisH,">
-</p>
+```math
+s=\frac{\pi}{B},\qquad U=e^{isH},
+```
 
 其中 `bound` 是本征值绝对值的上界。默认取各 Pauli 项有效系数绝对值之和的两倍，
 将精确本征值对应的有符号相位限制在 −1/4 到 1/4 之间。
-Core 的演化约定为 <img src="../../assets/formulas/inline/inline-2637b6dd9fae991f.svg" alt="e^{-itH}" style="vertical-align: -1.000pt;">，实现以 <img src="../../assets/formulas/inline/inline-37a0e776cafd52a2.svg" alt="t=-s" style="vertical-align: -1.000pt;"> 构造上述 <img src="../../assets/formulas/inline/inline-a25513c7e0f6eaa8.svg" alt="U" style="vertical-align: -1.000pt;">。相位 <img src="../../assets/formulas/inline/inline-10ce0200b450ea95.svg" alt="\phi" style="vertical-align: -3.000pt;"> 先映射
+Core 的演化约定为 $`e^{-itH}`$，实现以 $`t=-s`$ 构造上述 $`U`$。相位 $`\phi`$ 先映射
 到有符号区间，再恢复本征值：
 
-<p align="center">
-  <img src="../../assets/formulas/hpe-phase-rescaling.svg" alt="The phase is mapped to a signed interval before the eigenvalue λ = 2πφ̃/s is recovered.">
-</p>
+```math
+\widetilde{\phi}=\phi\;(\phi<1/2),\quad\widetilde{\phi}=\phi-1\;(\phi\geq1/2),\qquad\lambda=\frac{2\pi\widetilde{\phi}}{s}
+```
 
 估计寄存器至少需要两个量子比特才能区分正负相位。手动设置较紧的 `bound` 可缩小能量网格间距，
-但应给相位端点留出可分辨的余量。能量 <img src="../../assets/formulas/inline/inline-ea916ea31283e13b.svg" alt="+\mathtt{bound}" style="vertical-align: -2.000pt;"> 与 <img src="../../assets/formulas/inline/inline-80006d7f53be6eb0.svg" alt="-\mathtt{bound}" style="vertical-align: -1.000pt;"> 都会映射到相位 <img src="../../assets/formulas/inline/inline-d939926f05444b0f.svg" alt="1/2" style="vertical-align: -4.000pt;">。
+但应给相位端点留出可分辨的余量。能量 $`+\mathtt{bound}`$ 与 $`-\mathtt{bound}`$ 都会映射到相位 $`1/2`$。
 对非对易 Pauli 项，Core 使用指定 `TrotterMode` 和
 `trotter_steps` 合成演化，结果对应这一乘积公式近似；默认使用二阶公式、一步。
 对易项由 Core 使用精确单遍分解。

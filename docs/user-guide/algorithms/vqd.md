@@ -1,13 +1,13 @@
 # 变分量子消胀法（VQD）
 
 `VQD` 通过依次惩罚与已找到低能态的重叠，估计 Hermitian 算子的多个低能态。第
-<img src="../../assets/formulas/inline/inline-043a718774c572bd.svg" alt="s" style="vertical-align: -1.000pt;"> 级优化的目标为
+$`s`$ 级优化的目标为
 
-<p align="center">
-  <img src="../../assets/formulas/vqd-objective.svg" alt="The VQD objective adds overlap penalties for previously found states.">
-</p>
+```math
+L_s(\theta)=\langle\psi(\theta)|H|\psi(\theta)\rangle+\sum_{j=0}^{s-1}\beta_j|\langle\psi_j|\psi(\theta)\rangle|^2
+```
 
-正的 <img src="../../assets/formulas/inline/inline-8dbbe747d8622f2f.svg" alt="\beta_j" style="vertical-align: -5.000pt;"> 抑制优化器重新收敛到先前状态。该方法来源于 Higgott、Wang 与
+正的 $`\beta_j`$ 抑制优化器重新收敛到先前状态。该方法来源于 Higgott、Wang 与
 Brierley 的
 [Variational Quantum Computation of Excited States](https://doi.org/10.22331/q-2019-07-01-156)。
 
@@ -28,10 +28,10 @@ Brierley 的
 
 ## Penalty 与结果
 
-显式 `betas` 必须包含 <img src="../../assets/formulas/inline/inline-7c35c5a1785d2070.svg" alt="k-1" style="vertical-align: -1.000pt;"> 个有限正数。省略时，算法采用
-<img src="../../assets/formulas/inline/inline-7ea97874329ced0b.svg" alt="10\sum_l |c_l|" style="vertical-align: -15.000pt;"> 作为统一 penalty，其中 <img src="../../assets/formulas/inline/inline-0328d236256ae6d4.svg" alt="c_l" style="vertical-align: -3.000pt;"> 是 Hamiltonian 的 Pauli
+显式 `betas` 必须包含 $`k-1`$ 个有限正数。省略时，算法采用
+$`10\sum_l \vert c_l\vert `$ 作为统一 penalty，其中 $`c_l`$ 是 Hamiltonian 的 Pauli
 系数；这是保守默认值而非问题相关最优值。过小的 penalty 可能使多个级别收敛到同一
-低能态，过大的 penalty 会恶化目标尺度。零 Hamiltonian 在 <img src="../../assets/formulas/inline/inline-2d7530d3a21435c8.svg" alt="k&gt;1" style="vertical-align: -1.000pt;"> 时没有可推导
+低能态，过大的 penalty 会恶化目标尺度。零 Hamiltonian 在 $`k>1`$ 时没有可推导
 尺度，必须显式给出 penalty。
 
 `VQDResult.eigenvalues` 保存最终线路的原始 Hamiltonian 期望值；
@@ -47,7 +47,7 @@ Brierley 的
 
 ## 示例
 
-下面估计单量子比特 <img src="../../assets/formulas/inline/inline-bbeebd879e1dff69.svg" alt="Z" style="vertical-align: -0.000pt;"> 的两个本征态：
+下面估计单量子比特 $`Z`$ 的两个本征态：
 
 ```python
 from cqlib.qis import PauliString

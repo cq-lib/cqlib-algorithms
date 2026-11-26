@@ -1,7 +1,7 @@
 # 保真度量子核与 QSVR
 
 `FidelityQuantumKernel` 通过量子特征线路计算样本相似度，核函数为
-<img src="../../assets/formulas/inline/inline-d0758bca8ee5fcae.svg" alt="K(x,z)=|\langle\phi(x)|\phi(z)\rangle|^2" style="vertical-align: -4.000pt;">。`QSVR` 基于该核执行 ε-SVR 回归，提供训练、预测和 R² 评分。
+$`K(x,z)=\vert \langle\phi(x)\vert \phi(z)\rangle\vert ^2`$。`QSVR` 基于该核执行 ε-SVR 回归，提供训练、预测和 R² 评分。
 
 `QSVR` 接收实现 `QuantumKernel` 的固定核，也可直接接收核训练器的 `quantum_kernel_`。QSVR 训练使用 scikit-learn，可通过 `cqlib-algorithms[machine-learning]` 安装经典计算依赖。
 
