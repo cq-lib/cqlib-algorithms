@@ -173,6 +173,12 @@ Q=A(2\lvert 0^n\rangle\langle 0^n\rvert-I)A^\dagger S_f
 竖线被识别为列分隔符。较长的推导放在表格外，按需要使用 `aligned` 对齐分行。
 公式中的运算符、上下标和宏必须能被 GitHub 的 MathJax 渲染器识别。
 
+运算符名称使用 `\mathrm{...}`，例如 `\mathrm{diag}(A)` 和 `\mathrm{Re}\,z`；
+后接变量时用 `\,` 保留适当间距。GitHub 页面会拒绝 `\operatorname` 等部分宏，
+因此不能仅以本地 MathJax 编译通过作为 GitHub 页面兼容性的依据。
+新增宏应通过不含项目内容的最小示例核对 GitHub 实际渲染，并检查完整公式。
+比较符号优先使用 `\lt`、`\gt` 等命令，避免 `<` 紧接字母时受到 HTML 解析影响。
+
 修改公式后检查数学含义、行内与独立公式的分隔、表格列数和页面显示；同时确认
 代码示例、文档链接和参考文献没有受到排版调整的影响。语法说明见
 [GitHub 数学表达式文档](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/writing-mathematical-expressions)。

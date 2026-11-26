@@ -13,10 +13,10 @@ $`\vert \psi(\theta)\rangle`$，每一步计算相位规范不变的投影量子
 G_{ij}=\langle\partial_i\psi|\partial_j\psi\rangle-\langle\partial_i\psi|\psi\rangle\langle\psi|\partial_j\psi\rangle
 ```
 
-取实部得到度规 $`g=\operatorname{Re}(G)`$，并构造实时驱动力
+取实部得到度规 $`g=\mathrm{Re}(G)`$，并构造实时驱动力
 
 ```math
-b_i=\operatorname{Im}\left[\langle\partial_i\psi|H|\psi\rangle-\langle\partial_i\psi|\psi\rangle\langle\psi|H|\psi\rangle\right]
+b_i=\mathrm{Im}\left[\langle\partial_i\psi|H|\psi\rangle-\langle\partial_i\psi|\psi\rangle\langle\psi|H|\psi\rangle\right]
 ```
 
 参数速度由

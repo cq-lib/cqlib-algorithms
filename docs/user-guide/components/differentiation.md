@@ -130,7 +130,7 @@ for optimizer in optimizers:
 
 数学定义采用 Stokes et al.（arXiv:1909.02108）的对称化约定：
 $`F_{ij}=\langle\partial_i\psi\vert (1-\vert \psi\rangle\langle\psi\vert )\vert \partial_j\psi\rangle`$，
-$`g_{ij}=\operatorname{Re}F_{ij}`$。端序遵循 Cqlib
+$`g_{ij}=\mathrm{Re}\,F_{ij}`$。端序遵循 Cqlib
 小端约定，量子比特位置按线路插入顺序解释，支持非连续量子比特 ID。
 
 ## 参数移位规则
@@ -204,7 +204,7 @@ $`\widehat g_i=[E(\theta+c\Delta)-E(\theta-c\Delta)]\Delta_i/(2c)`$。评估数�
 
 `StatevectorQGT.compute(request)` 精确计算导数态并返回 `QGTResult`。
 `tensor` 为复 Hermitian 张量 $`F`$，`metric` 为实对称度规
-$`g=\operatorname{Re}F`$，两者顺序均与 `parameter_names` 一致。全局相位的导数与
+$`g=\mathrm{Re}\,F`$，两者顺序均与 `parameter_names` 一致。全局相位的导数与
 $`\vert \psi\rangle`$ 平行，经投影后不影响结果。
 支持的参数化门和线路限制见源码 docstring。
 
@@ -221,7 +221,7 @@ $`\vert \psi\rangle`$ 平行，经投影后不影响结果。
 
 ## 量子 Fisher 信息（StatevectorQFI）
 
-纯态约定下 $`\mathrm{QFI}=4\operatorname{Re}(F)=4g`$。`StatevectorQFI.compute(request)` 返回
+纯态约定下 $`\mathrm{QFI}=4\mathrm{Re}(F)=4g`$。`StatevectorQFI.compute(request)` 返回
 `QFIResult`；矩阵按 `parameter_names` 排列且为有限实对称矩阵。空参数请求返回
 $`0\times0`$ 矩阵。自然梯度仍使用 $`g`$，改用 QFI 会把相同步长下的方向缩放为四分之一。
 

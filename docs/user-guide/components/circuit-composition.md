@@ -42,7 +42,7 @@ $`A`$ 构建未测量线路 $`H^{\otimes n}\rightarrow D_A\rightarrow H^{\otimes
 `x`，二次型定义为
 
 ```math
-q_A(x)=\sum_iA_{ii}x_i+2\sum_{i<j}A_{ij}x_ix_j\quad(\mathrm{mod}\ 4)
+q_A(x)=\sum_iA_{ii}x_i+2\sum_{i\lt j}A_{ij}x_ix_j\quad(\mathrm{mod}\ 4)
 ```
 
 中间对角线路满足 $`D_A\vert x\rangle=i^{q_A(x)}\vert x\rangle`$：对角元素 $`A_{ii}=1`$ 对应量子
@@ -100,7 +100,7 @@ $`2^{n-\vert R\vert }`$，不是单态反射。
 给出 `state_preparation` 时，可传入 `StatePreparation` 组件，生成作用于整个搜索寄存器的 $`A`$。
 仅当 $`R`$ 包含所有量子比特时，$`D_R`$ 才是关于 $`A\vert 0\ldots0\rangle`$ 的单态反射
 $`2A\vert 0\ldots0\rangle\langle0\ldots0\vert A^\dagger-I`$。当 $`R`$ 是真子集时，$`D_R`$ 是关于
-$`A\operatorname{range}(P_{0,R})`$ 的子空间反射。`state_preparation` 必须可静态求逆且
+$`A\mathrm{range}(P_{0,R})`$ 的子空间反射。`state_preparation` 必须可静态求逆且
 量子比特数与 Oracle 一致。
 
 `reflection_qubits` 是搜索量子比特索引的可迭代对象，不允许为空、重复或越界，

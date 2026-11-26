@@ -221,7 +221,7 @@ $`mr`$，命名为 `{prefix}_theta_0, ...`。初态只在全部演化因子之�
 分别为
 
 ```math
-S=\sum_i(n_i-1),\qquad D=\sum_{i<j}(n_i-1)(n_j-1)
+S=\sum_i(n_i-1),\qquad D=\sum_{i\lt j}(n_i-1)(n_j-1)
 ```
 
 默认初态为同一参考构型的 `VSCFStatePreparation`，也可提供宽度相同、无活跃参数且

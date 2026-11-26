@@ -166,7 +166,7 @@ REM、T-REx、经典阴影和 DEB 需要在 `base` 中提供采样后端；QSE �
 | T-REx | 可执行随机读出翻转及相应校准线路 | 读出 twirling 后的期望值 | `trex_executor(base, shots=4096, num_randomizations=32)` |
 | Classical Shadows | 可执行随机局域 Pauli 测量 | Pauli 可观测量的 shadow 估计 | `shadows_executor(base, num_total_measurements_shadow=4096)` |
 | QSE | 给定扩展算符基和代码 Hamiltonian | 广义本征值问题的最低能量估计 | `qse_executor(base, check_operators=checks, code_hamiltonian=code_hamiltonian, shots=4096)` |
-| Virtual Distillation | 能执行多副本 copy-swap 线路，副本噪声近似独立 | $`\operatorname{Tr}(O\rho^M)/\operatorname{Tr}(\rho^M)`$ | `vd_executor(base, copies=2, shots_numerator=4096, shots_denominator=4096)` |
+| Virtual Distillation | 能执行多副本 copy-swap 线路，副本噪声近似独立 | $`\mathrm{Tr}(O\rho^M)/\mathrm{Tr}(\rho^M)`$ | `vd_executor(base, copies=2, shots_numerator=4096, shots_denominator=4096)` |
 
 ## 缩放、推断与拟概率
 

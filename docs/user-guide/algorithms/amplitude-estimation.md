@@ -34,7 +34,7 @@ $`Q^kA`$ 的好态概率为 $`\sin^2((2k+1)\theta)`$。
 线路的通用接口，因此底层使用完整稠密矩阵：
 
 ```math
-U=\operatorname{matrix}(Q),\qquad U_p=U^{2^j},\qquad C_p=\operatorname{diag}(I,U_p)
+U=\mathrm{matrix}(Q),\qquad U_p=U^{2^j},\qquad C_p=\mathrm{diag}(I,U_p)
 ```
 
 `Circuit.to_matrix` 的顺序从最低有效位到最高有效位，而数值酉门追加列表的第一项是
@@ -161,7 +161,7 @@ L_{\max}=\arcsin\left(\left(\frac{2\log(2T/\alpha)}{N_{\mathrm{shots}}}\right)^{
 当 $`K=4k+2>\lceil L_{\max}/\epsilon\rceil`$ 时，该轮实际 shots 降为
 $`\lceil N_{\mathrm{shots}}L_{\max}/(10\epsilon K)\rceil`$；`round_shots` 与按 shots 加权的查询数均记录
 实际值。binary64 实现要求
-$`\pi\operatorname{ulp}(0.25)\leq\epsilon<\pi/8`$：除以 $`\pi`$ 后的规范角度目标至少覆盖
+$`\pi\mathrm{ulp}(0.25)\leq\epsilon<\pi/8`$：除以 $`\pi`$ 后的规范角度目标至少覆盖
 `[0,0.25]` 上最坏的相邻浮点间距。`max_rounds` 至少为 `T`，并且基准 shots 必须使
 `Lmax` 的实数构造成立。基准 `shots` 还必须不超过 $`2^{53}-1`$，以保证参与
 binary64 Chernoff--Hoeffding 几何计算的整数频数可精确表示，并避免超大 Python

@@ -42,7 +42,7 @@ $`S_f\vert x\rangle=(-1)^{f(x)}\vert x\rangle`$。
 多输出 `PhaseOracle(F, output_mask=k)` 必须显式给出整数 $`k`$，并满足
 $`1\leq k<2^m`$；布尔值不是合法掩码。其线路仅包含 $`n`$ 个输入量子比特：
 
-$`S_{F,k}\vert x\rangle=(-1)^{\operatorname{parity}(k\mathbin{\&}F_{\mathrm{int}}(x))}\vert x\rangle`$，
+$`S_{F,k}\vert x\rangle=(-1)^{\mathrm{parity}(k\mathbin{\&}F_{\mathrm{int}}(x))}\vert x\rangle`$，
 
 其中 $`F_{\mathrm{int}}(x)=\sum_i2^iF_i(x)`$，`parity` 是被选输出位的模二和。这是
 $`F_i`$ 的 XOR/奇偶投影，**不是**“任一被选输出为真”的逻辑 OR 标记。

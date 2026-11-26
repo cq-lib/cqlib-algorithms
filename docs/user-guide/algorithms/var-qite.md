@@ -11,7 +11,7 @@
 不变的投影量子几何度规
 
 ```math
-g_{ij}=\operatorname{Re}\left[\langle\partial_i\psi|\partial_j\psi\rangle-\langle\partial_i\psi|\psi\rangle\langle\psi|\partial_j\psi\rangle\right]
+g_{ij}=\mathrm{Re}\left[\langle\partial_i\psi|\partial_j\psi\rangle-\langle\partial_i\psi|\psi\rangle\langle\psi|\partial_j\psi\rangle\right]
 ```
 
 并求解
